@@ -24,6 +24,7 @@ interface TimerContextProps {
   resetTimer: () => void;
   FOCUS_TIME: number;
   BREAK_TIME: number;
+  addCompletedSession: () => void;
 }
 
 const TimerContext = createContext<TimerContextProps | undefined>(undefined);
@@ -58,6 +59,14 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
       Notification.requestPermission();
     }
   }, []);
+  
+  const updateTimerState = useCallback((newState: Partial<TimerState>) => {
+    setTimerState(prevState => {
+      const updated = { ...prevState, ...newState };
+      localStorage.setItem("pomodoroState", JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
 
   // Load state from localStorage on initial render
   useEffect(() => {
@@ -69,83 +78,83 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
                 const remainingTime = Math.round((parsedState.endTime - Date.now()) / 1000);
                 if (remainingTime > 0) {
                     parsedState.time = remainingTime;
-                    setTimerState(parsedState);
                 } else {
                     // Timer finished while tab was closed
                     parsedState.isActive = false;
                     parsedState.time = parsedState.mode === 'focus' ? BREAK_TIME : FOCUS_TIME;
-                    parsedState.mode = parsedState.mode === 'focus' ? 'break' : 'focus';
-                    if (parsedState.mode === 'break') { // This means focus session just ended
-                        parsedState.sessions += 1;
+                    const endedOnFocus = parsedState.mode === 'focus';
+                    parsedState.mode = endedOnFocus ? 'break' : 'focus';
+                    if (endedOnFocus) {
+                        const savedUser = localStorage.getItem("userProfile");
+                        if(savedUser) {
+                            const user = JSON.parse(savedUser);
+                            user.completedSessions = (user.completedSessions || 0) + 1;
+                            localStorage.setItem("userProfile", JSON.stringify(user));
+                            parsedState.sessions = user.completedSessions;
+                        }
                     }
-                    setTimerState(parsedState);
                 }
-            } else {
-                 setTimerState(parsedState);
             }
+             const savedUser = localStorage.getItem("userProfile");
+             if (savedUser) {
+                const user = JSON.parse(savedUser);
+                parsedState.sessions = user.completedSessions || 0;
+             }
+            setTimerState(parsedState);
         } catch (error) {
             console.error("Failed to parse pomodoro state from localStorage", error);
             localStorage.removeItem("pomodoroState");
+        }
+    } else {
+        const savedUser = localStorage.getItem("userProfile");
+        if (savedUser) {
+            const user = JSON.parse(savedUser);
+            setTimerState(prevState => ({ ...prevState, sessions: user.completedSessions || 0 }));
         }
     }
     requestNotificationPermission();
   }, [requestNotificationPermission]);
 
-  // Save state to localStorage whenever it changes
-  useEffect(() => {
-    localStorage.setItem("pomodoroState", JSON.stringify(timerState));
-  }, [timerState]);
-
   const resetTimer = useCallback(() => {
-    setTimerState(prevState => ({
-      ...prevState,
+    updateTimerState({
       isActive: false,
       mode: 'focus',
       time: FOCUS_TIME,
       endTime: null,
-    }));
-  }, []);
+    });
+  }, [updateTimerState]);
+  
+  const addCompletedSession = useCallback(() => {
+      const savedUser = localStorage.getItem("userProfile");
+      if(savedUser){
+          const user = JSON.parse(savedUser);
+          user.completedSessions = (user.completedSessions || 0) + 1;
+          localStorage.setItem("userProfile", JSON.stringify(user));
+          updateTimerState({ sessions: user.completedSessions });
+      }
+  }, [updateTimerState]);
 
   const handleTimerEnd = useCallback(() => {
     if (timerState.mode === "focus") {
-      setTimerState(prevState => ({
-        ...prevState,
-        sessions: prevState.sessions + 1,
+       // Points are now awarded on the timer page itself
+       updateTimerState({
         mode: 'break',
         time: BREAK_TIME,
         isActive: false,
         endTime: null,
-      }));
-      
-      const savedUser = localStorage.getItem("userProfile");
-      if(savedUser){
-          const user = JSON.parse(savedUser);
-          user.points = (user.points || 0) + 25;
-          user.completedSessions = (user.completedSessions || 0) + 1;
-          localStorage.setItem("userProfile", JSON.stringify(user));
-      }
-
-      toast({
-        title: "Focus session complete!",
-        description: "Time for a 5-minute break. You earned 25 points!",
       });
       showNotification("Focus session complete!", { body: "Time for a 5-minute break."});
 
     } else {
-       setTimerState(prevState => ({
-        ...prevState,
+       updateTimerState({
         mode: 'focus',
         time: FOCUS_TIME,
         isActive: false,
         endTime: null,
-      }));
-      toast({
-        title: "Break's over!",
-        description: "Time to start another focus session.",
       });
       showNotification("Break's over!", { body: "Time to start another focus session."});
     }
-  }, [timerState.mode, toast, showNotification]);
+  }, [timerState.mode, showNotification, updateTimerState]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
@@ -156,14 +165,13 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
           setTimerState(prevState => {
             const newTime = prevState.time - 1;
             if (newTime <= 0) {
-                handleTimerEnd();
-                return { ...prevState, time: 0 };
+              if (interval) clearInterval(interval);
+              handleTimerEnd();
+              return { ...prevState, time: 0, isActive: false };
             }
             return { ...prevState, time: newTime }
           });
         }, 1000);
-      } else {
-          handleTimerEnd();
       }
     }
     
@@ -174,13 +182,10 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   
   const toggleTimer = () => {
     setTimerState(prevState => {
-        const wasActive = prevState.isActive;
-        const newIsActive = !wasActive;
-        let newEndTime = prevState.endTime;
-        if(newIsActive && !wasActive) { // Starting the timer
+        const newIsActive = !prevState.isActive;
+        let newEndTime = null;
+        if(newIsActive) {
             newEndTime = Date.now() + prevState.time * 1000;
-        } else if (!newIsActive && wasActive) { // Pausing timer
-            newEndTime = null;
         }
         return { 
             ...prevState, 
@@ -188,6 +193,12 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
             endTime: newEndTime,
         };
     });
+     // We need to also immediately save state on toggle
+    localStorage.setItem("pomodoroState", JSON.stringify({
+        ...timerState,
+        isActive: !timerState.isActive,
+        endTime: !timerState.isActive ? Date.now() + timerState.time * 1000 : null,
+    }));
   };
 
   const value = {
@@ -199,6 +210,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     resetTimer,
     FOCUS_TIME,
     BREAK_TIME,
+    addCompletedSession,
   };
 
   return (
