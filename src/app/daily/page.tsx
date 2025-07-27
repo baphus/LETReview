@@ -21,6 +21,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 
 interface UserStats {
   streak: number;
@@ -41,6 +43,7 @@ export default function DailyPage() {
   });
   const [challengeCompletedToday, setChallengeCompletedToday] = useState(false);
   const [streakBroken, setStreakBroken] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<"gen_education" | "professional">("gen_education");
 
   const loadUserStats = () => {
     const savedUser = localStorage.getItem("userProfile");
@@ -82,10 +85,18 @@ export default function DailyPage() {
 
   useEffect(() => {
     loadUserStats();
+    // This will run when the component mounts and also when the user navigates back to this page.
+    const handleFocus = () => {
+      loadUserStats();
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
 
   const handleStartChallenge = (difficulty: 'easy' | 'medium' | 'hard', count: number) => {
-    router.push(`/?challenge=true&difficulty=${difficulty}&count=${count}`);
+    router.push(`/?challenge=true&difficulty=${difficulty}&count=${count}&category=${selectedCategory}`);
   };
   
   const restoreStreakCost = Math.min(500, (userStats.highestStreak || 0) * 10);
@@ -149,9 +160,9 @@ export default function DailyPage() {
          <Card className="mb-6 bg-green-50 border-green-200">
           <CardHeader>
             <CardTitle className="text-center text-green-800 font-headline">
-              Great job! You've completed your challenge for today.
+              Streak secured for today!
             </CardTitle>
-            <CardDescription className="text-center text-green-600">Come back tomorrow to continue your streak!</CardDescription>
+            <CardDescription className="text-center text-green-600">You can still complete other challenges for extra points.</CardDescription>
           </CardHeader>
         </Card>
       )}
@@ -192,21 +203,31 @@ export default function DailyPage() {
       )}
 
       <section>
-        <h2 className="text-2xl font-bold font-headline mb-4">Today's Challenges</h2>
+        <div className="flex flex-col items-center gap-4 mb-4">
+            <h2 className="text-2xl font-bold font-headline">Today's Challenges</h2>
+             <Tabs value={selectedCategory} onValueChange={(value) => {
+                    setSelectedCategory(value as "gen_education" | "professional");
+                }}>
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="gen_education">General Education</TabsTrigger>
+                    <TabsTrigger value="professional">Professional Education</TabsTrigger>
+                </TabsList>
+            </Tabs>
+        </div>
         <div className="space-y-4">
           {challenges.map(challenge => (
             <Card key={challenge.difficulty} className={`border-${challenge.color}-200`}>
               <CardHeader>
                 <CardTitle className="font-headline capitalize">{challenge.difficulty} Challenge</CardTitle>
-                <CardDescription>Complete a set of {challenge.count} questions.</CardDescription>
+                <CardDescription>Complete a set of {challenge.count} {selectedCategory === 'gen_education' ? 'General' : 'Professional'} Education questions.</CardDescription>
               </CardHeader>
               <CardFooter className="flex justify-between items-center">
                 <div className={`flex items-center gap-1 font-semibold text-${challenge.color}-600`}>
                   <Star className={`h-4 w-4 fill-${challenge.color}-500`} />
                   <span>{challenge.points * challenge.count} Points</span>
                 </div>
-                <Button onClick={() => handleStartChallenge(challenge.difficulty, challenge.count)} disabled={challengeCompletedToday}>
-                  {challengeCompletedToday ? 'Completed' : 'Start'}
+                <Button onClick={() => handleStartChallenge(challenge.difficulty, challenge.count)}>
+                  Start
                 </Button>
               </CardFooter>
             </Card>
@@ -247,3 +268,5 @@ export default function DailyPage() {
     </div>
   );
 }
+
+    

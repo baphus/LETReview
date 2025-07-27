@@ -166,6 +166,20 @@ const QuizCard: FC<{
   );
 };
 
+// Function to generate a seed from a string (e.g., today's date)
+const getSeed = (str: string) => {
+  let h = 1779033703, i = 0;
+  for (i = 0; i < str.length; i++) {
+    h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+    h = h << 13 | h >>> 19;
+  }
+  return () => {
+    h = Math.imul(h ^ h >>> 16, 2246822507);
+    h = Math.imul(h ^ h >>> 13, 3266489909);
+    return (h ^= h >>> 16) >>> 0;
+  }
+};
+
 
 export default function ReviewPage() {
   const router = useRouter();
@@ -173,9 +187,11 @@ export default function ReviewPage() {
   const isChallenge = searchParams.get('challenge') === 'true';
   const challengeDifficulty = searchParams.get('difficulty') || 'easy';
   const challengeCount = parseInt(searchParams.get('count') || '0', 10);
+  const challengeCategory = searchParams.get('category') as "gen_education" | "professional" || "gen_education";
+
   
   const [category, setCategory] = useState<"gen_education" | "professional">(
-    "gen_education"
+    isChallenge ? challengeCategory : "gen_education"
   );
   const [mode, setMode] = useState<"study" | "flashcard" | "quiz">("study");
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -192,14 +208,16 @@ export default function ReviewPage() {
       .filter((q) => q.category === category);
 
     if (isChallenge) {
-      // For challenges, take a random slice of questions matching the difficulty
-       return baseQuestions
+      // For challenges, get a deterministic random shuffle based on the date
+       const today = new Date().toDateString();
+       const rng = getSeed(today + challengeDifficulty + challengeCategory);
+       const shuffled = baseQuestions
          .filter(q => q.difficulty === challengeDifficulty)
-         .sort(() => 0.5 - Math.random())
-         .slice(0, challengeCount);
+         .sort(() => rng() - rng());
+       return shuffled.slice(0, challengeCount);
     }
 
-    // For regular mode, filter by search term
+    // For regular mode, filter by search term and shuffle choices
     const shuffledQuestions = baseQuestions
       .map(q => ({ ...q, choices: [...q.choices].sort(() => Math.random() - 0.5) }));
       
@@ -207,13 +225,14 @@ export default function ReviewPage() {
       .filter((q) =>
         q.question.toLowerCase().includes(searchTerm.toLowerCase())
       );
-  }, [category, searchTerm, isChallenge, challengeCount, challengeDifficulty]);
+  }, [category, searchTerm, isChallenge, challengeCount, challengeDifficulty, challengeCategory]);
 
   useEffect(() => {
     if (isChallenge) {
       setMode('quiz');
+      setCategory(challengeCategory);
     }
-  }, [isChallenge]);
+  }, [isChallenge, challengeCategory]);
 
   const currentQuestion = questions[currentIndex];
 
@@ -226,27 +245,25 @@ export default function ReviewPage() {
             setShowResults(true);
             if (isChallenge) {
                 const scorePercentage = (quizScore / questions.length) * 100;
-                if (scorePercentage >= 85) {
-                    const savedUser = localStorage.getItem("userProfile");
-                    if (savedUser) {
-                        const user = JSON.parse(savedUser);
-                        const today = new Date().toDateString();
-                        
-                        // Only update streak if the last challenge was not today
-                        if (user.lastChallengeDate !== today) {
-                            user.streak = (user.streak || 0) + 1;
-                            if (user.streak > (user.highestStreak || 0)) {
-                                user.highestStreak = user.streak;
-                            }
-                        }
-                        user.lastChallengeDate = today;
+                const savedUser = localStorage.getItem("userProfile");
+                if (savedUser) {
+                  const user = JSON.parse(savedUser);
+                  const today = new Date().toDateString();
+                  
+                  // Only update streak if the last challenge was not today and they passed
+                  if (scorePercentage >= 85 && user.lastChallengeDate !== today) {
+                      user.streak = (user.streak || 0) + 1;
+                      if (user.streak > (user.highestStreak || 0)) {
+                          user.highestStreak = user.streak;
+                      }
+                      user.lastChallengeDate = today;
+                  }
 
-                        const pointsPerQuestion = { easy: 5, medium: 10, hard: 15 };
-                        const pointsEarned = quizScore * pointsPerQuestion[challengeDifficulty as keyof typeof pointsPerQuestion];
-                        user.points = (user.points || 0) + pointsEarned;
-                        
-                        localStorage.setItem('userProfile', JSON.stringify(user));
-                    }
+                  const pointsPerQuestion = { easy: 5, medium: 10, hard: 15 };
+                  const pointsEarned = quizScore * pointsPerQuestion[challengeDifficulty as keyof typeof pointsPerQuestion];
+                  user.points = (user.points || 0) + pointsEarned;
+                  
+                  localStorage.setItem('userProfile', JSON.stringify(user));
                 }
             }
         } else {
@@ -326,12 +343,12 @@ export default function ReviewPage() {
           </DialogHeader>
           {isChallenge && (quizScore / questions.length) >= 0.85 && (
             <div className="text-center text-green-600 font-semibold p-4 bg-green-50 rounded-md">
-              <p>Congratulations! You passed the challenge and increased your streak!</p>
+              <p>Congratulations! You passed the challenge. Your streak is safe!</p>
             </div>
           )}
            {isChallenge && (quizScore / questions.length) < 0.85 && (
             <div className="text-center text-red-600 font-semibold p-4 bg-red-50 rounded-md">
-              <p>So close! You needed 85% to pass. Try again tomorrow!</p>
+              <p>So close! You needed 85% to pass. Try another challenge!</p>
             </div>
           )}
           <Button onClick={() => {
@@ -393,7 +410,7 @@ export default function ReviewPage() {
       {isChallenge && (
          <header className="flex flex-col gap-4 mb-6 text-center">
             <h1 className="text-3xl font-bold font-headline capitalize">{challengeDifficulty} Daily Challenge</h1>
-            <p className="text-muted-foreground">Answer {questions.length} questions. You need 85% to pass.</p>
+            <p className="text-muted-foreground">Answer {questions.length} {challengeCategory === 'gen_education' ? 'General' : 'Professional'} Education questions. You need 85% to pass.</p>
         </header>
       )}
       
@@ -408,7 +425,7 @@ export default function ReviewPage() {
           <Card className="h-80 flex justify-center items-center">
              <div className="text-center text-muted-foreground">
               <p>No questions found for this criteria.</p>
-              {isChallenge && <p>Please add more questions to the data file.</p>}
+              {isChallenge && <p>Please check back tomorrow for new questions.</p>}
             </div>
           </Card>
         )}
