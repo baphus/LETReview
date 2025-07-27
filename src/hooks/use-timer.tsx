@@ -186,8 +186,15 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const handleIncorrectQuizAnswer = useCallback(() => {
-    updateTimerState({ quizStreak: 0, streakMultiplier: 1 });
-  }, [updateTimerState]);
+    if (timerState.quizStreak > 0) {
+        toast({
+            variant: "destructive",
+            title: "Streak Lost!",
+            description: "Your multiplier has been reset.",
+        });
+    }
+    updateTimerState({ quizStreak: 0, streakMultiplier: 1, sessionPoints: 0 });
+  }, [updateTimerState, timerState.quizStreak, toast]);
 
 
   const handleTimerEnd = useCallback(() => {
