@@ -218,6 +218,38 @@ export default function ReviewPage() {
   
   const { toast } = useToast();
 
+   // Load state from localStorage on initial mount
+  useEffect(() => {
+    if (isChallenge) return; // Don't load state for challenges
+
+    const savedProgress = localStorage.getItem('reviewProgress');
+    if (savedProgress) {
+      try {
+        const { category, mode, currentIndex, searchTerm } = JSON.parse(savedProgress);
+        setCategory(category || 'gen_education');
+        setMode(mode || 'study');
+        setCurrentIndex(currentIndex || 0);
+        setSearchTerm(searchTerm || "");
+      } catch (e) {
+        console.error("Failed to parse review progress", e);
+      }
+    }
+  }, [isChallenge]);
+
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    if (isChallenge) return; // Don't save state for challenges
+
+    const progress = {
+      category,
+      mode,
+      currentIndex,
+      searchTerm,
+    };
+    localStorage.setItem('reviewProgress', JSON.stringify(progress));
+  }, [category, mode, currentIndex, searchTerm, isChallenge]);
+
+
   const questions = useMemo(() => {
     let baseQuestions = sampleQuestions
       .filter((q) => q.category === category);
@@ -271,9 +303,8 @@ export default function ReviewPage() {
             }
             user.lastChallengeDate = today;
             
-            const pointsPerQuestion = { easy: 5, medium: 10, hard: 15 };
-            const basePoints = pointsPerQuestion[challengeDifficulty as keyof typeof pointsPerQuestion];
-            const pointsEarned = basePoints + (finalScore * 2); // Base points + bonus per correct answer
+            const pointsMap = { easy: 25, medium: 75, hard: 150 };
+            const pointsEarned = pointsMap[challengeDifficulty as keyof typeof pointsMap] || 0;
             user.points = (user.points || 0) + pointsEarned;
         }
         
@@ -304,7 +335,11 @@ export default function ReviewPage() {
   };
 
   const handlePrev = () => {
-    setCurrentIndex((prev) => (prev - 1 + questions.length) % questions.length);
+    if (currentIndex > 0) {
+        setCurrentIndex((prev) => prev - 1);
+    } else {
+        setCurrentIndex(questions.length - 1); // Loop to the end
+    }
   };
   
   const handleAnswer = (correct: boolean, answer: string) => {
@@ -365,7 +400,9 @@ export default function ReviewPage() {
   }
 
   useEffect(() => {
-    resetQuizState();
+     if (!isChallenge) {
+      resetQuizState();
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, category, searchTerm]);
   
@@ -534,3 +571,5 @@ export default function ReviewPage() {
     </div>
   );
 }
+
+    
