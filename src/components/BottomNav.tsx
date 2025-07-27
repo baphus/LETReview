@@ -25,7 +25,7 @@ export default function BottomNav() {
     const seconds = time % 60;
     
     return (
-        <Badge variant="secondary" className="absolute -top-2 -right-2 text-xs">
+        <Badge variant="destructive" className="absolute -top-1 left-0 transform -translate-x-1/2 -translate-y-1/2 text-xs px-1.5 py-0.5">
            {String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}
         </Badge>
     );
@@ -45,9 +45,11 @@ export default function BottomNav() {
                 isActivePath ? "text-primary" : "text-muted-foreground hover:text-primary"
               )}
             >
-              <Icon className="h-6 w-6 mb-1" />
+              <div className="relative">
+                <Icon className="h-6 w-6 mb-1" />
+                {href === '/timer' && <TimerIndicator />}
+              </div>
               <span>{label}</span>
-              {href === '/timer' && <TimerIndicator />}
             </Link>
           );
         })}

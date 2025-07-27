@@ -93,7 +93,6 @@ export default function ProfilePage() {
                 </Button>
               </div>
             )}
-            <p className="text-muted-foreground">{user.email}</p>
         </div>
       </header>
       
