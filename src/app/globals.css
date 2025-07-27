@@ -76,3 +76,17 @@
 .flashcard.is-flipped {
   transform: rotateY(180deg);
 }
+
+/* Pet animation */
+@keyframes bob {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.animate-bob {
+  animation: bob 3s ease-in-out infinite;
+}

@@ -140,7 +140,7 @@ export default function HomePage() {
                           alt={pet.name} 
                           width={80} 
                           height={80} 
-                          className="rounded-full bg-muted p-2"
+                          className="rounded-full bg-muted p-2 animate-bob"
                           data-ai-hint={pet.hint}
                       />
                       {editingPet === pet.name ? (

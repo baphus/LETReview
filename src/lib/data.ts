@@ -170,4 +170,5 @@ export const pets: Pet[] = [
     { name: "Panda", unlock_criteria: "30-day streak", streak_req: 30, image: "https://placehold.co/200x200", hint: "panda eating" },
     { name: "T-Rex", unlock_criteria: "50-day streak", streak_req: 50, image: "https://placehold.co/200x200", hint: "dinosaur rex" },
     { name: "Dragon", unlock_criteria: "75-day streak", streak_req: 75, image: "https://placehold.co/200x200", hint: "fantasy dragon" },
+    { name: "Phoenix", unlock_criteria: "100-day streak", streak_req: 100, image: "https://placehold.co/200x200", hint: "fire bird" },
 ];

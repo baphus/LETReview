@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { CalendarDays, Flame, Gem, Shield, Star, Lock, RefreshCcw } from "lucide-react";
+import { CalendarDays, Flame, Gem, Shield, Star, Lock, RefreshCcw, HelpCircle } from "lucide-react";
 import { pets } from "@/lib/data";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
@@ -242,15 +242,21 @@ export default function DailyPage() {
             const isUnlocked = userStats.highestStreak >= pet.streak_req;
             return (
               <Card key={pet.name} className="flex flex-col items-center p-4 text-center relative">
-                 <Image 
-                  src={pet.image} 
-                  alt={pet.name} 
-                  width={80} 
-                  height={80} 
-                  className={`rounded-full mb-2 transition-all ${!isUnlocked && 'grayscale'}`}
-                  data-ai-hint={pet.hint}
-                />
-                <p className="font-semibold text-sm">{pet.name}</p>
+                 {isUnlocked ? (
+                    <Image 
+                        src={pet.image} 
+                        alt={pet.name} 
+                        width={80} 
+                        height={80} 
+                        className="rounded-full mb-2"
+                        data-ai-hint={pet.hint}
+                    />
+                 ) : (
+                    <div className="w-[80px] h-[80px] rounded-full mb-2 bg-muted flex items-center justify-center">
+                        <HelpCircle className="h-10 w-10 text-muted-foreground" />
+                    </div>
+                 )}
+                <p className="font-semibold text-sm">{isUnlocked ? pet.name : '????'}</p>
                 {isUnlocked ? (
                   <Badge variant="default" className="mt-1">Unlocked</Badge>
                 ) : (
@@ -268,5 +274,3 @@ export default function DailyPage() {
     </div>
   );
 }
-
-    
