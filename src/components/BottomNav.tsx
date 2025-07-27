@@ -1,0 +1,40 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { BookOpen, CalendarDays, Clock, User } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+const navItems = [
+  { href: "/", label: "Review", icon: BookOpen },
+  { href: "/daily", label: "Daily", icon: CalendarDays },
+  { href: "/timer", label: "Timer", icon: Clock },
+  { href: "/profile", label: "Profile", icon: User },
+];
+
+export default function BottomNav() {
+  const pathname = usePathname();
+
+  return (
+    <nav className="fixed bottom-0 left-0 right-0 bg-card border-t shadow-t-lg md:hidden">
+      <div className="flex justify-around items-center h-16">
+        {navItems.map(({ href, label, icon: Icon }) => {
+          const isActive = pathname === href;
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={cn(
+                "flex flex-col items-center justify-center w-full h-full text-sm font-medium transition-colors",
+                isActive ? "text-primary" : "text-muted-foreground hover:text-primary"
+              )}
+            >
+              <Icon className="h-6 w-6 mb-1" />
+              <span>{label}</span>
+            </Link>
+          );
+        })}
+      </div>
+    </nav>
+  );
+}
