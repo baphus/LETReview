@@ -116,6 +116,12 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
                 const user = JSON.parse(savedUser);
                 parsedState.sessions = user.completedSessions || 0;
              }
+
+            // Ensure sessionPoints is a number
+            if (typeof parsedState.sessionPoints !== 'number' || isNaN(parsedState.sessionPoints)) {
+                parsedState.sessionPoints = 0;
+            }
+
             setTimerState(parsedState);
         } catch (error) {
             console.error("Failed to parse pomodoro state from localStorage", error);
@@ -235,15 +241,19 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     const newIsActive = !timerState.isActive;
     const newEndTime = newIsActive ? Date.now() + timerState.time * 1000 : null;
 
-    if (!newIsActive) { // if timer is being paused/stopped
-        handleIncorrectQuizAnswer(); // reset streak
-        updateTimerState({ sessionPoints: 0 }); // reset session points
+    if (newIsActive) { // if timer is being started
+        updateTimerState({
+          isActive: true,
+          endTime: newEndTime,
+        });
+    } else { // if timer is being paused
+       handleIncorrectQuizAnswer(); // reset streak
+       updateTimerState({ 
+          isActive: false,
+          endTime: null,
+          sessionPoints: 0 
+        }); 
     }
-
-    updateTimerState({
-      isActive: newIsActive,
-      endTime: newEndTime,
-    });
   };
 
   const value = {
