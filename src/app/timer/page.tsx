@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Clock, Coffee, Play, Pause, RotateCcw, Award, Zap, Sparkles } from "lucide-react";
+import { Clock, Coffee, Play, Pause, RotateCcw, Award, Zap, Sparkles, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTimer } from "@/hooks/use-timer";
 import { sampleQuestions } from "@/lib/data";
@@ -12,7 +12,7 @@ import type { QuizQuestion } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 
-const MiniQuiz = ({ onCorrectAnswer }: { onCorrectAnswer: (points: number) => void }) => {
+const MiniQuiz = ({ onCorrectAnswer, onIncorrectAnswer }: { onCorrectAnswer: (points: number) => void, onIncorrectAnswer: () => void }) => {
     const [question, setQuestion] = useState<QuizQuestion | null>(null);
     const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
     const [isAnswered, setIsAnswered] = useState(false);
@@ -21,6 +21,7 @@ const MiniQuiz = ({ onCorrectAnswer }: { onCorrectAnswer: (points: number) => vo
         const allQuestions = [...sampleQuestions];
         const randomIndex = Math.floor(Math.random() * allQuestions.length);
         const newQuestion = { ...allQuestions[randomIndex] };
+        // Shuffle choices for the new question
         newQuestion.choices = [...newQuestion.choices].sort(() => Math.random() - 0.5);
         setQuestion(newQuestion);
         setSelectedAnswer(null);
@@ -38,18 +39,20 @@ const MiniQuiz = ({ onCorrectAnswer }: { onCorrectAnswer: (points: number) => vo
         setSelectedAnswer(answer);
         setIsAnswered(true);
 
-        if (isCorrect) {
-            onCorrectAnswer(1);
-            setTimeout(() => {
-                getNewQuestion();
-            }, 1000); 
-        }
+        setTimeout(() => {
+            if (isCorrect) {
+                onCorrectAnswer(1);
+            } else {
+                onIncorrectAnswer();
+            }
+            getNewQuestion();
+        }, 1200); 
     };
     
     if (!question) return null;
 
     return (
-        <Card className="w-full max-w-sm">
+        <Card className="w-full max-w-sm animate-fade-in-up">
             <CardHeader>
                 <CardTitle className="text-center font-headline text-lg">Quick Question</CardTitle>
             </CardHeader>
@@ -57,7 +60,7 @@ const MiniQuiz = ({ onCorrectAnswer }: { onCorrectAnswer: (points: number) => vo
                 <p className="text-center font-semibold">{question.question}</p>
                 <div className="grid grid-cols-1 gap-2">
                     {question.choices.map(choice => {
-                        const isCorrect = choice === question.answer;
+                        const isTheCorrectAnswer = choice === question.answer;
                         const isSelected = choice === selectedAnswer;
 
                         return (
@@ -67,8 +70,8 @@ const MiniQuiz = ({ onCorrectAnswer }: { onCorrectAnswer: (points: number) => vo
                                 onClick={() => handleAnswer(choice)}
                                 disabled={isAnswered}
                                 className={cn(
-                                    isAnswered && isCorrect && "bg-green-100 border-green-300 hover:bg-green-100",
-                                    isAnswered && isSelected && !isCorrect && "bg-red-100 border-red-300 hover:bg-red-100"
+                                    isAnswered && isTheCorrectAnswer && "bg-green-100 border-green-300 hover:bg-green-100 text-green-800",
+                                    isAnswered && isSelected && !isTheCorrectAnswer && "bg-red-100 border-red-300 hover:bg-red-100 text-red-800"
                                 )}
                             >
                                 {choice}
@@ -162,6 +165,17 @@ export default function TimerPage() {
     });
   }, [streak, streakMultiplier, toast]);
   
+   const handleIncorrectAnswer = useCallback(() => {
+    if (streak > 0) {
+        toast({
+            variant: "destructive",
+            title: "Streak Lost!",
+            description: "You answered incorrectly. Your streak has been reset.",
+        });
+    }
+    setStreak(0);
+  }, [streak, toast]);
+  
   const resetTimer = () => {
     baseResetTimer();
     setStreak(0);
@@ -208,7 +222,10 @@ export default function TimerPage() {
         </Card>
         
         {isActive && mode === 'focus' && (
-            <MiniQuiz onCorrectAnswer={handleCorrectAnswer} />
+            <MiniQuiz 
+                onCorrectAnswer={handleCorrectAnswer} 
+                onIncorrectAnswer={handleIncorrectAnswer} 
+            />
         )}
 
       </div>
