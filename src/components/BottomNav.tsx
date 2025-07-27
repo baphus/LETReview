@@ -25,7 +25,7 @@ export default function BottomNav() {
     const seconds = time % 60;
     
     return (
-        <Badge variant="destructive" className="absolute -top-1 left-0 transform -translate-x-1/2 -translate-y-1/2 text-xs px-1.5 py-0.5">
+        <Badge variant="destructive" className="absolute -top-1 right-0 transform translate-x-1/2 -translate-y-1/2 text-xs px-1.5 py-0.5">
            {String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}
         </Badge>
     );

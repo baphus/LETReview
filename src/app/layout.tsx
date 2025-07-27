@@ -10,20 +10,20 @@ import BottomNav from "@/components/BottomNav";
 import { Toaster } from "@/components/ui/toaster";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TimerProvider } from "@/hooks/use-timer";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/AppSidebar";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
   variable: "--font-space-grotesk",
 });
-
-// This is a temporary solution for metadata until we can have dynamic metadata with client components.
-// export const metadata: Metadata = {
-//   title: "LETsReview",
-//   description:
-//     "A mobile-first web application for studying the Licensure Exam for Teachers (LET) in the Philippines.",
-//   manifest: "/manifest.json",
-// };
 
 function RootLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -36,8 +36,7 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
       router.replace("/login");
     } else if (userProfile && pathname === "/login") {
       router.replace("/home");
-    }
-     else {
+    } else {
       setIsCheckingAuth(false);
     }
   }, [pathname, router]);
@@ -57,13 +56,36 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const showNav = pathname !== '/login';
+  const showNav = pathname !== "/login";
+
+  if (!showNav) {
+    return (
+      <TimerProvider>
+        <main className="flex-1 overflow-y-auto">{children}</main>
+        <Toaster />
+      </TimerProvider>
+    );
+  }
 
   return (
     <TimerProvider>
-      <main className="flex-1 overflow-y-auto pb-20 md:pb-4">{children}</main>
-      {showNav && <BottomNav />}
-      <Toaster />
+      <SidebarProvider>
+        <Sidebar>
+          <SidebarContent>
+            <AppSidebar />
+          </SidebarContent>
+        </Sidebar>
+        <SidebarInset>
+          <header className="p-2 border-b md:hidden">
+            <SidebarTrigger />
+          </header>
+          <main className="flex-1 overflow-y-auto pb-20 md:pb-4">
+            {children}
+          </main>
+          <BottomNav />
+          <Toaster />
+        </SidebarInset>
+      </SidebarProvider>
     </TimerProvider>
   );
 }
@@ -77,10 +99,17 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <title>LETsReview</title>
-        <meta name="description" content="A mobile-first web application for studying the Licensure Exam for Teachers (LET) in the Philippines." />
+        <meta
+          name="description"
+          content="A mobile-first web application for studying the Licensure Exam for Teachers (LET) in the Philippines."
+        />
         <link rel="manifest" href="/manifest.json" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
         <link
           href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap"
           rel="stylesheet"
