@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, type FC, useEffect } from "react";
@@ -10,7 +11,6 @@ import {
   Copy,
   CheckCircle,
   XCircle,
-  HelpCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,13 +18,12 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { sampleQuestions } from "@/lib/data";
-import type { Question, QuizQuestion } from "@/lib/types";
+import type { QuizQuestion } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { generateQuiz } from "@/ai/flows/generate-quiz-flow";
 import { Badge } from "@/components/ui/badge";
 
-const Flashcard: FC<{ question: Question }> = ({ question }) => {
+const Flashcard: FC<{ question: QuizQuestion }> = ({ question }) => {
   const [isFlipped, setIsFlipped] = useState(false);
   const { toast } = useToast();
 
@@ -70,7 +69,7 @@ const Flashcard: FC<{ question: Question }> = ({ question }) => {
 };
 
 
-const StudyCard: FC<{ question: Question }> = ({ question }) => {
+const StudyCard: FC<{ question: QuizQuestion }> = ({ question }) => {
   const { toast } = useToast();
 
   const handleCopy = () => {
@@ -168,33 +167,33 @@ export default function ReviewPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [marked, setMarked] = useState<number[]>([]);
-  const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
   const [quizPoints, setQuizPoints] = useState(0);
-  const [loadingQuiz, setLoadingQuiz] = useState(false);
   
   const { toast } = useToast();
 
   const questions = useMemo(() => {
-    return sampleQuestions
+    const shuffledQuestions = sampleQuestions
+      .map(q => ({ ...q, choices: [...q.choices].sort(() => Math.random() - 0.5) }));
+      
+    return shuffledQuestions
       .filter((q) => q.category === category)
       .filter((q) =>
         q.question.toLowerCase().includes(searchTerm.toLowerCase())
       );
   }, [category, searchTerm]);
 
-  const currentQuestion = (mode === 'quiz' ? quizQuestions : questions)[currentIndex];
+  const currentQuestion = questions[currentIndex];
 
   const handleNext = () => {
-    const totalQuestions = (mode === 'quiz' ? quizQuestions.length : questions.length);
-    setCurrentIndex((prev) => (prev + 1) % totalQuestions);
+    setCurrentIndex((prev) => (prev + 1) % questions.length);
   };
 
   const handlePrev = () => {
-    const totalQuestions = (mode === 'quiz' ? quizQuestions.length : questions.length);
-    setCurrentIndex((prev) => (prev - 1 + totalQuestions) % totalQuestions);
+    setCurrentIndex((prev) => (prev - 1 + questions.length) % questions.length);
   };
   
   const toggleMark = () => {
+    if (!currentQuestion) return;
     const questionId = currentQuestion.id;
     if (marked.includes(questionId)) {
       setMarked(marked.filter(id => id !== questionId));
@@ -221,35 +220,14 @@ export default function ReviewPage() {
     }
   };
 
-  const startQuiz = async () => {
-    if (questions.length === 0) return;
-    setLoadingQuiz(true);
-    setCurrentIndex(0);
-    setQuizPoints(0);
-    try {
-      const result = await generateQuiz({ questions: questions.slice(0, 10) }); // Limit to 10 questions for performance
-      setQuizQuestions(result.questions);
-    } catch(e) {
-      toast({
-        variant: "destructive",
-        title: "Failed to generate quiz",
-        description: "The AI failed to generate a quiz. Please try again."
-      });
-      setMode("study"); // Fallback to study mode
-    } finally {
-      setLoadingQuiz(false);
-    }
-  };
-  
   useEffect(() => {
+    setCurrentIndex(0);
     if (mode === 'quiz') {
-      startQuiz();
+      setQuizPoints(0);
     }
-  }, [mode, category, searchTerm]); // Re-generate quiz if category or search term changes
+  }, [mode, category, searchTerm]);
 
-  const progressValue = (mode === 'quiz' ? quizQuestions.length : questions.length) > 0 ? ((currentIndex + 1) / (mode === 'quiz' ? quizQuestions.length : questions.length)) * 100 : 0;
-  
-  const totalQuestions = mode === 'quiz' ? quizQuestions.length : questions.length;
+  const progressValue = questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
   
   return (
     <div className="container mx-auto p-4 max-w-2xl">
@@ -294,16 +272,11 @@ export default function ReviewPage() {
       </div>
       
       <div className="my-6">
-        {loadingQuiz ? (
-          <Card className="h-80 flex flex-col justify-center items-center">
-            <HelpCircle className="h-12 w-12 text-muted-foreground animate-spin mb-4" />
-            <p className="text-muted-foreground">Generating your AI-powered quiz...</p>
-          </Card>
-        ) : totalQuestions > 0 ? (
+        {questions.length > 0 ? (
           <>
             {mode === 'study' && <StudyCard question={currentQuestion} />}
             {mode === 'flashcard' && <Flashcard question={currentQuestion} />}
-            {mode === 'quiz' && quizQuestions.length > 0 && <QuizCard question={currentQuestion as QuizQuestion} onAnswer={handleAnswer} />}
+            {mode === 'quiz' && <QuizCard question={currentQuestion} onAnswer={handleAnswer} />}
           </>
         ) : (
           <Card className="h-80 flex justify-center items-center">
@@ -315,7 +288,7 @@ export default function ReviewPage() {
       <footer className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            Question {currentIndex + 1} of {totalQuestions}
+            Question {currentIndex + 1} of {questions.length}
           </p>
           <div className="flex items-center gap-4">
             {mode === 'quiz' && (
@@ -323,19 +296,19 @@ export default function ReviewPage() {
                 Points: <span className="font-bold ml-1">{quizPoints}</span>
               </Badge>
             )}
-            <Button variant="outline" size="sm" onClick={toggleMark} disabled={mode === 'quiz'}>
-              <Bookmark className={cn("h-4 w-4 mr-2", marked.includes(currentQuestion?.id) && "fill-primary text-primary")} />
+            <Button variant="outline" size="sm" onClick={toggleMark} disabled={mode === 'quiz' || !currentQuestion}>
+              <Bookmark className={cn("h-4 w-4 mr-2", currentQuestion && marked.includes(currentQuestion.id) && "fill-primary text-primary")} />
               Mark for later
             </Button>
           </div>
         </div>
         <Progress value={progressValue} />
         <div className="flex justify-between items-center">
-          <Button onClick={handlePrev} disabled={totalQuestions <= 1}>
+          <Button onClick={handlePrev} disabled={questions.length <= 1}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Previous
           </Button>
-          <Button onClick={handleNext} disabled={totalQuestions <= 1}>
+          <Button onClick={handleNext} disabled={questions.length <= 1}>
             Next
             <ArrowRight className="h-4 w-4 ml-2" />
           </Button>

@@ -1,14 +1,12 @@
-export interface Question {
+
+export interface QuizQuestion {
   id: number;
   category: "gen_education" | "professional";
   difficulty: "easy" | "medium" | "hard";
   question: string;
+  choices: string[];
   answer: string;
   explanation?: string;
-}
-
-export interface QuizQuestion extends Question {
-  choices: string[];
 }
 
 export interface Pet {
