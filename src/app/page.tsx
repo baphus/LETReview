@@ -168,6 +168,7 @@ export default function ReviewPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isChallenge = searchParams.get('challenge') === 'true';
+  const challengeDifficulty = searchParams.get('difficulty') || 'easy';
   const challengeCount = parseInt(searchParams.get('count') || '0', 10);
   
   const [category, setCategory] = useState<"gen_education" | "professional">(
@@ -187,8 +188,11 @@ export default function ReviewPage() {
       .filter((q) => q.category === category);
 
     if (isChallenge) {
-      // For challenges, take a random slice of questions
-       return baseQuestions.sort(() => 0.5 - Math.random()).slice(0, challengeCount);
+      // For challenges, take a random slice of questions matching the difficulty
+       return baseQuestions
+         .filter(q => q.difficulty === challengeDifficulty)
+         .sort(() => 0.5 - Math.random())
+         .slice(0, challengeCount);
     }
 
     // For regular mode, filter by search term
@@ -199,7 +203,7 @@ export default function ReviewPage() {
       .filter((q) =>
         q.question.toLowerCase().includes(searchTerm.toLowerCase())
       );
-  }, [category, searchTerm, isChallenge, challengeCount]);
+  }, [category, searchTerm, isChallenge, challengeCount, challengeDifficulty]);
 
   useEffect(() => {
     if (isChallenge) {
@@ -222,12 +226,20 @@ export default function ReviewPage() {
                     if (savedUser) {
                         const user = JSON.parse(savedUser);
                         const today = new Date().toDateString();
+                        
                         // Only update streak if the last challenge was not today
                         if (user.lastChallengeDate !== today) {
                             user.streak = (user.streak || 0) + 1;
+                            if (user.streak > (user.highestStreak || 0)) {
+                                user.highestStreak = user.streak;
+                            }
                         }
                         user.lastChallengeDate = today;
-                        user.points = (user.points || 0) + (quizScore * 2); // Example points
+
+                        const pointsPerQuestion = { easy: 5, medium: 10, hard: 15 };
+                        const pointsEarned = quizScore * pointsPerQuestion[challengeDifficulty as keyof typeof pointsPerQuestion];
+                        user.points = (user.points || 0) + pointsEarned;
+                        
                         localStorage.setItem('userProfile', JSON.stringify(user));
                     }
                 }
@@ -307,7 +319,7 @@ export default function ReviewPage() {
           </DialogHeader>
           {isChallenge && (quizScore / questions.length) >= 0.85 && (
             <div className="text-center text-green-600 font-semibold p-4 bg-green-50 rounded-md">
-              <p>Congratulations! You passed the challenge and earned a streak point!</p>
+              <p>Congratulations! You passed the challenge and increased your streak!</p>
             </div>
           )}
            {isChallenge && (quizScore / questions.length) < 0.85 && (
@@ -373,7 +385,7 @@ export default function ReviewPage() {
 
       {isChallenge && (
          <header className="flex flex-col gap-4 mb-6 text-center">
-            <h1 className="text-3xl font-bold font-headline">Daily Challenge Quiz</h1>
+            <h1 className="text-3xl font-bold font-headline capitalize">{challengeDifficulty} Daily Challenge</h1>
             <p className="text-muted-foreground">Answer {questions.length} questions. You need 85% to pass.</p>
         </header>
       )}
@@ -387,7 +399,10 @@ export default function ReviewPage() {
           </>
         ) : (
           <Card className="h-80 flex justify-center items-center">
-            <p className="text-muted-foreground">No questions found.</p>
+             <div className="text-center text-muted-foreground">
+              <p>No questions found for this criteria.</p>
+              {isChallenge && <p>Please add more questions to the data file.</p>}
+            </div>
           </Card>
         )}
       </div>
@@ -417,7 +432,7 @@ export default function ReviewPage() {
             <ArrowLeft className="h-4 w-4 mr-2" />
             Previous
           </Button>
-          <Button onClick={handleNext} disabled={questions.length <= 1}>
+          <Button onClick={handleNext} disabled={questions.length <= 1 || !currentQuestion}>
             {currentIndex === questions.length - 1 && mode === 'quiz' ? 'Finish' : 'Next'}
             {currentIndex < questions.length - 1 && <ArrowRight className="h-4 w-4 ml-2" />}
           </Button>

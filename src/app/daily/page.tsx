@@ -1,46 +1,110 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { CalendarDays, Flame, Gem, Shield, Star, Lock } from "lucide-react";
+import { CalendarDays, Flame, Gem, Shield, Star, Lock, RefreshCcw } from "lucide-react";
 import { pets } from "@/lib/data";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
 
 interface UserStats {
   streak: number;
+  highestStreak: number;
   points: number;
   lastChallengeDate?: string;
+  petsUnlocked: number;
 }
 
 export default function DailyPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [userStats, setUserStats] = useState<UserStats>({
     streak: 0,
+    highestStreak: 0,
     points: 0,
+    petsUnlocked: 0,
   });
-  const [petsUnlocked, setPetsUnlocked] = useState(0);
+  const [challengeCompletedToday, setChallengeCompletedToday] = useState(false);
+  const [streakBroken, setStreakBroken] = useState(false);
 
-  useEffect(() => {
+  const loadUserStats = () => {
     const savedUser = localStorage.getItem("userProfile");
     if (savedUser) {
       const parsedUser = JSON.parse(savedUser);
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const lastDate = parsedUser.lastChallengeDate ? new Date(parsedUser.lastChallengeDate) : null;
+      lastDate?.setHours(0, 0, 0, 0);
+
+      const todayString = today.toDateString();
+      const lastDateString = lastDate?.toDateString();
+
+      const isCompletedToday = lastDateString === todayString;
+      setChallengeCompletedToday(isCompletedToday);
+
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      yesterday.setHours(0, 0, 0, 0);
+
+      if (parsedUser.streak > 0 && lastDate && lastDate.getTime() < yesterday.getTime()) {
+        setStreakBroken(true);
+        parsedUser.streak = 0;
+        localStorage.setItem("userProfile", JSON.stringify(parsedUser));
+      } else {
+        setStreakBroken(false);
+      }
+      
       setUserStats({
         streak: parsedUser.streak || 0,
+        highestStreak: parsedUser.highestStreak || 0,
         points: parsedUser.points || 0,
         lastChallengeDate: parsedUser.lastChallengeDate,
+        petsUnlocked: parsedUser.petsUnlocked || 0,
       });
-      setPetsUnlocked(parsedUser.petsUnlocked || 0);
     }
-  }, []);
+  };
 
-  const today = new Date().toDateString();
-  const challengeCompletedToday = userStats.lastChallengeDate === today;
+  useEffect(() => {
+    loadUserStats();
+  }, []);
 
   const handleStartChallenge = (difficulty: 'easy' | 'medium' | 'hard', count: number) => {
     router.push(`/?challenge=true&difficulty=${difficulty}&count=${count}`);
+  };
+  
+  const restoreStreakCost = Math.min(500, (userStats.highestStreak || 0) * 10);
+
+  const handleRestoreStreak = () => {
+     if (userStats.points >= restoreStreakCost) {
+      const savedUser = localStorage.getItem("userProfile");
+      if (savedUser) {
+        const user = JSON.parse(savedUser);
+        user.points -= restoreStreakCost;
+        user.streak = user.highestStreak;
+        localStorage.setItem("userProfile", JSON.stringify(user));
+        setStreakBroken(false);
+        setUserStats(prev => ({ ...prev, points: user.points, streak: user.streak }));
+        toast({ title: "Streak Restored!", description: `You spent ${restoreStreakCost} points.`});
+      }
+    } else {
+      toast({ variant: "destructive", title: "Not enough points!", description: `You need ${restoreStreakCost} points to restore your streak.`});
+    }
   };
 
   const challenges = [
@@ -87,7 +151,43 @@ export default function DailyPage() {
             <CardTitle className="text-center text-green-800 font-headline">
               Great job! You've completed your challenge for today.
             </CardTitle>
+            <CardDescription className="text-center text-green-600">Come back tomorrow to continue your streak!</CardDescription>
           </CardHeader>
+        </Card>
+      )}
+
+      {streakBroken && !challengeCompletedToday && (
+        <Card className="mb-6 bg-amber-50 border-amber-200">
+          <CardHeader>
+            <CardTitle className="text-center text-amber-800 font-headline">
+              Oh no! You lost your streak.
+            </CardTitle>
+            <CardDescription className="text-center text-amber-600">
+              Restore your {userStats.highestStreak}-day streak for {restoreStreakCost} points or start a new challenge.
+            </CardDescription>
+          </CardHeader>
+          <CardFooter>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button className="w-full" disabled={userStats.points < restoreStreakCost}>
+                    <RefreshCcw className="mr-2 h-4 w-4" />
+                    Restore Streak ({restoreStreakCost} points)
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This will cost {restoreStreakCost} points and restore your streak to {userStats.highestStreak} days.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleRestoreStreak}>Confirm</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+          </CardFooter>
         </Card>
       )}
 
@@ -103,7 +203,7 @@ export default function DailyPage() {
               <CardFooter className="flex justify-between items-center">
                 <div className={`flex items-center gap-1 font-semibold text-${challenge.color}-600`}>
                   <Star className={`h-4 w-4 fill-${challenge.color}-500`} />
-                  <span>{challenge.points} Points</span>
+                  <span>{challenge.points * challenge.count} Points</span>
                 </div>
                 <Button onClick={() => handleStartChallenge(challenge.difficulty, challenge.count)} disabled={challengeCompletedToday}>
                   {challengeCompletedToday ? 'Completed' : 'Start'}
@@ -118,7 +218,7 @@ export default function DailyPage() {
         <h2 className="text-2xl font-bold font-headline mb-4">My Pets</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {pets.map((pet) => {
-            const isUnlocked = userStats.streak >= pet.streak_req;
+            const isUnlocked = userStats.highestStreak >= pet.streak_req;
             return (
               <Card key={pet.name} className="flex flex-col items-center p-4 text-center relative">
                  <Image 

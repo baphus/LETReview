@@ -33,6 +33,7 @@ export default function LoginPage() {
       avatarUrl,
       points: 0,
       streak: 0,
+      highestStreak: 0,
       completedSessions: 0,
       petsUnlocked: 0,
     };
