@@ -45,6 +45,17 @@ export default function HomePage() {
     } else {
       router.push('/login');
     }
+     // This will run when the component mounts and also when the user navigates back to this page.
+    const handleFocus = () => {
+      const savedUser = localStorage.getItem("userProfile");
+       if (savedUser) {
+          setUser(JSON.parse(savedUser));
+       }
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
   }, [router]);
 
   if (!user) {

@@ -10,11 +10,16 @@ import { useEffect, useState, useRef, ChangeEvent } from "react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
+import { Label } from "@/components/ui/label";
+import { DatePicker } from "@/components/ui/datepicker";
+import { Slider } from "@/components/ui/slider";
 
 
 interface UserProfile {
     name: string;
     avatarUrl: string;
+    examDate?: string;
+    passingScore?: number;
     points: number;
     streak: number;
     highestStreak: number;
@@ -29,6 +34,8 @@ export default function ProfilePage() {
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [examDate, setExamDate] = useState<Date | undefined>(undefined);
+  const [passingScore, setPassingScore] = useState(85);
 
   useEffect(() => {
     const savedUser = localStorage.getItem("userProfile");
@@ -36,6 +43,10 @@ export default function ProfilePage() {
       const parsedUser = JSON.parse(savedUser);
       setUser(parsedUser);
       setNewName(parsedUser.name);
+      if (parsedUser.examDate) {
+        setExamDate(new Date(parsedUser.examDate));
+      }
+      setPassingScore(parsedUser.passingScore || 85);
     } else {
         router.push('/login');
     }
@@ -54,6 +65,18 @@ export default function ProfilePage() {
         toast({ title: "Success", description: "Your name has been updated."});
     }
   };
+
+  const handleSettingsSave = () => {
+     if (user) {
+        const updatedUser = { 
+            ...user, 
+            examDate: examDate ? examDate.toISOString() : undefined,
+            passingScore: passingScore,
+        };
+        saveUser(updatedUser);
+        toast({ title: "Success", description: "Your settings have been saved."});
+    }
+  }
 
   const handleResetData = () => {
       localStorage.clear();
@@ -143,22 +166,46 @@ export default function ProfilePage() {
                     )}
                 </div>
             </div>
-            <Separator />
-             <div className="space-y-2">
-                <h3 className="text-lg font-semibold font-headline">Danger Zone</h3>
-                <Card className="border-destructive">
-                    <CardHeader>
-                        <CardTitle className="text-destructive">Reset All Data</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-sm text-muted-foreground mb-4">This action is irreversible. All your progress, points, and pets will be permanently deleted.</p>
-                        <Button variant="destructive" className="w-full" onClick={handleResetData}>
-                            <LogOut className="mr-2 h-4 w-4" />
-                            Reset All Data
-                        </Button>
-                    </CardContent>
-                </Card>
-            </div>
+            
+        </CardContent>
+      </Card>
+      
+       <Card className="mt-6">
+            <CardHeader>
+                <CardTitle>Settings</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                <div className="space-y-2">
+                    <Label htmlFor="exam-date">Exam Date</Label>
+                    <DatePicker date={examDate} setDate={setExamDate} />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="passing-score">Challenge Passing Score: <span className="font-bold text-primary">{passingScore}%</span></Label>
+                    <Slider
+                        id="passing-score"
+                        min={50}
+                        max={100}
+                        step={5}
+                        value={[passingScore]}
+                        onValueChange={(value) => setPassingScore(value[0])}
+                    />
+                </div>
+                 <Button className="w-full" onClick={handleSettingsSave}>
+                    Save Settings
+                </Button>
+            </CardContent>
+        </Card>
+
+      <Card className="mt-6">
+        <CardHeader>
+            <CardTitle className="text-destructive">Danger Zone</CardTitle>
+        </CardHeader>
+        <CardContent>
+            <p className="text-sm text-muted-foreground mb-4">This action is irreversible. All your progress, points, and pets will be permanently deleted.</p>
+            <Button variant="destructive" className="w-full" onClick={handleResetData}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Reset All Data
+            </Button>
         </CardContent>
       </Card>
     </div>

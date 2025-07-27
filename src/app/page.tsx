@@ -215,6 +215,7 @@ export default function ReviewPage() {
   const [showResults, setShowResults] = useState(false);
   const [answeredCurrent, setAnsweredCurrent] = useState(false);
   const [challengeAnswers, setChallengeAnswers] = useState<ChallengeAnswer[]>([]);
+  const [passingScore, setPassingScore] = useState(85);
   
   const { toast } = useToast();
 
@@ -248,6 +249,14 @@ export default function ReviewPage() {
     };
     localStorage.setItem('reviewProgress', JSON.stringify(progress));
   }, [category, mode, currentIndex, searchTerm, isChallenge]);
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem("userProfile");
+    if(savedUser){
+        const user = JSON.parse(savedUser);
+        setPassingScore(user.passingScore || 85);
+    }
+  }, [])
 
 
   const questions = useMemo(() => {
@@ -289,23 +298,25 @@ export default function ReviewPage() {
     setShowResults(true);
 
     const scorePercentage = (finalScore / questions.length) * 100;
-    const passed = scorePercentage >= 85;
+    const passed = scorePercentage >= passingScore;
 
     const savedUser = localStorage.getItem("userProfile");
     if (savedUser) {
         const user = JSON.parse(savedUser);
         const today = new Date().toDateString();
         
-        if (passed && user.lastChallengeDate !== today) {
-            user.streak = (user.streak || 0) + 1;
-            if (user.streak > (user.highestStreak || 0)) {
-                user.highestStreak = user.streak;
-            }
-            user.lastChallengeDate = today;
-            
-            const pointsMap = { easy: 25, medium: 75, hard: 150 };
-            const pointsEarned = pointsMap[challengeDifficulty as keyof typeof pointsMap] || 0;
-            user.points = (user.points || 0) + pointsEarned;
+        if (user.lastChallengeDate !== today) { // Can only extend streak once per day
+             if (passed) {
+                user.streak = (user.streak || 0) + 1;
+                if (user.streak > (user.highestStreak || 0)) {
+                    user.highestStreak = user.streak;
+                }
+                user.lastChallengeDate = today;
+                
+                const pointsMap = { easy: 50, medium: 100, hard: 200 };
+                const pointsEarned = pointsMap[challengeDifficulty as keyof typeof pointsMap] || 0;
+                user.points = (user.points || 0) + pointsEarned;
+             }
         }
         
         localStorage.setItem('userProfile', JSON.stringify(user));
@@ -433,13 +444,13 @@ export default function ReviewPage() {
           
           <div className="flex-1 min-h-0">
               {isChallenge && (
-                  (quizScore / questions.length) >= 0.85 ? (
+                  (quizScore / questions.length * 100) >= passingScore ? (
                       <div className="text-center text-green-600 font-semibold p-4 bg-green-50 rounded-md shrink-0">
                           <p>Congratulations! You passed the challenge. Your streak is safe!</p>
                       </div>
                   ) : (
                       <div className="text-center text-red-600 font-semibold p-4 bg-red-50 rounded-md shrink-0">
-                          <p>So close! You needed 85% to pass. Try another challenge!</p>
+                          <p>So close! You needed {passingScore}% to pass. Try another challenge!</p>
                       </div>
                   )
               )}
@@ -523,7 +534,7 @@ export default function ReviewPage() {
       {isChallenge && (
          <header className="flex flex-col gap-4 mb-6 text-center">
             <h1 className="text-3xl font-bold font-headline capitalize">{challengeDifficulty} Daily Challenge</h1>
-            <p className="text-muted-foreground">Answer all {questions.length} {challengeCategory === 'gen_education' ? 'General' : 'Professional'} Education questions. You need 85% to pass.</p>
+            <p className="text-muted-foreground">Answer all {questions.length} {challengeCategory === 'gen_education' ? 'General' : 'Professional'} Education questions. You need {passingScore}% to pass.</p>
         </header>
       )}
       

@@ -48,6 +48,7 @@ export default function LoginPage() {
       completedSessions: 0,
       petsUnlocked: 0,
       petNames: {},
+      passingScore: 85,
     };
 
     localStorage.setItem("userProfile", JSON.stringify(userProfile));
