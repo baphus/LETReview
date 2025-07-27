@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 
 const Flashcard: FC<{ question: QuizQuestion }> = ({ question }) => {
@@ -104,28 +105,32 @@ const StudyCard: FC<{ question: QuizQuestion }> = ({ question }) => {
 
 const QuizCard: FC<{ 
   question: QuizQuestion;
-  onAnswer: (correct: boolean) => void;
+  onAnswer: (correct: boolean, answer: string) => void;
   isChallenge: boolean;
-}> = ({ question, onAnswer, isChallenge }) => {
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  userAnswer?: string | null;
+}> = ({ question, onAnswer, isChallenge, userAnswer }) => {
+  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(userAnswer || null);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
-  const [hasAnswered, setHasAnswered] = useState(false);
+  const [hasAnswered, setHasAnswered] = useState(!!userAnswer);
 
   const handleAnswerClick = (answer: string) => {
-    if (hasAnswered) return; // Prevent changing answer
+    if (hasAnswered) return;
 
     const correct = answer === question.answer;
     setSelectedAnswer(answer);
-    setIsCorrect(correct);
-    onAnswer(correct);
+    onAnswer(correct, answer);
     setHasAnswered(true);
+
+    if (!isChallenge) {
+        setIsCorrect(correct);
+    }
   };
   
   useEffect(() => {
-    setSelectedAnswer(null);
+    setSelectedAnswer(userAnswer || null);
     setIsCorrect(null);
-    setHasAnswered(false);
-  }, [question]);
+    setHasAnswered(!!userAnswer);
+  }, [question, userAnswer]);
 
   return (
     <Card className="w-full min-h-80 shadow-lg relative p-6">
@@ -137,22 +142,26 @@ const QuizCard: FC<{
             {question.choices.map((choice) => {
                 const isSelected = selectedAnswer === choice;
                 const isTheCorrectAnswer = choice === question.answer;
+                const showAsCorrect = !isChallenge && hasAnswered && isTheCorrectAnswer;
+                const showAsIncorrect = !isChallenge && hasAnswered && isSelected && !isTheCorrectAnswer;
 
                 return (
                     <Card 
                         key={choice}
                         onClick={() => handleAnswerClick(choice)}
                         className={cn(
-                            "p-4 cursor-pointer transition-all hover:bg-muted",
-                            hasAnswered && isTheCorrectAnswer && "border-green-500 bg-green-50",
-                            isSelected && !isTheCorrectAnswer && "border-red-500 bg-red-50",
-                            hasAnswered && !isTheCorrectAnswer && !isSelected && "opacity-50"
+                            "p-4 cursor-pointer transition-all",
+                            hasAnswered && isChallenge ? "cursor-default" : "hover:bg-muted",
+                            isSelected && isChallenge && "bg-muted border-primary",
+                            showAsCorrect && "border-green-500 bg-green-50",
+                            showAsIncorrect && "border-red-500 bg-red-50",
+                            !isChallenge && hasAnswered && !isTheCorrectAnswer && !isSelected && "opacity-50"
                         )}
                     >
                         <div className="flex items-center justify-between">
                             <p>{choice}</p>
-                            {hasAnswered && isTheCorrectAnswer && isSelected && <CheckCircle className="h-5 w-5 text-green-500" />}
-                            {hasAnswered && !isTheCorrectAnswer && isSelected && <XCircle className="h-5 w-5 text-red-500" />}
+                            {showAsCorrect && <CheckCircle className="h-5 w-5 text-green-500" />}
+                            {showAsIncorrect && <XCircle className="h-5 w-5 text-red-500" />}
                         </div>
                     </Card>
                 )
@@ -181,6 +190,14 @@ const getSeed = (str: string) => {
 };
 
 
+interface ChallengeAnswer {
+    questionId: number;
+    userAnswer: string;
+    correctAnswer: string;
+    isCorrect: boolean;
+    question: string;
+}
+
 export default function ReviewPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -200,6 +217,7 @@ export default function ReviewPage() {
   const [quizScore, setQuizScore] = useState(0);
   const [showResults, setShowResults] = useState(false);
   const [answeredCurrent, setAnsweredCurrent] = useState(false);
+  const [challengeAnswers, setChallengeAnswers] = useState<ChallengeAnswer[]>([]);
   
   const { toast } = useToast();
 
@@ -236,35 +254,40 @@ export default function ReviewPage() {
 
   const currentQuestion = questions[currentIndex];
 
+  const handleFinishChallenge = () => {
+    setShowResults(true);
+    const scorePercentage = (quizScore / questions.length) * 100;
+    const savedUser = localStorage.getItem("userProfile");
+    if (savedUser) {
+        const user = JSON.parse(savedUser);
+        const today = new Date().toDateString();
+        
+        // Only update streak if the last challenge was not today and they passed
+        if (scorePercentage >= 85 && user.lastChallengeDate !== today) {
+            user.streak = (user.streak || 0) + 1;
+            if (user.streak > (user.highestStreak || 0)) {
+                user.highestStreak = user.streak;
+            }
+            user.lastChallengeDate = today;
+        }
+
+        const pointsPerQuestion = { easy: 5, medium: 10, hard: 15 };
+        const pointsEarned = quizScore * pointsPerQuestion[challengeDifficulty as keyof typeof pointsPerQuestion];
+        user.points = (user.points || 0) + pointsEarned;
+        
+        localStorage.setItem('userProfile', JSON.stringify(user));
+    }
+  };
+
   const handleNext = () => {
-    setAnsweredCurrent(false);
     if (currentIndex < questions.length - 1) {
         setCurrentIndex((prev) => prev + 1);
     } else {
-        if(mode === 'quiz') {
-            setShowResults(true);
+        if (mode === 'quiz') {
             if (isChallenge) {
-                const scorePercentage = (quizScore / questions.length) * 100;
-                const savedUser = localStorage.getItem("userProfile");
-                if (savedUser) {
-                  const user = JSON.parse(savedUser);
-                  const today = new Date().toDateString();
-                  
-                  // Only update streak if the last challenge was not today and they passed
-                  if (scorePercentage >= 85 && user.lastChallengeDate !== today) {
-                      user.streak = (user.streak || 0) + 1;
-                      if (user.streak > (user.highestStreak || 0)) {
-                          user.highestStreak = user.streak;
-                      }
-                      user.lastChallengeDate = today;
-                  }
-
-                  const pointsPerQuestion = { easy: 5, medium: 10, hard: 15 };
-                  const pointsEarned = quizScore * pointsPerQuestion[challengeDifficulty as keyof typeof pointsPerQuestion];
-                  user.points = (user.points || 0) + pointsEarned;
-                  
-                  localStorage.setItem('userProfile', JSON.stringify(user));
-                }
+                handleFinishChallenge();
+            } else {
+                setShowResults(true);
             }
         } else {
             setCurrentIndex(0); // Loop back to the start
@@ -288,52 +311,80 @@ export default function ReviewPage() {
     }
   };
 
-  const handleAnswer = (correct: boolean) => {
-    setAnsweredCurrent(true);
+  const handleAnswer = (correct: boolean, answer: string) => {
+    if (isChallenge) {
+        setChallengeAnswers(prev => [...prev, {
+            questionId: currentQuestion.id,
+            userAnswer: answer,
+            correctAnswer: currentQuestion.answer,
+            isCorrect: correct,
+            question: currentQuestion.question,
+        }]);
+    }
+    
     if (correct) {
       setQuizScore(s => s + 1);
-      if (!isChallenge) {
-        toast({
-            title: "Correct!",
-            description: "Nice work!",
-            className: "bg-green-100 border-green-300"
-        });
-      }
-    } else {
-      if (!isChallenge) {
-        toast({
-            variant: "destructive",
-            title: "Incorrect",
-            description: "Better luck next time!",
-        });
-      }
     }
+
+    if (!isChallenge) {
+        if (correct) {
+            toast({
+                title: "Correct!",
+                description: "Nice work!",
+                className: "bg-green-100 border-green-300"
+            });
+        } else {
+             toast({
+                variant: "destructive",
+                title: "Incorrect",
+                description: "Better luck next time!",
+            });
+        }
+    }
+    setAnsweredCurrent(true);
   };
 
-  useEffect(() => {
+  const resetQuizState = () => {
     setCurrentIndex(0);
+    setQuizScore(0);
+    setShowResults(false);
+    setChallengeAnswers([]);
     setAnsweredCurrent(false);
-    if (mode === 'quiz') {
-      setQuizScore(0);
+  }
+
+  const handleDialogClose = () => {
+    setShowResults(false);
+    if (isChallenge) {
+      router.push('/daily');
+    } else {
+      resetQuizState();
     }
+  }
+
+  useEffect(() => {
+    resetQuizState();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, category, searchTerm]);
+  
+  useEffect(() => {
+    setAnsweredCurrent(
+        isChallenge 
+            ? challengeAnswers.some(a => a.questionId === currentQuestion?.id)
+            : false
+    );
+  }, [currentIndex, challengeAnswers, currentQuestion, isChallenge]);
 
   const progressValue = questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
   
+  const userAnswerForCurrentQuestion = useMemo(() => {
+    if (!isChallenge || !currentQuestion) return null;
+    return challengeAnswers.find(a => a.questionId === currentQuestion.id)?.userAnswer;
+  }, [isChallenge, currentQuestion, challengeAnswers]);
+
   return (
     <div className="container mx-auto p-4 max-w-2xl">
-        <Dialog open={showResults} onOpenChange={(isOpen) => {
-            if(!isOpen) {
-                setShowResults(false);
-                if (isChallenge) {
-                    router.push('/daily');
-                } else {
-                    setCurrentIndex(0);
-                    setQuizScore(0);
-                }
-            }
-        }}>
-        <DialogContent>
+        <Dialog open={showResults} onOpenChange={handleDialogClose}>
+        <DialogContent className="max-h-[90dvh] flex flex-col">
           <DialogHeader className="items-center text-center">
             <Trophy className="h-16 w-16 text-yellow-400" />
             <DialogTitle className="text-2xl font-bold font-headline">Quiz Complete!</DialogTitle>
@@ -341,25 +392,45 @@ export default function ReviewPage() {
               You scored {quizScore} out of {questions.length}.
             </DialogDescription>
           </DialogHeader>
-          {isChallenge && (quizScore / questions.length) >= 0.85 && (
-            <div className="text-center text-green-600 font-semibold p-4 bg-green-50 rounded-md">
-              <p>Congratulations! You passed the challenge. Your streak is safe!</p>
-            </div>
-          )}
-           {isChallenge && (quizScore / questions.length) < 0.85 && (
-            <div className="text-center text-red-600 font-semibold p-4 bg-red-50 rounded-md">
-              <p>So close! You needed 85% to pass. Try another challenge!</p>
-            </div>
-          )}
-          <Button onClick={() => {
-            setShowResults(false);
-            if (isChallenge) {
-                router.push('/daily');
-            } else {
-                setCurrentIndex(0);
-                setQuizScore(0);
-            }
-          }}>{isChallenge ? 'Back to Challenges' : 'Try Again'}</Button>
+           {isChallenge && (
+            <>
+                {(quizScore / questions.length) >= 0.85 ? (
+                    <div className="text-center text-green-600 font-semibold p-4 bg-green-50 rounded-md">
+                        <p>Congratulations! You passed the challenge. Your streak is safe!</p>
+                    </div>
+                ) : (
+                    <div className="text-center text-red-600 font-semibold p-4 bg-red-50 rounded-md">
+                        <p>So close! You needed 85% to pass. Try another challenge!</p>
+                    </div>
+                )}
+                <ScrollArea className="flex-1">
+                    <div className="space-y-4 pr-6">
+                        {challengeAnswers.map(answer => (
+                            <div key={answer.questionId} className="text-sm p-3 rounded-md bg-muted">
+                                <p className="font-semibold mb-1">{answer.question}</p>
+                                {answer.isCorrect ? (
+                                    <div className="flex items-center gap-2 text-green-600">
+                                       <CheckCircle className="h-4 w-4 shrink-0" /> 
+                                       <span>Your answer: {answer.userAnswer}</span>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-1">
+                                        <div className="flex items-center gap-2 text-red-600">
+                                            <XCircle className="h-4 w-4 shrink-0" />
+                                            <span>Your answer: {answer.userAnswer}</span>
+                                        </div>
+                                         <div className="flex items-center gap-2 text-green-600 pl-6">
+                                            <span>Correct answer: {answer.correctAnswer}</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </ScrollArea>
+            </>
+           )}
+          <Button onClick={handleDialogClose}>{isChallenge ? 'Back to Challenges' : 'Try Again'}</Button>
         </DialogContent>
       </Dialog>
       
@@ -388,7 +459,6 @@ export default function ReviewPage() {
             <div className="flex flex-col sm:flex-row gap-4 justify-between">
                 <Tabs value={category} onValueChange={(value) => {
                     setCategory(value as "gen_education" | "professional");
-                    setCurrentIndex(0);
                 }}>
                 <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="gen_education">General Education</TabsTrigger>
@@ -415,11 +485,16 @@ export default function ReviewPage() {
       )}
       
       <div className="my-6">
-        {questions.length > 0 ? (
+        {questions.length > 0 && currentQuestion ? (
           <>
             {mode === 'study' && <StudyCard question={currentQuestion} />}
             {mode === 'flashcard' && <Flashcard question={currentQuestion} />}
-            {mode === 'quiz' && <QuizCard question={currentQuestion} onAnswer={handleAnswer} isChallenge={isChallenge} />}
+            {mode === 'quiz' && <QuizCard 
+                question={currentQuestion} 
+                onAnswer={handleAnswer} 
+                isChallenge={isChallenge} 
+                userAnswer={userAnswerForCurrentQuestion}
+            />}
           </>
         ) : (
           <Card className="h-80 flex justify-center items-center">
@@ -452,12 +527,12 @@ export default function ReviewPage() {
         </div>
         <Progress value={progressValue} />
         <div className="flex justify-between items-center">
-          <Button onClick={handlePrev} disabled={questions.length <= 1 || mode === 'quiz'}>
+          <Button onClick={handlePrev} disabled={questions.length <= 1 || (isChallenge && currentIndex === 0)}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Previous
           </Button>
-          <Button onClick={handleNext} disabled={questions.length <= 1 || !currentQuestion || (mode === 'quiz' && !answeredCurrent)}>
-            {currentIndex === questions.length - 1 && mode === 'quiz' ? 'Finish' : 'Next'}
+          <Button onClick={handleNext} disabled={!currentQuestion || (mode === 'quiz' && !answeredCurrent)}>
+            {currentIndex === questions.length - 1 ? 'Finish' : 'Next'}
             {currentIndex < questions.length - 1 && <ArrowRight className="h-4 w-4 ml-2" />}
           </Button>
         </div>
@@ -465,5 +540,3 @@ export default function ReviewPage() {
     </div>
   );
 }
-
-    
