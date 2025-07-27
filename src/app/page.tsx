@@ -6,7 +6,6 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft,
   ArrowRight,
-  Search,
   BookOpen,
   CheckCircle,
   XCircle,
@@ -521,19 +520,6 @@ export default function ReviewPage() {
                 <BookOpen className="h-8 w-8 text-primary" />
                 <h1 className="text-3xl font-bold font-headline">Question Reviewer</h1>
                 </div>
-                <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input
-                    type="search"
-                    placeholder="Search questions..."
-                    className="pl-10"
-                    value={searchTerm}
-                    onChange={(e) => {
-                    setSearchTerm(e.target.value);
-                    setCurrentIndex(0);
-                    }}
-                />
-                </div>
             </header>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
@@ -619,3 +605,5 @@ export default function ReviewPage() {
     </div>
   );
 }
+
+    
