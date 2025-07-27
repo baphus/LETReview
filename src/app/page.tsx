@@ -271,7 +271,7 @@ export default function ReviewPage() {
             }
             user.lastChallengeDate = today;
             
-            const pointsPerQuestion = { easy: 25, medium: 75, hard: 150 };
+            const pointsPerQuestion = { easy: 5, medium: 10, hard: 15 };
             const basePoints = pointsPerQuestion[challengeDifficulty as keyof typeof pointsPerQuestion];
             const pointsEarned = basePoints + (finalScore * 2); // Base points + bonus per correct answer
             user.points = (user.points || 0) + pointsEarned;
@@ -386,16 +386,15 @@ export default function ReviewPage() {
     <div className="container mx-auto p-4 max-w-2xl">
       <Dialog open={showResults} onOpenChange={handleDialogClose}>
         <DialogContent className="max-h-[90dvh] flex flex-col">
-          <DialogHeader className="items-center text-center shrink-0">
+          <DialogHeader className="items-center text-center">
             <Trophy className="h-16 w-16 text-yellow-400" />
             <DialogTitle className="text-2xl font-bold font-headline">Quiz Complete!</DialogTitle>
             <DialogDescription>
               You scored {quizScore} out of {questions.length}.
             </DialogDescription>
           </DialogHeader>
-           
+          
           <div className="flex-1 min-h-0">
-            <div className="h-full flex flex-col">
               {isChallenge && (
                   (quizScore / questions.length) >= 0.85 ? (
                       <div className="text-center text-green-600 font-semibold p-4 bg-green-50 rounded-md shrink-0">
@@ -408,8 +407,8 @@ export default function ReviewPage() {
                   )
               )}
 
-              <ScrollArea className="flex-1 pr-6 -mr-6 mt-4 h-64">
-                  <div className="space-y-4">
+              <ScrollArea className="mt-4 h-64">
+                  <div className="space-y-4 pr-6">
                       {challengeAnswers.map(answer => (
                           <div key={answer.questionId} className="text-sm p-3 rounded-md bg-muted">
                               <p className="font-semibold mb-1">{answer.question}</p>
@@ -433,10 +432,9 @@ export default function ReviewPage() {
                       ))}
                   </div>
               </ScrollArea>
-            </div>
           </div>
 
-          <DialogFooter className="shrink-0 mt-4">
+          <DialogFooter className="mt-4">
             <Button onClick={handleDialogClose} className="w-full">{isChallenge ? 'Back to Challenges' : 'Try Again'}</Button>
           </DialogFooter>
         </DialogContent>
