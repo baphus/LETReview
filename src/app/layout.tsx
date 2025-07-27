@@ -77,7 +77,7 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
         </Sidebar>
         <SidebarInset>
           <header className="p-2 border-b md:hidden">
-            <SidebarTrigger />
+            {/* The sidebar trigger is removed from here for mobile view */}
           </header>
           <main className="flex-1 overflow-y-auto pb-20 md:pb-4">
             {children}
