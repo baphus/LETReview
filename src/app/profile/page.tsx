@@ -94,9 +94,6 @@ export default function ProfilePage() {
   return (
     <div className="container mx-auto p-4 max-w-2xl">
       <header className="flex items-center gap-4 mb-6">
-        <Button variant="ghost" size="icon" onClick={() => router.back()}>
-            <ArrowLeft />
-        </Button>
         <h1 className="text-2xl font-bold font-headline">Profile & Settings</h1>
       </header>
       
@@ -167,4 +164,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-

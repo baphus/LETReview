@@ -69,9 +69,19 @@ export default function HomePage() {
 
   return (
     <div className="container mx-auto p-4 max-w-4xl">
-       <header className="mb-6">
-        <h1 className="text-3xl font-bold font-headline">Home</h1>
-        <p className="text-muted-foreground">Welcome back, {user.name}!</p>
+       <header className="flex justify-between items-center mb-6">
+        <div>
+            <h1 className="text-3xl font-bold font-headline">Home</h1>
+            <p className="text-muted-foreground">Welcome back, {user.name}!</p>
+        </div>
+        <Link href="/profile">
+            <Avatar className="h-14 w-14 border-2 border-primary">
+                <AvatarImage src={user.avatarUrl} alt={user.name} />
+                <AvatarFallback>
+                    <User className="h-6 w-6" />
+                </AvatarFallback>
+            </Avatar>
+        </Link>
       </header>
       
       <Separator className="my-6" />
