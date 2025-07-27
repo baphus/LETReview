@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Clock, Coffee, Play, Pause, RotateCcw, Award, Zap, Sparkles, XCircle } from "lucide-react";
+import { Clock, Coffee, Play, Pause, RotateCcw, Award, Zap, Sparkles, XCircle, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTimer } from "@/hooks/use-timer";
 import { sampleQuestions } from "@/lib/data";
@@ -16,6 +16,7 @@ const MiniQuiz = ({ onCorrectAnswer, onIncorrectAnswer }: { onCorrectAnswer: () 
     const [question, setQuestion] = useState<QuizQuestion | null>(null);
     const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
     const [isAnswered, setIsAnswered] = useState(false);
+    const [isCorrect, setIsCorrect] = useState(false);
 
     const getNewQuestion = useCallback(() => {
         const allQuestions = [...sampleQuestions];
@@ -26,6 +27,7 @@ const MiniQuiz = ({ onCorrectAnswer, onIncorrectAnswer }: { onCorrectAnswer: () 
         setQuestion(newQuestion);
         setSelectedAnswer(null);
         setIsAnswered(false);
+        setIsCorrect(false);
     }, []);
 
     useEffect(() => {
@@ -35,18 +37,19 @@ const MiniQuiz = ({ onCorrectAnswer, onIncorrectAnswer }: { onCorrectAnswer: () 
     const handleAnswer = (answer: string) => {
         if (isAnswered) return;
 
-        const isCorrect = answer === question?.answer;
+        const correct = answer === question?.answer;
         setSelectedAnswer(answer);
+        setIsCorrect(correct);
         setIsAnswered(true);
 
-        setTimeout(() => {
-            if (isCorrect) {
-                onCorrectAnswer();
-            } else {
-                onIncorrectAnswer();
-            }
-            getNewQuestion();
-        }, 1200); 
+        if (correct) {
+            onCorrectAnswer();
+            setTimeout(() => {
+                getNewQuestion();
+            }, 1200); 
+        } else {
+            onIncorrectAnswer();
+        }
     };
     
     if (!question) return null;
@@ -59,20 +62,21 @@ const MiniQuiz = ({ onCorrectAnswer, onIncorrectAnswer }: { onCorrectAnswer: () 
             <CardContent className="space-y-4">
                 <p className="text-center font-semibold">{question.question}</p>
                 <div className="grid grid-cols-1 gap-2">
-                    {question.choices.map(choice => {
+                    {question.choices.map((choice, index) => {
                         const isTheCorrectAnswer = choice === question.answer;
                         const isSelected = choice === selectedAnswer;
 
                         return (
                             <Button
-                                key={choice}
+                                key={`${choice}-${index}`}
                                 variant="outline"
                                 onClick={() => handleAnswer(choice)}
                                 disabled={isAnswered}
                                 className={cn(
                                     "h-auto whitespace-normal",
                                     isAnswered && isTheCorrectAnswer && "bg-green-100 border-green-300 hover:bg-green-100 text-green-800",
-                                    isAnswered && isSelected && !isTheCorrectAnswer && "bg-red-100 border-red-300 hover:bg-red-100 text-red-800"
+                                    isAnswered && isSelected && !isTheCorrectAnswer && "bg-red-100 border-red-300 hover:bg-red-100 text-red-800",
+                                    isAnswered && !isSelected && !isTheCorrectAnswer && "opacity-60"
                                 )}
                             >
                                 {choice}
@@ -81,6 +85,14 @@ const MiniQuiz = ({ onCorrectAnswer, onIncorrectAnswer }: { onCorrectAnswer: () 
                     })}
                 </div>
             </CardContent>
+            {isAnswered && !isCorrect && (
+                <CardFooter className="flex-col gap-2">
+                     <p className="text-sm text-center text-muted-foreground">The correct answer is highlighted in green.</p>
+                     <Button onClick={getNewQuestion} className="w-full">
+                        Next Question <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                </CardFooter>
+            )}
         </Card>
     );
 };
@@ -254,3 +266,4 @@ export default function TimerPage() {
       </div>
     </div>
   );
+}
