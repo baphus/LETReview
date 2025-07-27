@@ -84,24 +84,46 @@ const StudyCard: FC<{ question: QuizQuestion }> = ({ question }) => {
       description: "Question and answer copied to clipboard.",
     });
   };
-  
+
   return (
-    <Card className="w-full min-h-80 shadow-lg relative">
-      <CardHeader>
+    <Card className="w-full min-h-80 shadow-lg relative p-6">
+      <CardHeader className="p-0 mb-4">
         <CardTitle className="font-headline text-xl md:text-2xl">{question.question}</CardTitle>
       </CardHeader>
-      <CardContent>
-        <p className="text-lg font-semibold text-primary">{question.answer}</p>
+      <CardContent className="p-0 space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {question.choices.map((choice) => {
+                const isCorrect = choice === question.answer;
+                return (
+                    <Card 
+                        key={choice}
+                        className={cn(
+                            "p-4",
+                            isCorrect ? "border-green-500 bg-green-50" : "bg-muted/40"
+                        )}
+                    >
+                        <div className="flex items-center justify-between">
+                            <p className={cn(isCorrect && "font-semibold text-green-800")}>{choice}</p>
+                            {isCorrect && <CheckCircle className="h-5 w-5 text-green-500" />}
+                        </div>
+                    </Card>
+                )
+            })}
+        </div>
         {question.explanation && (
-          <p className="text-sm text-muted-foreground mt-2">{question.explanation}</p>
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
+            <h4 className="font-semibold text-blue-800 mb-1">Explanation</h4>
+            <p className="text-sm text-blue-700">{question.explanation}</p>
+          </div>
         )}
       </CardContent>
-      <Button variant="ghost" size="icon" className="absolute top-4 right-4" onClick={handleCopy}>
+       <Button variant="ghost" size="icon" className="absolute top-4 right-4" onClick={handleCopy}>
         <Copy className="h-4 w-4" />
       </Button>
     </Card>
   );
 };
+
 
 const QuizCard: FC<{ 
   question: QuizQuestion;
@@ -542,5 +564,3 @@ export default function ReviewPage() {
     </div>
   );
 }
-
-    
