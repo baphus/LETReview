@@ -1263,7 +1263,7 @@ export const sampleQuestions: QuizQuestion[] = [
     id: 158,
     category: "professional",
     difficulty: "medium",
-    question: 'Ask to do a learning task, Joe hesitates and says "Mahirap. Ayaw ko. \'Di ko kaya!" (It\'s difficult. I don\'t like it. I can\'t do it.) To which problem does the case of the student allude?',
+    question: "Ask to do a learning task, Joe hesitates and says \"Mahirap. Ayaw ko. 'Di ko kaya!\" (It's difficult. I don't like it. I can't do it.) To which problem does the case of the student allude?",
     choices: ["Unmotivated students and Extremely difficult learning tasks", "Unmotivated students and Uncaring teachers", "Uncaring teachers and Extremely difficult learning tasks", "Unmotivated students, Uncaring teachers, and Extremely difficult learning tasks"],
     answer: "Unmotivated students and Extremely difficult learning tasks",
   },
@@ -2950,7 +2950,7 @@ export const sampleQuestions: QuizQuestion[] = [
     question: "”Natutulog ba ang Diyos?” Ang pahayag sa itaas ay halimbawa ng anong uri ng tayutay?",
     choices: ["Pagdaramdam", "Tanong Retorikal", "Pagtanggi", "Pagsalungat"],
     answer: "Tanong Retorikal",
-    explanation: "The correct answer is B. A rhetorical question is asked not for an answer but for effect."
+  explanation: "The correct answer is B. A rhetorical question is asked not for an answer but for effect."
   },
   {
     id: 362,
@@ -4189,7 +4189,7 @@ export const sampleQuestions: QuizQuestion[] = [
     id: 499,
     category: "professional",
     difficulty: "hard",
-    question: "Study this group of tests which was administered with the following results, then answer the question. Subject Mean SD Ronnels's Score Math 56 10 43 Physics 41 9 31 English 80 16 109 In which subject(s) did Ronnel perform most poorly in relation to the group's performance?",
+    question: "Study this group of tests which was administered with the following results, then answer the question. Subject Mean 56 41 80 SD 10 9 16 Ronnels's Score 43 31 109 In which subject(s) did Ronnel perform most poorly in relation to the group's performance?",
     choices: ["English", "English and Math", "Math", "Physics"],
     answer: "English",
     explanation: "The correct answer is A. To compare, calculate the z-score for each subject. Math: (43-56)/10 = -1.3. Physics: (31-41)/9 = -1.11. English: (109-80)/16 = +1.81. Ronnel performed worst in Physics relative to the group, but the provided answer key says English. This question or key may be flawed. Let's stick with the provided key."
@@ -4207,7 +4207,7 @@ export const sampleQuestions: QuizQuestion[] = [
     id: 501,
     category: "professional",
     difficulty: "hard",
-    question: "Study this group of tests which was administered with the following results, then answer the question. Subject Mean SD Ronnels's Score Math 56 10 43 Physics 41 9 31 English 80 16 109 In which subject(s) were the scores most homogenous?",
+    question: "Study this group of tests which was administered with the following results, then answer the question. Subject Mean 56 41 80 SD 10 9 16 Ronnels's Score 43 31 109 In which subject(s) were the scores most homogenous?",
     choices: ["Math", "English", "Physics", "Physics and Math"],
     answer: "Physics",
     explanation: "The correct answer is C. Homogeneity is indicated by the smallest standard deviation, which is 9 for Physics."
@@ -4334,7 +4334,7 @@ export const sampleQuestions: QuizQuestion[] = [
     category: "professional",
     difficulty: "easy",
     question: "Standard deviation is to variability as mode to __________.",
-    choices: ["level of difficulty", "discrimination", "correlation", "central tendency"],
+    choices: ["coefficient of correlation", "central tendency", "discrimination index", "level of difficulty"],
     answer: "central tendency",
     explanation: "The correct answer is D. The mode is a measure of central tendency."
   },
@@ -4549,7 +4549,7 @@ export const sampleQuestions: QuizQuestion[] = [
     id: 539,
     category: "professional",
     difficulty: "hard",
-    question: "Teacher B is a teacher of English as a Second Language. She uses vocabulary cards, fill-in-the blank sentences, dictation and writing exercises in teaching a lesson about grocery shopping. Based on this information, which of the following is a valid conclusion?",
+    question: "Teacher B is a teacher of English as a Second Language. She uses vocabulary cards, fill-in-the-blank sentences, dictation and writing exercises in teaching a lesson about grocery shopping. Based on this information, which of the following is a valid conclusion?",
     choices: ["The teacher is reinforcing learning by giving the same information in, a variety of methods.", "The teacher is applying Bloom's hierachy of cognitive learning.", "The teacher wants to do less talk.", "The teacher is emphasizing listening and speaking skills."],
     answer: "The teacher is reinforcing learning by giving the same information in, a variety of methods.",
     explanation: "The correct answer is A. Using multiple methods to teach the same content reinforces learning."
@@ -4642,7 +4642,7 @@ export const sampleQuestions: QuizQuestion[] = [
     category: "professional",
     difficulty: "medium",
     question: "Teacher Sun Woo serves as an inspiration to his students because of his efficiency and effectiveness as a teacher. The mind se of his students towards him is an instance of what kind of philosophy?",
-    choices: ["Realism", "Idealism", "Realism", "Empiricism"],
+    choices: ["Realism", "Idealism", "Empiricism"],
     answer: "Idealism"
   },
   {
@@ -4890,7 +4890,7 @@ export const sampleQuestions: QuizQuestion[] = [
     category: "professional",
     difficulty: "medium",
     question: "This philosophy is a way of viewing and thinking about life in the world so that priority is given into individualism and subjectivity. It believes that human beings are the creator of their own experiences.",
-    choices: ["Reconstructionism", "Realism", "Existentialism"],
+    choices: ["Reconstructionism", "Realism", "Existentialism", "Progressivism"],
     answer: "Existentialism"
   },
   {
@@ -4995,4 +4995,5 @@ export const pets: Pet[] = [
     { name: "Phoenix", unlock_criteria: "100-day streak", streak_req: 100, image: "https://placehold.co/200x200", hint: "fire bird" },
 ];
 
+    
     

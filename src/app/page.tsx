@@ -14,14 +14,12 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { sampleQuestions } from "@/lib/data";
 import type { QuizQuestion } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -68,11 +66,11 @@ const StudyCard: FC<{ question: QuizQuestion }> = ({ question }) => {
       </CardHeader>
       <CardContent className="p-0 space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {question.choices.map((choice) => {
+            {question.choices.map((choice, index) => {
                 const isCorrect = choice === question.answer;
                 return (
                     <Card 
-                        key={choice}
+                        key={`${choice}-${index}`}
                         className={cn(
                             "p-4",
                             isCorrect ? "border-green-500 bg-green-50" : "bg-muted/40"
@@ -125,7 +123,7 @@ const QuizCard: FC<{
       </CardHeader>
       <CardContent className="p-0">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {question.choices.map((choice) => {
+            {question.choices.map((choice, index) => {
                 const isSelected = selectedAnswer === choice;
                 const isTheCorrectAnswer = choice === question.answer;
                 
@@ -148,7 +146,7 @@ const QuizCard: FC<{
 
                 return (
                     <Card 
-                        key={choice}
+                        key={`${choice}-${index}`}
                         onClick={() => !isDisabled && handleAnswerClick(choice)}
                         className={cn(
                             "p-4 transition-all",
@@ -210,7 +208,6 @@ export default function ReviewPage() {
   );
   const [mode, setMode] = useState<"study" | "flashcard" | "quiz">("study");
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [searchTerm, setSearchTerm] = useState("");
   const [quizScore, setQuizScore] = useState(0);
   const [showResults, setShowResults] = useState(false);
   const [answeredCurrent, setAnsweredCurrent] = useState(false);
@@ -227,11 +224,10 @@ export default function ReviewPage() {
     const savedProgress = localStorage.getItem('reviewProgress');
     if (savedProgress) {
       try {
-        const { category, mode, currentIndex, searchTerm, isShuffled: savedIsShuffled } = JSON.parse(savedProgress);
+        const { category, mode, currentIndex, isShuffled: savedIsShuffled } = JSON.parse(savedProgress);
         setCategory(category || 'gen_education');
         setMode(mode || 'study');
         setCurrentIndex(currentIndex || 0);
-        setSearchTerm(searchTerm || "");
         setIsShuffled(savedIsShuffled || false);
       } catch (e) {
         console.error("Failed to parse review progress", e);
@@ -247,11 +243,10 @@ export default function ReviewPage() {
       category,
       mode,
       currentIndex,
-      searchTerm,
       isShuffled,
     };
     localStorage.setItem('reviewProgress', JSON.stringify(progress));
-  }, [category, mode, currentIndex, searchTerm, isChallenge, isShuffled]);
+  }, [category, mode, currentIndex, isChallenge, isShuffled]);
 
   useEffect(() => {
     const savedUser = localStorage.getItem("userProfile");
@@ -276,23 +271,17 @@ export default function ReviewPage() {
        return shuffled.slice(0, challengeCount);
     }
 
-    // For regular mode, filter by search term
-    let filteredQuestions = baseQuestions
-      .filter((q) =>
-        q.question.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-
     if(isShuffled) {
         // Shuffle questions but keep choices in their original order for consistency in study/quiz mode
-        return [...filteredQuestions].sort(() => Math.random() - 0.5)
+        return [...baseQuestions].sort(() => Math.random() - 0.5)
             .map(q => ({ ...q, choices: [...q.choices].sort(() => Math.random() - 0.5) }));
     }
     
     // Always shuffle choices for variety, even if questions aren't shuffled
-    return filteredQuestions
+    return baseQuestions
       .map(q => ({ ...q, choices: [...q.choices].sort(() => Math.random() - 0.5) }));
 
-  }, [category, searchTerm, isChallenge, challengeCount, challengeDifficulty, challengeCategory, isShuffled]);
+  }, [category, isChallenge, challengeCount, challengeDifficulty, challengeCategory, isShuffled]);
 
   useEffect(() => {
     if (isChallenge) {
@@ -440,7 +429,7 @@ export default function ReviewPage() {
       resetQuizState();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, category, searchTerm]);
+  }, [mode, category]);
   
   useEffect(() => {
     setAnsweredCurrent(
