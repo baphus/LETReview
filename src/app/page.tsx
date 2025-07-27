@@ -24,7 +24,7 @@ import type { QuizQuestion } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 
@@ -416,8 +416,9 @@ export default function ReviewPage() {
               You scored {quizScore} out of {questions.length}.
             </DialogDescription>
           </DialogHeader>
+           <div className="flex-1 min-h-0">
            {isChallenge && (
-            <>
+            <div className="space-y-4">
                 {(quizScore / questions.length) >= 0.85 ? (
                     <div className="text-center text-green-600 font-semibold p-4 bg-green-50 rounded-md">
                         <p>Congratulations! You passed the challenge. Your streak is safe!</p>
@@ -427,7 +428,7 @@ export default function ReviewPage() {
                         <p>So close! You needed 85% to pass. Try another challenge!</p>
                     </div>
                 )}
-                <ScrollArea className="flex-1">
+                <ScrollArea className="h-64">
                     <div className="space-y-4 pr-6">
                         {challengeAnswers.map(answer => (
                             <div key={answer.questionId} className="text-sm p-3 rounded-md bg-muted">
@@ -452,9 +453,12 @@ export default function ReviewPage() {
                         ))}
                     </div>
                 </ScrollArea>
-            </>
+            </div>
            )}
-          <Button onClick={handleDialogClose}>{isChallenge ? 'Back to Challenges' : 'Try Again'}</Button>
+           </div>
+          <DialogFooter>
+            <Button onClick={handleDialogClose} className="w-full">{isChallenge ? 'Back to Challenges' : 'Try Again'}</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
       
