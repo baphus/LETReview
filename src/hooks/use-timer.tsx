@@ -145,18 +145,28 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   }, [updateTimerState]);
 
   const handleCorrectQuizAnswer = useCallback(() => {
-    const pointsEarned = 1 * timerState.streakMultiplier;
-    const savedUser = localStorage.getItem("userProfile");
-    if (savedUser) {
-      const user = JSON.parse(savedUser);
-      user.points = (user.points || 0) + pointsEarned;
-      localStorage.setItem("userProfile", JSON.stringify(user));
-    }
-    updateTimerState({
-      quizStreak: timerState.quizStreak + 1,
-      streakMultiplier: timerState.streakMultiplier + 1,
+    setTimerState(prevState => {
+      const newStreak = prevState.quizStreak + 1;
+      const newMultiplier = 1 + (newStreak * 0.05);
+      const pointsEarned = Math.floor(1 * newMultiplier);
+
+      const savedUser = localStorage.getItem("userProfile");
+      if (savedUser) {
+        const user = JSON.parse(savedUser);
+        user.points = (user.points || 0) + pointsEarned;
+        localStorage.setItem("userProfile", JSON.stringify(user));
+      }
+
+      const updatedState = {
+        ...prevState,
+        quizStreak: newStreak,
+        streakMultiplier: newMultiplier,
+      };
+
+      localStorage.setItem("pomodoroState", JSON.stringify(updatedState));
+      return updatedState;
     });
-  }, [timerState.quizStreak, timerState.streakMultiplier, updateTimerState]);
+  }, []);
 
   const handleIncorrectQuizAnswer = useCallback(() => {
     updateTimerState({ quizStreak: 0, streakMultiplier: 1 });
@@ -172,6 +182,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
         endTime: null,
       });
       showNotification("Focus session complete!", { body: "Time for a 5-minute break."});
+      addCompletedSession();
 
     } else {
        updateTimerState({
@@ -183,25 +194,23 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
       showNotification("Break's over!", { body: "Time to start another focus session."});
     }
     handleIncorrectQuizAnswer(); // Reset streak on timer end
-  }, [timerState.mode, showNotification, updateTimerState, handleIncorrectQuizAnswer]);
+  }, [timerState.mode, showNotification, updateTimerState, handleIncorrectQuizAnswer, addCompletedSession]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
 
-    if (timerState.isActive) {
-      if (timerState.time > 0) {
-        interval = setInterval(() => {
-          setTimerState(prevState => {
-            const newTime = prevState.time - 1;
-            if (newTime <= 0) {
-              if (interval) clearInterval(interval);
-              handleTimerEnd();
-              return { ...prevState, time: 0, isActive: false };
-            }
-            return { ...prevState, time: newTime }
-          });
-        }, 1000);
-      }
+    if (timerState.isActive && timerState.time > 0) {
+      interval = setInterval(() => {
+        setTimerState(prevState => {
+          const newTime = prevState.time - 1;
+          if (newTime <= 0) {
+            if (interval) clearInterval(interval);
+            handleTimerEnd();
+            return { ...prevState, time: 0, isActive: false };
+          }
+          return { ...prevState, time: newTime }
+        });
+      }, 1000);
     }
     
     return () => {
@@ -210,27 +219,17 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   }, [timerState.isActive, timerState.time, handleTimerEnd]);
   
   const toggleTimer = () => {
-    setTimerState(prevState => {
-        const newIsActive = !prevState.isActive;
-        if (!newIsActive) { // if timer is being paused
-            handleIncorrectQuizAnswer(); // reset streak
-        }
-        let newEndTime = null;
-        if(newIsActive) {
-            newEndTime = Date.now() + prevState.time * 1000;
-        }
-        return { 
-            ...prevState, 
-            isActive: newIsActive,
-            endTime: newEndTime,
-        };
+    const newIsActive = !timerState.isActive;
+    const newEndTime = newIsActive ? Date.now() + timerState.time * 1000 : null;
+
+    if (!newIsActive) { // if timer is being paused/stopped
+        handleIncorrectQuizAnswer(); // reset streak
+    }
+
+    updateTimerState({
+      isActive: newIsActive,
+      endTime: newEndTime,
     });
-     // We need to also immediately save state on toggle
-    localStorage.setItem("pomodoroState", JSON.stringify({
-        ...timerState,
-        isActive: !timerState.isActive,
-        endTime: !timerState.isActive ? Date.now() + timerState.time * 1000 : null,
-    }));
   };
 
   const value = {

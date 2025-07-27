@@ -128,36 +128,25 @@ export default function TimerPage() {
 
 
   const handleTimerEnd = useCallback(() => {
-    if (mode === "focus") {
-      addCompletedSession();
-      toast({
-        title: "Focus session complete!",
-        description: `Time for a 5-minute break.`,
-      });
-    } else {
-      toast({
-        title: "Break's over!",
-        description: "Time to start another focus session.",
-      });
-    }
-  }, [mode, toast, addCompletedSession]);
+    // This logic is now primarily handled in the useTimer hook
+    // to ensure consistency across the app.
+  }, []);
 
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
     if (isActive && time > 0) {
       interval = setInterval(() => {
-        // Timer logic is handled by the hook, this is for completion
+        // Timer logic is handled by the hook
       }, 1000);
-    } else if (isActive && time <= 0) {
-        handleTimerEnd();
-    }
+    } 
     return () => {
       if (interval) clearInterval(interval);
     };
   }, [isActive, time, handleTimerEnd]);
   
   const handleCorrectAnswer = () => {
-    const pointsEarned = 1 * streakMultiplier;
+    const newMultiplier = 1 + ((quizStreak + 1) * 0.05);
+    const pointsEarned = Math.floor(1 * newMultiplier);
     handleCorrectQuizAnswer();
     toast({
         title: `Correct! +${pointsEarned} ${pointsEarned > 1 ? 'Points' : 'Point'}`,
@@ -261,7 +250,7 @@ export default function TimerPage() {
                 </CardTitle>
             </CardHeader>
             <CardContent>
-                <p className="text-2xl font-bold">x{streakMultiplier}</p>
+                <p className="text-2xl font-bold">x{streakMultiplier.toFixed(2)}</p>
             </CardContent>
         </Card>
       </div>
