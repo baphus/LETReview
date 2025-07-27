@@ -135,7 +135,8 @@ const QuizCard: FC<{
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(userAnswer || null);
 
   const handleAnswerClick = (answer: string) => {
-    if (isChallenge && hasAnswered) return;
+    // In challenge mode, you can change your answer.
+    // if (isChallenge && hasAnswered) return;
     const correct = answer === question.answer;
     setSelectedAnswer(answer);
     onAnswer(correct, answer);
@@ -338,14 +339,7 @@ export default function ReviewPage() {
     const existingAnswerIndex = newAnswers.findIndex(a => a.questionId === currentQuestion.id);
     
     // In challenge mode, once answered, don't allow changes via this function
-    if (isChallenge && existingAnswerIndex !== -1 && newAnswers[existingAnswerIndex].userAnswer) {
-      // To allow changing answers, we just update the existing one.
-       newAnswers[existingAnswerIndex] = {
-            ...newAnswers[existingAnswerIndex],
-            userAnswer: answer,
-            isCorrect: correct,
-        };
-    } else if (existingAnswerIndex !== -1) {
+    if (existingAnswerIndex !== -1) {
         newAnswers[existingAnswerIndex] = {
             ...newAnswers[existingAnswerIndex],
             userAnswer: answer,
@@ -448,7 +442,7 @@ export default function ReviewPage() {
                             <p>So close! You needed 85% to pass. Try another challenge!</p>
                         </div>
                     )}
-                    <ScrollArea className="flex-1 pr-6 -mr-6 mt-4">
+                    <ScrollArea className="h-64 pr-6 -mr-6">
                         <div className="space-y-4">
                             {challengeAnswers.map(answer => (
                                 <div key={answer.questionId} className="text-sm p-3 rounded-md bg-muted">
@@ -546,7 +540,7 @@ export default function ReviewPage() {
                 onAnswer={handleAnswer} 
                 isChallenge={isChallenge} 
                 userAnswer={userAnswerForCurrentQuestion}
-                hasAnswered={!isChallenge && answeredCurrent}
+                hasAnswered={answeredCurrent}
             />}
           </>
         ) : (
@@ -565,9 +559,6 @@ export default function ReviewPage() {
             Question {currentIndex + 1} of {questions.length}
           </p>
           <div className="flex items-center gap-4">
-            {mode === 'quiz' && !isChallenge && (
-              <Badge variant="outline" className="text-base">Score: {quizScore}</Badge>
-            )}
             {!isChallenge && (
               <Button variant="outline" size="sm" onClick={toggleMark} disabled={mode === 'quiz' || !currentQuestion}>
                 <Bookmark className={cn("h-4 w-4 mr-2", currentQuestion && marked.includes(currentQuestion.id) && "fill-primary text-primary")} />
