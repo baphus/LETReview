@@ -145,8 +145,14 @@ const QuizCard: FC<{
   
   useEffect(() => {
     setSelectedAnswer(userAnswer || null);
-    setHasAnswered(!!userAnswer);
-  }, [question, userAnswer]);
+    if (isChallenge) {
+      setHasAnswered(!!userAnswer);
+    } else {
+      setHasAnswered(false);
+      setSelectedAnswer(null);
+    }
+  }, [question, userAnswer, isChallenge]);
+
 
   return (
     <Card className="w-full min-h-80 shadow-lg relative p-6">
@@ -338,25 +344,25 @@ export default function ReviewPage() {
 
   const handleAnswer = (correct: boolean, answer: string) => {
     if (isChallenge) {
-        setChallengeAnswers(prev => {
-            const existingAnswerIndex = prev.findIndex(a => a.questionId === currentQuestion.id);
-            if (existingAnswerIndex !== -1) {
-                const updatedAnswers = [...prev];
-                updatedAnswers[existingAnswerIndex] = {
-                    ...updatedAnswers[existingAnswerIndex],
-                    userAnswer: answer,
-                    isCorrect: correct,
-                };
-                return updatedAnswers;
-            }
-            return [...prev, {
+        const newAnswers = [...challengeAnswers];
+        const existingAnswerIndex = newAnswers.findIndex(a => a.questionId === currentQuestion.id);
+
+        if (existingAnswerIndex !== -1) {
+            newAnswers[existingAnswerIndex] = {
+                ...newAnswers[existingAnswerIndex],
+                userAnswer: answer,
+                isCorrect: correct,
+            };
+        } else {
+            newAnswers.push({
                 questionId: currentQuestion.id,
                 userAnswer: answer,
                 correctAnswer: currentQuestion.answer,
                 isCorrect: correct,
                 question: currentQuestion.question,
-            }];
-        });
+            });
+        }
+        setChallengeAnswers(newAnswers);
     } else {
         if (correct) {
           setQuizScore(s => s + 1);
@@ -426,8 +432,8 @@ export default function ReviewPage() {
             </DialogDescription>
           </DialogHeader>
            <div className="flex-1 min-h-0">
-           {isChallenge && (
-            <div className="space-y-4">
+           {isChallenge ? (
+            <div className="space-y-4 h-full">
                 {(quizScore / questions.length) >= 0.85 ? (
                     <div className="text-center text-green-600 font-semibold p-4 bg-green-50 rounded-md">
                         <p>Congratulations! You passed the challenge. Your streak is safe!</p>
@@ -437,8 +443,8 @@ export default function ReviewPage() {
                         <p>So close! You needed 85% to pass. Try another challenge!</p>
                     </div>
                 )}
-                <ScrollArea className="h-64">
-                    <div className="space-y-4 pr-6">
+                <ScrollArea className="h-64 pr-6">
+                    <div className="space-y-4">
                         {challengeAnswers.map(answer => (
                             <div key={answer.questionId} className="text-sm p-3 rounded-md bg-muted">
                                 <p className="font-semibold mb-1">{answer.question}</p>
@@ -463,6 +469,10 @@ export default function ReviewPage() {
                     </div>
                 </ScrollArea>
             </div>
+           ) : (
+             <div className="text-center">
+                <p>Great job! Keep practicing to improve your score.</p>
+             </div>
            )}
            </div>
           <DialogFooter>
@@ -549,9 +559,9 @@ export default function ReviewPage() {
             Question {currentIndex + 1} of {questions.length}
           </p>
           <div className="flex items-center gap-4">
-            {mode === 'quiz' && (
+            {mode === 'quiz' && isChallenge && (
               <Badge variant="outline" className="text-base">
-                Score: <span className="font-bold ml-1">{isChallenge ? challengeAnswers.reduce((acc, ans) => acc + (ans.isCorrect ? 1 : 0), 0) : quizScore}</span>
+                Score: <span className="font-bold ml-1">{challengeAnswers.reduce((acc, ans) => acc + (ans.isCorrect ? 1 : 0), 0)}</span>
               </Badge>
             )}
             {!isChallenge && (
@@ -577,3 +587,5 @@ export default function ReviewPage() {
     </div>
   );
 }
+
+    
