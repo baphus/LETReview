@@ -13,6 +13,8 @@ interface TimerState {
   mode: "focus" | "break";
   sessions: number;
   endTime: number | null;
+  quizStreak: number;
+  streakMultiplier: number;
 }
 
 interface TimerContextProps {
@@ -25,6 +27,10 @@ interface TimerContextProps {
   FOCUS_TIME: number;
   BREAK_TIME: number;
   addCompletedSession: () => void;
+  quizStreak: number;
+  streakMultiplier: number;
+  handleCorrectQuizAnswer: () => void;
+  handleIncorrectQuizAnswer: () => void;
 }
 
 const TimerContext = createContext<TimerContextProps | undefined>(undefined);
@@ -44,6 +50,8 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     mode: 'focus',
     sessions: 0,
     endTime: null,
+    quizStreak: 0,
+    streakMultiplier: 1,
   });
 
   const { toast } = useToast();
@@ -121,6 +129,8 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
       mode: 'focus',
       time: FOCUS_TIME,
       endTime: null,
+      quizStreak: 0,
+      streakMultiplier: 1,
     });
   }, [updateTimerState]);
   
@@ -134,9 +144,27 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
       }
   }, [updateTimerState]);
 
+  const handleCorrectQuizAnswer = useCallback(() => {
+    const pointsEarned = 1 * timerState.streakMultiplier;
+    const savedUser = localStorage.getItem("userProfile");
+    if (savedUser) {
+      const user = JSON.parse(savedUser);
+      user.points = (user.points || 0) + pointsEarned;
+      localStorage.setItem("userProfile", JSON.stringify(user));
+    }
+    updateTimerState({
+      quizStreak: timerState.quizStreak + 1,
+      streakMultiplier: timerState.streakMultiplier + 1,
+    });
+  }, [timerState.quizStreak, timerState.streakMultiplier, updateTimerState]);
+
+  const handleIncorrectQuizAnswer = useCallback(() => {
+    updateTimerState({ quizStreak: 0, streakMultiplier: 1 });
+  }, [updateTimerState]);
+
+
   const handleTimerEnd = useCallback(() => {
     if (timerState.mode === "focus") {
-       // Points are now awarded on the timer page itself
        updateTimerState({
         mode: 'break',
         time: BREAK_TIME,
@@ -154,7 +182,8 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
       });
       showNotification("Break's over!", { body: "Time to start another focus session."});
     }
-  }, [timerState.mode, showNotification, updateTimerState]);
+    handleIncorrectQuizAnswer(); // Reset streak on timer end
+  }, [timerState.mode, showNotification, updateTimerState, handleIncorrectQuizAnswer]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
@@ -183,6 +212,9 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   const toggleTimer = () => {
     setTimerState(prevState => {
         const newIsActive = !prevState.isActive;
+        if (!newIsActive) { // if timer is being paused
+            handleIncorrectQuizAnswer(); // reset streak
+        }
         let newEndTime = null;
         if(newIsActive) {
             newEndTime = Date.now() + prevState.time * 1000;
@@ -211,6 +243,10 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     FOCUS_TIME,
     BREAK_TIME,
     addCompletedSession,
+    quizStreak: timerState.quizStreak,
+    streakMultiplier: timerState.streakMultiplier,
+    handleCorrectQuizAnswer,
+    handleIncorrectQuizAnswer,
   };
 
   return (

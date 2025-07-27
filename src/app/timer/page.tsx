@@ -108,11 +108,14 @@ export default function TimerPage() {
     resetTimer: baseResetTimer,
     FOCUS_TIME,
     BREAK_TIME,
-    addCompletedSession
+    addCompletedSession,
+    quizStreak,
+    streakMultiplier,
+    handleCorrectQuizAnswer,
+    handleIncorrectQuizAnswer
   } = useTimer();
   
   const { toast } = useToast();
-  const [streak, setStreak] = useState(0);
 
   const minutes = Math.floor(time / 60);
   const seconds = time % 60;
@@ -131,7 +134,6 @@ export default function TimerPage() {
         title: "Focus session complete!",
         description: `Time for a 5-minute break.`,
       });
-      setStreak(0);
     } else {
       toast({
         title: "Break's over!",
@@ -154,41 +156,29 @@ export default function TimerPage() {
     };
   }, [isActive, time, handleTimerEnd]);
   
-
-  const handleCorrectAnswer = useCallback(() => {
-    const newStreak = streak + 1;
-    setStreak(newStreak);
-
-    if (newStreak > 0 && newStreak % 5 === 0) {
-        const pointsEarned = 1;
-        const savedUser = localStorage.getItem("userProfile");
-        if (savedUser) {
-            const user = JSON.parse(savedUser);
-            user.points = (user.points || 0) + pointsEarned;
-            localStorage.setItem("userProfile", JSON.stringify(user));
-        }
-        toast({
-            title: `Streak Bonus! +${pointsEarned} Point`,
-            description: `You've answered 5 questions correctly in a row!`,
-            className: "bg-green-100 border-green-300"
-        });
-    }
-  }, [streak, toast]);
+  const handleCorrectAnswer = () => {
+    const pointsEarned = 1 * streakMultiplier;
+    handleCorrectQuizAnswer();
+    toast({
+        title: `Correct! +${pointsEarned} ${pointsEarned > 1 ? 'Points' : 'Point'}`,
+        description: `Your streak is now ${quizStreak + 1}!`,
+        className: "bg-green-100 border-green-300"
+    });
+  };
   
-   const handleIncorrectAnswer = useCallback(() => {
-    if (streak > 0) {
+   const handleIncorrectAnswer = () => {
+    if (quizStreak > 0) {
         toast({
             variant: "destructive",
             title: "Streak Lost!",
             description: "You answered incorrectly. Your streak has been reset.",
         });
     }
-    setStreak(0);
-  }, [streak, toast]);
+    handleIncorrectQuizAnswer();
+  };
   
   const resetTimer = () => {
     baseResetTimer();
-    setStreak(0);
   }
 
   return (
@@ -240,27 +230,38 @@ export default function TimerPage() {
 
       </div>
 
-      <div className="grid grid-cols-2 gap-4 mt-6 text-center">
+      <div className="grid grid-cols-3 gap-4 mt-6 text-center">
         <Card>
             <CardHeader className="pb-2">
-                <CardTitle className="text-lg flex items-center justify-center gap-2">
+                <CardTitle className="text-sm flex items-center justify-center gap-2">
                     <Award className="text-primary" />
-                    <span>Completed Sessions</span>
+                    <span>Completed</span>
                 </CardTitle>
             </CardHeader>
             <CardContent>
-                <p className="text-3xl font-bold">{sessions}</p>
+                <p className="text-2xl font-bold">{sessions}</p>
             </CardContent>
         </Card>
          <Card>
             <CardHeader className="pb-2">
-                <CardTitle className="text-lg flex items-center justify-center gap-2">
+                <CardTitle className="text-sm flex items-center justify-center gap-2">
                     <Zap className="text-yellow-500" />
-                    <span>Current Streak</span>
+                    <span>Streak</span>
                 </CardTitle>
             </CardHeader>
             <CardContent>
-                <p className="text-3xl font-bold">{streak}</p>
+                <p className="text-2xl font-bold">{quizStreak}</p>
+            </CardContent>
+        </Card>
+         <Card>
+            <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center justify-center gap-2">
+                    <Sparkles className="text-accent" />
+                    <span>Multiplier</span>
+                </CardTitle>
+            </CardHeader>
+            <CardContent>
+                <p className="text-2xl font-bold">x{streakMultiplier}</p>
             </CardContent>
         </Card>
       </div>
