@@ -99,7 +99,7 @@ export default function DailyPage() {
     router.push(`/?challenge=true&difficulty=${difficulty}&count=${count}&category=${selectedCategory}`);
   };
   
-  const restoreStreakCost = Math.min(500, (userStats.highestStreak || 0) * 10);
+  const restoreStreakCost = Math.min(250, (userStats.highestStreak || 0) * 10);
 
   const handleRestoreStreak = () => {
      if (userStats.points >= restoreStreakCost) {
@@ -119,9 +119,9 @@ export default function DailyPage() {
   };
 
   const challenges = [
-    { difficulty: 'easy', count: 5, points: 5, color: 'green' },
-    { difficulty: 'medium', count: 10, points: 10, color: 'yellow' },
-    { difficulty: 'hard', count: 15, points: 15, color: 'red' },
+    { difficulty: 'easy', count: 5, points: 25, color: 'green' },
+    { difficulty: 'medium', count: 10, points: 75, color: 'yellow' },
+    { difficulty: 'hard', count: 15, points: 150, color: 'red' },
   ];
 
   return (
@@ -224,7 +224,7 @@ export default function DailyPage() {
               <CardFooter className="flex justify-between items-center">
                 <div className={`flex items-center gap-1 font-semibold text-${challenge.color}-600`}>
                   <Star className={`h-4 w-4 fill-${challenge.color}-500`} />
-                  <span>{challenge.points * challenge.count} Points</span>
+                  <span>{challenge.points} Points</span>
                 </div>
                 <Button onClick={() => handleStartChallenge(challenge.difficulty, challenge.count)}>
                   Start
@@ -274,3 +274,5 @@ export default function DailyPage() {
     </div>
   );
 }
+
+    
