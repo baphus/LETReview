@@ -48,6 +48,33 @@ export const sampleQuestions: QuizQuestion[] = [
     answer: "Au",
     explanation: "Au comes from the Latin word for gold, 'aurum'.",
   },
+  {
+    id: 11,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "How many islands are there in the Philippines?",
+    choices: ["7,107", "7,641", "7,890", "7,412"],
+    answer: "7,641",
+    explanation: "The official count of islands in the Philippine archipelago is 7,641.",
+  },
+  {
+    id: 12,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "Who was the first president of the Philippines?",
+    choices: ["Manuel Quezon", "Emilio Aguinaldo", "Jose P. Laurel", "Sergio Osmeña"],
+    answer: "Emilio Aguinaldo",
+    explanation: "Emilio Aguinaldo was the first president of the First Philippine Republic.",
+  },
+  {
+    id: 13,
+    category: "gen_education",
+    difficulty: "hard",
+    question: "Which Philippine volcano is famous for its perfect cone shape?",
+    choices: ["Mount Pinatubo", "Taal Volcano", "Mayon Volcano", "Mount Apo"],
+    answer: "Mayon Volcano",
+    explanation: "Mayon Volcano in Albay province is renowned for its symmetrical, conical shape.",
+  },
 
   // Professional Education
   {
@@ -105,11 +132,42 @@ export const sampleQuestions: QuizQuestion[] = [
     answer: "Summative Assessment",
     explanation: "Summative assessments are used to evaluate student learning, skill acquisition, and academic achievement at the conclusion of a defined instructional period.",
   },
+  {
+    id: 14,
+    category: "professional",
+    difficulty: "medium",
+    question: "Which learning theory suggests that people learn from one another, via observation, imitation, and modeling?",
+    choices: ["Social Learning Theory", "Behaviorism", "Cognitivism", "Constructivism"],
+    answer: "Social Learning Theory",
+    explanation: "Albert Bandura's Social Learning Theory posits that learning is a cognitive process that takes place in a social context.",
+  },
+  {
+    id: 15,
+    category: "professional",
+    difficulty: "easy",
+    question: "Which of the following is a primary role of a teacher in a constructivist classroom?",
+    choices: ["Facilitator", "Lecturer", "Instructor", "Dictator"],
+    answer: "Facilitator",
+    explanation: "In constructivism, the teacher acts as a facilitator who guides students as they construct their own knowledge.",
+  },
+  {
+    id: 16,
+    category: "professional",
+    difficulty: "hard",
+    question: "A teacher uses a portfolio to assess a student's progress over a period. What type of assessment is this?",
+    choices: ["Authentic Assessment", "Summative Assessment", "Norm-referenced Assessment", "Criterion-referenced Assessment"],
+    answer: "Authentic Assessment",
+    explanation: "Authentic assessment involves tasks that are relevant to the students' lives and experiences, such as creating a portfolio.",
+  }
 ];
 
 export const pets: Pet[] = [
-    { name: "Pet Rock", unlock_criteria: "3-day streak", points: 5, image: "https://placehold.co/200x200", hint: "rock stone" },
-    { name: "Pet Fish", unlock_criteria: "7-day streak", points: 10, image: "https://placehold.co/200x200", hint: "goldfish fishbowl" },
-    { name: "Pet Cat", unlock_criteria: "14-day streak", points: 20, image: "https://placehold.co/200x200", hint: "cute kitten" },
-    { name: "Pet Dragon", unlock_criteria: "30-day streak", points: 50, image: "https://placehold.co/200x200", hint: "fantasy dragon" },
+    { name: "Pet Rock", unlock_criteria: "1-day streak", streak_req: 1, image: "https://placehold.co/200x200", hint: "rock stone" },
+    { name: "Goldfish", unlock_criteria: "3-day streak", streak_req: 3, image: "https://placehold.co/200x200", hint: "goldfish fishbowl" },
+    { name: "Turtle", unlock_criteria: "7-day streak", streak_req: 7, image: "https://placehold.co/200x200", hint: "sea turtle" },
+    { name: "Corgi", unlock_criteria: "14-day streak", streak_req: 14, image: "https://placehold.co/200x200", hint: "cute dog" },
+    { name: "Owl", unlock_criteria: "21-day streak", streak_req: 21, image: "https://placehold.co/200x200", hint: "wise owl" },
+    { name: "Panda", unlock_criteria: "30-day streak", streak_req: 30, image: "https://placehold.co/200x200", hint: "panda eating" },
+    { name: "T-Rex", unlock_criteria: "50-day streak", streak_req: 50, image: "https://placehold.co/200x200", hint: "dinosaur rex" },
+    { name: "Dragon", unlock_criteria: "75-day streak", streak_req: 75, image: "https://placehold.co/200x200", hint: "fantasy dragon" },
 ];

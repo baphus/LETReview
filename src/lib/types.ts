@@ -12,7 +12,7 @@ export interface QuizQuestion {
 export interface Pet {
   name: string;
   unlock_criteria: string;
-  points: number;
+  streak_req: number;
   image: string;
   hint: string;
 }

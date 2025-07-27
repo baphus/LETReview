@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useMemo, type FC, useEffect } from "react";
+import { useSearchParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft,
   ArrowRight,
@@ -11,9 +12,10 @@ import {
   Copy,
   CheckCircle,
   XCircle,
+  Trophy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,6 +24,8 @@ import type { QuizQuestion } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+
 
 const Flashcard: FC<{ question: QuizQuestion }> = ({ question }) => {
   const [isFlipped, setIsFlipped] = useState(false);
@@ -101,7 +105,8 @@ const StudyCard: FC<{ question: QuizQuestion }> = ({ question }) => {
 const QuizCard: FC<{ 
   question: QuizQuestion;
   onAnswer: (correct: boolean) => void;
-}> = ({ question, onAnswer }) => {
+  isChallenge: boolean;
+}> = ({ question, onAnswer, isChallenge }) => {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
 
@@ -150,7 +155,7 @@ const QuizCard: FC<{
                 )
             })}
         </div>
-        {isCorrect === false && question.explanation && (
+        {isCorrect === false && question.explanation && !isChallenge && (
            <p className="text-sm text-muted-foreground mt-4 p-2 bg-muted rounded-md">{question.explanation}</p>
         )}
       </CardContent>
@@ -160,6 +165,11 @@ const QuizCard: FC<{
 
 
 export default function ReviewPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const isChallenge = searchParams.get('challenge') === 'true';
+  const challengeCount = parseInt(searchParams.get('count') || '0', 10);
+  
   const [category, setCategory] = useState<"gen_education" | "professional">(
     "gen_education"
   );
@@ -167,25 +177,65 @@ export default function ReviewPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [marked, setMarked] = useState<number[]>([]);
-  const [quizPoints, setQuizPoints] = useState(0);
+  const [quizScore, setQuizScore] = useState(0);
+  const [showResults, setShowResults] = useState(false);
   
   const { toast } = useToast();
 
   const questions = useMemo(() => {
-    const shuffledQuestions = sampleQuestions
+    let baseQuestions = sampleQuestions
+      .filter((q) => q.category === category);
+
+    if (isChallenge) {
+      // For challenges, take a random slice of questions
+       return baseQuestions.sort(() => 0.5 - Math.random()).slice(0, challengeCount);
+    }
+
+    // For regular mode, filter by search term
+    const shuffledQuestions = baseQuestions
       .map(q => ({ ...q, choices: [...q.choices].sort(() => Math.random() - 0.5) }));
       
     return shuffledQuestions
-      .filter((q) => q.category === category)
       .filter((q) =>
         q.question.toLowerCase().includes(searchTerm.toLowerCase())
       );
-  }, [category, searchTerm]);
+  }, [category, searchTerm, isChallenge, challengeCount]);
+
+  useEffect(() => {
+    if (isChallenge) {
+      setMode('quiz');
+    }
+  }, [isChallenge]);
 
   const currentQuestion = questions[currentIndex];
 
   const handleNext = () => {
-    setCurrentIndex((prev) => (prev + 1) % questions.length);
+    if (currentIndex < questions.length - 1) {
+        setCurrentIndex((prev) => prev + 1);
+    } else {
+        if(mode === 'quiz') {
+            setShowResults(true);
+            if (isChallenge) {
+                const scorePercentage = (quizScore / questions.length) * 100;
+                if (scorePercentage >= 85) {
+                    const savedUser = localStorage.getItem("userProfile");
+                    if (savedUser) {
+                        const user = JSON.parse(savedUser);
+                        const today = new Date().toDateString();
+                        // Only update streak if the last challenge was not today
+                        if (user.lastChallengeDate !== today) {
+                            user.streak = (user.streak || 0) + 1;
+                        }
+                        user.lastChallengeDate = today;
+                        user.points = (user.points || 0) + (quizScore * 2); // Example points
+                        localStorage.setItem('userProfile', JSON.stringify(user));
+                    }
+                }
+            }
+        } else {
+            setCurrentIndex(0); // Loop back to the start
+        }
+    }
   };
 
   const handlePrev = () => {
@@ -206,24 +256,29 @@ export default function ReviewPage() {
 
   const handleAnswer = (correct: boolean) => {
     if (correct) {
-      setQuizPoints(p => p + 10);
-      toast({
-        title: "Correct!",
-        description: "You earned 10 points.",
-      })
+      setQuizScore(s => s + 1);
+      if (!isChallenge) {
+        toast({
+            title: "Correct!",
+            description: "Nice work!",
+            className: "bg-green-100 border-green-300"
+        });
+      }
     } else {
-       toast({
-        variant: "destructive",
-        title: "Incorrect",
-        description: "Better luck next time!",
-      })
+      if (!isChallenge) {
+        toast({
+            variant: "destructive",
+            title: "Incorrect",
+            description: "Better luck next time!",
+        });
+      }
     }
   };
 
   useEffect(() => {
     setCurrentIndex(0);
     if (mode === 'quiz') {
-      setQuizPoints(0);
+      setQuizScore(0);
     }
   }, [mode, category, searchTerm]);
 
@@ -231,52 +286,104 @@ export default function ReviewPage() {
   
   return (
     <div className="container mx-auto p-4 max-w-2xl">
-      <header className="flex flex-col gap-4 mb-6">
-        <div className="flex items-center gap-2">
-          <BookOpen className="h-8 w-8 text-primary" />
-          <h1 className="text-3xl font-bold font-headline">Question Reviewer</h1>
-        </div>
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Search questions..."
-            className="pl-10"
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setCurrentIndex(0);
-            }}
-          />
-        </div>
-      </header>
-      
-      <div className="flex flex-col sm:flex-row gap-4 justify-between">
-        <Tabs value={category} onValueChange={(value) => {
-            setCategory(value as "gen_education" | "professional");
-            setCurrentIndex(0);
+        <Dialog open={showResults} onOpenChange={(isOpen) => {
+            if(!isOpen) {
+                setShowResults(false);
+                if (isChallenge) {
+                    router.push('/daily');
+                } else {
+                    setCurrentIndex(0);
+                    setQuizScore(0);
+                }
+            }
         }}>
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="gen_education">General Education</TabsTrigger>
-            <TabsTrigger value="professional">Professional Education</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <DialogContent>
+          <DialogHeader className="items-center text-center">
+            <Trophy className="h-16 w-16 text-yellow-400" />
+            <DialogTitle className="text-2xl font-bold font-headline">Quiz Complete!</DialogTitle>
+            <DialogDescription>
+              You scored {quizScore} out of {questions.length}.
+            </DialogDescription>
+          </DialogHeader>
+          {isChallenge && (quizScore / questions.length) >= 0.85 && (
+            <div className="text-center text-green-600 font-semibold p-4 bg-green-50 rounded-md">
+              <p>Congratulations! You passed the challenge and earned a streak point!</p>
+            </div>
+          )}
+           {isChallenge && (quizScore / questions.length) < 0.85 && (
+            <div className="text-center text-red-600 font-semibold p-4 bg-red-50 rounded-md">
+              <p>So close! You needed 85% to pass. Try again tomorrow!</p>
+            </div>
+          )}
+          <Button onClick={() => {
+            setShowResults(false);
+            if (isChallenge) {
+                router.push('/daily');
+            } else {
+                setCurrentIndex(0);
+                setQuizScore(0);
+            }
+          }}>{isChallenge ? 'Back to Challenges' : 'Try Again'}</Button>
+        </DialogContent>
+      </Dialog>
+      
+      {!isChallenge && (
+        <>
+            <header className="flex flex-col gap-4 mb-6">
+                <div className="flex items-center gap-2">
+                <BookOpen className="h-8 w-8 text-primary" />
+                <h1 className="text-3xl font-bold font-headline">Question Reviewer</h1>
+                </div>
+                <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input
+                    type="search"
+                    placeholder="Search questions..."
+                    className="pl-10"
+                    value={searchTerm}
+                    onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentIndex(0);
+                    }}
+                />
+                </div>
+            </header>
+            
+            <div className="flex flex-col sm:flex-row gap-4 justify-between">
+                <Tabs value={category} onValueChange={(value) => {
+                    setCategory(value as "gen_education" | "professional");
+                    setCurrentIndex(0);
+                }}>
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="gen_education">General Education</TabsTrigger>
+                    <TabsTrigger value="professional">Professional Education</TabsTrigger>
+                </TabsList>
+                </Tabs>
 
-        <Tabs value={mode} onValueChange={(value) => setMode(value as "study" | "flashcard" | "quiz")}>
-          <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="study">Study</TabsTrigger>
-              <TabsTrigger value="flashcard">Flashcard</TabsTrigger>
-              <TabsTrigger value="quiz">Quiz</TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </div>
+                <Tabs value={mode} onValueChange={(value) => setMode(value as "study" | "flashcard" | "quiz")}>
+                <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="study">Study</TabsTrigger>
+                    <TabsTrigger value="flashcard">Flashcard</TabsTrigger>
+                    <TabsTrigger value="quiz">Quiz</TabsTrigger>
+                </TabsList>
+                </Tabs>
+            </div>
+        </>
+      )}
+
+      {isChallenge && (
+         <header className="flex flex-col gap-4 mb-6 text-center">
+            <h1 className="text-3xl font-bold font-headline">Daily Challenge Quiz</h1>
+            <p className="text-muted-foreground">Answer {questions.length} questions. You need 85% to pass.</p>
+        </header>
+      )}
       
       <div className="my-6">
         {questions.length > 0 ? (
           <>
             {mode === 'study' && <StudyCard question={currentQuestion} />}
             {mode === 'flashcard' && <Flashcard question={currentQuestion} />}
-            {mode === 'quiz' && <QuizCard question={currentQuestion} onAnswer={handleAnswer} />}
+            {mode === 'quiz' && <QuizCard question={currentQuestion} onAnswer={handleAnswer} isChallenge={isChallenge} />}
           </>
         ) : (
           <Card className="h-80 flex justify-center items-center">
@@ -293,24 +400,26 @@ export default function ReviewPage() {
           <div className="flex items-center gap-4">
             {mode === 'quiz' && (
               <Badge variant="outline" className="text-base">
-                Points: <span className="font-bold ml-1">{quizPoints}</span>
+                Score: <span className="font-bold ml-1">{quizScore}</span>
               </Badge>
             )}
-            <Button variant="outline" size="sm" onClick={toggleMark} disabled={mode === 'quiz' || !currentQuestion}>
-              <Bookmark className={cn("h-4 w-4 mr-2", currentQuestion && marked.includes(currentQuestion.id) && "fill-primary text-primary")} />
-              Mark for later
-            </Button>
+            {!isChallenge && (
+              <Button variant="outline" size="sm" onClick={toggleMark} disabled={mode === 'quiz' || !currentQuestion}>
+                <Bookmark className={cn("h-4 w-4 mr-2", currentQuestion && marked.includes(currentQuestion.id) && "fill-primary text-primary")} />
+                Mark for later
+              </Button>
+            )}
           </div>
         </div>
         <Progress value={progressValue} />
         <div className="flex justify-between items-center">
-          <Button onClick={handlePrev} disabled={questions.length <= 1}>
+          <Button onClick={handlePrev} disabled={questions.length <= 1 || mode === 'quiz'}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Previous
           </Button>
           <Button onClick={handleNext} disabled={questions.length <= 1}>
-            Next
-            <ArrowRight className="h-4 w-4 ml-2" />
+            {currentIndex === questions.length - 1 && mode === 'quiz' ? 'Finish' : 'Next'}
+            {currentIndex < questions.length - 1 && <ArrowRight className="h-4 w-4 ml-2" />}
           </Button>
         </div>
       </footer>
