@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Clock, Coffee, Play, Pause, RotateCcw, Award, Zap, Sparkles, XCircle, ArrowRight } from "lucide-react";
+import { Clock, Coffee, Play, Pause, RotateCcw, Award, Zap, Sparkles, XCircle, ArrowRight, Gem } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTimer } from "@/hooks/use-timer";
 import { sampleQuestions } from "@/lib/data";
@@ -111,6 +111,7 @@ export default function TimerPage() {
     addCompletedSession,
     quizStreak,
     streakMultiplier,
+    sessionPoints,
     handleCorrectQuizAnswer,
     handleIncorrectQuizAnswer
   } = useTimer();
@@ -145,11 +146,10 @@ export default function TimerPage() {
   }, [isActive, time, handleTimerEnd]);
   
   const handleCorrectAnswer = () => {
-    const newMultiplier = 1 + ((quizStreak + 1) * 0.05);
-    const pointsEarned = Math.floor(1 * newMultiplier);
     handleCorrectQuizAnswer();
+    const pointsGained = Math.floor(1 * streakMultiplier);
     toast({
-        title: `Correct! +${pointsEarned} ${pointsEarned > 1 ? 'Points' : 'Point'}`,
+        title: `Correct! +${pointsGained} ${pointsGained > 1 ? 'Points' : 'Point'}`,
         description: `Your streak is now ${quizStreak + 1}!`,
         className: "bg-green-100 border-green-300"
     });
@@ -160,7 +160,7 @@ export default function TimerPage() {
         toast({
             variant: "destructive",
             title: "Streak Lost!",
-            description: "You answered incorrectly. Your streak has been reset.",
+            description: "Your streak and session points have been reset.",
         });
     }
     handleIncorrectQuizAnswer();
@@ -219,7 +219,7 @@ export default function TimerPage() {
 
       </div>
 
-      <div className="grid grid-cols-3 gap-4 mt-6 text-center">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 text-center">
         <Card>
             <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center justify-center gap-2">
@@ -251,6 +251,17 @@ export default function TimerPage() {
             </CardHeader>
             <CardContent>
                 <p className="text-2xl font-bold">x{streakMultiplier.toFixed(2)}</p>
+            </CardContent>
+        </Card>
+         <Card>
+            <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center justify-center gap-2">
+                    <Gem className="text-green-500" />
+                    <span>Points to Gain</span>
+                </CardTitle>
+            </CardHeader>
+            <CardContent>
+                <p className="text-2xl font-bold">{sessionPoints}</p>
             </CardContent>
         </Card>
       </div>

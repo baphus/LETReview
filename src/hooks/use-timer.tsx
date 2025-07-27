@@ -15,6 +15,7 @@ interface TimerState {
   endTime: number | null;
   quizStreak: number;
   streakMultiplier: number;
+  sessionPoints: number;
 }
 
 interface TimerContextProps {
@@ -29,6 +30,7 @@ interface TimerContextProps {
   addCompletedSession: () => void;
   quizStreak: number;
   streakMultiplier: number;
+  sessionPoints: number;
   handleCorrectQuizAnswer: () => void;
   handleIncorrectQuizAnswer: () => void;
 }
@@ -52,6 +54,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     endTime: null,
     quizStreak: 0,
     streakMultiplier: 1,
+    sessionPoints: 0,
   });
 
   const { toast } = useToast();
@@ -97,10 +100,15 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
                         if(savedUser) {
                             const user = JSON.parse(savedUser);
                             user.completedSessions = (user.completedSessions || 0) + 1;
+                            user.points = (user.points || 0) + (parsedState.sessionPoints || 0);
                             localStorage.setItem("userProfile", JSON.stringify(user));
                             parsedState.sessions = user.completedSessions;
                         }
                     }
+                    // Reset streak/points info for new session
+                    parsedState.sessionPoints = 0;
+                    parsedState.quizStreak = 0;
+                    parsedState.streakMultiplier = 1;
                 }
             }
              const savedUser = localStorage.getItem("userProfile");
@@ -131,6 +139,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
       endTime: null,
       quizStreak: 0,
       streakMultiplier: 1,
+      sessionPoints: 0,
     });
   }, [updateTimerState]);
   
@@ -139,28 +148,30 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
       if(savedUser){
           const user = JSON.parse(savedUser);
           user.completedSessions = (user.completedSessions || 0) + 1;
+          user.points = (user.points || 0) + timerState.sessionPoints;
           localStorage.setItem("userProfile", JSON.stringify(user));
           updateTimerState({ sessions: user.completedSessions });
+
+           if (timerState.sessionPoints > 0) {
+                toast({
+                    title: `Session Complete!`,
+                    description: `You earned ${timerState.sessionPoints} points.`,
+                });
+            }
       }
-  }, [updateTimerState]);
+  }, [updateTimerState, timerState.sessionPoints, toast]);
 
   const handleCorrectQuizAnswer = useCallback(() => {
     setTimerState(prevState => {
       const newStreak = prevState.quizStreak + 1;
       const newMultiplier = 1 + (newStreak * 0.05);
-      const pointsEarned = Math.floor(1 * newMultiplier);
-
-      const savedUser = localStorage.getItem("userProfile");
-      if (savedUser) {
-        const user = JSON.parse(savedUser);
-        user.points = (user.points || 0) + pointsEarned;
-        localStorage.setItem("userProfile", JSON.stringify(user));
-      }
-
+      const pointsEarned = Math.floor(1 * prevState.streakMultiplier);
+      
       const updatedState = {
         ...prevState,
         quizStreak: newStreak,
         streakMultiplier: newMultiplier,
+        sessionPoints: prevState.sessionPoints + pointsEarned,
       };
 
       localStorage.setItem("pomodoroState", JSON.stringify(updatedState));
@@ -175,26 +186,28 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
 
   const handleTimerEnd = useCallback(() => {
     if (timerState.mode === "focus") {
+       addCompletedSession();
+       showNotification("Focus session complete!", { body: "Time for a 5-minute break."});
        updateTimerState({
         mode: 'break',
         time: BREAK_TIME,
         isActive: false,
         endTime: null,
+        sessionPoints: 0,
+        quizStreak: 0,
+        streakMultiplier: 1,
       });
-      showNotification("Focus session complete!", { body: "Time for a 5-minute break."});
-      addCompletedSession();
 
     } else {
+       showNotification("Break's over!", { body: "Time to start another focus session."});
        updateTimerState({
         mode: 'focus',
         time: FOCUS_TIME,
         isActive: false,
         endTime: null,
       });
-      showNotification("Break's over!", { body: "Time to start another focus session."});
     }
-    handleIncorrectQuizAnswer(); // Reset streak on timer end
-  }, [timerState.mode, showNotification, updateTimerState, handleIncorrectQuizAnswer, addCompletedSession]);
+  }, [timerState.mode, showNotification, updateTimerState, addCompletedSession]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
@@ -224,6 +237,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
 
     if (!newIsActive) { // if timer is being paused/stopped
         handleIncorrectQuizAnswer(); // reset streak
+        updateTimerState({ sessionPoints: 0 }); // reset session points
     }
 
     updateTimerState({
@@ -244,6 +258,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     addCompletedSession,
     quizStreak: timerState.quizStreak,
     streakMultiplier: timerState.streakMultiplier,
+    sessionPoints: timerState.sessionPoints,
     handleCorrectQuizAnswer,
     handleIncorrectQuizAnswer,
   };
