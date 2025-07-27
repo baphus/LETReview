@@ -68,20 +68,10 @@ export default function HomePage() {
   const unlockedPets = pets.filter(p => user.highestStreak >= p.streak_req);
 
   return (
-    <div className="container mx-auto p-4 max-w-2xl">
-      <header className="flex items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold font-headline">Welcome back,</h1>
-          <p className="text-3xl font-bold text-primary">{user.name}!</p>
-        </div>
-        <Link href="/profile" passHref>
-          <Avatar className="h-16 w-16 border-4 border-primary cursor-pointer">
-            <AvatarImage src={user.avatarUrl} alt={user.name} data-ai-hint="profile picture" />
-            <AvatarFallback>
-              <User className="h-8 w-8" />
-            </AvatarFallback>
-          </Avatar>
-        </Link>
+    <div className="container mx-auto p-4 max-w-4xl">
+       <header className="mb-6">
+        <h1 className="text-3xl font-bold font-headline">Home</h1>
+        <p className="text-muted-foreground">Welcome back, {user.name}!</p>
       </header>
       
       <Separator className="my-6" />

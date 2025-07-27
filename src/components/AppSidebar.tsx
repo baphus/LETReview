@@ -3,17 +3,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, CalendarDays, Clock, Home } from "lucide-react";
+import { BookOpen, CalendarDays, Clock, Home, User } from "lucide-react";
 import {
   SidebarHeader,
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
   useSidebar,
+  SidebarFooter,
+  SidebarSeparator,
 } from "@/components/ui/sidebar";
-import { cn } from "@/lib/utils";
-import { useTimer } from "@/hooks/use-timer";
 import { Badge } from "./ui/badge";
+import { useTimer } from "@/hooks/use-timer";
+import { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
+import { useEffect, useState } from "react";
 
 const navItems = [
   { href: "/home", label: "Home", icon: Home },
@@ -22,10 +25,26 @@ const navItems = [
   { href: "/timer", label: "Timer", icon: Clock },
 ];
 
+interface UserProfile {
+    name: string;
+    avatarUrl: string;
+}
+
 export function AppSidebar() {
   const pathname = usePathname();
   const { time, isActive } = useTimer();
   const { state: sidebarState } = useSidebar();
+  const [user, setUser] = useState<UserProfile | null>(null);
+
+  useEffect(() => {
+    // We need to check if window is defined, which means we are on the client
+    if (typeof window !== 'undefined') {
+        const savedUser = localStorage.getItem("userProfile");
+        if (savedUser) {
+            setUser(JSON.parse(savedUser));
+        }
+    }
+  }, [pathname]); // Rerun on route change to get latest data
 
   const TimerIndicator = () => {
     if (!isActive) return null;
@@ -54,16 +73,16 @@ export function AppSidebar() {
           </span>
         </div>
       </SidebarHeader>
-      <SidebarMenu>
+      <SidebarMenu className="flex-1">
         {navItems.map(({ href, label, icon: Icon }) => (
           <SidebarMenuItem key={href}>
             <Link href={href} className="w-full">
               <SidebarMenuButton
                 isActive={pathname === href}
                 tooltip={{ children: label }}
-                className="justify-between"
+                className="justify-between h-12"
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                   <Icon className="h-5 w-5" />
                   <span className="group-data-[collapsible=icon]:hidden">
                     {label}
@@ -79,6 +98,34 @@ export function AppSidebar() {
           </SidebarMenuItem>
         ))}
       </SidebarMenu>
+        {user && (
+            <>
+            <SidebarSeparator />
+            <SidebarFooter>
+                <Link href="/profile" className="w-full">
+                    <SidebarMenuButton
+                        isActive={pathname === '/profile'}
+                        tooltip={{ children: user.name }}
+                        className="h-14"
+                    >
+                         <div className="flex items-center gap-3">
+                            <Avatar className="h-8 w-8">
+                                <AvatarImage src={user.avatarUrl} alt={user.name} />
+                                <AvatarFallback>
+                                    <User className="h-4 w-4" />
+                                </AvatarFallback>
+                            </Avatar>
+                            <div className="flex flex-col items-start group-data-[collapsible=icon]:hidden">
+                                <span className="font-semibold text-sm">{user.name}</span>
+                                <span className="text-xs text-muted-foreground">View Profile</span>
+                            </div>
+                        </div>
+                    </SidebarMenuButton>
+                </Link>
+            </SidebarFooter>
+            </>
+        )}
     </>
   );
 }
+

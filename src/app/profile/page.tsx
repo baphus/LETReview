@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { User, LogOut, Settings, Edit, Check, Camera } from "lucide-react";
+import { User, LogOut, Settings, Edit, Check, Camera, ArrowLeft } from "lucide-react";
 import { useEffect, useState, useRef, ChangeEvent } from "react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -93,60 +93,78 @@ export default function ProfilePage() {
 
   return (
     <div className="container mx-auto p-4 max-w-2xl">
-      <header className="flex flex-col items-center gap-4 mb-6">
-        <div className="relative">
-            <Avatar className="h-24 w-24 border-4 border-primary">
-            <AvatarImage src={user.avatarUrl} alt={user.name} data-ai-hint="profile picture" />
-            <AvatarFallback>
-                <User className="h-12 w-12" />
-            </AvatarFallback>
-            </Avatar>
-            <Button 
-                size="icon" 
-                className="absolute bottom-0 right-0 rounded-full h-8 w-8"
-                onClick={handleAvatarClick}
-            >
-                <Camera className="h-4 w-4" />
-            </Button>
-            <input 
-                type="file" 
-                ref={fileInputRef} 
-                className="hidden" 
-                accept="image/*"
-                onChange={handleFileChange} 
-            />
-        </div>
-        <div className="text-center">
-            {editingName ? (
-              <div className="flex items-center gap-2">
-                <Input value={newName} onChange={(e) => setNewName(e.target.value)} className="text-2xl font-bold font-headline h-auto p-0 border-0" onKeyDown={(e) => e.key === 'Enter' && handleNameSave()} />
-                <Button size="icon" variant="ghost" onClick={handleNameSave}>
-                  <Check className="h-5 w-5 text-green-500" />
-                </Button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold font-headline">{user.name}</h1>
-                <Button size="icon" variant="ghost" onClick={() => setEditingName(true)}>
-                  <Edit className="h-5 w-5" />
-                </Button>
-              </div>
-            )}
-        </div>
+      <header className="flex items-center gap-4 mb-6">
+        <Button variant="ghost" size="icon" onClick={() => router.back()}>
+            <ArrowLeft />
+        </Button>
+        <h1 className="text-2xl font-bold font-headline">Profile & Settings</h1>
       </header>
       
-      <Separator className="my-6" />
-
-      <section className="space-y-2">
-         <Button variant="ghost" className="w-full justify-start" disabled>
-            <Settings className="mr-2 h-4 w-4" />
-            Settings
-         </Button>
-         <Button variant="ghost" className="w-full justify-start text-destructive hover:text-destructive" onClick={handleResetData}>
-            <LogOut className="mr-2 h-4 w-4" />
-            Reset All Data
-         </Button>
-      </section>
+      <Card>
+        <CardHeader>
+            <CardTitle>Edit Profile</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+            <div className="flex flex-col items-center gap-4">
+                <div className="relative">
+                    <Avatar className="h-24 w-24 border-4 border-primary">
+                    <AvatarImage src={user.avatarUrl} alt={user.name} data-ai-hint="profile picture" />
+                    <AvatarFallback>
+                        <User className="h-12 w-12" />
+                    </AvatarFallback>
+                    </Avatar>
+                    <Button 
+                        size="icon" 
+                        className="absolute bottom-0 right-0 rounded-full h-8 w-8"
+                        onClick={handleAvatarClick}
+                    >
+                        <Camera className="h-4 w-4" />
+                    </Button>
+                    <input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        className="hidden" 
+                        accept="image/*"
+                        onChange={handleFileChange} 
+                    />
+                </div>
+                <div className="text-center w-full max-w-xs">
+                    {editingName ? (
+                    <div className="flex items-center gap-2">
+                        <Input value={newName} onChange={(e) => setNewName(e.target.value)} className="text-xl font-bold font-headline h-auto p-1" onKeyDown={(e) => e.key === 'Enter' && handleNameSave()} />
+                        <Button size="icon" variant="ghost" onClick={handleNameSave}>
+                        <Check className="h-5 w-5 text-green-500" />
+                        </Button>
+                    </div>
+                    ) : (
+                    <div className="flex items-center justify-center gap-2">
+                        <h2 className="text-xl font-bold font-headline">{user.name}</h2>
+                        <Button size="icon" variant="ghost" onClick={() => setEditingName(true)}>
+                        <Edit className="h-5 w-5" />
+                        </Button>
+                    </div>
+                    )}
+                </div>
+            </div>
+            <Separator />
+             <div className="space-y-2">
+                <h3 className="text-lg font-semibold font-headline">Danger Zone</h3>
+                <Card className="border-destructive">
+                    <CardHeader>
+                        <CardTitle className="text-destructive">Reset All Data</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-sm text-muted-foreground mb-4">This action is irreversible. All your progress, points, and pets will be permanently deleted.</p>
+                        <Button variant="destructive" className="w-full" onClick={handleResetData}>
+                            <LogOut className="mr-2 h-4 w-4" />
+                            Reset All Data
+                        </Button>
+                    </CardContent>
+                </Card>
+            </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
+
