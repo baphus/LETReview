@@ -19,7 +19,7 @@ const spaceGrotesk = Space_Grotesk({
 
 // This is a temporary solution for metadata until we can have dynamic metadata with client components.
 // export const metadata: Metadata = {
-//   title: "LETReviewBuddy",
+//   title: "LETsReview",
 //   description:
 //     "A mobile-first web application for studying the Licensure Exam for Teachers (LET) in the Philippines.",
 //   manifest: "/manifest.json",
@@ -76,7 +76,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <title>LETReviewBuddy</title>
+        <title>LETsReview</title>
         <meta name="description" content="A mobile-first web application for studying the Licensure Exam for Teachers (LET) in the Philippines." />
         <link rel="manifest" href="/manifest.json" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />

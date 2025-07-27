@@ -71,7 +71,7 @@ export default function LoginPage() {
     <div className="container mx-auto p-4 max-w-sm flex items-center justify-center h-full">
       <Card className="w-full">
         <CardHeader className="text-center">
-          <CardTitle className="font-headline text-2xl">Welcome to LETReviewBuddy!</CardTitle>
+          <CardTitle className="font-headline text-2xl">Welcome to LETsReview!</CardTitle>
           <CardDescription>Let's get you set up for success.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
