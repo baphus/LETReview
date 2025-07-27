@@ -193,7 +193,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
             description: "Your multiplier has been reset.",
         });
     }
-    updateTimerState({ quizStreak: 0, streakMultiplier: 1, sessionPoints: 0 });
+    updateTimerState({ quizStreak: 0, streakMultiplier: 1 });
   }, [updateTimerState, timerState.quizStreak, toast]);
 
 
@@ -254,11 +254,18 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
           endTime: newEndTime,
         });
     } else { // if timer is being paused
-       handleIncorrectQuizAnswer(); // reset streak
+       if (timerState.quizStreak > 0) {
+            toast({
+                variant: "destructive",
+                title: "Streak Lost!",
+                description: "Your multiplier has been reset because you paused the timer.",
+            });
+        }
        updateTimerState({ 
           isActive: false,
           endTime: null,
-          sessionPoints: 0 
+          quizStreak: 0,
+          streakMultiplier: 1
         }); 
     }
   };
