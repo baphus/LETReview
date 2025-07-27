@@ -1,13 +1,20 @@
+
+"use client";
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { User, Flame, Gem, Star, Award, LogOut, Settings } from "lucide-react";
+import { User, Flame, Gem, Star, Award, LogOut, Settings, Edit, Check } from "lucide-react";
 import Image from "next/image";
 import { pets } from "@/lib/data";
+import { useEffect, useState } from "react";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
 
 export default function ProfilePage() {
-  const user = {
+  const { toast } = useToast();
+  const [user, setUser] = useState({
     name: "LET Aspirant",
     email: "aspirant@example.com",
     avatarUrl: "https://placehold.co/100x100",
@@ -15,6 +22,28 @@ export default function ProfilePage() {
     streak: 6,
     completedSessions: 4,
     petsUnlocked: 2,
+  });
+  const [editingName, setEditingName] = useState(false);
+  const [newName, setNewName] = useState(user.name);
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem("userProfile");
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+      setNewName(JSON.parse(savedUser).name);
+    }
+  }, []);
+
+  const saveUser = (updatedUser: typeof user) => {
+    localStorage.setItem("userProfile", JSON.stringify(updatedUser));
+    setUser(updatedUser);
+  };
+  
+  const handleNameSave = () => {
+    const updatedUser = { ...user, name: newName };
+    saveUser(updatedUser);
+    setEditingName(false);
+    toast({ title: "Success", description: "Your name has been updated."});
   };
 
   const unlockedPets = pets.slice(0, user.petsUnlocked);
@@ -29,13 +58,23 @@ export default function ProfilePage() {
           </AvatarFallback>
         </Avatar>
         <div className="text-center">
-          <h1 className="text-2xl font-bold font-headline">{user.name}</h1>
-          <p className="text-muted-foreground">{user.email}</p>
+            {editingName ? (
+              <div className="flex items-center gap-2">
+                <Input value={newName} onChange={(e) => setNewName(e.target.value)} className="text-2xl font-bold font-headline h-auto p-0 border-0" />
+                <Button size="icon" variant="ghost" onClick={handleNameSave}>
+                  <Check className="h-5 w-5 text-green-500" />
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-bold font-headline">{user.name}</h1>
+                <Button size="icon" variant="ghost" onClick={() => setEditingName(true)}>
+                  <Edit className="h-5 w-5" />
+                </Button>
+              </div>
+            )}
+            <p className="text-muted-foreground">{user.email}</p>
         </div>
-        <Button>
-          <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="mr-2 h-4 w-4"><title>Google</title><path d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.02-2.62 1.62-4.55 1.62-3.83 0-6.95-3.12-6.95-6.95s3.12-6.95 6.95-6.95c2.21 0 3.63 1.05 4.43 1.82l2.49-2.49C18.02 2.89 15.65 2 12.48 2c-5.63 0-10.23 4.6-10.23 10.23s4.6 10.23 10.23 10.23c2.89 0 5.25-1.02 7-3.18 1.93-2.16 2.58-5.04 2.58-7.78v-.76h-9.56Z" fill="currentColor"/></svg>
-          Sign in with Google
-        </Button>
       </header>
       
       <Separator className="my-6" />
@@ -108,9 +147,12 @@ export default function ProfilePage() {
             <Settings className="mr-2 h-4 w-4" />
             Settings
          </Button>
-         <Button variant="ghost" className="w-full justify-start text-destructive hover:text-destructive">
+         <Button variant="ghost" className="w-full justify-start text-destructive hover:text-destructive" onClick={() => {
+            localStorage.removeItem("userProfile");
+            window.location.reload();
+         }}>
             <LogOut className="mr-2 h-4 w-4" />
-            Log Out
+            Reset Data
          </Button>
       </section>
     </div>
