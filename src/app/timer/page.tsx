@@ -50,8 +50,13 @@ export default function TimerPage() {
       }
       setIsActive(false); // Pause after session ends
     }
-    
-    // Check for visibility change to pause timer
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isActive, time, mode, toast]);
+
+  useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden' && isActive) {
         setIsActive(false);
@@ -66,10 +71,9 @@ export default function TimerPage() {
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
-      if (interval) clearInterval(interval);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [isActive, time, mode, toast]);
+  }, [isActive, toast]);
 
 
   const toggleTimer = () => {
