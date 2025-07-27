@@ -29,17 +29,17 @@ export default function LoginPage() {
 
     const userProfile = {
       name: name.trim(),
-      email: `${name.trim().toLowerCase().replace(/\s/g, ".")}@example.com`,
       avatarUrl,
       points: 0,
       streak: 0,
       highestStreak: 0,
       completedSessions: 0,
       petsUnlocked: 0,
+      petNames: {},
     };
 
     localStorage.setItem("userProfile", JSON.stringify(userProfile));
-    router.push("/");
+    router.push("/home");
   };
   
   const handleAvatarClick = () => {
