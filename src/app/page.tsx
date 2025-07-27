@@ -448,7 +448,7 @@ export default function ReviewPage() {
     <div className="container mx-auto p-4 max-w-2xl">
       <Dialog open={showResults} onOpenChange={handleDialogClose}>
         <DialogContent className="max-h-[90dvh] flex flex-col">
-          <DialogHeader className="items-center text-center">
+          <DialogHeader className="items-center text-center flex-shrink-0">
             <Trophy className="h-16 w-16 text-yellow-400" />
             <DialogTitle className="text-2xl font-bold font-headline">Quiz Complete!</DialogTitle>
             <DialogDescription>
@@ -459,17 +459,17 @@ export default function ReviewPage() {
           <div className="flex-1 min-h-0">
               {isChallenge && (
                   (quizScore / questions.length * 100) >= passingScore ? (
-                      <div className="text-center text-green-600 font-semibold p-4 bg-green-50 rounded-md shrink-0">
+                      <div className="text-center text-green-600 font-semibold p-4 bg-green-50 rounded-md shrink-0 mb-4">
                           <p>Congratulations! You passed the challenge. Your streak is safe!</p>
                       </div>
                   ) : (
-                      <div className="text-center text-red-600 font-semibold p-4 bg-red-50 rounded-md shrink-0">
+                      <div className="text-center text-red-600 font-semibold p-4 bg-red-50 rounded-md shrink-0 mb-4">
                           <p>So close! You needed {passingScore}% to pass. Try another challenge!</p>
                       </div>
                   )
               )}
 
-              <ScrollArea className="mt-4 h-[calc(100%-4rem)]">
+              <ScrollArea className="h-full">
                   <div className="space-y-4 pr-6">
                       {challengeAnswers.map(answer => (
                           <div key={answer.questionId} className="text-sm p-3 rounded-md bg-muted">
@@ -496,7 +496,7 @@ export default function ReviewPage() {
               </ScrollArea>
           </div>
 
-          <DialogFooter className="mt-4">
+          <DialogFooter className="mt-4 flex-shrink-0">
             <Button onClick={handleDialogClose} className="w-full">{isChallenge ? 'Back to Challenges' : 'Try Again'}</Button>
           </DialogFooter>
         </DialogContent>
