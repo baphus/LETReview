@@ -96,7 +96,6 @@ export default function TimerPage() {
   } = useTimer();
   
   const { toast } = useToast();
-  const [sessionPoints, setSessionPoints] = useState(0);
   const [streak, setStreak] = useState(0);
 
   const minutes = Math.floor(time / 60);
@@ -112,21 +111,10 @@ export default function TimerPage() {
   const handleTimerEnd = useCallback(() => {
     if (mode === "focus") {
       addCompletedSession();
-
-      const pointsEarned = sessionPoints;
-      
-      const savedUser = localStorage.getItem("userProfile");
-      if(savedUser && pointsEarned > 0){
-          const user = JSON.parse(savedUser);
-          user.points = (user.points || 0) + pointsEarned;
-          localStorage.setItem("userProfile", JSON.stringify(user));
-      }
-
       toast({
         title: "Focus session complete!",
-        description: `Time for a 5-minute break. You earned ${pointsEarned} points!`,
+        description: `Time for a 5-minute break.`,
       });
-      setSessionPoints(0);
       setStreak(0);
     } else {
       toast({
@@ -134,7 +122,7 @@ export default function TimerPage() {
         description: "Time to start another focus session.",
       });
     }
-  }, [mode, toast, sessionPoints, addCompletedSession]);
+  }, [mode, toast, addCompletedSession]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
@@ -158,7 +146,14 @@ export default function TimerPage() {
 
   const handleCorrectAnswer = useCallback((points: number) => {
     const pointsWithMultiplier = points * streakMultiplier;
-    setSessionPoints(prev => prev + pointsWithMultiplier);
+    
+    const savedUser = localStorage.getItem("userProfile");
+    if (savedUser) {
+        const user = JSON.parse(savedUser);
+        user.points = (user.points || 0) + pointsWithMultiplier;
+        localStorage.setItem("userProfile", JSON.stringify(user));
+    }
+    
     setStreak(prev => prev + 1);
      toast({
         title: `Correct! +${pointsWithMultiplier} Points`,
@@ -169,7 +164,6 @@ export default function TimerPage() {
   
   const resetTimer = () => {
     baseResetTimer();
-    setSessionPoints(0);
     setStreak(0);
   }
 
@@ -219,7 +213,7 @@ export default function TimerPage() {
 
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mt-6 text-center">
+      <div className="grid grid-cols-2 gap-4 mt-6 text-center">
         <Card>
             <CardHeader className="pb-2">
                 <CardTitle className="text-lg flex items-center justify-center gap-2">
@@ -240,17 +234,6 @@ export default function TimerPage() {
             </CardHeader>
             <CardContent>
                 <p className="text-3xl font-bold">{streak} <span className="text-base text-muted-foreground"> (x{streakMultiplier} pts)</span></p>
-            </CardContent>
-        </Card>
-         <Card className="col-span-2 lg:col-span-1">
-            <CardHeader className="pb-2">
-                <CardTitle className="text-lg flex items-center justify-center gap-2">
-                    <Sparkles className="text-accent" />
-                    <span>Session Points</span>
-                </CardTitle>
-            </CardHeader>
-            <CardContent>
-                <p className="text-3xl font-bold">{sessionPoints}</p>
             </CardContent>
         </Card>
       </div>
