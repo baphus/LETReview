@@ -34,9 +34,10 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
     const userProfile = localStorage.getItem("userProfile");
     if (!userProfile && pathname !== "/login") {
       router.replace("/login");
-    } else if (userProfile && pathname === "/") {
+    } else if (userProfile && pathname === "/login") {
       router.replace("/home");
-    } else {
+    }
+     else {
       setIsCheckingAuth(false);
     }
   }, [pathname, router]);
