@@ -9,6 +9,7 @@ import "./globals.css";
 import BottomNav from "@/components/BottomNav";
 import { Toaster } from "@/components/ui/toaster";
 import { Skeleton } from "@/components/ui/skeleton";
+import { TimerProvider } from "@/hooks/use-timer";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const spaceGrotesk = Space_Grotesk({
@@ -56,11 +57,11 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
   const showNav = pathname !== '/login';
 
   return (
-    <>
+    <TimerProvider>
       <main className="flex-1 overflow-y-auto pb-20 md:pb-4">{children}</main>
       {showNav && <BottomNav />}
       <Toaster />
-    </>
+    </TimerProvider>
   );
 }
 

@@ -1,9 +1,12 @@
+
 "use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, CalendarDays, Clock, User } from "lucide-react";
+import { BookOpen, CalendarDays, Clock, User, Play, Pause } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTimer } from "@/hooks/use-timer";
+import { Badge } from "./ui/badge";
 
 const navItems = [
   { href: "/", label: "Review", icon: BookOpen },
@@ -14,23 +17,37 @@ const navItems = [
 
 export default function BottomNav() {
   const pathname = usePathname();
+  const { time, isActive, mode } = useTimer();
+
+  const TimerIndicator = () => {
+    if (!isActive) return null;
+    const minutes = Math.floor(time / 60);
+    const seconds = time % 60;
+    
+    return (
+        <Badge variant="secondary" className="absolute -top-2 -right-2 text-xs">
+           {String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}
+        </Badge>
+    );
+  };
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-card border-t shadow-t-lg md:hidden">
       <div className="flex justify-around items-center h-16">
         {navItems.map(({ href, label, icon: Icon }) => {
-          const isActive = pathname === href;
+          const isActivePath = pathname === href;
           return (
             <Link
               key={href}
               href={href}
               className={cn(
-                "flex flex-col items-center justify-center w-full h-full text-sm font-medium transition-colors",
-                isActive ? "text-primary" : "text-muted-foreground hover:text-primary"
+                "flex flex-col items-center justify-center w-full h-full text-sm font-medium transition-colors relative",
+                isActivePath ? "text-primary" : "text-muted-foreground hover:text-primary"
               )}
             >
               <Icon className="h-6 w-6 mb-1" />
               <span>{label}</span>
+              {href === '/timer' && <TimerIndicator />}
             </Link>
           );
         })}
