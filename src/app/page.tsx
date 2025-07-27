@@ -135,7 +135,7 @@ const QuizCard: FC<{
   const [hasAnswered, setHasAnswered] = useState(!!userAnswer);
 
   const handleAnswerClick = (answer: string) => {
-    if (hasAnswered) return;
+    if (!isChallenge && hasAnswered) return;
 
     const correct = answer === question.answer;
     setSelectedAnswer(answer);
@@ -161,9 +161,8 @@ const QuizCard: FC<{
                 
                 // In challenge mode, we only show if the answer was selected, not if it was right or wrong.
                 const getChallengeClass = () => {
-                    if (!hasAnswered) return "hover:bg-muted";
                     if (isSelected) return "bg-muted border-primary";
-                    return "cursor-default";
+                    return "hover:bg-muted cursor-pointer";
                 };
 
                 const getNonChallengeClass = () => {
@@ -279,14 +278,16 @@ export default function ReviewPage() {
   const currentQuestion = questions[currentIndex];
 
   const handleFinishChallenge = () => {
+    const finalScore = challengeAnswers.reduce((acc, ans) => acc + (ans.isCorrect ? 1 : 0), 0);
+    setQuizScore(finalScore);
     setShowResults(true);
-    const scorePercentage = (quizScore / questions.length) * 100;
+
+    const scorePercentage = (finalScore / questions.length) * 100;
     const savedUser = localStorage.getItem("userProfile");
     if (savedUser) {
         const user = JSON.parse(savedUser);
         const today = new Date().toDateString();
         
-        // Only update streak if the last challenge was not today and they passed
         if (scorePercentage >= 85 && user.lastChallengeDate !== today) {
             user.streak = (user.streak || 0) + 1;
             if (user.streak > (user.highestStreak || 0)) {
@@ -296,7 +297,7 @@ export default function ReviewPage() {
         }
 
         const pointsPerQuestion = { easy: 5, medium: 10, hard: 15 };
-        const pointsEarned = quizScore * pointsPerQuestion[challengeDifficulty as keyof typeof pointsPerQuestion];
+        const pointsEarned = finalScore * pointsPerQuestion[challengeDifficulty as keyof typeof pointsPerQuestion];
         user.points = (user.points || 0) + pointsEarned;
         
         localStorage.setItem('userProfile', JSON.stringify(user));
@@ -337,20 +338,30 @@ export default function ReviewPage() {
 
   const handleAnswer = (correct: boolean, answer: string) => {
     if (isChallenge) {
-        setChallengeAnswers(prev => [...prev, {
-            questionId: currentQuestion.id,
-            userAnswer: answer,
-            correctAnswer: currentQuestion.answer,
-            isCorrect: correct,
-            question: currentQuestion.question,
-        }]);
-    }
-    
-    if (correct) {
-      setQuizScore(s => s + 1);
-    }
+        setChallengeAnswers(prev => {
+            const existingAnswerIndex = prev.findIndex(a => a.questionId === currentQuestion.id);
+            if (existingAnswerIndex !== -1) {
+                const updatedAnswers = [...prev];
+                updatedAnswers[existingAnswerIndex] = {
+                    ...updatedAnswers[existingAnswerIndex],
+                    userAnswer: answer,
+                    isCorrect: correct,
+                };
+                return updatedAnswers;
+            }
+            return [...prev, {
+                questionId: currentQuestion.id,
+                userAnswer: answer,
+                correctAnswer: currentQuestion.answer,
+                isCorrect: correct,
+                question: currentQuestion.question,
+            }];
+        });
+    } else {
+        if (correct) {
+          setQuizScore(s => s + 1);
+        }
 
-    if (!isChallenge) {
         if (correct) {
             toast({
                 title: "Correct!",
@@ -392,18 +403,16 @@ export default function ReviewPage() {
   
   useEffect(() => {
     setAnsweredCurrent(
-        isChallenge 
-            ? challengeAnswers.some(a => a.questionId === currentQuestion?.id)
-            : false
+        challengeAnswers.some(a => a.questionId === currentQuestion?.id)
     );
-  }, [currentIndex, challengeAnswers, currentQuestion, isChallenge]);
+  }, [currentIndex, challengeAnswers, currentQuestion]);
 
   const progressValue = questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
   
   const userAnswerForCurrentQuestion = useMemo(() => {
-    if (!isChallenge || !currentQuestion) return null;
+    if (!currentQuestion) return null;
     return challengeAnswers.find(a => a.questionId === currentQuestion.id)?.userAnswer;
-  }, [isChallenge, currentQuestion, challengeAnswers]);
+  }, [currentQuestion, challengeAnswers]);
 
   return (
     <div className="container mx-auto p-4 max-w-2xl">
@@ -542,7 +551,7 @@ export default function ReviewPage() {
           <div className="flex items-center gap-4">
             {mode === 'quiz' && (
               <Badge variant="outline" className="text-base">
-                Score: <span className="font-bold ml-1">{quizScore}</span>
+                Score: <span className="font-bold ml-1">{isChallenge ? challengeAnswers.reduce((acc, ans) => acc + (ans.isCorrect ? 1 : 0), 0) : quizScore}</span>
               </Badge>
             )}
             {!isChallenge && (
@@ -568,5 +577,3 @@ export default function ReviewPage() {
     </div>
   );
 }
-
-    
