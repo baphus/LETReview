@@ -70,6 +70,7 @@ const MiniQuiz = ({ onCorrectAnswer, onIncorrectAnswer }: { onCorrectAnswer: () 
                                 onClick={() => handleAnswer(choice)}
                                 disabled={isAnswered}
                                 className={cn(
+                                    "h-auto whitespace-normal",
                                     isAnswered && isTheCorrectAnswer && "bg-green-100 border-green-300 hover:bg-green-100 text-green-800",
                                     isAnswered && isSelected && !isTheCorrectAnswer && "bg-red-100 border-red-300 hover:bg-red-100 text-red-800"
                                 )}
