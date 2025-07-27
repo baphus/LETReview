@@ -3,16 +3,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, CalendarDays, Clock, User, Play, Pause } from "lucide-react";
+import { BookOpen, CalendarDays, Clock, Home, Play, Pause } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTimer } from "@/hooks/use-timer";
 import { Badge } from "./ui/badge";
 
 const navItems = [
+  { href: "/home", label: "Home", icon: Home },
   { href: "/", label: "Review", icon: BookOpen },
   { href: "/daily", label: "Daily", icon: CalendarDays },
   { href: "/timer", label: "Timer", icon: Clock },
-  { href: "/profile", label: "Profile", icon: User },
 ];
 
 export default function BottomNav() {

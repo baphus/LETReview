@@ -5,10 +5,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { User, Flame, Gem, Star, Award, LogOut, Settings, Edit, Check, Shield } from "lucide-react";
-import Image from "next/image";
-import { pets } from "@/lib/data";
-import { useEffect, useState } from "react";
+import { User, LogOut, Settings, Edit, Check, Camera } from "lucide-react";
+import { useEffect, useState, useRef, ChangeEvent } from "react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
@@ -16,7 +14,6 @@ import { useRouter } from "next/navigation";
 
 interface UserProfile {
     name: string;
-    email: string;
     avatarUrl: string;
     points: number;
     streak: number;
@@ -31,6 +28,7 @@ export default function ProfilePage() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const savedUser = localStorage.getItem("userProfile");
@@ -49,8 +47,8 @@ export default function ProfilePage() {
   };
   
   const handleNameSave = () => {
-    if (user) {
-        const updatedUser = { ...user, name: newName };
+    if (user && newName.trim()) {
+        const updatedUser = { ...user, name: newName.trim() };
         saveUser(updatedUser);
         setEditingName(false);
         toast({ title: "Success", description: "Your name has been updated."});
@@ -59,24 +57,65 @@ export default function ProfilePage() {
 
   const handleResetData = () => {
       localStorage.clear();
-      window.location.href = '/login';
-  }
+      router.push('/login');
+  };
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && user) {
+      if (file.size > 2 * 1024 * 1024) { // 2MB limit
+        toast({
+          variant: "destructive",
+          title: "Image too large",
+          description: "Please select an image smaller than 2MB.",
+        });
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const avatarUrl = event.target?.result as string;
+        const updatedUser = { ...user, avatarUrl };
+        saveUser(updatedUser);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
 
   if (!user) {
     return null; // Or a loading spinner
   }
 
-  const unlockedPets = pets.filter(p => user.highestStreak >= p.streak_req);
-
   return (
     <div className="container mx-auto p-4 max-w-2xl">
       <header className="flex flex-col items-center gap-4 mb-6">
-        <Avatar className="h-24 w-24 border-4 border-primary">
-          <AvatarImage src={user.avatarUrl} alt={user.name} data-ai-hint="profile picture" />
-          <AvatarFallback>
-            <User className="h-12 w-12" />
-          </AvatarFallback>
-        </Avatar>
+        <div className="relative">
+            <Avatar className="h-24 w-24 border-4 border-primary">
+            <AvatarImage src={user.avatarUrl} alt={user.name} data-ai-hint="profile picture" />
+            <AvatarFallback>
+                <User className="h-12 w-12" />
+            </AvatarFallback>
+            </Avatar>
+            <Button 
+                size="icon" 
+                className="absolute bottom-0 right-0 rounded-full h-8 w-8"
+                onClick={handleAvatarClick}
+            >
+                <Camera className="h-4 w-4" />
+            </Button>
+            <input 
+                type="file" 
+                ref={fileInputRef} 
+                className="hidden" 
+                accept="image/*"
+                onChange={handleFileChange} 
+            />
+        </div>
         <div className="text-center">
             {editingName ? (
               <div className="flex items-center gap-2">
@@ -96,69 +135,6 @@ export default function ProfilePage() {
         </div>
       </header>
       
-      <Separator className="my-6" />
-
-      <section>
-        <h2 className="text-xl font-bold font-headline mb-4">Study Statistics</h2>
-        <div className="grid grid-cols-2 gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Points</CardTitle>
-              <Gem className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{user.points}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Current Streak</CardTitle>
-              <Flame className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{user.streak} days</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Highest Streak</CardTitle>
-              <Shield className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{user.highestStreak} days</div>
-            </CardContent>
-          </Card>
-           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pomodoro Sessions</CardTitle>
-              <Award className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{user.completedSessions}</div>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
-
-      <section className="mt-8">
-        <h2 className="text-xl font-bold font-headline mb-4">Pet Collection ({unlockedPets.length}/{pets.length})</h2>
-        <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
-          {unlockedPets.length > 0 ? unlockedPets.map((pet) => (
-            <div key={pet.name} className="flex flex-col items-center text-center">
-              <Image 
-                src={pet.image} 
-                alt={pet.name} 
-                width={80} 
-                height={80} 
-                className="rounded-full bg-muted p-2"
-                data-ai-hint={pet.hint}
-              />
-              <p className="text-sm font-medium mt-1">{pet.name}</p>
-            </div>
-          )) : <p className="col-span-full text-muted-foreground">No pets unlocked yet. Keep up your streak!</p>}
-        </div>
-      </section>
-
       <Separator className="my-6" />
 
       <section className="space-y-2">
