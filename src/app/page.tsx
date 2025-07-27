@@ -132,26 +132,16 @@ const QuizCard: FC<{
   userAnswer?: string | null;
 }> = ({ question, onAnswer, isChallenge, userAnswer }) => {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(userAnswer || null);
-  const [hasAnswered, setHasAnswered] = useState(!!userAnswer);
+  const hasAnswered = !!userAnswer;
 
   const handleAnswerClick = (answer: string) => {
-    // In challenge mode, allow changing answer. In regular quiz, lock after first answer.
-    if (!isChallenge && hasAnswered) return;
-
     const correct = answer === question.answer;
     setSelectedAnswer(answer);
     onAnswer(correct, answer);
-    setHasAnswered(true);
   };
   
   useEffect(() => {
     setSelectedAnswer(userAnswer || null);
-    if (isChallenge) {
-      setHasAnswered(!!userAnswer);
-    } else {
-      setHasAnswered(false);
-      setSelectedAnswer(null);
-    }
   }, [question, userAnswer, isChallenge]);
 
 
@@ -343,27 +333,27 @@ export default function ReviewPage() {
   };
 
   const handleAnswer = (correct: boolean, answer: string) => {
-    if (isChallenge) {
-        const newAnswers = [...challengeAnswers];
-        const existingAnswerIndex = newAnswers.findIndex(a => a.questionId === currentQuestion.id);
+    const newAnswers = [...challengeAnswers];
+    const existingAnswerIndex = newAnswers.findIndex(a => a.questionId === currentQuestion.id);
 
-        if (existingAnswerIndex !== -1) {
-            newAnswers[existingAnswerIndex] = {
-                ...newAnswers[existingAnswerIndex],
-                userAnswer: answer,
-                isCorrect: correct,
-            };
-        } else {
-            newAnswers.push({
-                questionId: currentQuestion.id,
-                userAnswer: answer,
-                correctAnswer: currentQuestion.answer,
-                isCorrect: correct,
-                question: currentQuestion.question,
-            });
-        }
-        setChallengeAnswers(newAnswers);
+    if (existingAnswerIndex !== -1) {
+        newAnswers[existingAnswerIndex] = {
+            ...newAnswers[existingAnswerIndex],
+            userAnswer: answer,
+            isCorrect: correct,
+        };
     } else {
+        newAnswers.push({
+            questionId: currentQuestion.id,
+            userAnswer: answer,
+            correctAnswer: currentQuestion.answer,
+            isCorrect: correct,
+            question: currentQuestion.question,
+        });
+    }
+    setChallengeAnswers(newAnswers);
+
+    if (!isChallenge) {
         if (correct) {
           setQuizScore(s => s + 1);
         }
@@ -422,7 +412,7 @@ export default function ReviewPage() {
 
   return (
     <div className="container mx-auto p-4 max-w-2xl">
-        <Dialog open={showResults} onOpenChange={handleDialogClose}>
+      <Dialog open={showResults} onOpenChange={handleDialogClose}>
         <DialogContent className="max-h-[90dvh] flex flex-col">
           <DialogHeader className="items-center text-center">
             <Trophy className="h-16 w-16 text-yellow-400" />
@@ -431,50 +421,51 @@ export default function ReviewPage() {
               You scored {quizScore} out of {questions.length}.
             </DialogDescription>
           </DialogHeader>
-           <div className="flex-1 min-h-0">
+           
            {isChallenge ? (
-            <div className="space-y-4 h-full flex flex-col">
-                {(quizScore / questions.length) >= 0.85 ? (
-                    <div className="text-center text-green-600 font-semibold p-4 bg-green-50 rounded-md">
-                        <p>Congratulations! You passed the challenge. Your streak is safe!</p>
-                    </div>
-                ) : (
-                    <div className="text-center text-red-600 font-semibold p-4 bg-red-50 rounded-md">
-                        <p>So close! You needed 85% to pass. Try another challenge!</p>
-                    </div>
-                )}
-                <ScrollArea className="flex-1 pr-6">
-                    <div className="space-y-4">
-                        {challengeAnswers.map(answer => (
-                            <div key={answer.questionId} className="text-sm p-3 rounded-md bg-muted">
-                                <p className="font-semibold mb-1">{answer.question}</p>
-                                {answer.isCorrect ? (
-                                    <div className="flex items-center gap-2 text-green-600">
-                                       <CheckCircle className="h-4 w-4 shrink-0" /> 
-                                       <span>Your answer: {answer.userAnswer}</span>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-1">
-                                        <div className="flex items-center gap-2 text-red-600">
-                                            <XCircle className="h-4 w-4 shrink-0" />
-                                            <span>Your answer: {answer.userAnswer}</span>
+            <div className="flex-1 min-h-0">
+                <div className="space-y-4 h-full flex flex-col">
+                    {(quizScore / questions.length) >= 0.85 ? (
+                        <div className="text-center text-green-600 font-semibold p-4 bg-green-50 rounded-md">
+                            <p>Congratulations! You passed the challenge. Your streak is safe!</p>
+                        </div>
+                    ) : (
+                        <div className="text-center text-red-600 font-semibold p-4 bg-red-50 rounded-md">
+                            <p>So close! You needed 85% to pass. Try another challenge!</p>
+                        </div>
+                    )}
+                    <ScrollArea className="flex-1 pr-6">
+                        <div className="space-y-4">
+                            {challengeAnswers.map(answer => (
+                                <div key={answer.questionId} className="text-sm p-3 rounded-md bg-muted">
+                                    <p className="font-semibold mb-1">{answer.question}</p>
+                                    {answer.isCorrect ? (
+                                        <div className="flex items-center gap-2 text-green-600">
+                                           <CheckCircle className="h-4 w-4 shrink-0" /> 
+                                           <span>Your answer: {answer.userAnswer}</span>
                                         </div>
-                                         <div className="flex items-center gap-2 text-green-600 pl-6">
-                                            <span>Correct answer: {answer.correctAnswer}</span>
+                                    ) : (
+                                        <div className="space-y-1">
+                                            <div className="flex items-center gap-2 text-red-600">
+                                                <XCircle className="h-4 w-4 shrink-0" />
+                                                <span>Your answer: {answer.userAnswer}</span>
+                                            </div>
+                                             <div className="flex items-center gap-2 text-green-600 pl-6">
+                                                <span>Correct answer: {answer.correctAnswer}</span>
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                </ScrollArea>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </ScrollArea>
+                </div>
             </div>
            ) : (
-             <div className="text-center">
+             <div className="text-center flex-1 min-h-0">
                 <p>Great job! Keep practicing to improve your score.</p>
              </div>
            )}
-           </div>
           <DialogFooter>
             <Button onClick={handleDialogClose} className="w-full">{isChallenge ? 'Back to Challenges' : 'Try Again'}</Button>
           </DialogFooter>
@@ -559,11 +550,6 @@ export default function ReviewPage() {
             Question {currentIndex + 1} of {questions.length}
           </p>
           <div className="flex items-center gap-4">
-            {mode === 'quiz' && !isChallenge && (
-              <Badge variant="outline" className="text-base">
-                Score: <span className="font-bold ml-1">{quizScore}</span>
-              </Badge>
-            )}
             {!isChallenge && (
               <Button variant="outline" size="sm" onClick={toggleMark} disabled={mode === 'quiz' || !currentQuestion}>
                 <Bookmark className={cn("h-4 w-4 mr-2", currentQuestion && marked.includes(currentQuestion.id) && "fill-primary text-primary")} />
@@ -587,5 +573,3 @@ export default function ReviewPage() {
     </div>
   );
 }
-
-    
