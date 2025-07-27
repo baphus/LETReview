@@ -12,7 +12,7 @@ import type { QuizQuestion } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 
-const MiniQuiz = ({ onCorrectAnswer, onIncorrectAnswer }: { onCorrectAnswer: (points: number) => void, onIncorrectAnswer: () => void }) => {
+const MiniQuiz = ({ onCorrectAnswer, onIncorrectAnswer }: { onCorrectAnswer: () => void, onIncorrectAnswer: () => void }) => {
     const [question, setQuestion] = useState<QuizQuestion | null>(null);
     const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
     const [isAnswered, setIsAnswered] = useState(false);
@@ -41,7 +41,7 @@ const MiniQuiz = ({ onCorrectAnswer, onIncorrectAnswer }: { onCorrectAnswer: (po
 
         setTimeout(() => {
             if (isCorrect) {
-                onCorrectAnswer(1);
+                onCorrectAnswer();
             } else {
                 onIncorrectAnswer();
             }
@@ -141,29 +141,26 @@ export default function TimerPage() {
     };
   }, [isActive, time, handleTimerEnd]);
   
-  const streakMultiplier = useMemo(() => {
-    if (streak >= 10) return 3;
-    if (streak >= 5) return 2;
-    return 1;
-  }, [streak]);
 
-  const handleCorrectAnswer = useCallback((points: number) => {
-    const pointsWithMultiplier = points * streakMultiplier;
-    
-    const savedUser = localStorage.getItem("userProfile");
-    if (savedUser) {
-        const user = JSON.parse(savedUser);
-        user.points = (user.points || 0) + pointsWithMultiplier;
-        localStorage.setItem("userProfile", JSON.stringify(user));
+  const handleCorrectAnswer = useCallback(() => {
+    const newStreak = streak + 1;
+    setStreak(newStreak);
+
+    if (newStreak > 0 && newStreak % 5 === 0) {
+        const pointsEarned = 1;
+        const savedUser = localStorage.getItem("userProfile");
+        if (savedUser) {
+            const user = JSON.parse(savedUser);
+            user.points = (user.points || 0) + pointsEarned;
+            localStorage.setItem("userProfile", JSON.stringify(user));
+        }
+        toast({
+            title: `Streak Bonus! +${pointsEarned} Point`,
+            description: `You've answered 5 questions correctly in a row!`,
+            className: "bg-green-100 border-green-300"
+        });
     }
-    
-    setStreak(prev => prev + 1);
-     toast({
-        title: `Correct! +${pointsWithMultiplier} Points`,
-        description: `Your streak is now ${streak + 1}!`,
-        className: "bg-green-100 border-green-300"
-    });
-  }, [streak, streakMultiplier, toast]);
+  }, [streak, toast]);
   
    const handleIncorrectAnswer = useCallback(() => {
     if (streak > 0) {
@@ -250,10 +247,9 @@ export default function TimerPage() {
                 </CardTitle>
             </CardHeader>
             <CardContent>
-                <p className="text-3xl font-bold">{streak} <span className="text-base text-muted-foreground"> (x{streakMultiplier} pts)</span></p>
+                <p className="text-3xl font-bold">{streak}</p>
             </CardContent>
         </Card>
       </div>
     </div>
   );
-}
