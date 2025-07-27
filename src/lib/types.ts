@@ -7,6 +7,10 @@ export interface Question {
   explanation?: string;
 }
 
+export interface QuizQuestion extends Question {
+  choices: string[];
+}
+
 export interface Pet {
   name: string;
   unlock_criteria: string;

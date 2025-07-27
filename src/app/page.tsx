@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, type FC } from "react";
+import { useState, useMemo, type FC, useEffect } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -8,18 +8,21 @@ import {
   Search,
   BookOpen,
   Copy,
+  CheckCircle,
+  XCircle,
+  HelpCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { sampleQuestions } from "@/lib/data";
-import type { Question } from "@/lib/types";
+import type { Question, QuizQuestion } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { generateQuiz } from "@/ai/flows/generate-quiz-flow";
+import { Badge } from "@/components/ui/badge";
 
 const Flashcard: FC<{ question: Question }> = ({ question }) => {
   const [isFlipped, setIsFlipped] = useState(false);
@@ -79,7 +82,7 @@ const StudyCard: FC<{ question: Question }> = ({ question }) => {
   };
   
   return (
-    <Card className="w-full min-h-80 shadow-lg">
+    <Card className="w-full min-h-80 shadow-lg relative">
       <CardHeader>
         <CardTitle className="font-headline text-xl md:text-2xl">{question.question}</CardTitle>
       </CardHeader>
@@ -96,14 +99,79 @@ const StudyCard: FC<{ question: Question }> = ({ question }) => {
   );
 };
 
+const QuizCard: FC<{ 
+  question: QuizQuestion;
+  onAnswer: (correct: boolean) => void;
+}> = ({ question, onAnswer }) => {
+  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
+
+  const handleAnswerClick = (answer: string) => {
+    if (selectedAnswer) return; // Prevent changing answer
+
+    const correct = answer === question.answer;
+    setSelectedAnswer(answer);
+    setIsCorrect(correct);
+    onAnswer(correct);
+  };
+  
+  useEffect(() => {
+    setSelectedAnswer(null);
+    setIsCorrect(null);
+  }, [question]);
+
+  return (
+    <Card className="w-full min-h-80 shadow-lg relative p-6">
+      <CardHeader className="p-0 mb-4">
+        <CardTitle className="font-headline text-xl md:text-2xl">{question.question}</CardTitle>
+      </CardHeader>
+      <CardContent className="p-0">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {question.choices.map((choice) => {
+                const isSelected = selectedAnswer === choice;
+                const isTheCorrectAnswer = choice === question.answer;
+
+                return (
+                    <Card 
+                        key={choice}
+                        onClick={() => handleAnswerClick(choice)}
+                        className={cn(
+                            "p-4 cursor-pointer transition-all hover:bg-muted",
+                            selectedAnswer && isTheCorrectAnswer && "border-green-500 bg-green-50",
+                            isSelected && !isTheCorrectAnswer && "border-red-500 bg-red-50",
+                            selectedAnswer && !isTheCorrectAnswer && !isSelected && "opacity-50"
+                        )}
+                    >
+                        <div className="flex items-center justify-between">
+                            <p>{choice}</p>
+                            {selectedAnswer && isTheCorrectAnswer && isSelected && <CheckCircle className="h-5 w-5 text-green-500" />}
+                            {selectedAnswer && !isTheCorrectAnswer && isSelected && <XCircle className="h-5 w-5 text-red-500" />}
+                        </div>
+                    </Card>
+                )
+            })}
+        </div>
+        {isCorrect === false && question.explanation && (
+           <p className="text-sm text-muted-foreground mt-4 p-2 bg-muted rounded-md">{question.explanation}</p>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+
 export default function ReviewPage() {
   const [category, setCategory] = useState<"gen_education" | "professional">(
     "gen_education"
   );
-  const [mode, setMode] = useState<"study" | "flashcard">("study");
+  const [mode, setMode] = useState<"study" | "flashcard" | "quiz">("study");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [marked, setMarked] = useState<number[]>([]);
+  const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
+  const [quizPoints, setQuizPoints] = useState(0);
+  const [loadingQuiz, setLoadingQuiz] = useState(false);
+  
   const { toast } = useToast();
 
   const questions = useMemo(() => {
@@ -114,14 +182,16 @@ export default function ReviewPage() {
       );
   }, [category, searchTerm]);
 
-  const currentQuestion = questions[currentIndex];
+  const currentQuestion = (mode === 'quiz' ? quizQuestions : questions)[currentIndex];
 
   const handleNext = () => {
-    setCurrentIndex((prev) => (prev + 1) % questions.length);
+    const totalQuestions = (mode === 'quiz' ? quizQuestions.length : questions.length);
+    setCurrentIndex((prev) => (prev + 1) % totalQuestions);
   };
 
   const handlePrev = () => {
-    setCurrentIndex((prev) => (prev - 1 + questions.length) % questions.length);
+    const totalQuestions = (mode === 'quiz' ? quizQuestions.length : questions.length);
+    setCurrentIndex((prev) => (prev - 1 + totalQuestions) % totalQuestions);
   };
   
   const toggleMark = () => {
@@ -135,7 +205,51 @@ export default function ReviewPage() {
     }
   };
 
-  const progressValue = questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
+  const handleAnswer = (correct: boolean) => {
+    if (correct) {
+      setQuizPoints(p => p + 10);
+      toast({
+        title: "Correct!",
+        description: "You earned 10 points.",
+      })
+    } else {
+       toast({
+        variant: "destructive",
+        title: "Incorrect",
+        description: "Better luck next time!",
+      })
+    }
+  };
+
+  const startQuiz = async () => {
+    if (questions.length === 0) return;
+    setLoadingQuiz(true);
+    setCurrentIndex(0);
+    setQuizPoints(0);
+    try {
+      const result = await generateQuiz({ questions: questions.slice(0, 10) }); // Limit to 10 questions for performance
+      setQuizQuestions(result.questions);
+    } catch(e) {
+      toast({
+        variant: "destructive",
+        title: "Failed to generate quiz",
+        description: "The AI failed to generate a quiz. Please try again."
+      });
+      setMode("study"); // Fallback to study mode
+    } finally {
+      setLoadingQuiz(false);
+    }
+  };
+  
+  useEffect(() => {
+    if (mode === 'quiz') {
+      startQuiz();
+    }
+  }, [mode, category, searchTerm]); // Re-generate quiz if category or search term changes
+
+  const progressValue = (mode === 'quiz' ? quizQuestions.length : questions.length) > 0 ? ((currentIndex + 1) / (mode === 'quiz' ? quizQuestions.length : questions.length)) * 100 : 0;
+  
+  const totalQuestions = mode === 'quiz' ? quizQuestions.length : questions.length;
   
   return (
     <div className="container mx-auto p-4 max-w-2xl">
@@ -158,26 +272,39 @@ export default function ReviewPage() {
           />
         </div>
       </header>
-
-      <Tabs defaultValue="gen_education" onValueChange={(value) => {
-          setCategory(value as "gen_education" | "professional");
-          setCurrentIndex(0);
-      }}>
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="gen_education">General Education</TabsTrigger>
-          <TabsTrigger value="professional">Professional Education</TabsTrigger>
-        </TabsList>
-      </Tabs>
       
-      <div className="flex items-center justify-center space-x-2 my-4">
-        <Label htmlFor="mode-switch">Study Mode</Label>
-        <Switch id="mode-switch" checked={mode === 'flashcard'} onCheckedChange={(checked) => setMode(checked ? 'flashcard' : 'study')} />
-        <Label htmlFor="mode-switch">Flashcard Mode</Label>
+      <div className="flex flex-col sm:flex-row gap-4 justify-between">
+        <Tabs value={category} onValueChange={(value) => {
+            setCategory(value as "gen_education" | "professional");
+            setCurrentIndex(0);
+        }}>
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="gen_education">General Education</TabsTrigger>
+            <TabsTrigger value="professional">Professional Education</TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        <Tabs value={mode} onValueChange={(value) => setMode(value as "study" | "flashcard" | "quiz")}>
+          <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="study">Study</TabsTrigger>
+              <TabsTrigger value="flashcard">Flashcard</TabsTrigger>
+              <TabsTrigger value="quiz">Quiz</TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
       
       <div className="my-6">
-        {questions.length > 0 ? (
-           mode === 'study' ? <StudyCard question={currentQuestion} /> : <Flashcard question={currentQuestion} />
+        {loadingQuiz ? (
+          <Card className="h-80 flex flex-col justify-center items-center">
+            <HelpCircle className="h-12 w-12 text-muted-foreground animate-spin mb-4" />
+            <p className="text-muted-foreground">Generating your AI-powered quiz...</p>
+          </Card>
+        ) : totalQuestions > 0 ? (
+          <>
+            {mode === 'study' && <StudyCard question={currentQuestion} />}
+            {mode === 'flashcard' && <Flashcard question={currentQuestion} />}
+            {mode === 'quiz' && quizQuestions.length > 0 && <QuizCard question={currentQuestion as QuizQuestion} onAnswer={handleAnswer} />}
+          </>
         ) : (
           <Card className="h-80 flex justify-center items-center">
             <p className="text-muted-foreground">No questions found.</p>
@@ -188,20 +315,27 @@ export default function ReviewPage() {
       <footer className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            Question {currentIndex + 1} of {questions.length}
+            Question {currentIndex + 1} of {totalQuestions}
           </p>
-          <Button variant="outline" size="sm" onClick={toggleMark}>
-            <Bookmark className={cn("h-4 w-4 mr-2", marked.includes(currentQuestion?.id) && "fill-primary text-primary")} />
-            Mark for later
-          </Button>
+          <div className="flex items-center gap-4">
+            {mode === 'quiz' && (
+              <Badge variant="outline" className="text-base">
+                Points: <span className="font-bold ml-1">{quizPoints}</span>
+              </Badge>
+            )}
+            <Button variant="outline" size="sm" onClick={toggleMark} disabled={mode === 'quiz'}>
+              <Bookmark className={cn("h-4 w-4 mr-2", marked.includes(currentQuestion?.id) && "fill-primary text-primary")} />
+              Mark for later
+            </Button>
+          </div>
         </div>
         <Progress value={progressValue} />
         <div className="flex justify-between items-center">
-          <Button onClick={handlePrev} disabled={questions.length <= 1}>
+          <Button onClick={handlePrev} disabled={totalQuestions <= 1}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Previous
           </Button>
-          <Button onClick={handleNext} disabled={questions.length <= 1}>
+          <Button onClick={handleNext} disabled={totalQuestions <= 1}>
             Next
             <ArrowRight className="h-4 w-4 ml-2" />
           </Button>
