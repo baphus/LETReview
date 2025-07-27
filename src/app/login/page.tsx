@@ -7,14 +7,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, Camera } from "lucide-react";
+import { User, Camera, CalendarIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { DatePicker } from "@/components/ui/datepicker";
+import { Label } from "@/components/ui/label";
 
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [name, setName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("https://placehold.co/100x100");
+  const [examDate, setExamDate] = useState<Date>();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleLogin = () => {
@@ -26,10 +29,19 @@ export default function LoginPage() {
       });
       return;
     }
+     if (!examDate) {
+      toast({
+        variant: "destructive",
+        title: "Exam date is required",
+        description: "Please select your exam date.",
+      });
+      return;
+    }
 
     const userProfile = {
       name: name.trim(),
       avatarUrl,
+      examDate: examDate.toISOString(),
       points: 0,
       streak: 0,
       highestStreak: 0,
@@ -100,15 +112,18 @@ export default function LoginPage() {
             </div>
           </div>
           <div className="space-y-2">
-            <label htmlFor="name" className="text-sm font-medium">Your Name</label>
+            <Label htmlFor="name">Your Name</Label>
             <Input
               id="name"
               type="text"
               placeholder="e.g. Juan Dela Cruz"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
             />
+          </div>
+           <div className="space-y-2">
+            <Label htmlFor="exam-date">Exam Date</Label>
+            <DatePicker date={examDate} setDate={setExamDate} />
           </div>
         </CardContent>
         <CardFooter>

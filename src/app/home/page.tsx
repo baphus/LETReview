@@ -13,11 +13,13 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import Countdown from "@/components/Countdown";
 
 
 interface UserProfile {
     name: string;
     avatarUrl: string;
+    examDate: string;
     points: number;
     streak: number;
     highestStreak: number;
@@ -69,12 +71,12 @@ export default function HomePage() {
 
   return (
     <div className="container mx-auto p-4 max-w-4xl">
-       <header className="flex justify-between items-center mb-6">
+      <header className="flex justify-between items-center mb-6">
         <div>
             <h1 className="text-3xl font-bold font-headline">Home</h1>
             <p className="text-muted-foreground">Welcome back, {user.name}!</p>
         </div>
-        <Link href="/profile">
+         <Link href="/profile">
             <Avatar className="h-14 w-14 border-2 border-primary">
                 <AvatarImage src={user.avatarUrl} alt={user.name} />
                 <AvatarFallback>
@@ -83,6 +85,8 @@ export default function HomePage() {
             </Avatar>
         </Link>
       </header>
+
+      {user.examDate && <Countdown examDate={new Date(user.examDate)} />}
       
       <Separator className="my-6" />
 
@@ -113,7 +117,7 @@ export default function HomePage() {
               <Shield className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{user.highestStreak} days</div>
+              <div className="text-2xl font-bold">{user.highestStreak}</div>
             </CardContent>
           </Card>
            <Card>
