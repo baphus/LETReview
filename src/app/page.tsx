@@ -135,6 +135,7 @@ const QuizCard: FC<{
   const [hasAnswered, setHasAnswered] = useState(!!userAnswer);
 
   const handleAnswerClick = (answer: string) => {
+    // In challenge mode, allow changing answer. In regular quiz, lock after first answer.
     if (!isChallenge && hasAnswered) return;
 
     const correct = answer === question.answer;
@@ -165,7 +166,6 @@ const QuizCard: FC<{
                 const isSelected = selectedAnswer === choice;
                 const isTheCorrectAnswer = choice === question.answer;
                 
-                // In challenge mode, we only show if the answer was selected, not if it was right or wrong.
                 const getChallengeClass = () => {
                     if (isSelected) return "bg-muted border-primary";
                     return "hover:bg-muted cursor-pointer";
@@ -433,7 +433,7 @@ export default function ReviewPage() {
           </DialogHeader>
            <div className="flex-1 min-h-0">
            {isChallenge ? (
-            <div className="space-y-4 h-full">
+            <div className="space-y-4 h-full flex flex-col">
                 {(quizScore / questions.length) >= 0.85 ? (
                     <div className="text-center text-green-600 font-semibold p-4 bg-green-50 rounded-md">
                         <p>Congratulations! You passed the challenge. Your streak is safe!</p>
@@ -443,7 +443,7 @@ export default function ReviewPage() {
                         <p>So close! You needed 85% to pass. Try another challenge!</p>
                     </div>
                 )}
-                <ScrollArea className="h-64 pr-6">
+                <ScrollArea className="flex-1 pr-6">
                     <div className="space-y-4">
                         {challengeAnswers.map(answer => (
                             <div key={answer.questionId} className="text-sm p-3 rounded-md bg-muted">
@@ -559,9 +559,9 @@ export default function ReviewPage() {
             Question {currentIndex + 1} of {questions.length}
           </p>
           <div className="flex items-center gap-4">
-            {mode === 'quiz' && isChallenge && (
+            {mode === 'quiz' && !isChallenge && (
               <Badge variant="outline" className="text-base">
-                Score: <span className="font-bold ml-1">{challengeAnswers.reduce((acc, ans) => acc + (ans.isCorrect ? 1 : 0), 0)}</span>
+                Score: <span className="font-bold ml-1">{quizScore}</span>
               </Badge>
             )}
             {!isChallenge && (
