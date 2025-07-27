@@ -177,7 +177,11 @@ const Sidebar = React.forwardRef<
     },
     ref
   ) => {
-    const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+    const { isMobile } = useSidebar()
+
+    if (isMobile) {
+      return null
+    }
 
     if (collapsible === "none") {
       return (
@@ -194,26 +198,7 @@ const Sidebar = React.forwardRef<
       )
     }
 
-    if (isMobile) {
-      return (
-        <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
-          <SheetContent
-            data-sidebar="sidebar"
-            data-mobile="true"
-            className="w-[--sidebar-width] bg-muted/40 p-0 text-foreground"
-            style={
-              {
-                "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
-              } as React.CSSProperties
-            }
-            side={side}
-          >
-            <SheetTitle className="sr-only">Menu</SheetTitle>
-            <div className="flex h-full w-full flex-col">{children}</div>
-          </SheetContent>
-        </Sheet>
-      )
-    }
+    const { state } = useSidebar()
 
     return (
       <div
@@ -764,3 +749,5 @@ export {
   SidebarTrigger,
   useSidebar,
 }
+
+    
