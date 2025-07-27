@@ -3,7 +3,7 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { User, LogOut, Settings, Edit, Check, Camera, ArrowLeft } from "lucide-react";
 import { useEffect, useState, useRef, ChangeEvent } from "react";
@@ -195,6 +195,21 @@ export default function ProfilePage() {
                 </Button>
             </CardContent>
         </Card>
+
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>About LETsReview</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            This app is a review companion designed to help aspiring educators prepare for the Licensure Examination for Teachers (LET) in the Philippines.
+          </p>
+          <br />
+          <p className="text-sm text-muted-foreground italic">
+            This app is lovingly dedicated to my girlfriend, Trisha, an aspiring teacher who inspired this project.
+          </p>
+        </CardContent>
+      </Card>
 
       <Card className="mt-6">
         <CardHeader>

@@ -18,6 +18,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import SplashScreen from "@/components/SplashScreen";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const spaceGrotesk = Space_Grotesk({
@@ -29,8 +30,23 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [isShowingSplash, setIsShowingSplash] = useState(true);
 
   useEffect(() => {
+    const splashShown = sessionStorage.getItem("splashShown");
+    if (splashShown) {
+      setIsShowingSplash(false);
+    } else {
+      setTimeout(() => {
+        setIsShowingSplash(false);
+        sessionStorage.setItem("splashShown", "true");
+      }, 3000); // Show splash for 3 seconds
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isShowingSplash) return; // Wait for splash screen to finish
+
     const userProfile = localStorage.getItem("userProfile");
     if (!userProfile && pathname !== "/login") {
       router.replace("/login");
@@ -39,7 +55,11 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
     } else {
       setIsCheckingAuth(false);
     }
-  }, [pathname, router]);
+  }, [pathname, router, isShowingSplash]);
+
+  if (isShowingSplash) {
+    return <SplashScreen />;
+  }
 
   if (isCheckingAuth) {
     return (
