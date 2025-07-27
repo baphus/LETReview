@@ -498,7 +498,7 @@ export default function ReviewPage() {
               </div>
           </div>
 
-          <DialogFooter className="mt-4">
+          <DialogFooter className="mt-4 pt-4 border-t">
             <Button onClick={handleDialogClose} className="w-full">{isChallenge ? 'Back to Challenges' : 'Try Again'}</Button>
           </DialogFooter>
         </DialogContent>
