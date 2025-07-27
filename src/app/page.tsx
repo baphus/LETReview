@@ -448,7 +448,7 @@ export default function ReviewPage() {
     <div className="container mx-auto p-4 max-w-2xl">
       <Dialog open={showResults} onOpenChange={handleDialogClose}>
         <DialogContent className="max-h-[90dvh] flex flex-col">
-          <DialogHeader className="items-center text-center flex-shrink-0">
+          <DialogHeader className="items-center text-center">
             <Trophy className="h-16 w-16 text-yellow-400" />
             <DialogTitle className="text-2xl font-bold font-headline">Quiz Complete!</DialogTitle>
             <DialogDescription>
@@ -456,47 +456,49 @@ export default function ReviewPage() {
             </DialogDescription>
           </DialogHeader>
           
-          <div className="flex-1 min-h-0">
+          <div className="flex-1 flex flex-col min-h-0">
               {isChallenge && (
                   (quizScore / questions.length * 100) >= passingScore ? (
-                      <div className="text-center text-green-600 font-semibold p-4 bg-green-50 rounded-md shrink-0 mb-4">
+                      <div className="text-center text-green-600 font-semibold p-4 bg-green-50 rounded-md mb-4 shrink-0">
                           <p>Congratulations! You passed the challenge. Your streak is safe!</p>
                       </div>
                   ) : (
-                      <div className="text-center text-red-600 font-semibold p-4 bg-red-50 rounded-md shrink-0 mb-4">
+                      <div className="text-center text-red-600 font-semibold p-4 bg-red-50 rounded-md mb-4 shrink-0">
                           <p>So close! You needed {passingScore}% to pass. Try another challenge!</p>
                       </div>
                   )
               )}
 
-              <ScrollArea className="h-full">
-                  <div className="space-y-4 pr-6">
-                      {challengeAnswers.map(answer => (
-                          <div key={answer.questionId} className="text-sm p-3 rounded-md bg-muted">
-                              <p className="font-semibold mb-1">{answer.question}</p>
-                              {answer.isCorrect ? (
-                                  <div className="flex items-center gap-2 text-green-600">
-                                      <CheckCircle className="h-4 w-4 shrink-0" /> 
-                                      <span>Your answer: {answer.userAnswer}</span>
-                                  </div>
-                              ) : (
-                                  <div className="space-y-1">
-                                      <div className="flex items-center gap-2 text-red-600">
-                                          <XCircle className="h-4 w-4 shrink-0" />
-                                          <span>Your answer: {answer.userAnswer}</span>
-                                      </div>
-                                          <div className="flex items-center gap-2 text-green-600 pl-6">
-                                          <span>Correct answer: {answer.correctAnswer}</span>
-                                      </div>
-                                  </div>
-                              )}
-                          </div>
-                      ))}
-                  </div>
-              </ScrollArea>
+              <div className="flex-1 min-h-0">
+                <ScrollArea className="h-full">
+                    <div className="space-y-4 pr-6">
+                        {challengeAnswers.map(answer => (
+                            <div key={answer.questionId} className="text-sm p-3 rounded-md bg-muted">
+                                <p className="font-semibold mb-1">{answer.question}</p>
+                                {answer.isCorrect ? (
+                                    <div className="flex items-center gap-2 text-green-600">
+                                        <CheckCircle className="h-4 w-4 shrink-0" /> 
+                                        <span>Your answer: {answer.userAnswer}</span>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-1">
+                                        <div className="flex items-center gap-2 text-red-600">
+                                            <XCircle className="h-4 w-4 shrink-0" />
+                                            <span>Your answer: {answer.userAnswer}</span>
+                                        </div>
+                                            <div className="flex items-center gap-2 text-green-600 pl-6">
+                                            <span>Correct answer: {answer.correctAnswer}</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </ScrollArea>
+              </div>
           </div>
 
-          <DialogFooter className="mt-4 flex-shrink-0">
+          <DialogFooter className="mt-4">
             <Button onClick={handleDialogClose} className="w-full">{isChallenge ? 'Back to Challenges' : 'Try Again'}</Button>
           </DialogFooter>
         </DialogContent>
@@ -594,5 +596,3 @@ export default function ReviewPage() {
     </div>
   );
 }
-
-    
