@@ -6,10 +6,8 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft,
   ArrowRight,
-  Bookmark,
   Search,
   BookOpen,
-  Copy,
   CheckCircle,
   XCircle,
   Trophy,
@@ -30,16 +28,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 const Flashcard: FC<{ question: QuizQuestion }> = ({ question }) => {
   const [isFlipped, setIsFlipped] = useState(false);
-  const { toast } = useToast();
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(`${question.question}\n\nAnswer: ${question.answer}`);
-    toast({
-      title: "Copied!",
-      description: "Question and answer copied to clipboard.",
-    });
-  };
-
+ 
   return (
     <div className="flashcard-container cursor-pointer" onClick={() => setIsFlipped(!isFlipped)}>
       <div className={cn("flashcard w-full h-80 relative", { "is-flipped": isFlipped })}>
@@ -62,9 +51,6 @@ const Flashcard: FC<{ question: QuizQuestion }> = ({ question }) => {
               {question.explanation && (
                 <p className="text-sm text-muted-foreground mt-4">{question.explanation}</p>
               )}
-               <Button variant="ghost" size="icon" className="absolute top-2 right-2" onClick={(e) => { e.stopPropagation(); handleCopy(); }}>
-                <Copy className="h-4 w-4" />
-              </Button>
             </CardContent>
           </Card>
         </div>
@@ -75,16 +61,6 @@ const Flashcard: FC<{ question: QuizQuestion }> = ({ question }) => {
 
 
 const StudyCard: FC<{ question: QuizQuestion }> = ({ question }) => {
-  const { toast } = useToast();
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(`${question.question}\n\nAnswer: ${question.answer}`);
-    toast({
-      title: "Copied!",
-      description: "Question and answer copied to clipboard.",
-    });
-  };
-
   return (
     <Card className="w-full min-h-80 shadow-lg relative p-6">
       <CardHeader className="p-0 mb-4">
@@ -117,9 +93,6 @@ const StudyCard: FC<{ question: QuizQuestion }> = ({ question }) => {
           </div>
         )}
       </CardContent>
-       <Button variant="ghost" size="icon" className="absolute top-4 right-4" onClick={handleCopy}>
-        <Copy className="h-4 w-4" />
-      </Button>
     </Card>
   );
 };
@@ -156,13 +129,18 @@ const QuizCard: FC<{
                 const isSelected = selectedAnswer === choice;
                 const isTheCorrectAnswer = choice === question.answer;
                 
+                let isDisabled = false;
+                if (!isChallenge && hasAnswered) {
+                    isDisabled = true;
+                }
+
                 const getChallengeClass = () => {
                     if (isSelected) return "bg-muted border-primary";
                     return "hover:bg-muted cursor-pointer";
                 };
 
                 const getNonChallengeClass = () => {
-                    if (!hasAnswered) return "hover:bg-muted";
+                    if (!hasAnswered) return "hover:bg-muted cursor-pointer";
                     if (isTheCorrectAnswer) return "border-green-500 bg-green-50";
                     if (isSelected && !isTheCorrectAnswer) return "border-red-500 bg-red-50";
                     return "opacity-50";
@@ -171,10 +149,11 @@ const QuizCard: FC<{
                 return (
                     <Card 
                         key={choice}
-                        onClick={() => handleAnswerClick(choice)}
+                        onClick={() => !isDisabled && handleAnswerClick(choice)}
                         className={cn(
-                            "p-4 cursor-pointer transition-all",
-                            isChallenge ? getChallengeClass() : getNonChallengeClass()
+                            "p-4 transition-all",
+                            isChallenge ? getChallengeClass() : getNonChallengeClass(),
+                            isDisabled ? "cursor-not-allowed" : "cursor-pointer"
                         )}
                     >
                         <div className="flex items-center justify-between">
@@ -232,7 +211,6 @@ export default function ReviewPage() {
   const [mode, setMode] = useState<"study" | "flashcard" | "quiz">("study");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
-  const [marked, setMarked] = useState<number[]>([]);
   const [quizScore, setQuizScore] = useState(0);
   const [showResults, setShowResults] = useState(false);
   const [answeredCurrent, setAnsweredCurrent] = useState(false);
@@ -293,13 +271,9 @@ export default function ReviewPage() {
             }
             user.lastChallengeDate = today;
             
-            const pointsPerQuestion = { easy: 5, medium: 10, hard: 15 };
-            const pointsEarned = finalScore * pointsPerQuestion[challengeDifficulty as keyof typeof pointsPerQuestion];
-            user.points = (user.points || 0) + pointsEarned;
-        } else if (!isChallenge) {
-            // Award points for non-challenge quizzes based on correct answers
-            const pointsPerQuestion = { easy: 1, medium: 2, hard: 3 };
-            const pointsEarned = finalScore * pointsPerQuestion[challengeDifficulty as keyof typeof pointsPerQuestion];
+            const pointsPerQuestion = { easy: 25, medium: 75, hard: 150 };
+            const basePoints = pointsPerQuestion[challengeDifficulty as keyof typeof pointsPerQuestion];
+            const pointsEarned = basePoints + (finalScore * 2); // Base points + bonus per correct answer
             user.points = (user.points || 0) + pointsEarned;
         }
         
@@ -333,18 +307,6 @@ export default function ReviewPage() {
     setCurrentIndex((prev) => (prev - 1 + questions.length) % questions.length);
   };
   
-  const toggleMark = () => {
-    if (!currentQuestion) return;
-    const questionId = currentQuestion.id;
-    if (marked.includes(questionId)) {
-      setMarked(marked.filter(id => id !== questionId));
-      toast({ title: "Question unmarked." });
-    } else {
-      setMarked([...marked, questionId]);
-      toast({ title: "Question marked for later." });
-    }
-  };
-
   const handleAnswer = (correct: boolean, answer: string) => {
     const newAnswers = [...challengeAnswers];
     const existingAnswerIndex = newAnswers.findIndex(a => a.questionId === currentQuestion.id);
@@ -381,10 +343,8 @@ export default function ReviewPage() {
                 description: "Better luck next time!",
             });
         }
-         setAnsweredCurrent(true);
-    } else {
-        setAnsweredCurrent(true);
     }
+    setAnsweredCurrent(true);
   };
 
   const resetQuizState = () => {
@@ -426,7 +386,7 @@ export default function ReviewPage() {
     <div className="container mx-auto p-4 max-w-2xl">
       <Dialog open={showResults} onOpenChange={handleDialogClose}>
         <DialogContent className="max-h-[90dvh] flex flex-col">
-          <DialogHeader className="items-center text-center">
+          <DialogHeader className="items-center text-center shrink-0">
             <Trophy className="h-16 w-16 text-yellow-400" />
             <DialogTitle className="text-2xl font-bold font-headline">Quiz Complete!</DialogTitle>
             <DialogDescription>
@@ -434,49 +394,49 @@ export default function ReviewPage() {
             </DialogDescription>
           </DialogHeader>
            
-           <div className="flex-1 min-h-0">
-             <div className="space-y-4 h-full flex flex-col">
-                {isChallenge && (
-                    (quizScore / questions.length) >= 0.85 ? (
-                        <div className="text-center text-green-600 font-semibold p-4 bg-green-50 rounded-md shrink-0">
-                            <p>Congratulations! You passed the challenge. Your streak is safe!</p>
-                        </div>
-                    ) : (
-                        <div className="text-center text-red-600 font-semibold p-4 bg-red-50 rounded-md shrink-0">
-                            <p>So close! You needed 85% to pass. Try another challenge!</p>
-                        </div>
-                    )
-                )}
+          <div className="flex-1 min-h-0">
+            <div className="h-full flex flex-col">
+              {isChallenge && (
+                  (quizScore / questions.length) >= 0.85 ? (
+                      <div className="text-center text-green-600 font-semibold p-4 bg-green-50 rounded-md shrink-0">
+                          <p>Congratulations! You passed the challenge. Your streak is safe!</p>
+                      </div>
+                  ) : (
+                      <div className="text-center text-red-600 font-semibold p-4 bg-red-50 rounded-md shrink-0">
+                          <p>So close! You needed 85% to pass. Try another challenge!</p>
+                      </div>
+                  )
+              )}
 
-                <ScrollArea className="h-64 pr-6 -mr-6 mt-4">
-                    <div className="space-y-4">
-                        {challengeAnswers.map(answer => (
-                            <div key={answer.questionId} className="text-sm p-3 rounded-md bg-muted">
-                                <p className="font-semibold mb-1">{answer.question}</p>
-                                {answer.isCorrect ? (
-                                    <div className="flex items-center gap-2 text-green-600">
-                                       <CheckCircle className="h-4 w-4 shrink-0" /> 
-                                       <span>Your answer: {answer.userAnswer}</span>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-1">
-                                        <div className="flex items-center gap-2 text-red-600">
-                                            <XCircle className="h-4 w-4 shrink-0" />
-                                            <span>Your answer: {answer.userAnswer}</span>
-                                        </div>
-                                         <div className="flex items-center gap-2 text-green-600 pl-6">
-                                            <span>Correct answer: {answer.correctAnswer}</span>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                </ScrollArea>
-              </div>
-           </div>
+              <ScrollArea className="flex-1 pr-6 -mr-6 mt-4 h-64">
+                  <div className="space-y-4">
+                      {challengeAnswers.map(answer => (
+                          <div key={answer.questionId} className="text-sm p-3 rounded-md bg-muted">
+                              <p className="font-semibold mb-1">{answer.question}</p>
+                              {answer.isCorrect ? (
+                                  <div className="flex items-center gap-2 text-green-600">
+                                      <CheckCircle className="h-4 w-4 shrink-0" /> 
+                                      <span>Your answer: {answer.userAnswer}</span>
+                                  </div>
+                              ) : (
+                                  <div className="space-y-1">
+                                      <div className="flex items-center gap-2 text-red-600">
+                                          <XCircle className="h-4 w-4 shrink-0" />
+                                          <span>Your answer: {answer.userAnswer}</span>
+                                      </div>
+                                          <div className="flex items-center gap-2 text-green-600 pl-6">
+                                          <span>Correct answer: {answer.correctAnswer}</span>
+                                      </div>
+                                  </div>
+                              )}
+                          </div>
+                      ))}
+                  </div>
+              </ScrollArea>
+            </div>
+          </div>
 
-          <DialogFooter>
+          <DialogFooter className="shrink-0 mt-4">
             <Button onClick={handleDialogClose} className="w-full">{isChallenge ? 'Back to Challenges' : 'Try Again'}</Button>
           </DialogFooter>
         </DialogContent>
@@ -560,17 +520,6 @@ export default function ReviewPage() {
           <p className="text-sm text-muted-foreground">
             Question {currentIndex + 1} of {questions.length}
           </p>
-          <div className="flex items-center gap-4">
-            {!isChallenge && (
-              <Button variant="outline" size="sm" onClick={toggleMark} disabled={!currentQuestion}>
-                <Bookmark className={cn("h-4 w-4 mr-2", currentQuestion && marked.includes(currentQuestion.id) && "fill-primary text-primary")} />
-                Mark for later
-              </Button>
-            )}
-             {isChallenge && (
-               <Badge variant="outline" className="text-base">Score: {challengeAnswers.filter(a => a.isCorrect).length}</Badge>
-            )}
-          </div>
         </div>
         <Progress value={progressValue} />
         <div className="flex justify-between items-center">
@@ -587,7 +536,3 @@ export default function ReviewPage() {
     </div>
   );
 }
-
-    
-
-    
