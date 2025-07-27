@@ -179,7 +179,7 @@ export default function TimerPage() {
   }
 
   return (
-    <div className="container mx-auto p-4 max-w-2xl flex flex-col h-full">
+    <div className="container mx-auto p-4 max-w-2xl flex flex-col">
       <header className="flex items-center gap-2 mb-6">
         <Clock className="h-8 w-8 text-primary" />
         <h1 className="text-3xl font-bold font-headline">Pomodoro Timer</h1>
