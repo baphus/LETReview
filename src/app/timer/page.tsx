@@ -156,13 +156,6 @@ export default function TimerPage() {
   };
   
    const handleIncorrectAnswer = () => {
-    if (quizStreak > 0) {
-        toast({
-            variant: "destructive",
-            title: "Streak Lost!",
-            description: "Your streak and session points have been reset.",
-        });
-    }
     handleIncorrectQuizAnswer();
   };
   
@@ -268,3 +261,5 @@ export default function TimerPage() {
     </div>
   );
 }
+
+    

@@ -111,7 +111,11 @@ export default function DailyPage() {
         localStorage.setItem("userProfile", JSON.stringify(user));
         setStreakBroken(false);
         setUserStats(prev => ({ ...prev, points: user.points, streak: user.streak }));
-        toast({ title: "Streak Restored!", description: `You spent ${restoreStreakCost} points.`});
+        toast({
+          title: "Streak Restored!",
+          description: `You spent ${restoreStreakCost} points.`,
+          className: "bg-green-100 border-green-300"
+        });
       }
     } else {
       toast({ variant: "destructive", title: "Not enough points!", description: `You need ${restoreStreakCost} points to restore your streak.`});
@@ -274,5 +278,7 @@ export default function DailyPage() {
     </div>
   );
 }
+
+    
 
     

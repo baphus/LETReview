@@ -62,7 +62,11 @@ export default function ProfilePage() {
         const updatedUser = { ...user, name: newName.trim() };
         saveUser(updatedUser);
         setEditingName(false);
-        toast({ title: "Success", description: "Your name has been updated."});
+        toast({
+          title: "Success",
+          description: "Your name has been updated.",
+          className: "bg-green-100 border-green-300"
+        });
     }
   };
 
@@ -74,7 +78,11 @@ export default function ProfilePage() {
             passingScore: passingScore,
         };
         saveUser(updatedUser);
-        toast({ title: "Success", description: "Your settings have been saved."});
+        toast({
+          title: "Success",
+          description: "Your settings have been saved.",
+          className: "bg-green-100 border-green-300"
+        });
     }
   }
 
@@ -226,3 +234,5 @@ export default function ProfilePage() {
     </div>
   );
 }
+
+    

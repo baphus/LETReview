@@ -74,7 +74,11 @@ export default function HomePage() {
         localStorage.setItem("userProfile", JSON.stringify(updatedUser));
         setUser(updatedUser);
         setEditingPet(null);
-        toast({ title: "Pet renamed!", description: `Your pet is now named ${newPetName.trim()}.`});
+        toast({
+          title: "Pet renamed!",
+          description: `Your pet is now named ${newPetName.trim()}.`,
+          className: "bg-green-100 border-green-300"
+        });
     }
   }
 
@@ -187,3 +191,5 @@ export default function HomePage() {
     </div>
   );
 }
+
+    

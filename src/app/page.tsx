@@ -320,6 +320,7 @@ export default function ReviewPage() {
             toast({
                 title: "Challenge Passed!",
                 description: `You earned ${pointsEarned} points and secured your streak!`,
+                className: "bg-green-100 border-green-300"
             });
         }
         
@@ -446,8 +447,8 @@ export default function ReviewPage() {
 
   return (
     <div className="container mx-auto p-4 max-w-2xl">
-      <Dialog open={showResults} onOpenChange={handleDialogClose}>
-        <DialogContent>
+       <Dialog open={showResults} onOpenChange={handleDialogClose}>
+        <DialogContent className="flex flex-col h-[90dvh] max-h-[600px]">
           <DialogHeader className="items-center text-center">
             <Trophy className="h-16 w-16 text-yellow-400" />
             <DialogTitle className="text-2xl font-bold font-headline">Quiz Complete!</DialogTitle>
@@ -456,20 +457,20 @@ export default function ReviewPage() {
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4">
+          <div className="flex-1 min-h-0">
               {isChallenge && (
                   (quizScore / questions.length * 100) >= passingScore ? (
-                      <div className="text-center text-green-600 font-semibold p-4 bg-green-50 rounded-md">
+                      <div className="text-center text-green-600 font-semibold p-4 bg-green-50 rounded-md mb-4">
                           <p>Congratulations! You passed the challenge. Your streak is safe!</p>
                       </div>
                   ) : (
-                      <div className="text-center text-red-600 font-semibold p-4 bg-red-50 rounded-md">
+                      <div className="text-center text-red-600 font-semibold p-4 bg-red-50 rounded-md mb-4">
                           <p>So close! You needed {passingScore}% to pass. Try another challenge!</p>
                       </div>
                   )
               )}
 
-              <ScrollArea className="h-64">
+              <ScrollArea className="h-full">
                   <div className="space-y-4 pr-6">
                       {challengeAnswers.map(answer => (
                           <div key={answer.questionId} className="text-sm p-3 rounded-md bg-muted">
@@ -594,3 +595,5 @@ export default function ReviewPage() {
     </div>
   );
 }
+
+    

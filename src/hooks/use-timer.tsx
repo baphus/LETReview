@@ -162,6 +162,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
                 toast({
                     title: `Session Complete!`,
                     description: `You earned ${timerState.sessionPoints} points.`,
+                    className: "bg-green-100 border-green-300"
                 });
             }
       }
@@ -265,7 +266,8 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
           isActive: false,
           endTime: null,
           quizStreak: 0,
-          streakMultiplier: 1
+          streakMultiplier: 1,
+          sessionPoints: 0,
         }); 
     }
   };
@@ -293,3 +295,5 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     </TimerContext.Provider>
   );
 }
+
+    
