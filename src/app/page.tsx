@@ -11,6 +11,7 @@ import {
   CheckCircle,
   XCircle,
   Trophy,
+  Shuffle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -87,7 +88,7 @@ const StudyCard: FC<{ question: QuizQuestion }> = ({ question }) => {
             })}
         </div>
         {question.explanation && (
-          <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
+          <div className="p-4 bg-blue-50 border-blue-200 rounded-md">
             <h4 className="font-semibold text-blue-800 mb-1">Explanation</h4>
             <p className="text-sm text-blue-700">{question.explanation}</p>
           </div>
@@ -216,6 +217,7 @@ export default function ReviewPage() {
   const [answeredCurrent, setAnsweredCurrent] = useState(false);
   const [challengeAnswers, setChallengeAnswers] = useState<ChallengeAnswer[]>([]);
   const [passingScore, setPassingScore] = useState(85);
+  const [isShuffled, setIsShuffled] = useState(false);
   
   const { toast } = useToast();
 
@@ -226,11 +228,12 @@ export default function ReviewPage() {
     const savedProgress = localStorage.getItem('reviewProgress');
     if (savedProgress) {
       try {
-        const { category, mode, currentIndex, searchTerm } = JSON.parse(savedProgress);
+        const { category, mode, currentIndex, searchTerm, isShuffled: savedIsShuffled } = JSON.parse(savedProgress);
         setCategory(category || 'gen_education');
         setMode(mode || 'study');
         setCurrentIndex(currentIndex || 0);
         setSearchTerm(searchTerm || "");
+        setIsShuffled(savedIsShuffled || false);
       } catch (e) {
         console.error("Failed to parse review progress", e);
       }
@@ -246,9 +249,10 @@ export default function ReviewPage() {
       mode,
       currentIndex,
       searchTerm,
+      isShuffled,
     };
     localStorage.setItem('reviewProgress', JSON.stringify(progress));
-  }, [category, mode, currentIndex, searchTerm, isChallenge]);
+  }, [category, mode, currentIndex, searchTerm, isChallenge, isShuffled]);
 
   useEffect(() => {
     const savedUser = localStorage.getItem("userProfile");
@@ -273,15 +277,23 @@ export default function ReviewPage() {
        return shuffled.slice(0, challengeCount);
     }
 
-    // For regular mode, filter by search term and shuffle choices
-    const shuffledQuestions = baseQuestions
-      .map(q => ({ ...q, choices: [...q.choices].sort(() => Math.random() - 0.5) }));
-      
-    return shuffledQuestions
+    // For regular mode, filter by search term
+    let filteredQuestions = baseQuestions
       .filter((q) =>
         q.question.toLowerCase().includes(searchTerm.toLowerCase())
       );
-  }, [category, searchTerm, isChallenge, challengeCount, challengeDifficulty, challengeCategory]);
+
+    if(isShuffled) {
+        // Shuffle questions but keep choices in their original order for consistency in study/quiz mode
+        return [...filteredQuestions].sort(() => Math.random() - 0.5)
+            .map(q => ({ ...q, choices: [...q.choices].sort(() => Math.random() - 0.5) }));
+    }
+    
+    // Always shuffle choices for variety, even if questions aren't shuffled
+    return filteredQuestions
+      .map(q => ({ ...q, choices: [...q.choices].sort(() => Math.random() - 0.5) }));
+
+  }, [category, searchTerm, isChallenge, challengeCount, challengeDifficulty, challengeCategory, isShuffled]);
 
   useEffect(() => {
     if (isChallenge) {
@@ -414,6 +426,16 @@ export default function ReviewPage() {
     }
   }
 
+  const handleShuffleToggle = () => {
+    setIsShuffled(prev => !prev);
+    setCurrentIndex(0);
+    resetQuizState();
+    toast({
+        title: isShuffled ? "Shuffle Off" : "Shuffle On",
+        description: isShuffled ? "Questions are now in order." : "Questions have been shuffled.",
+    });
+  }
+
   useEffect(() => {
      if (!isChallenge) {
       resetQuizState();
@@ -514,7 +536,7 @@ export default function ReviewPage() {
                 </div>
             </header>
             
-            <div className="flex flex-col sm:flex-row gap-4 justify-between">
+            <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
                 <Tabs value={category} onValueChange={(value) => {
                     setCategory(value as "gen_education" | "professional");
                 }}>
@@ -524,13 +546,24 @@ export default function ReviewPage() {
                 </TabsList>
                 </Tabs>
 
-                <Tabs value={mode} onValueChange={(value) => setMode(value as "study" | "flashcard" | "quiz")}>
-                <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="study">Study</TabsTrigger>
-                    <TabsTrigger value="flashcard">Flashcard</TabsTrigger>
-                    <TabsTrigger value="quiz">Quiz</TabsTrigger>
-                </TabsList>
-                </Tabs>
+                <div className="flex gap-2 w-full sm:w-auto">
+                    <Tabs value={mode} onValueChange={(value) => setMode(value as "study" | "flashcard" | "quiz")} className="w-full">
+                        <TabsList className="grid w-full grid-cols-3">
+                            <TabsTrigger value="study">Study</TabsTrigger>
+                            <TabsTrigger value="flashcard">Flashcard</TabsTrigger>
+                            <TabsTrigger value="quiz">Quiz</TabsTrigger>
+                        </TabsList>
+                    </Tabs>
+                     <Button 
+                        variant={isShuffled ? "default" : "outline"} 
+                        size="icon" 
+                        onClick={handleShuffleToggle}
+                        aria-label="Shuffle questions"
+                        className="shrink-0"
+                     >
+                        <Shuffle className="h-4 w-4" />
+                    </Button>
+                </div>
             </div>
         </>
       )}
