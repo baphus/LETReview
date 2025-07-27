@@ -2739,6 +2739,906 @@ export const sampleQuestions: QuizQuestion[] = [
     question: "In an English test, eight students obtained the following scores: 10, 15, 12, 18, 16, 24, 12, and 14. What is the median score?",
     choices: ["14", "15.5", "14.5", "15"],
     answer: "15",
+  },
+  {
+    id: 343,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "In one of his poems, the Filipino author Zulueta da Costa said that the Filipinos are like the Molave. What figure of speech was used?",
+    choices: ["simile", "personification", "metaphor", "hyperbole"],
+    answer: "simile",
+    explanation: ""
+  },
+  {
+    id: 344,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "Helen of Troy is the face who launched a thousand ships .What figure of speech is used in the given sentence?",
+    choices: ["ellipsis", "synecdoche", "alliteration", "irony"],
+    answer: "synecdoche",
+    explanation: ""
+  },
+  {
+    id: 345,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "Si Ana at Ariadne ay masisipag na mag-aaral. Ano ang mali sa pangungusap?",
+    choices: ["Si", "at", "masisipag", "mag-aaral", "Walang mali"],
+    answer: "Si",
+    explanation: ""
+  },
+  {
+    id: 346,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "________ mo ng mga damit ang iyong kapatid sa dormitory.",
+    choices: ["Dalhin", "Dalahin", "Dalhan", "Dadalahin"],
+    answer: "Dalhan",
+    explanation: ""
+  },
+  {
+    id: 347,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "________ sa batas, hindi maaaring isakdal ng dalawang beses ang isang akusado para sa iisang pagkakasala.",
+    choices: ["Maliban", "Ayon", "Ayon kay", "Marahil"],
+    answer: "Ayon",
+    explanation: ""
+  },
+  {
+    id: 348,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "nawalang-malay : hinimatay : : naghihingalo : ______",
+    choices: ["nasa bingit ng kamatayan", "namatay", "napagod", "nahihilo"],
+    answer: "nasa bingit ng kamatayan",
+    explanation: ""
+  },
+  {
+    id: 349,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "Isahan : gaano : : _______",
+    choices: ["maramihan : gaa-gaano", "maramihan : gaanuano", "maramihan : gaga-gaano", "maramihan : ganuano"],
+    answer: "maramihan : gaa-gaano",
+    explanation: ""
+  },
+  {
+    id: 350,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "Masalimuot ang buhay ng taong kapit sa patalim.",
+    choices: ["malungkot", "masaya", "magulo", "mapayapa"],
+    answer: "magulo",
+    explanation: ""
+  },
+  {
+    id: 351,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "Naglipana sa lansangan ang masamang-loob lalo na kung gabi.",
+    choices: ["namasyal", "nagkalat", "nagtatago", "nagmuni muni"],
+    answer: "nagkalat",
+    explanation: ""
+  },
+  {
+    id: 352,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "Siya ang “Ama ng Zarsuelang Tagalog”?",
+    choices: ["Aurelio Tolentino", "N.V.M Gonzalez", "Alejandro Abadilla", "Severino Reyes"],
+    answer: "Severino Reyes",
+    explanation: ""
+  },
+  {
+    id: 353,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "Alin sa mga sumusunod ang HINDI epiko ng Mindanao?",
+    choices: ["Indarapatra at Sulayman", "Alim", "Bidasari", "Bantugan"],
+    answer: "Alim",
+    explanation: ""
+  },
+  {
+    id: 354,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "Ang titik “ng” sa Alpabetong Filipino ay nagmula sa alpabetong _____.",
+    choices: ["Ingles", "Abecedario", "Romano", "Abakada"],
+    answer: "Abakada",
+    explanation: ""
+  },
+  {
+    id: 355,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "Ilang titik ang hiniram ng Alpabetong Filipino mula sa Alpabetong Ingles?",
+    choices: ["6", "7", "8", "9"],
+    answer: "7",
+    explanation: ""
+  },
+  {
+    id: 356,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "Aling salita ang klaster?",
+    choices: ["palma", "basta", "pluma", "basket"],
+    answer: "pluma",
+    explanation: ""
+  },
+  {
+    id: 357,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "”Ang aking pag-ibig ay tanging sa iyo lamang .” Ibigay ang ayos ng pangungusap na ito.",
+    choices: ["payak", "tambalan", "karaniwan", "di karaniwan"],
+    answer: "di karaniwan",
+    explanation: ""
+  },
+  {
+    id: 358,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "Aling Salita ang may diptonggo?",
+    choices: ["buwis", "bayan", "buhay", "iwas"],
+    answer: "buhay",
+    explanation: ""
+  },
+  {
+    id: 359,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "Ang epiko tungkol sa kasaysayan ng pag iibigan ng mga bathala na nagmula sa Iloilo ay ang ______ .",
+    choices: ["Hinilawod", "Biag-ni- Lam-ang", "Bidasari", "Maragtas"],
+    answer: "Hinilawod",
+    explanation: ""
+  },
+  {
+    id: 360,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "Anong teorya ng wika ang nagsasabing ang wika ay nailikha bunga ng masidhing damdamin ng tao?",
+    choices: ["Bow-wow", "Pooh-pooh", "Ding-dong", "Yoheho"],
+    answer: "Pooh-pooh",
+    explanation: ""
+  },
+  {
+    id: 361,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "”Natutulog ba ang Diyos?” Ang pahayag sa itaas ay halimbawa ng anong uri ng tayutay?",
+    choices: ["Pagdaramdam", "Tanong Retorikal", "Pagtanggi", "Pagsalungat"],
+    answer: "Tanong Retorikal",
+    explanation: ""
+  },
+  {
+    id: 362,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "Ano ang nagging pangalan ng wikang pambansa noong 1959?",
+    choices: ["Pilipino", "Filipino", "Tagalog", "Wikang Pambansa"],
+    answer: "Pilipino",
+    explanation: ""
+  },
+  {
+    id: 363,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "The captain of the pep squad are working feverishly to boost the team`s morale. No error.",
+    choices: ["pep-squad", "are", "to boost", "team`s morale", "No error"],
+    answer: "are",
+    explanation: ""
+  },
+  {
+    id: 364,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "The teachers as well as the guidance counselor is accompanying the students on a field trip. No error.",
+    choices: ["teachers", "guidance counselor", "is accompanying", "on a field trip", "No error"],
+    answer: "is accompanying",
+    explanation: ""
+  },
+  {
+    id: 365,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "Simba and Nala is my favorite characters in The Lion King. No error.",
+    choices: ["and", "is", "The Lion King", "No error"],
+    answer: "is",
+    explanation: ""
+  },
+  {
+    id: 366,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "Tne committee are meeting on Friday to discuss the details of the charaity ball. No error.",
+    choices: ["are meeting", "on Friday", "to discuss", "charity ball", "No error"],
+    answer: "are meeting",
+    explanation: ""
+  },
+  {
+    id: 367,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "Mumps, which are a dangerous disease, can be prevented through vaccination . No error.",
+    choices: ["Mumps", "are", "disease", "vaccination", "No error"],
+    answer: "are",
+    explanation: ""
+  },
+  {
+    id: 368,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "The student leaders ______ surveys to determine the students` need since last week.",
+    choices: ["has conducted", "have conducted", "has conducting", "have been conducting"],
+    answer: "have been conducting",
+    explanation: ""
+  },
+  {
+    id: 369,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "The President _______ the bill on Children`s Right last Monday.",
+    choices: ["vetoes", "vetos", "vetoed", "vetoid"],
+    answer: "vetoed",
+    explanation: ""
+  },
+  {
+    id: 370,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "The Committee on Ethics ____ every Friday.",
+    choices: ["meets", "meet", "has met", "have met"],
+    answer: "meets",
+    explanation: ""
+  },
+  {
+    id: 371,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "It is estimated that in the present century, there ______ about 954 million illiterate adults.",
+    choices: ["is", "are", "was", "were"],
+    answer: "are",
+    explanation: ""
+  },
+  {
+    id: 372,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "In 1960, 58% of illiterates ______ women; the corresponding figure today is more than 60%.",
+    choices: ["is", "are", "was", "were"],
+    answer: "were",
+    explanation: ""
+  },
+  {
+    id: 373,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "The warm humid air irritated he.",
+    choices: ["irritated he.", "irritated him.", "irritation him.", "irritating him."],
+    answer: "irritated him.",
+    explanation: ""
+  },
+  {
+    id: 374,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "Keep on reading and you will learn more.",
+    choices: ["Keep on reading", "Keep to read", "Keep on read", "Keeping on reading"],
+    answer: "Keep on reading",
+    explanation: ""
+  },
+  {
+    id: 375,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "Even though Mariel studied hard, she got the highest mark.",
+    choices: ["Even though Mariel studied hard", "But Mariel hard", "Because Mariel studied hard", "While Mariel studied hard"],
+    answer: "Because Mariel studied hard",
+    explanation: ""
+  },
+  {
+    id: 376,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "The Carlos Palanca Memorial Award for Literature were given to different literary pieces that excel in their respective genres.",
+    choices: ["were given to different literary pieces", "is given by different literary pieces", "are given at different literary pieces", "is given to different literary pieces"],
+    answer: "is given to different literary pieces",
+    explanation: ""
+  },
+  {
+    id: 377,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "We hike Mt.Apo half an hour.",
+    choices: ["half an hour.", "for half an hour.", "at half an hour.", "by half an hour."],
+    answer: "for half an hour.",
+    explanation: ""
+  },
+  {
+    id: 378,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "Kmono: ______ :: kilt : Scandinavian",
+    choices: ["Indian", "Indonesian", "Chinese", "Japanese"],
+    answer: "Japanese",
+    explanation: ""
+  },
+  {
+    id: 379,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "king of beats : lion :: king of birds : _______",
+    choices: ["robin", "sparrow", "eagle", "falcon"],
+    answer: "eagle",
+    explanation: ""
+  },
+  {
+    id: 380,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "Jewish : kosher : : halal",
+    choices: ["Muslim", "Buddhist", "Christian", "Pagans"],
+    answer: "Muslim",
+    explanation: ""
+  },
+  {
+    id: 381,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "Catholic : priest : : Buddhist : ______",
+    choices: ["Imam", "rabbi", "lama", "pope"],
+    answer: "lama",
+    explanation: ""
+  },
+  {
+    id: 382,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "laity : lay people : : clergy : ______",
+    choices: ["clergymen", "clerics", "clergy", "clerks"],
+    answer: "clergymen",
+    explanation: ""
+  },
+  {
+    id: 383,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "Ano ang tamang ispeling ng salitang barbershop sa Filipino?",
+    choices: ["barbersyap", "barbershop", "barbershap", "barbersiyap"],
+    answer: "barbershop",
+    explanation: ""
+  },
+  {
+    id: 384,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "” Ikaw ang aking mahal.” Ibigay ang ayos ng pangungusap na ito .",
+    choices: ["payak", "tambalan", "karaniwan", "di karaniwan"],
+    answer: "di karaniwan",
+    explanation: ""
+  },
+  {
+    id: 385,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "Alin sa mga sumusunod ang HINDI tulang pasalaysay?",
+    choices: ["Moro-moro", "Epiko", "Awit", "korido"],
+    answer: "Moro-moro",
+    explanation: ""
+  },
+  {
+    id: 386,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "Alin sa mga sumusunod ang HINDI epiko ng Bisaya?",
+    choices: ["Lagda", "Maragtas", "Bidasari", "Hinilawod"],
+    answer: "Bidasari",
+    explanation: ""
+  },
+  {
+    id: 387,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "Alin sa mga sumusunod ang isang epiko ng mga Ifugao?",
+    choices: ["Ibalon at Aslon", "Hudhod", "Biag ni Lam-ang", "Haraya"],
+    answer: "Hudhod",
+    explanation: ""
+  },
+  {
+    id: 388,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "”Nagtaksil si Adrian.” Ibigay ang ayos ng pangungusap na ito.",
+    choices: ["payak", "tambalan", "karaniwan", "di karaniwan"],
+    answer: "karaniwan",
+    explanation: ""
+  },
+  {
+    id: 389,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "Ito ay ang pag-aaral ng makabuluhang tunog ng isang wika.",
+    choices: ["Ponolohiya", "Morpolohiya", "Sintaks", "Palabuuan"],
+    answer: "Ponolohiya",
+    explanation: ""
+  },
+  {
+    id: 390,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "Siya ang may-akda ng nobelang “Banaag at Sikat”?",
+    choices: ["Jose dela Cruz", "Lope K. Santos", "Jose Corazon de Jesus", "Emilio Jacinto"],
+    answer: "Lope K. Santos",
+    explanation: ""
+  },
+  {
+    id: 391,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "Isang awiting bayan na tungkol sa pakikipagkaibigan ang _____ .",
+    choices: ["sambotani", "salagintok", "daeleng", "oyayi"],
+    answer: "salagintok",
+    explanation: ""
+  },
+  {
+    id: 392,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "Siya ay si “Dolores Manapat”.",
+    choices: ["Graciano Lopez Jaena", "N.V.M. Gonzalez", "Andres Bonifacio", "Marcelo H. del Pilar"],
+    answer: "Marcelo H. del Pilar",
+    explanation: ""
+  },
+  {
+    id: 393,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "The process of comparing one quantity with corresponding standard is called ______ .",
+    choices: ["Measurement", "Formulation", "Interpolation", "Extrapolation"],
+    answer: "Measurement",
+    explanation: ""
+  },
+  {
+    id: 394,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "Matter is anything that has ______.",
+    choices: ["Weight and volume", "Mass and volume", "Weight and mass", "Mass and shape"],
+    answer: "Mass and volume",
+    explanation: ""
+  },
+  {
+    id: 395,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "A student walks from home to school 3 blocks away and then returns home for lunch. After lunch, he goes back to school. His total displacement is _______ .",
+    choices: ["0 block", "3 block", "6 blocks", "9 blocks"],
+    answer: "3 block",
+    explanation: ""
+  },
+  {
+    id: 396,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "What property of matter is involved in the sign, “Fasten Your Seat Belt”?",
+    choices: ["Impenetrability", "Inertia", "Acceleration", "Interaction"],
+    answer: "Inertia",
+    explanation: ""
+  },
+  {
+    id: 397,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "Which of the following situations is true as a boat moves from salty sea to fresh water river?",
+    choices: ["It sinks deeper.", "It floats higher.", "It stays at the same level.", "It moves faster."],
+    answer: "It sinks deeper.",
+    explanation: ""
+  },
+  {
+    id: 398,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "Which of the following is conserved when a pendulum is swinging?",
+    choices: ["Mass", "Momentum", "Energy", "Weight"],
+    answer: "Energy",
+    explanation: ""
+  },
+  {
+    id: 399,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "Which statement best explains why ice is a good refrigerant ?",
+    choices: ["It cools by evaporation.", "It absorbs heat while melting.", "It conducts heat quickly.", "It does not melt inside the refrigerator."],
+    answer: "It absorbs heat while melting.",
+    explanation: ""
+  },
+  {
+    id: 400,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "An object becomes positively charge if it _________ .",
+    choices: ["gains protons", "gains electron", "loses protons", "loses electrons"],
+    answer: "loses electrons",
+    explanation: ""
+  },
+  {
+    id: 401,
+    category: "gen_education",
+    difficulty: "hard",
+    question: "The force that holds the atoms and molecules together to form larger bodies is known as",
+    choices: ["Gravitational force", "Electromagnetic force", "Weak nuclear force", "Strong nuclear force"],
+    answer: "Strong nuclear force",
+    explanation: ""
+  },
+  {
+    id: 402,
+    category: "gen_education",
+    difficulty: "hard",
+    question: "What is the maximum number of electrons that can be accommodated in n=4?",
+    choices: ["2", "8", "16", "32"],
+    answer: "32",
+    explanation: ""
+  },
+  {
+    id: 403,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "It is characterized by shared experiences and mutual responsibilities.",
+    choices: ["Gesellschaft", "Gemeinchaft", "Enculturation", "Acculturation"],
+    answer: "Gemeinchaft",
+    explanation: ""
+  },
+  {
+    id: 404,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "It features the exchange of goods, money and services .",
+    choices: ["Gesellschaft", "Gemeinchaft", "Enculturation", "Acculturation"],
+    answer: "Gesellschaft",
+    explanation: ""
+  },
+  {
+    id: 405,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "The longest revolt in the Philippine History is called the ______ .",
+    choices: ["Dagohoy revolt", "Diego Silang revolt", "Gabriela Silang revolt", "Palaris revolt"],
+    answer: "Dagohoy revolt",
+    explanation: ""
+  },
+  {
+    id: 406,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "Violation of human rights is a violation of the _____ of persons.",
+    choices: ["dignity", "intelligence", "emotions", "freedom"],
+    answer: "dignity",
+    explanation: ""
+  },
+  {
+    id: 407,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "What is the foundation of genuine peace and reconciliation?",
+    choices: ["Joy", "Confrontation", "happinness", "Social justice"],
+    answer: "Social justice",
+    explanation: ""
+  },
+  {
+    id: 408,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "What was our government under the 1935 constitution ?",
+    choices: ["Revolutionary", "Monarchy", "Commonwealth", "Military"],
+    answer: "Commonwealth",
+    explanation: ""
+  },
+  {
+    id: 409,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "What values are being promoted by the Philippine Government when it launched the “Juan Time” project in 2011 ?",
+    choices: ["Punctuality", "Austerity", "Palabra de Honor", "Close family ties"],
+    answer: "Punctuality",
+    explanation: ""
+  },
+  {
+    id: 410,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "If you seeing your ways of doing things as the right way and everybody else`s as the wrong way, you tend to have the the attitude called",
+    choices: ["Cultural relativism", "Ethical relativism", "Ethnocentrism", "Xenophobia"],
+    answer: "Ethnocentrism",
+    explanation: ""
+  },
+  {
+    id: 411,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "It refers to any liability to pay money arising out of a contract , express or implied .",
+    choices: ["Poll tax", "Tax", "Debt", "Debtors"],
+    answer: "Debt",
+    explanation: ""
+  },
+  {
+    id: 412,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "He coined the term “survival of the fittest.”",
+    choices: ["August Comte", "Karl Marx", "Herbert Spencer", "Arnold Toynbee"],
+    answer: "Herbert Spencer",
+    explanation: ""
+  },
+  {
+    id: 413,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "The biologist who probably first used the term “cell” was ______.",
+    choices: ["Hooke", "Browne", "Leeuwenhoek", "Schleiden"],
+    answer: "Hooke",
+    explanation: ""
+  },
+  {
+    id: 414,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "The following means help in controlling floods , except",
+    choices: ["Reforestation", "Deforestation", "Crop rotation", "Construction of flood ways"],
+    answer: "Deforestation",
+    explanation: ""
+  },
+  {
+    id: 415,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "Farmers add commercial fertilizers to the soil to ______ .",
+    choices: ["Speed up the decay of bacteria", "Add mineral content", "Activate the growth of earthworms", "Enhance the growth of the roots"],
+    answer: "Add mineral content",
+    explanation: ""
+  },
+  {
+    id: 416,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "What phylum classification is the transmitter of dengue?",
+    choices: ["Arthropoda", "Hemichordate", "Echinodermata", "Annelida"],
+    answer: "Arthropoda",
+    explanation: ""
+  },
+  {
+    id: 417,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "A col-blooded animals is one that _______ .",
+    choices: ["lacks red corpuscles", "lacks white corpuscles", "has a variable body temperature", "has fixed body temperature"],
+    answer: "has a variable body temperature",
+    explanation: ""
+  },
+  {
+    id: 418,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "Which of the following organisms is included in the kingdom Plantae ?",
+    choices: ["Magnolidae", "Fungi", "Protozoa", "Prokaryotes"],
+    answer: "Magnolidae",
+    explanation: ""
+  },
+  {
+    id: 419,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "The molecule that allows plants to capture energy from the sun is the ______ .",
+    choices: ["ATP", "carbon dioxide", "chlorophyll", "sugar"],
+    answer: "chlorophyll",
+    explanation: ""
+  },
+  {
+    id: 420,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "What do you call the natural environment where a certain organism lives and thrives ?",
+    choices: ["Community", "Habitat", "Country", "Ecosystem"],
+    answer: "Habitat",
+    explanation: ""
+  },
+  {
+    id: 421,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "Ang gintong panahon ng Panitikan ng Pilipinas ay ang panahon ng _______ .",
+    choices: ["Amerikano", "Hapones", "Kastila", "Kontemporaryo"],
+    answer: "Hapones",
+    explanation: ""
+  },
+  {
+    id: 422,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "Ang may-akda ng tulang “Ako Ang Daigdig”.",
+    choices: ["Alejandro Abadilla", "Jose Corazon de Jesus", "Aurelio Tolentino", "Amado Hernandez"],
+    answer: "Alejandro Abadilla",
+    explanation: ""
+  },
+  {
+    id: 423,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "The local basketball players were supported by Fil-American imports . this group _____ efforts.",
+    choices: ["Complicated the team", "Complimented the team", "Complemented the team", "completed the team"],
+    answer: "Complemented the team",
+    explanation: ""
+  },
+  {
+    id: 424,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "Did you understand her response to the judges? Here`s the answer.",
+    choices: ["Not very", "Not really", "Certainly", "On the other hand"],
+    answer: "Certainly",
+    explanation: ""
+  },
+  {
+    id: 425,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "I have but one life to give and I am willing to give it to my country ,not everyone is given this chance. Justice Abad Santos answered the Japanese soldiers. This finds an equivalent in valor of :",
+    choices: ["Jose Rizal", "Marcelo del Pilar", "Pre.Aquino", "Governor Aguinaldo"],
+    answer: "Jose Rizal",
+    explanation: ""
+  },
+  {
+    id: 426,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "The human Body temperature is",
+    choices: ["37 F", "98.4 F", "104 F", "445 F"],
+    answer: "37 F",
+    explanation: ""
+  },
+  {
+    id: 427,
+    category: "gen_education",
+    difficulty: "hard",
+    question: "The ratio between the length and the breadth of a rectangular park is 3 : 2. If a man cycling along the boundary of the park at the speed of 12 km/hr completes one round in 8 minutes, then the area of the park (in sq. m) is:",
+    choices: ["15360", "153600", "30720", "307200"],
+    answer: "153600",
+    explanation: ""
+  },
+  {
+    id: 428,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "Your father isn’t working anymore, __________?",
+    choices: ["is he", "isn’t he", "has he", "hasn’t he"],
+    answer: "is he",
+    explanation: ""
+  },
+  {
+    id: 429,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "Which among the sound below is a voiceless sound?",
+    choices: ["/dz/", "/g/", "/z/", "/sh/"],
+    answer: "/sh/",
+    explanation: ""
+  },
+  {
+    id: 430,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "All of the following are examples of input devices EXCEPT",
+    choices: ["scanner", "mouse", "printer", "keyboard"],
+    answer: "printer",
+    explanation: ""
+  },
+  {
+    id: 431,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "_______ is data that has been organized or presented in a meaningful way .",
+    choices: ["A process", "Information", "Software", "Storage"],
+    answer: "Information",
+    explanation: ""
+  },
+  {
+    id: 432,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "_______ is the heart of the computer and this is where all the computing is done .",
+    choices: ["Keyboard", "Monitor", "CPU", "printer"],
+    answer: "CPU",
+    explanation: ""
+  },
+  {
+    id: 433,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "Which element in the periodic table has the symbol Ca ?",
+    choices: ["Cadmium", "Calcium", "Carbon", "Californium"],
+    answer: "Calcium",
+    explanation: ""
+  },
+  {
+    id: 434,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "Ions are formed by _______ .",
+    choices: ["gaining or losing electrons", "gaining or losing protons", "sharing protons", "sharing electrons"],
+    answer: "gaining or losing electrons",
+    explanation: ""
+  },
+  {
+    id: 435,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "All of the following are characteristics of metals, except _______ .",
+    choices: ["good conductor", "brittleness", "malleability", "ductility"],
+    answer: "brittleness",
+    explanation: ""
+  },
+  {
+    id: 436,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "In flame test, what is the color of the flame if there is a presence of boron in a solution ?",
+    choices: ["Brick red", "Yellow gold", "Royal blue", "Bright green"],
+    answer: "Bright green",
+    explanation: ""
+  },
+  {
+    id: 437,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "The chemical reaction that releases heat energy during the process is called _______ .",
+    choices: ["Endothermic reaction", "Exothermic reaction", "Synthesis reaction", "Decomposition"],
+    answer: "Exothermic reaction",
+    explanation: ""
+  },
+  {
+    id: 438,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "Which of the following is an example of a chemical change?",
+    choices: ["Melting of candle", "Rusting of iron", "Dissolving sugar", "Boiling of water"],
+    answer: "Rusting of iron",
+    explanation: ""
+  },
+  {
+    id: 439,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "A change in state from solid to gas without passing the liquid state is called _____ .",
+    choices: ["Solidification", "Evaporation", "condensation", "sublimation"],
+    answer: "sublimation",
+    explanation: ""
+  },
+  {
+    id: 440,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "Which warning label indicates a chemical property of the material being labeled?",
+    choices: ["Fragile", "Handle with care", "Shake well", "Flammable"],
+    answer: "Flammable",
+    explanation: ""
+  },
+  {
+    id: 441,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "Which scientist paved the way for modern exploration by advancing the theory that planets revolve around the sun ?",
+    choices: ["Ptolemy", "Aristotle", "Copernicus", "Harvey"],
+    answer: "Copernicus",
+    explanation: ""
+  },
+  {
+    id: 442,
+    category: "gen_education",
+    difficulty: "easy",
+    question: "The Philippines lies in the region where many volcanoes are active. This region is known as _____.",
+    choices: ["Wheel of Fire", "Ring of fire", "Volcanic Rim", "Archipelagic Fault Line"],
+    answer: "Ring of fire",
+    explanation: ""
   }
 ];
 
