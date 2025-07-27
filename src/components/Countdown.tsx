@@ -23,40 +23,31 @@ const calculateTimeLeft = (examDate: Date): CountdownTime | null => {
   return null;
 };
 
-const FlipCard = ({ value }: { value: number }) => {
-    const [flipped, setFlipped] = useState(false);
-    const [currentValue, setCurrentValue] = useState(value);
-  
-    useEffect(() => {
-      if (value !== currentValue) {
-        setFlipped(true);
-        setTimeout(() => {
-          setCurrentValue(value);
-          setFlipped(false);
-        }, 600); // match animation duration
-      }
-    }, [value, currentValue]);
-
-    const formattedValue = String(currentValue).padStart(2, '0');
-  
-    return (
-        <div className={`flip-card ${flipped ? 'flipped' : ''}`}>
-            <div className="top">{formattedValue}</div>
-            <div className="bottom">{formattedValue}</div>
-        </div>
-    );
-  };
+const StaticCard = ({ value, label }: { value: string, label: string }) => {
+  return (
+    <div className="flex flex-col items-center">
+      <div className="p-2 rounded-lg bg-primary text-primary-foreground">
+        <span className="text-3xl md:text-5xl font-mono font-bold">{value}</span>
+      </div>
+      <span className="text-xs font-sans text-muted-foreground mt-1">{label}</span>
+    </div>
+  )
+}
 
 const Countdown = ({ examDate }: { examDate: Date }) => {
-  const [timeLeft, setTimeLeft] = useState<CountdownTime | null>(calculateTimeLeft(examDate));
+  const [timeLeft, setTimeLeft] = useState<CountdownTime | null>(null);
 
   useEffect(() => {
+    // This should only run on the client side
+    setTimeLeft(calculateTimeLeft(examDate));
+
     const timer = setInterval(() => {
       setTimeLeft(calculateTimeLeft(examDate));
     }, 1000);
 
     return () => clearInterval(timer);
   }, [examDate]);
+
 
   if (!timeLeft) {
     return (
@@ -69,38 +60,14 @@ const Countdown = ({ examDate }: { examDate: Date }) => {
   return (
     <div className="text-center p-4 rounded-lg bg-card border shadow-sm mb-6">
         <h2 className="text-lg font-bold font-headline mb-4">Countdown to Your Exam</h2>
-        <div className="flex justify-center items-center gap-2 md:gap-4 text-3xl md:text-5xl font-mono font-bold text-primary">
-            <div className="flex flex-col items-center">
-                <div className="flex gap-1">
-                    <FlipCard value={Math.floor(timeLeft.days / 10)} />
-                    <FlipCard value={timeLeft.days % 10} />
-                </div>
-                <span className="text-xs font-sans text-muted-foreground mt-1">Days</span>
-            </div>
-            <span>:</span>
-             <div className="flex flex-col items-center">
-                <div className="flex gap-1">
-                    <FlipCard value={Math.floor(timeLeft.hours / 10)} />
-                    <FlipCard value={timeLeft.hours % 10} />
-                </div>
-                <span className="text-xs font-sans text-muted-foreground mt-1">Hours</span>
-            </div>
-             <span>:</span>
-             <div className="flex flex-col items-center">
-                <div className="flex gap-1">
-                     <FlipCard value={Math.floor(timeLeft.minutes / 10)} />
-                    <FlipCard value={timeLeft.minutes % 10} />
-                </div>
-                <span className="text-xs font-sans text-muted-foreground mt-1">Minutes</span>
-            </div>
-             <span>:</span>
-            <div className="flex flex-col items-center">
-                <div className="flex gap-1">
-                    <FlipCard value={Math.floor(timeLeft.seconds / 10)} />
-                    <FlipCard value={timeLeft.seconds % 10} />
-                </div>
-                <span className="text-xs font-sans text-muted-foreground mt-1">Seconds</span>
-            </div>
+        <div className="flex justify-center items-start gap-2 md:gap-4">
+            <StaticCard value={String(timeLeft.days).padStart(2, '0')} label="Days" />
+            <span className="text-3xl md:text-5xl font-mono font-bold text-primary pt-1">:</span>
+            <StaticCard value={String(timeLeft.hours).padStart(2, '0')} label="Hours" />
+            <span className="text-3xl md:text-5xl font-mono font-bold text-primary pt-1">:</span>
+            <StaticCard value={String(timeLeft.minutes).padStart(2, '0')} label="Minutes" />
+            <span className="text-3xl md:text-5xl font-mono font-bold text-primary pt-1">:</span>
+            <StaticCard value={String(timeLeft.seconds).padStart(2, '0')} label="Seconds" />
         </div>
     </div>
   );
