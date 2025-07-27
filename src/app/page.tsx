@@ -110,7 +110,6 @@ const QuizCard: FC<{
   userAnswer?: string | null;
 }> = ({ question, onAnswer, isChallenge, userAnswer }) => {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(userAnswer || null);
-  const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [hasAnswered, setHasAnswered] = useState(!!userAnswer);
 
   const handleAnswerClick = (answer: string) => {
@@ -120,15 +119,10 @@ const QuizCard: FC<{
     setSelectedAnswer(answer);
     onAnswer(correct, answer);
     setHasAnswered(true);
-
-    if (!isChallenge) {
-        setIsCorrect(correct);
-    }
   };
   
   useEffect(() => {
     setSelectedAnswer(userAnswer || null);
-    setIsCorrect(null);
     setHasAnswered(!!userAnswer);
   }, [question, userAnswer]);
 
@@ -142,8 +136,20 @@ const QuizCard: FC<{
             {question.choices.map((choice) => {
                 const isSelected = selectedAnswer === choice;
                 const isTheCorrectAnswer = choice === question.answer;
-                const showAsCorrect = !isChallenge && hasAnswered && isTheCorrectAnswer;
-                const showAsIncorrect = !isChallenge && hasAnswered && isSelected && !isTheCorrectAnswer;
+                
+                // In challenge mode, we only show if the answer was selected, not if it was right or wrong.
+                const getChallengeClass = () => {
+                    if (!hasAnswered) return "hover:bg-muted";
+                    if (isSelected) return "bg-muted border-primary";
+                    return "cursor-default";
+                };
+
+                const getNonChallengeClass = () => {
+                    if (!hasAnswered) return "hover:bg-muted";
+                    if (isTheCorrectAnswer) return "border-green-500 bg-green-50";
+                    if (isSelected && !isTheCorrectAnswer) return "border-red-500 bg-red-50";
+                    return "opacity-50";
+                };
 
                 return (
                     <Card 
@@ -151,23 +157,19 @@ const QuizCard: FC<{
                         onClick={() => handleAnswerClick(choice)}
                         className={cn(
                             "p-4 cursor-pointer transition-all",
-                            hasAnswered && isChallenge ? "cursor-default" : "hover:bg-muted",
-                            isSelected && isChallenge && "bg-muted border-primary",
-                            showAsCorrect && "border-green-500 bg-green-50",
-                            showAsIncorrect && "border-red-500 bg-red-50",
-                            !isChallenge && hasAnswered && !isTheCorrectAnswer && !isSelected && "opacity-50"
+                            isChallenge ? getChallengeClass() : getNonChallengeClass()
                         )}
                     >
                         <div className="flex items-center justify-between">
                             <p>{choice}</p>
-                            {showAsCorrect && <CheckCircle className="h-5 w-5 text-green-500" />}
-                            {showAsIncorrect && <XCircle className="h-5 w-5 text-red-500" />}
+                            {!isChallenge && hasAnswered && isTheCorrectAnswer && <CheckCircle className="h-5 w-5 text-green-500" />}
+                            {!isChallenge && hasAnswered && isSelected && !isTheCorrectAnswer && <XCircle className="h-5 w-5 text-red-500" />}
                         </div>
                     </Card>
                 )
             })}
         </div>
-        {isCorrect === false && question.explanation && !isChallenge && (
+        {!isChallenge && hasAnswered && selectedAnswer && selectedAnswer !== question.answer && question.explanation && (
            <p className="text-sm text-muted-foreground mt-4 p-2 bg-muted rounded-md">{question.explanation}</p>
         )}
       </CardContent>
@@ -480,7 +482,7 @@ export default function ReviewPage() {
       {isChallenge && (
          <header className="flex flex-col gap-4 mb-6 text-center">
             <h1 className="text-3xl font-bold font-headline capitalize">{challengeDifficulty} Daily Challenge</h1>
-            <p className="text-muted-foreground">Answer {questions.length} {challengeCategory === 'gen_education' ? 'General' : 'Professional'} Education questions. You need 85% to pass.</p>
+            <p className="text-muted-foreground">Answer all {questions.length} {challengeCategory === 'gen_education' ? 'General' : 'Professional'} Education questions. You need 85% to pass.</p>
         </header>
       )}
       
@@ -540,3 +542,5 @@ export default function ReviewPage() {
     </div>
   );
 }
+
+    
