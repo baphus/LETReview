@@ -109,19 +109,22 @@ const QuizCard: FC<{
 }> = ({ question, onAnswer, isChallenge }) => {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
+  const [hasAnswered, setHasAnswered] = useState(false);
 
   const handleAnswerClick = (answer: string) => {
-    if (selectedAnswer) return; // Prevent changing answer
+    if (hasAnswered) return; // Prevent changing answer
 
     const correct = answer === question.answer;
     setSelectedAnswer(answer);
     setIsCorrect(correct);
     onAnswer(correct);
+    setHasAnswered(true);
   };
   
   useEffect(() => {
     setSelectedAnswer(null);
     setIsCorrect(null);
+    setHasAnswered(false);
   }, [question]);
 
   return (
@@ -141,15 +144,15 @@ const QuizCard: FC<{
                         onClick={() => handleAnswerClick(choice)}
                         className={cn(
                             "p-4 cursor-pointer transition-all hover:bg-muted",
-                            selectedAnswer && isTheCorrectAnswer && "border-green-500 bg-green-50",
+                            hasAnswered && isTheCorrectAnswer && "border-green-500 bg-green-50",
                             isSelected && !isTheCorrectAnswer && "border-red-500 bg-red-50",
-                            selectedAnswer && !isTheCorrectAnswer && !isSelected && "opacity-50"
+                            hasAnswered && !isTheCorrectAnswer && !isSelected && "opacity-50"
                         )}
                     >
                         <div className="flex items-center justify-between">
                             <p>{choice}</p>
-                            {selectedAnswer && isTheCorrectAnswer && isSelected && <CheckCircle className="h-5 w-5 text-green-500" />}
-                            {selectedAnswer && !isTheCorrectAnswer && isSelected && <XCircle className="h-5 w-5 text-red-500" />}
+                            {hasAnswered && isTheCorrectAnswer && isSelected && <CheckCircle className="h-5 w-5 text-green-500" />}
+                            {hasAnswered && !isTheCorrectAnswer && isSelected && <XCircle className="h-5 w-5 text-red-500" />}
                         </div>
                     </Card>
                 )
@@ -180,6 +183,7 @@ export default function ReviewPage() {
   const [marked, setMarked] = useState<number[]>([]);
   const [quizScore, setQuizScore] = useState(0);
   const [showResults, setShowResults] = useState(false);
+  const [answeredCurrent, setAnsweredCurrent] = useState(false);
   
   const { toast } = useToast();
 
@@ -214,6 +218,7 @@ export default function ReviewPage() {
   const currentQuestion = questions[currentIndex];
 
   const handleNext = () => {
+    setAnsweredCurrent(false);
     if (currentIndex < questions.length - 1) {
         setCurrentIndex((prev) => prev + 1);
     } else {
@@ -267,6 +272,7 @@ export default function ReviewPage() {
   };
 
   const handleAnswer = (correct: boolean) => {
+    setAnsweredCurrent(true);
     if (correct) {
       setQuizScore(s => s + 1);
       if (!isChallenge) {
@@ -289,6 +295,7 @@ export default function ReviewPage() {
 
   useEffect(() => {
     setCurrentIndex(0);
+    setAnsweredCurrent(false);
     if (mode === 'quiz') {
       setQuizScore(0);
     }
@@ -432,7 +439,7 @@ export default function ReviewPage() {
             <ArrowLeft className="h-4 w-4 mr-2" />
             Previous
           </Button>
-          <Button onClick={handleNext} disabled={questions.length <= 1 || !currentQuestion}>
+          <Button onClick={handleNext} disabled={questions.length <= 1 || !currentQuestion || (mode === 'quiz' && !answeredCurrent)}>
             {currentIndex === questions.length - 1 && mode === 'quiz' ? 'Finish' : 'Next'}
             {currentIndex < questions.length - 1 && <ArrowRight className="h-4 w-4 ml-2" />}
           </Button>
@@ -441,3 +448,5 @@ export default function ReviewPage() {
     </div>
   );
 }
+
+    
