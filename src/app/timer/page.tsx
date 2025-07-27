@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Clock, Coffee, Play, Pause, RotateCcw, Award } from "lucide-react";
+import { Clock, Coffee, Play, Pause, RotateCcw, Award, Gem } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const FOCUS_TIME = 25 * 60; // 25 minutes
