@@ -305,18 +305,22 @@ export default function ReviewPage() {
         const user = JSON.parse(savedUser);
         const today = new Date().toDateString();
         
-        if (user.lastChallengeDate !== today) { // Can only extend streak once per day
-             if (passed) {
-                user.streak = (user.streak || 0) + 1;
-                if (user.streak > (user.highestStreak || 0)) {
-                    user.highestStreak = user.streak;
-                }
-                user.lastChallengeDate = today;
-                
-                const pointsMap = { easy: 50, medium: 100, hard: 200 };
-                const pointsEarned = pointsMap[challengeDifficulty as keyof typeof pointsMap] || 0;
-                user.points = (user.points || 0) + pointsEarned;
-             }
+        // Award points only if the challenge is passed and only once per day.
+        if (passed && user.lastChallengeDate !== today) {
+            user.streak = (user.streak || 0) + 1;
+            if (user.streak > (user.highestStreak || 0)) {
+                user.highestStreak = user.streak;
+            }
+            user.lastChallengeDate = today;
+
+            const pointsMap = { easy: 25, medium: 75, hard: 150 };
+            const pointsEarned = pointsMap[challengeDifficulty as keyof typeof pointsMap] || 0;
+            user.points = (user.points || 0) + pointsEarned;
+
+            toast({
+                title: "Challenge Passed!",
+                description: `You earned ${pointsEarned} points and secured your streak!`,
+            });
         }
         
         localStorage.setItem('userProfile', JSON.stringify(user));
@@ -455,7 +459,7 @@ export default function ReviewPage() {
                   )
               )}
 
-              <ScrollArea className="mt-4 h-64">
+              <ScrollArea className="mt-4 h-[calc(100%-4rem)]">
                   <div className="space-y-4 pr-6">
                       {challengeAnswers.map(answer => (
                           <div key={answer.questionId} className="text-sm p-3 rounded-md bg-muted">
@@ -582,5 +586,3 @@ export default function ReviewPage() {
     </div>
   );
 }
-
-    
