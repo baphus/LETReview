@@ -4580,6 +4580,406 @@ export const sampleQuestions: QuizQuestion[] = [
     choices: ["Some pupils are admittedly not capable of learning.", "Every pupil has his own native ability and his learning is limited to this nativeabilty.", "Every child is a potential genius.", "Pupils can possibly reach a point where they have learned everything."],
     answer: "Every child is a potential genius.",
     explanation: "The correct answer is C. The idea of a limitless capacity suggests that every child has the potential for genius."
+  },
+  {
+    id: 543,
+    category: "professional",
+    difficulty: "medium",
+    question: '"Life is what you make it" exemplifies best what ______:',
+    choices: ["Existentialism", "Humanism", "Progressivism", "Essentialism"],
+    answer: "Existentialism"
+  },
+  {
+    id: 544,
+    category: "professional",
+    difficulty: "medium",
+    question: "After listening to the homily of the Priest about fidelity, Catherine has a moment of reflection. Her understanding of the value of fidelity has become deeper as she related this to her past experience. This typifies what kind of philosophy ?",
+    choices: ["Constructivism", "Reconstructivism", "Humanism", "Existentialism"],
+    answer: "Constructivism"
+  },
+  {
+    id: 545,
+    category: "professional",
+    difficulty: "medium",
+    question: "After studying the Principle of Identity, Teacher Beng asks her students to determine which among the given set of problems conforms to the said identity. This shows that Teacher Beng upholds this kind of philosophy?",
+    choices: ["Perennialism", "Progressivism", "Essentialism", "Naturalism"],
+    answer: "Progressivism"
+  },
+  {
+    id: 546,
+    category: "professional",
+    difficulty: "medium",
+    question: "Joy listens to the advice given by her sister to end the relationship that she has with Min Hoo . However, her sister learned that the advice she has given was not followed and Joy decided to continue the relationship. This action of Joy is a manifestation of what kind of philosophy?",
+    choices: ["Essentialism", "Existentialism", "Perennialism", "Humanism"],
+    answer: "Existentialism"
+  },
+  {
+    id: 547,
+    category: "professional",
+    difficulty: "medium",
+    question: "After finishing the degree in Education, Teacher Mary realizes that learning never stops. In fact, she accumulates more knowledge after leaving the portal of her alma mater. This typifies what kind of philosophy?",
+    choices: ["Constructivism", "Perennialism", "Progressivism", "Humanism"],
+    answer: "Progressivism"
+  },
+  {
+    id: 548,
+    category: "professional",
+    difficulty: "medium",
+    question: "Mary Joy is an advocate of the principle \"making the most of your life\". Live life to the fullest. She is indeed an advocate of what kind of philosophy ?",
+    choices: ["Humanism", "Idealism", "Realism", "Existentialism"],
+    answer: "Humanism"
+  },
+  {
+    id: 549,
+    category: "professional",
+    difficulty: "medium",
+    question: "Teacher Mae Joy is a very dedicated teacher in the nursery. Her foremost concern is for the students to learn how to adapt themselves in the environment. This shows that Teacher Mae Joy upholds this kind of philosophy?",
+    choices: ["Naturalism", "Pragmatism", "Progressivism", "Rationalism"],
+    answer: "Naturalism"
+  },
+  {
+    id: 550,
+    category: "professional",
+    difficulty: "medium",
+    question: "Teacher Sun Woo serves as an inspiration to his students because of his efficiency and effectiveness as a teacher. The mind se of his students towards him is an instance of what kind of philosophy?",
+    choices: ["Realism", "Idealism", "Realism", "Empiricism"],
+    answer: "Idealism"
+  },
+  {
+    id: 551,
+    category: "professional",
+    difficulty: "medium",
+    question: "Lee Min Hoo learns well through active interplay with others. His learning increases when engaged I activities that has meaning in him. Which philosophy can describe this ?",
+    choices: ["Progressivism", "Idealism", "Realism", "Empiricism"],
+    answer: "Progressivism"
+  },
+  {
+    id: 552,
+    category: "professional",
+    difficulty: "medium",
+    question: '"Learning is the process of retrieving prior learning" , this is a statement from ;',
+    choices: ["Constructivist", "Reconstructivist", "Progressivist", "Idealist"],
+    answer: "Constructivist"
+  },
+  {
+    id: 553,
+    category: "professional",
+    difficulty: "medium",
+    question: '"The curriculum is a total learning experience for an individual". This point of view is considered to be of :',
+    choices: ["Traditionalist", "Progressivist", "Materialist", "Cognitivist"],
+    answer: "Progressivist"
+  },
+  {
+    id: 554,
+    category: "professional",
+    difficulty: "medium",
+    question: "The principal shares the thought with his teachers that the subject matter should help students understand and appreciate themselves as unique individuals who accept complete responsibility of their thoughts, feelings, and actions. From which point of view is this thought based ?",
+    choices: ["Essentialism", "Rationalism", "Progressivism", "Existentialism"],
+    answer: "Existentialism"
+  },
+  {
+    id: 555,
+    category: "professional",
+    difficulty: "medium",
+    question: "During the faculty recollection, Mr. Duterte asked his teachers to share their thoughts about their students as their primary customer. What followed were the gist of what were shared : Teacher Vhong : The learner is a product of his environment. Sometimes he has no choice. He is determined by his environment. Teacher Vice : The learner can choose what he becomes despite his environment. Teacher Anne : The learner is a social being who learns well through an active interplay with others. Teacher Karylle : The learner is a rational being. School should develop his rational and moral powers. Whose philosophical concept is that Teacher Vhong ?",
+    choices: ["Existentialist", "Progressivist", "Behaviorist", "Rationalist"],
+    answer: "Behaviorist"
+  },
+  {
+    id: 556,
+    category: "professional",
+    difficulty: "medium",
+    question: "Teacher Vice response comes from the mouth of ?",
+    choices: ["Essentialist", "Perennialist", "Existentialist", "Behaviorist"],
+    answer: "Existentialist"
+  },
+  {
+    id: 557,
+    category: "professional",
+    difficulty: "medium",
+    question: "If you agree with Teacher Anne, you are more of _______",
+    choices: ["Progressivist", "Perennialist", "Essentialist", "Rationalist"],
+    answer: "Progressivist"
+  },
+  {
+    id: 558,
+    category: "professional",
+    difficulty: "medium",
+    question: "If you identify with Teacher Karylle, you adhere to this philosophy",
+    choices: ["Behaviorist", "Perennnialism", "Existentialist", "Progressivist"],
+    answer: "Perennnialism"
+  },
+  {
+    id: 559,
+    category: "professional",
+    difficulty: "medium",
+    question: "Student Park Shin Hye, after receiving the conceptual knowledge on multiplication of trinomials from his Algebra Teacher , immediately answers the exercises in the book. This demonstrates what kind of philosophy ?",
+    choices: ["Existentialism", "Idealism", "Constructivism", "Progressivism"],
+    answer: "Progressivism"
+  },
+  {
+    id: 560,
+    category: "professional",
+    difficulty: "medium",
+    question: "Teacher Lee Jung Suk views his students as a unique , free choosing and responsible individuals. He encourages them to develop their own individualities. What philosophy does Teacher Lee Jung Suk adhere to ?",
+    choices: ["Naturalism", "Humanism", "Existentialism", "Contructivism"],
+    answer: "Existentialism"
+  },
+  {
+    id: 561,
+    category: "professional",
+    difficulty: "medium",
+    question: "In the Social Science class of Mr. Kim So Hyun, students identify the various social and economic problems that require urgent solutions. They not only discuss the ways to address it but also agreed to participate in solving them. What kind of philosophy does this class uphold ?",
+    choices: ["Essentialism", "Reconstructivism", "Naturalism", "Behaviorism"],
+    answer: "Reconstructivism"
+  },
+  {
+    id: 562,
+    category: "professional",
+    difficulty: "medium",
+    question: "Teacher Park Bo Gum, unlike other teachers in his school, practices the non traditional method of discussing the lessons using not only the book prescribed by the school as the main source of information and knowledge. Instead , he went out of his way to devise other means that will help his students to understand their lessons. To what philosophy does Teacher Park Bo Gum submit to ?",
+    choices: ["Behaviorism", "Contructivism", "Progressivism", "Humanism"],
+    answer: "Progressivism"
+  },
+  {
+    id: 563,
+    category: "professional",
+    difficulty: "medium",
+    question: "Teacher Soong Jong Ki class is engage in problem solving activity which in a way is a reflection of the personal and social experiences. The purpose of this activity is for the students to acquire the skills that can help them in solving their own real-life problems. What philosophy can best described this ?",
+    choices: ["Existentialism", "Progressivism", "Idealism", "Realism"],
+    answer: "Progressivism"
+  },
+  {
+    id: 564,
+    category: "professional",
+    difficulty: "medium",
+    question: "In his class, Teacher Goong Yu always presents principles and values so as to encourage his students to examine them and decide for themselves whether to accept it or not . What kind of philosophy does Teacher Goong Yu practice ?",
+    choices: ["Idealism", "Existentialism", "Humanism", "Essentialism"],
+    answer: "Existentialism"
+  },
+  {
+    id: 565,
+    category: "professional",
+    difficulty: "medium",
+    question: "Teacher Kim Woo Bin is an inspiration to almost all of his students. His efficiency and effectiveness in the profession is truly outstanding. Which of the following describes this attitude of the students toward him ?",
+    choices: ["Existentialism", "Naturalism", "Progressivism", "Idealism"],
+    answer: "Idealism"
+  },
+  {
+    id: 566,
+    category: "professional",
+    difficulty: "medium",
+    question: 'If a teacher states that "specialization is knowing more and more about less and less, hence it is better to be a generalist". What kind of philosophy does they uphold?',
+    choices: ["Progressivism", "Essentialism", "Naturalism", "Perennialism"],
+    answer: "Essentialism"
+  },
+  {
+    id: 567,
+    category: "professional",
+    difficulty: "medium",
+    question: "In social trends, his do you call those who are for the revival of the classics ?",
+    choices: ["Progressivist", "Essentialist", "Humanist", "Behaviorist"],
+    answer: "Humanist"
+  },
+  {
+    id: 568,
+    category: "professional",
+    difficulty: "medium",
+    question: "A teacher puts emphasis on making her students master the rules of multiplying fractions, and not so much on the strategies and execution. This is an illustration of _______?",
+    choices: ["Existentialism", "Progressivism", "Essentialism", "Naturalism"],
+    answer: "Essentialism"
+  },
+  {
+    id: 569,
+    category: "professional",
+    difficulty: "medium",
+    question: "Students are the product of their environment. To which philosophy does this statement belong ?",
+    choices: ["Naturalism", "Essentialism", "Behaviorism", "Existentialism"],
+    answer: "Behaviorism"
+  },
+  {
+    id: 570,
+    category: "professional",
+    difficulty: "medium",
+    question: "What philosophy posses that a social teacher is a revered person, central to the educative process and therefore must be excellent mentally and morally in personally conduct and conviction ?",
+    choices: ["Idealism", "Progressivism", "Realism", "Essentialism"],
+    answer: "Idealism"
+  },
+  {
+    id: 571,
+    category: "professional",
+    difficulty: "medium",
+    question: "This philosophy emphasizes the teaching of controversial issues to prepare students for a progressive structuring of the social order.",
+    choices: ["Progressivism", "Social Experimentation", "Behaviorism", "Reconstructionism"],
+    answer: "Reconstructionism"
+  },
+  {
+    id: 572,
+    category: "professional",
+    difficulty: "medium",
+    question: "The philosophy contends that truth is universal an unchanging and therefore a good education is also universal and constant.",
+    choices: ["Existentialism", "Essentialism", "Perennialism", "Progressivism"],
+    answer: "Perennialism"
+  },
+  {
+    id: 573,
+    category: "professional",
+    difficulty: "medium",
+    question: "Which philosophy of education has for its curriculum a body intellectual subject matter that are conceptual on subject, essential for the realization of mental and moral development?",
+    choices: ["Pragmatism", "Realism", "Existentialism", "Idealism"],
+    answer: "Realism"
+  },
+  {
+    id: 574,
+    category: "professional",
+    difficulty: "medium",
+    question: "The educational theory, in response to progressivism, which concerns with the revival of effort in the direction of teaching the fundamental tools of learning as the most indispensable type of education .",
+    choices: ["Perennialism", "Naturalism", "Essentialism", "Behaviorism"],
+    answer: "Essentialism"
+  },
+  {
+    id: 575,
+    category: "professional",
+    difficulty: "medium",
+    question: "The philosophy believes that the schools should originate policies and progress which would bring about reform of the social orders",
+    choices: ["Behaviorism", "Progressivism", "Reconstructionism", "Perennialism"],
+    answer: "Reconstructionism"
+  },
+  {
+    id: 576,
+    category: "professional",
+    difficulty: "medium",
+    question: "This philosophy contends that the intellectual faculty of man is higher that the physical faculties.",
+    choices: ["Perennialism", "Idealism", "Realism", "Existentialism"],
+    answer: "Idealism"
+  },
+  {
+    id: 577,
+    category: "professional",
+    difficulty: "medium",
+    question: "The philosophy proclaims the spiritual nature and the universe. It holds that the good, the true anted the beautiful are permanently part of the structure of an unchanging universe.",
+    choices: ["Realism", "Existentialism", "Naturalism", "Idealism"],
+    answer: "Idealism"
+  },
+  {
+    id: 578,
+    category: "professional",
+    difficulty: "medium",
+    question: "This philosophy posses the known ability of the world and everything in its as they are in themselves and their existence independent of human mind.",
+    choices: ["Realism", "Idealism", "Naturalism", "Existentialism"],
+    answer: "Realism"
+  },
+  {
+    id: 579,
+    category: "professional",
+    difficulty: "medium",
+    question: '"The central aim of education should be develop the power of thought " ; this would likely be the aim of what educational practitioner ?',
+    choices: ["Reconstructivism", "Progressivism", "Perennialism", "Existentialism"],
+    answer: "Perennialism"
+  },
+  {
+    id: 580,
+    category: "professional",
+    difficulty: "medium",
+    question: "This educational theory is based on the philosophy grounded on experience and the interaction of the person with his environment. It posist that the education must use past experiences to direct future experiences.",
+    choices: ["Progressivism", "Idealism", "Existentialism", "Realism"],
+    answer: "Progressivism"
+  },
+  {
+    id: 581,
+    category: "professional",
+    difficulty: "medium",
+    question: "This philosophy is a way of viewing and thinking about life in the world so that priority is given into individualism and subjectivity. It believes that human beings are the creator of their own experiences.",
+    choices: ["Reconstructionism", "Realism", "Existentialism"],
+    answer: "Existentialism"
+  },
+  {
+    id: 582,
+    category: "professional",
+    difficulty: "medium",
+    question: "It is belief that when an idea agrees with its object, it is proof of its truth. However, it is definition of truth not criteria .",
+    choices: ["Idealist", "Naturalism", "Naive Realism", "Behaviorist"],
+    answer: "Naive Realism"
+  },
+  {
+    id: 583,
+    category: "professional",
+    difficulty: "medium",
+    question: "This educational philosophy encourages accumulation of knowledge and thinking and must apply criteria for moral evaluation. Suggested methods are questioning and discussion, lecture and the project, whether methods done singly or in group.",
+    choices: ["Behaviorism", "Essentialism", "Idealism", "Existentialism"],
+    answer: "Idealism"
+  },
+  {
+    id: 584,
+    category: "professional",
+    difficulty: "medium",
+    question: "This theory views education as a recurring process based on eternal truths; thus, the schools curriculum should emphasize the recurrent themes of human life.",
+    choices: ["Naturalism", "Progressivism", "Perennialism", "Pragmatism"],
+    answer: "Perennialism"
+  },
+  {
+    id: 585,
+    category: "professional",
+    difficulty: "medium",
+    question: "Socrates : Idealism Dewey : ???????",
+    choices: ["Essentialism", "Progressivism", "Existentialism", "Naturalism"],
+    answer: "Progressivism"
+  },
+  {
+    id: 586,
+    category: "professional",
+    difficulty: "medium",
+    question: "Hutchins : ????? Watson : Behaviorism",
+    choices: ["Progressivism", "Perennialism", "Behaviorism", "Naturalism"],
+    answer: "Perennialism"
+  },
+  {
+    id: 587,
+    category: "professional",
+    difficulty: "medium",
+    question: "Essentialism : Bagley ??????????? : Jean Paul Sarte",
+    choices: ["Naturalism", "Existentialism", "Behaviorism", "Progressivism"],
+    answer: "Existentialism"
+  },
+  {
+    id: 588,
+    category: "professional",
+    difficulty: "medium",
+    question: "The establishment of the school of the future (SOF) introduces improvement and reform in education to respond to both human and social needs. What philosophy is related to it ?",
+    choices: ["Perennialism", "Idealism", "Existentialism", "Reconstructivism"],
+    answer: "Reconstructivism"
+  },
+  {
+    id: 589,
+    category: "professional",
+    difficulty: "medium",
+    question: "The Department of Education gives greater emphasis on the development of basic skills. What is the philosophical basis for this ?",
+    choices: ["Pragmatism", "Existentialism", "Naturalism", "Essentialism"],
+    answer: "Essentialism"
+  },
+  {
+    id: 590,
+    category: "professional",
+    difficulty: "medium",
+    question: "Teacher Sandara views her students as unique , free- choosing and responsible individuals. All classroom activities revolve the said premise. What theory underlines this ?",
+    choices: ["Naturalism", "Essentialism", "Behaviorism", "Existentialism"],
+    answer: "Existentialism"
+  },
+  {
+    id: 591,
+    category: "professional",
+    difficulty: "medium",
+    question: "The most influential movement in the 18th century. Acts according by the nature .",
+    choices: ["Idealism", "Existentialism", "Naturalism", "Realism"],
+    answer: "Naturalism"
+  },
+  {
+    id: 592,
+    category: "professional",
+    difficulty: "medium",
+    question: "Admits the existence of GOD.",
+    choices: ["Agnosticism", "Atheism", "Hedonism", "Deism or Theism"],
+    answer: "Deism or Theism"
   }
 ];
 
