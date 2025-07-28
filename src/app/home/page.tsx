@@ -124,43 +124,43 @@ export default function HomePage() {
 
       <section>
         <h2 className="text-xl font-bold font-headline mb-4">Your Stats</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Points</CardTitle>
-              <Gem className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{user.points}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Current Streak</CardTitle>
-              <Flame className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{user.streak} days</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Highest Streak</CardTitle>
-              <Shield className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{user.highestStreak}</div>
-            </CardContent>
-          </Card>
-           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pomodoro Sessions</CardTitle>
-              <Award className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{user.completedSessions}</div>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-2 gap-4">
+            <Card className="col-span-2 md:col-span-1 bg-primary/10 border-primary">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-base font-bold text-primary">Daily Streak</CardTitle>
+                <Flame className="h-5 w-5 text-primary" />
+                </CardHeader>
+                <CardContent>
+                <div className="text-3xl font-bold">{user.streak} days</div>
+                </CardContent>
+            </Card>
+            <Card className="col-span-2 md:col-span-1 bg-accent/10 border-accent">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-base font-bold text-accent">Total Points</CardTitle>
+                <Gem className="h-5 w-5 text-accent" />
+                </CardHeader>
+                <CardContent>
+                <div className="text-3xl font-bold">{user.points}</div>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Highest Streak</CardTitle>
+                <Shield className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                <div className="text-2xl font-bold">{user.highestStreak}</div>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Pomodoro Sessions</CardTitle>
+                <Award className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                <div className="text-2xl font-bold">{user.completedSessions}</div>
+                </CardContent>
+            </Card>
         </div>
       </section>
 
