@@ -44,8 +44,8 @@ const MiniQuiz = ({ onCorrectAnswer, onIncorrectAnswer, onStreak }: { onCorrectA
         setIsAnswered(true);
 
         if (correct) {
-            const { highestQuizStreak } = useTimer.getState();
-            const pointsGained = 1 * (highestQuizStreak + 1);
+            const { quizStreak } = useTimer.getState();
+            const pointsGained = 1 * (quizStreak + 1);
             onCorrectAnswer(pointsGained);
             onStreak();
             setTimeout(() => {
@@ -115,7 +115,7 @@ export default function TimerPage() {
     SHORT_BREAK_TIME,
     LONG_BREAK_TIME,
     quizStreak,
-    highestQuizStreak,
+    // highestQuizStreak, // This is now managed in userProfile
     handleCorrectQuizAnswer,
     handleIncorrectQuizAnswer,
     timerEnded
@@ -124,6 +124,7 @@ export default function TimerPage() {
   const { toast } = useToast();
   const [showCombo, setShowCombo] = useState(false);
   const [showPoints, setShowPoints] = useState<{ show: boolean, points: number }>({ show: false, points: 0 });
+  const [userHighestStreak, setUserHighestStreak] = useState(0);
 
   const time = rawTime || 0;
   const minutes = Math.floor(time / 60);
@@ -136,8 +137,18 @@ export default function TimerPage() {
 
 
   useEffect(() => {
-    // This effect is intentionally left blank as the timer logic is now fully handled in the useTimer hook.
-    // The hook manages its own interval.
+    const loadUserStats = () => {
+        const savedUser = localStorage.getItem("userProfile");
+        if(savedUser){
+            const user = JSON.parse(savedUser);
+            setUserHighestStreak(user.highestStreak || 0);
+        }
+    };
+    loadUserStats();
+    
+    // Listen for storage changes to update the UI in real-time
+    window.addEventListener('storage', loadUserStats);
+    return () => window.removeEventListener('storage', loadUserStats);
   }, []);
   
   const handleCorrectAnswer = (points: number) => {
@@ -305,14 +316,10 @@ export default function TimerPage() {
                 </CardTitle>
             </CardHeader>
             <CardContent>
-                <p className="text-2xl font-bold">{highestQuizStreak}</p>
+                <p className="text-2xl font-bold">{userHighestStreak}</p>
             </CardContent>
         </Card>
       </div>
     </div>
   );
 }
-
-
-
-    

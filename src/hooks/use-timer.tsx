@@ -150,6 +150,8 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
              if (savedUser) {
                 const user = JSON.parse(savedUser);
                 parsedState.sessions = user.completedSessions || 0;
+                // Don't overwrite highest streak from profile with session streak
+                // parsedState.highestQuizStreak = user.highestStreak || 0;
              }
             dispatch(parsedState);
         } catch (error) {
@@ -160,7 +162,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
         const savedUser = localStorage.getItem("userProfile");
         if (savedUser) {
             const user = JSON.parse(savedUser);
-            dispatch({ sessions: user.completedSessions || 0 });
+            dispatch({ sessions: user.completedSessions || 0, highestQuizStreak: user.highestStreak || 0 });
         }
     }
     requestNotificationPermission();
@@ -178,19 +180,21 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   
 
   const handleCorrectQuizAnswer = useCallback((pointsGained: number) => {
-    const savedUser = localStorage.getItem("userProfile");
-    if(savedUser) {
-        const user = JSON.parse(savedUser);
-        user.points = (user.points || 0) + pointsGained;
-        localStorage.setItem("userProfile", JSON.stringify(user));
-    }
-    
-    const newStreak = stateStore.quizStreak + 1;
-    const newHighestStreak = Math.max(stateStore.highestQuizStreak, newStreak);
-    dispatch({
-        quizStreak: newStreak,
-        highestQuizStreak: newHighestStreak,
-    });
+      const newStreak = stateStore.quizStreak + 1;
+      const newHighestStreak = Math.max(stateStore.highestQuizStreak, newStreak);
+      
+      const savedUser = localStorage.getItem("userProfile");
+      if(savedUser) {
+          const user = JSON.parse(savedUser);
+          user.points = (user.points || 0) + pointsGained;
+          user.highestStreak = Math.max(user.highestStreak || 0, newStreak);
+          localStorage.setItem("userProfile", JSON.stringify(user));
+      }
+      
+      dispatch({
+          quizStreak: newStreak,
+          highestQuizStreak: newHighestStreak,
+      });
 
   }, []);
 
@@ -199,7 +203,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
         toast({
             variant: "destructive",
             title: "Streak Lost!",
-            description: "Your current streak has been reset.",
+            description: "Your current quiz streak has been reset.",
         });
     }
     dispatch({ 
