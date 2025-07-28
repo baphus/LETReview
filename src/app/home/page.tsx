@@ -62,7 +62,9 @@ export default function HomePage() {
     const handleFocus = () => {
       const savedUser = localStorage.getItem("userProfile");
        if (savedUser) {
-          setUser(JSON.parse(savedUser));
+          const parsedUser = JSON.parse(savedUser);
+          if (!parsedUser.unlockedPets) parsedUser.unlockedPets = [];
+          setUser(parsedUser);
        }
     };
     window.addEventListener('focus', handleFocus);
