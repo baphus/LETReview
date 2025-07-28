@@ -268,8 +268,6 @@ function ReviewerPageContent() {
     setChallengeAnswers([]);
   }, []);
 
-  const currentQuestion = questions[currentIndex];
-
   const handleFinishChallenge = (finalAnswers: ChallengeAnswer[]) => {
     const finalScore = finalAnswers.reduce((acc, ans) => acc + (ans.isCorrect ? 1 : 0), 0);
     setQuizScore(finalScore);
@@ -284,33 +282,37 @@ function ReviewerPageContent() {
         const today = new Date();
         const todayString = today.toDateString();
         
-        // Mark challenge as completed for today
         const challengeId = `${challengeDifficulty}-${challengeCategory}-${today.toISOString().split('T')[0]}`;
-        if (!user.completedChallenges) {
-            user.completedChallenges = [];
-        }
-        // Clear out challenges from other days
-        user.completedChallenges = user.completedChallenges.filter((id: string) => id.endsWith(today.toISOString().split('T')[0]));
-        if (!user.completedChallenges.includes(challengeId)) {
-            user.completedChallenges.push(challengeId);
-        }
-
-        if (passed && user.lastChallengeDate !== todayString) {
-            user.streak = (user.streak || 0) + 1;
-            if (user.streak > (user.highestStreak || 0)) {
-                user.highestStreak = user.streak;
+        
+        // Only mark challenge as completed if PASSED
+        if (passed) {
+            if (!user.completedChallenges) {
+                user.completedChallenges = [];
             }
-            user.lastChallengeDate = todayString;
+            // Clear out challenges from other days
+            user.completedChallenges = user.completedChallenges.filter((id: string) => id.endsWith(today.toISOString().split('T')[0]));
+            if (!user.completedChallenges.includes(challengeId)) {
+                user.completedChallenges.push(challengeId);
+            }
 
-            const pointsMap = { easy: 25, medium: 75, hard: 150 };
-            const pointsEarned = pointsMap[challengeDifficulty as keyof typeof pointsMap] || 0;
-            user.points = (user.points || 0) + pointsEarned;
+            // Award points and streak only on the first pass of the day
+            if (user.lastChallengeDate !== todayString) {
+                user.streak = (user.streak || 0) + 1;
+                if (user.streak > (user.highestStreak || 0)) {
+                    user.highestStreak = user.streak;
+                }
+                user.lastChallengeDate = todayString;
 
-            toast({
-                title: "Challenge Passed!",
-                description: `You earned ${pointsEarned} points and secured your streak!`,
-                className: "bg-green-100 border-green-300"
-            });
+                const pointsMap = { easy: 25, medium: 75, hard: 150 };
+                const pointsEarned = pointsMap[challengeDifficulty as keyof typeof pointsMap] || 0;
+                user.points = (user.points || 0) + pointsEarned;
+
+                toast({
+                    title: "Challenge Passed!",
+                    description: `You earned ${pointsEarned} points and secured your streak!`,
+                    className: "bg-green-100 border-green-300"
+                });
+            }
         }
         
         localStorage.setItem('userProfile', JSON.stringify(user));
@@ -380,6 +382,11 @@ function ReviewerPageContent() {
     });
   }
   
+  const handleTryAgain = () => {
+    setShowResults(false);
+    resetQuizState();
+  };
+
   useEffect(() => {
     if (!isChallenge) {
         resetQuizState();
@@ -389,7 +396,7 @@ function ReviewerPageContent() {
   
   const progressValue = questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
   
-  const isChallengeFailed = showResults && isChallenge && (quizScore / questions.length * 100) < passingScore;
+  const isChallengePassed = showResults && isChallenge && (quizScore / questions.length * 100) >= passingScore;
 
   if (isChallenge && !currentQuestion && challengeAnswers.length === questions.length && !showResults) {
     handleFinishChallenge(challengeAnswers);
@@ -410,7 +417,7 @@ function ReviewerPageContent() {
           
           <div className="flex-1 min-h-0 flex flex-col">
               {isChallenge && (
-                  (quizScore / questions.length * 100) >= passingScore ? (
+                  isChallengePassed ? (
                       <div className="text-center text-green-600 font-semibold p-4 bg-green-50 rounded-md mb-4">
                           <p>Congratulations! You passed the challenge. Your streak is safe!</p>
                       </div>
@@ -449,6 +456,12 @@ function ReviewerPageContent() {
           </div>
 
           <DialogFooter className="mt-4 pt-4 border-t flex-col sm:flex-col sm:space-x-0 gap-2">
+            {!isChallengePassed && isChallenge && (
+                <Button onClick={handleTryAgain} variant="secondary">
+                    <RefreshCcw className="mr-2 h-4 w-4" />
+                    Try Again
+                </Button>
+            )}
             <Button onClick={handleDialogClose} className="w-full">
                 Back to Challenges
             </Button>
