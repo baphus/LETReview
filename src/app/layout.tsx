@@ -30,19 +30,24 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-  const [isShowingSplash, setIsShowingSplash] = useState(true);
+  const [isShowingSplash, setIsShowingSplash] = useState(pathname === "/");
 
   useEffect(() => {
-    const splashShown = sessionStorage.getItem("splashShown");
-    if (splashShown) {
-      setIsShowingSplash(false);
+    if (pathname === '/') {
+        setIsShowingSplash(true);
+         const splashShown = sessionStorage.getItem("splashShown");
+        if (splashShown) {
+            setIsShowingSplash(false);
+        } else {
+            setTimeout(() => {
+                setIsShowingSplash(false);
+                sessionStorage.setItem("splashShown", "true");
+            }, 3000); 
+        }
     } else {
-      setTimeout(() => {
         setIsShowingSplash(false);
-        sessionStorage.setItem("splashShown", "true");
-      }, 3000); // Show splash for 3 seconds
     }
-  }, []);
+  }, [pathname]);
 
    const applyActiveTheme = () => {
         const savedUser = localStorage.getItem("userProfile");
@@ -55,24 +60,28 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
     };
 
   useEffect(() => {
-    if (isShowingSplash) return; // Wait for splash screen to finish
+    if (isShowingSplash) return;
 
     applyActiveTheme();
     const userProfile = localStorage.getItem("userProfile");
-    if (!userProfile && pathname !== "/login") {
+    const isAuthPage = pathname === "/login" || pathname === "/";
+    
+    if (!userProfile && !isAuthPage) {
       router.replace("/login");
-    } else if (userProfile && pathname === "/login") {
+    } else if (userProfile && isAuthPage) {
       router.replace("/home");
     } else {
       setIsCheckingAuth(false);
     }
   }, [pathname, router, isShowingSplash]);
 
-  if (isShowingSplash) {
+  if (isShowingSplash && pathname === "/") {
     return <SplashScreen />;
   }
+  
+  const isAppPage = !['/', '/login'].includes(pathname);
 
-  if (isCheckingAuth) {
+  if (isCheckingAuth && isAppPage) {
     return (
       <div className="flex flex-col h-dvh">
         <main className="flex-1 overflow-y-auto p-4">
@@ -87,9 +96,7 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const showNav = pathname !== "/login";
-
-  if (!showNav) {
+  if (!isAppPage) {
     return (
       <TimerProvider>
         <main className="flex-1 overflow-y-auto">{children}</main>
@@ -129,7 +136,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <title>LETReview</title>
+        <title>LETReviewBuddy</title>
         <meta
           name="description"
           content="A mobile-first web application for studying the Licensure Exam for Teachers (LET) in the Philippines."

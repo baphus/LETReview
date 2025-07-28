@@ -20,7 +20,7 @@ import { useEffect, useState } from "react";
 
 const navItems = [
   { href: "/home", label: "Home", icon: Home },
-  { href: "/", label: "Review", icon: BookOpen },
+  { href: "/review", label: "Review", icon: BookOpen },
   { href: "/quiz", label: "Quiz", icon: Lightbulb },
   { href: "/daily", label: "Daily", icon: CalendarDays },
   { href: "/timer", label: "Timer", icon: Clock },
@@ -75,29 +75,32 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
       <SidebarMenu className="flex-1">
-        {navItems.map(({ href, label, icon: Icon }) => (
-          <SidebarMenuItem key={href}>
-            <Link href={href} className="w-full">
-              <SidebarMenuButton
-                isActive={pathname === href}
-                tooltip={{ children: label }}
-                className="justify-between h-12"
-              >
-                <div className="flex items-center gap-3">
-                  <Icon className="h-5 w-5" />
-                  <span className="group-data-[collapsible=icon]:hidden">
-                    {label}
-                  </span>
-                </div>
-                 {href === '/timer' && (
-                  <div className="relative group-data-[collapsible=icon]:-mr-1">
-                    <TimerIndicator />
-                  </div>
-                )}
-              </SidebarMenuButton>
-            </Link>
-          </SidebarMenuItem>
-        ))}
+        {navItems.map(({ href, label, icon: Icon }) => {
+            const isActive = (href === "/" && pathname === "/") || (href !== "/" && pathname.startsWith(href));
+            return (
+              <SidebarMenuItem key={href}>
+                <Link href={href} className="w-full">
+                  <SidebarMenuButton
+                    isActive={isActive}
+                    tooltip={{ children: label }}
+                    className="justify-between h-12"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Icon className="h-5 w-5" />
+                      <span className="group-data-[collapsible=icon]:hidden">
+                        {label}
+                      </span>
+                    </div>
+                     {href === '/timer' && (
+                      <div className="relative group-data-[collapsible=icon]:-mr-1">
+                        <TimerIndicator />
+                      </div>
+                    )}
+                  </SidebarMenuButton>
+                </Link>
+              </SidebarMenuItem>
+            )
+        })}
       </SidebarMenu>
         {user && (
             <>
