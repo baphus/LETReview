@@ -71,7 +71,7 @@ export default function LandingPage() {
               <div className="inline-block rounded-lg bg-secondary px-3 py-1 text-sm">Key Features</div>
               <h2 className="text-3xl md:text-4xl font-bold tracking-tighter font-headline">Everything You Need to Succeed</h2>
               <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                LETReviewBuddy is packed with features designed to make your review sessions effective, engaging, and fun.
+                LETReview is packed with features designed to make your review sessions effective, engaging, and fun.
               </p>
             </div>
             <div className="mx-auto grid items-start gap-8 sm:max-w-4xl sm:grid-cols-2 md:gap-12 lg:max-w-5xl lg:grid-cols-2">
