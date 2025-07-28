@@ -18,7 +18,6 @@ interface TimerState {
   endTime: number | null;
   quizStreak: number;
   streakMultiplier: number;
-  sessionPoints: number;
   timerEnded: boolean;
 }
 
@@ -34,7 +33,6 @@ interface TimerContextProps {
   SHORT_BREAK_TIME: number;
   LONG_BREAK_TIME: number;
   quizStreak: number;
-  sessionPoints: number;
   handleCorrectQuizAnswer: () => void;
   handleIncorrectQuizAnswer: () => void;
   timerEnded: boolean;
@@ -60,7 +58,6 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     endTime: null,
     quizStreak: 0,
     streakMultiplier: 1,
-    sessionPoints: 0,
     timerEnded: false,
   });
 
@@ -94,10 +91,10 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
        const savedUser = localStorage.getItem("userProfile");
        if(savedUser){
            const user = JSON.parse(savedUser);
-           user.completedSessions = (user.completedSessions || 0) + 1;
+           const updatedSessions = (user.completedSessions || 0) + 1;
+           user.completedSessions = updatedSessions;
            localStorage.setItem("userProfile", JSON.stringify(user));
 
-           const updatedSessions = user.completedSessions;
            const updatedFocusSessions = (currentState.focusSessionsCompleted || 0) + 1;
 
            const notificationBody = (updatedFocusSessions % SESSIONS_UNTIL_LONG_BREAK === 0) 
@@ -105,14 +102,6 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
                : `Time for a short break.`;
            
            showNotification("Focus session complete!", { body: notificationBody });
-
-            if (currentState.sessionPoints > 0) {
-              toast({
-                  title: `Session Complete!`,
-                  description: `You earned a total of ${currentState.sessionPoints} points.`,
-                  className: "bg-green-100 border-green-300"
-              });
-            }
 
            updateTimerState({
                isActive: false,
@@ -154,11 +143,6 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
                 const user = JSON.parse(savedUser);
                 parsedState.sessions = user.completedSessions || 0;
              }
-
-            if (typeof parsedState.sessionPoints !== 'number' || isNaN(parsedState.sessionPoints)) {
-                parsedState.sessionPoints = 0;
-            }
-
             setTimerState(parsedState);
         } catch (error) {
             console.error("Failed to parse pomodoro state from localStorage", error);
@@ -181,7 +165,6 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
       endTime: null,
       quizStreak: 0,
       streakMultiplier: 1,
-      sessionPoints: 0,
       timerEnded: false,
     });
   }, [updateTimerState, timerState.mode]);
@@ -205,7 +188,6 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
         ...prevState,
         quizStreak: newStreak,
         streakMultiplier: newMultiplier,
-        sessionPoints: prevState.sessionPoints + pointsGained,
       };
 
       localStorage.setItem("pomodoroState", JSON.stringify(updatedState));
@@ -296,7 +278,6 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
         endTime: null,
         quizStreak: 0,
         streakMultiplier: 1,
-        sessionPoints: 0,
         timerEnded: false,
     });
   }
@@ -313,7 +294,6 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     SHORT_BREAK_TIME,
     LONG_BREAK_TIME,
     quizStreak: timerState.quizStreak,
-    sessionPoints: timerState.sessionPoints,
     handleCorrectQuizAnswer,
     handleIncorrectQuizAnswer,
     timerEnded: timerState.timerEnded,
@@ -325,3 +305,5 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     </TimerContext.Provider>
   );
 }
+
+    

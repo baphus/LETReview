@@ -112,7 +112,6 @@ export default function TimerPage() {
     SHORT_BREAK_TIME,
     LONG_BREAK_TIME,
     quizStreak,
-    sessionPoints,
     handleCorrectQuizAnswer,
     handleIncorrectQuizAnswer,
     timerEnded
@@ -271,7 +270,7 @@ export default function TimerPage() {
 
       </div>
 
-      <div className="grid grid-cols-3 gap-4 mt-6 text-center">
+      <div className="grid grid-cols-2 gap-4 mt-6 text-center">
         <Card>
             <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center justify-center gap-2">
@@ -294,19 +293,11 @@ export default function TimerPage() {
                 <p className="text-2xl font-bold">{quizStreak}</p>
             </CardContent>
         </Card>
-         <Card>
-            <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center justify-center gap-2">
-                    <Gem className="text-green-500" />
-                    <span>Session Points</span>
-                </CardTitle>
-            </CardHeader>
-            <CardContent>
-                <p className="text-2xl font-bold">{sessionPoints}</p>
-            </CardContent>
-        </Card>
       </div>
     </div>
   );
 }
 
+
+
+    
