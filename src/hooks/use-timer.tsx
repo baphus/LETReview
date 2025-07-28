@@ -17,7 +17,6 @@ interface TimerState {
   focusSessionsCompleted: number;
   endTime: number | null;
   quizStreak: number;
-  streakMultiplier: number;
   timerEnded: boolean;
 }
 
@@ -33,7 +32,7 @@ interface TimerContextProps {
   SHORT_BREAK_TIME: number;
   LONG_BREAK_TIME: number;
   quizStreak: number;
-  handleCorrectQuizAnswer: () => void;
+  handleCorrectQuizAnswer: (points: number) => void;
   handleIncorrectQuizAnswer: () => void;
   timerEnded: boolean;
 }
@@ -57,7 +56,6 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     focusSessionsCompleted: 0,
     endTime: null,
     quizStreak: 0,
-    streakMultiplier: 1,
     timerEnded: false,
   });
 
@@ -121,7 +119,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
         endTime: null,
       });
     }
-  }, [showNotification, updateTimerState, toast]);
+  }, [showNotification, updateTimerState]);
 
   // Load state from localStorage on initial render
   useEffect(() => {
@@ -164,15 +162,12 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
       time: timerState.mode === 'focus' ? FOCUS_TIME : (timerState.mode === 'shortBreak' ? SHORT_BREAK_TIME : LONG_BREAK_TIME),
       endTime: null,
       quizStreak: 0,
-      streakMultiplier: 1,
       timerEnded: false,
     });
   }, [updateTimerState, timerState.mode]);
   
 
-  const handleCorrectQuizAnswer = useCallback(() => {
-    const pointsGained = Math.floor(1 * timerState.streakMultiplier);
-    
+  const handleCorrectQuizAnswer = useCallback((pointsGained: number) => {
     const savedUser = localStorage.getItem("userProfile");
     if(savedUser) {
         const user = JSON.parse(savedUser);
@@ -182,24 +177,16 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     
     setTimerState(prevState => {
       const newStreak = prevState.quizStreak + 1;
-      const newMultiplier = 1 + (newStreak * 0.05);
-      
       const updatedState = {
         ...prevState,
         quizStreak: newStreak,
-        streakMultiplier: newMultiplier,
       };
 
       localStorage.setItem("pomodoroState", JSON.stringify(updatedState));
       return updatedState;
     });
 
-    toast({
-        title: `Correct! +${pointsGained} ${pointsGained > 1 ? 'Points' : 'Point'}`,
-        description: `Your streak is now ${timerState.quizStreak + 1}!`,
-        className: "bg-green-100 border-green-300"
-    });
-  }, [timerState.streakMultiplier, timerState.quizStreak, toast]);
+  }, []);
 
   const handleIncorrectQuizAnswer = useCallback(() => {
     if (timerState.quizStreak > 0) {
@@ -211,7 +198,6 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     }
     updateTimerState({ 
       quizStreak: 0,
-      streakMultiplier: 1, 
     });
   }, [updateTimerState, timerState.quizStreak, toast]);
 
@@ -253,7 +239,6 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
           isActive: false,
           endTime: null,
           quizStreak: 0,
-          streakMultiplier: 1,
         }); 
     }
   };
@@ -277,7 +262,6 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
         time: newTime,
         endTime: null,
         quizStreak: 0,
-        streakMultiplier: 1,
         timerEnded: false,
     });
   }

@@ -13,11 +13,12 @@ import { cn } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 
-const MiniQuiz = ({ onCorrectAnswer, onIncorrectAnswer, onStreak }: { onCorrectAnswer: () => void, onIncorrectAnswer: () => void, onStreak: () => void }) => {
+const MiniQuiz = ({ onCorrectAnswer, onIncorrectAnswer, onStreak }: { onCorrectAnswer: (points: number) => void, onIncorrectAnswer: () => void, onStreak: () => void }) => {
     const [question, setQuestion] = useState<QuizQuestion | null>(null);
     const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
     const [isAnswered, setIsAnswered] = useState(false);
     const [isCorrect, setIsCorrect] = useState(false);
+    const { quizStreak } = useTimer();
 
     const getNewQuestion = useCallback(() => {
         const allQuestions = [...sampleQuestions];
@@ -43,7 +44,9 @@ const MiniQuiz = ({ onCorrectAnswer, onIncorrectAnswer, onStreak }: { onCorrectA
         setIsAnswered(true);
 
         if (correct) {
-            onCorrectAnswer();
+            const streakMultiplier = 1 + ((quizStreak + 1) * 0.05);
+            const pointsGained = Math.floor(1 * streakMultiplier);
+            onCorrectAnswer(pointsGained);
             onStreak();
             setTimeout(() => {
                 getNewQuestion();
@@ -119,6 +122,7 @@ export default function TimerPage() {
   
   const { toast } = useToast();
   const [showCombo, setShowCombo] = useState(false);
+  const [showPoints, setShowPoints] = useState<{ show: boolean, points: number }>({ show: false, points: 0 });
 
   const minutes = Math.floor(time / 60);
   const seconds = time % 60;
@@ -134,8 +138,12 @@ export default function TimerPage() {
     // The hook manages its own interval.
   }, []);
   
-  const handleCorrectAnswer = () => {
-    handleCorrectQuizAnswer();
+  const handleCorrectAnswer = (points: number) => {
+    handleCorrectQuizAnswer(points);
+    setShowPoints({ show: true, points: points });
+    setTimeout(() => {
+        setShowPoints({ show: false, points: 0 });
+    }, 1500);
   };
   
    const handleIncorrectAnswer = () => {
@@ -262,7 +270,12 @@ export default function TimerPage() {
                 />
                  {showCombo && quizStreak > 1 && (
                     <div className="absolute -top-4 -right-4 bg-accent text-accent-foreground px-3 py-1 rounded-full text-lg font-bold animate-combo-pop">
-                    Streak x{quizStreak}!
+                        Streak x{quizStreak}!
+                    </div>
+                )}
+                 {showPoints.show && (
+                    <div className="absolute -top-4 left-0 bg-primary text-primary-foreground px-3 py-1 rounded-full text-lg font-bold animate-combo-pop flex items-center gap-1">
+                        <Gem className="h-4 w-4" /> +{showPoints.points}
                     </div>
                 )}
             </div>
