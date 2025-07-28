@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 
 export default function LandingHeader() {
   return (
-    <header className="px-4 lg:px-6 h-16 flex items-center shadow-sm">
+    <header className="px-4 lg:px-6 h-16 flex items-center shadow-sm sticky top-0 bg-background/95 backdrop-blur z-10">
       <Link href="/" className="flex items-center justify-center">
         <BookOpen className="h-6 w-6 text-primary" />
         <span className="sr-only">LETReview</span>
@@ -16,6 +16,9 @@ export default function LandingHeader() {
       <nav className="ml-auto flex gap-4 sm:gap-6 items-center">
         <Link href="#features" className="text-sm font-medium hover:underline underline-offset-4">
           Features
+        </Link>
+        <Link href="#preview" className="text-sm font-medium hover:underline underline-offset-4">
+          Preview
         </Link>
         <Link href="#testimonials" className="text-sm font-medium hover:underline underline-offset-4">
           Testimonials

@@ -91,9 +91,31 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
+        
+        {/* App Preview Section */}
+        <section id="preview" className="w-full py-20 md:py-32 bg-primary/5">
+            <div className="container mx-auto px-4 md:px-6">
+                <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
+                    <h2 className="text-3xl md:text-4xl font-bold tracking-tighter font-headline">See it in Action</h2>
+                    <p className="max-w-[600px] text-muted-foreground md:text-xl/relaxed">
+                        Explore the clean and intuitive interface designed to keep you focused and motivated.
+                    </p>
+                </div>
+                <div className="mx-auto max-w-5xl">
+                    <Image
+                        src="https://placehold.co/1200x800.png"
+                        alt="LETReview App Screenshot"
+                        width={1200}
+                        height={800}
+                        className="rounded-lg border shadow-2xl"
+                        data-ai-hint="app screenshot"
+                    />
+                </div>
+            </div>
+        </section>
 
          {/* Testimonial Section */}
-        <section id="testimonials" className="w-full py-20 md:py-32 bg-primary/5">
+        <section id="testimonials" className="w-full py-20 md:py-32">
           <div className="container mx-auto grid items-center justify-center gap-4 px-4 text-center md:px-6">
             <div className="space-y-3">
               <h2 className="text-3xl font-bold tracking-tighter md:text-4xl/tight font-headline">
@@ -125,7 +147,7 @@ export default function LandingPage() {
 
 
         {/* CTA Section */}
-        <section id="cta" className="w-full py-20 md:py-32">
+        <section id="cta" className="w-full py-20 md:py-32 bg-primary/5">
           <div className="container mx-auto text-center px-4 md:px-6">
             <h2 className="text-3xl md:text-4xl font-bold tracking-tighter font-headline mb-4">Ready to Start Your Journey?</h2>
             <p className="max-w-[600px] mx-auto text-muted-foreground md:text-xl mb-6">
