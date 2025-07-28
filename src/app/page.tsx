@@ -95,12 +95,12 @@ export default function LandingPage() {
         {/* App Preview Section */}
         <section id="preview" className="w-full py-12">
             <div className="container mx-auto px-4 md:px-6">
-                <div className="relative mx-auto max-w-3xl">
+                <div className="relative mx-auto max-w-5xl">
                     <Image
-                        src="https://placehold.co/800x500.png"
+                        src="https://placehold.co/1200x750.png"
                         alt="LETReview App Screenshot"
-                        width={800}
-                        height={500}
+                        width={1200}
+                        height={750}
                         className="rounded-lg border shadow-2xl"
                         data-ai-hint="app dashboard"
                     />
