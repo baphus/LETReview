@@ -172,7 +172,6 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
       time: stateStore.mode === 'focus' ? FOCUS_TIME : (stateStore.mode === 'shortBreak' ? SHORT_BREAK_TIME : LONG_BREAK_TIME),
       endTime: null,
       quizStreak: 0,
-      highestQuizStreak: 0,
       timerEnded: false,
     });
   }, []);
@@ -245,7 +244,6 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
           isActive: false,
           endTime: null,
           quizStreak: 0,
-          highestQuizStreak: 0,
         }); 
     }
   };
@@ -269,7 +267,6 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
         time: newTime,
         endTime: null,
         quizStreak: 0,
-        highestQuizStreak: 0,
         timerEnded: false,
     });
   }
