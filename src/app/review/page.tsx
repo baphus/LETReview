@@ -260,6 +260,8 @@ function ReviewerPageContent() {
       .map(q => ({ ...q, choices: [...q.choices].sort(() => Math.random() - 0.5) }));
 
   }, [category, isChallenge, challengeCount, challengeDifficulty, challengeCategory, isShuffled]);
+  
+  const currentQuestion = questions[currentIndex];
 
   const resetQuizState = useCallback(() => {
     setCurrentIndex(0);
@@ -289,13 +291,15 @@ function ReviewerPageContent() {
             if (!user.completedChallenges) {
                 user.completedChallenges = [];
             }
-            // Clear out challenges from other days
-            user.completedChallenges = user.completedChallenges.filter((id: string) => id.endsWith(today.toISOString().split('T')[0]));
+            // Clear out challenges from other days to avoid bloating local storage
+            const todayKey = today.toISOString().split('T')[0];
+            user.completedChallenges = (user.completedChallenges || []).filter((id: string) => id.endsWith(todayKey));
+            
             if (!user.completedChallenges.includes(challengeId)) {
                 user.completedChallenges.push(challengeId);
             }
 
-            // Award points and streak only on the first pass of the day
+            // Award points and streak only on the first pass of the day for any challenge
             if (user.lastChallengeDate !== todayString) {
                 user.streak = (user.streak || 0) + 1;
                 if (user.streak > (user.highestStreak || 0)) {
@@ -310,6 +314,12 @@ function ReviewerPageContent() {
                 toast({
                     title: "Challenge Passed!",
                     description: `You earned ${pointsEarned} points and secured your streak!`,
+                    className: "bg-green-100 border-green-300"
+                });
+            } else {
+                 toast({
+                    title: "Challenge Passed!",
+                    description: `You passed another challenge!`,
                     className: "bg-green-100 border-green-300"
                 });
             }
@@ -419,11 +429,11 @@ function ReviewerPageContent() {
               {isChallenge && (
                   isChallengePassed ? (
                       <div className="text-center text-green-600 font-semibold p-4 bg-green-50 rounded-md mb-4">
-                          <p>Congratulations! You passed the challenge. Your streak is safe!</p>
+                          <p>Congratulations! You passed the challenge.</p>
                       </div>
                   ) : (
                       <div className="text-center text-red-600 font-semibold p-4 bg-red-50 rounded-md mb-4">
-                          <p>So close! You needed {passingScore}% to pass. Try another challenge!</p>
+                          <p>So close! You needed {passingScore}% to pass. Don't give up!</p>
                       </div>
                   )
               )}
@@ -463,7 +473,7 @@ function ReviewerPageContent() {
                 </Button>
             )}
             <Button onClick={handleDialogClose} className="w-full">
-                Back to Challenges
+                {isChallenge ? 'Back to Challenges' : 'Close'}
             </Button>
           </DialogFooter>
         </DialogContent>
