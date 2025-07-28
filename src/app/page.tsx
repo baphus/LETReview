@@ -457,7 +457,7 @@ export default function ReviewPage() {
             </DialogDescription>
           </DialogHeader>
           
-          <div className="flex-1 min-h-0">
+          <div className="flex-1 min-h-0 flex flex-col">
               {isChallenge && (
                   (quizScore / questions.length * 100) >= passingScore ? (
                       <div className="text-center text-green-600 font-semibold p-4 bg-green-50 rounded-md mb-4">
@@ -470,7 +470,7 @@ export default function ReviewPage() {
                   )
               )}
 
-              <ScrollArea className="h-full">
+              <ScrollArea className="h-96">
                   <div className="space-y-4 pr-6">
                       {challengeAnswers.map(answer => (
                           <div key={answer.questionId} className="text-sm p-3 rounded-md bg-muted">
