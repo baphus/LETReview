@@ -281,14 +281,26 @@ function ReviewerPageContent() {
     const savedUser = localStorage.getItem("userProfile");
     if (savedUser) {
         const user = JSON.parse(savedUser);
-        const today = new Date().toDateString();
+        const today = new Date();
+        const todayString = today.toDateString();
         
-        if (passed && user.lastChallengeDate !== today) {
+        // Mark challenge as completed for today
+        const challengeId = `${challengeDifficulty}-${challengeCategory}-${today.toISOString().split('T')[0]}`;
+        if (!user.completedChallenges) {
+            user.completedChallenges = [];
+        }
+        // Clear out challenges from other days
+        user.completedChallenges = user.completedChallenges.filter((id: string) => id.endsWith(today.toISOString().split('T')[0]));
+        if (!user.completedChallenges.includes(challengeId)) {
+            user.completedChallenges.push(challengeId);
+        }
+
+        if (passed && user.lastChallengeDate !== todayString) {
             user.streak = (user.streak || 0) + 1;
             if (user.streak > (user.highestStreak || 0)) {
                 user.highestStreak = user.streak;
             }
-            user.lastChallengeDate = today;
+            user.lastChallengeDate = todayString;
 
             const pointsMap = { easy: 25, medium: 75, hard: 150 };
             const pointsEarned = pointsMap[challengeDifficulty as keyof typeof pointsMap] || 0;
@@ -368,31 +380,6 @@ function ReviewerPageContent() {
     });
   }
   
-  const handleSecondChance = () => {
-    const savedUser = localStorage.getItem("userProfile");
-    if (savedUser) {
-        let user = JSON.parse(savedUser);
-        if (user.points >= 50) {
-            user.points -= 50;
-            localStorage.setItem("userProfile", JSON.stringify(user));
-            toast({
-                title: "Second Chance!",
-                description: "You've spent 50 points to try again.",
-                className: "bg-green-100 border-green-300"
-            });
-            setShowResults(false);
-            resetQuizState();
-            // We don't need to re-route, just reset the state
-        } else {
-            toast({
-                variant: "destructive",
-                title: "Not enough points!",
-                description: "You need 50 points for a second chance."
-            });
-        }
-    }
-  }
-
   useEffect(() => {
     if (!isChallenge) {
         resetQuizState();
@@ -462,13 +449,7 @@ function ReviewerPageContent() {
           </div>
 
           <DialogFooter className="mt-4 pt-4 border-t flex-col sm:flex-col sm:space-x-0 gap-2">
-            {isChallengeFailed && (
-                <Button onClick={handleSecondChance} className="w-full">
-                    <RefreshCcw className="mr-2 h-4 w-4" />
-                    Try Again (50 Points)
-                </Button>
-            )}
-            <Button onClick={handleDialogClose} className="w-full" variant={isChallengeFailed ? "outline" : "default"}>
+            <Button onClick={handleDialogClose} className="w-full">
                 Back to Challenges
             </Button>
           </DialogFooter>

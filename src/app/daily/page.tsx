@@ -33,6 +33,7 @@ interface UserStats {
   lastChallengeDate?: string;
   lastQotdDate?: string;
   petsUnlocked: number;
+  completedChallenges: string[];
 }
 
 const QuestionOfTheDay = ({ onCorrectAnswer }: { onCorrectAnswer: () => void }) => {
@@ -133,6 +134,7 @@ export default function DailyPage() {
     highestStreak: 0,
     points: 0,
     petsUnlocked: 0,
+    completedChallenges: [],
   });
   const [challengeCompletedToday, setChallengeCompletedToday] = useState(false);
   const [streakBroken, setStreakBroken] = useState(false);
@@ -166,6 +168,9 @@ export default function DailyPage() {
         setStreakBroken(false);
       }
       
+      const todayKey = new Date().toISOString().split('T')[0];
+      const todaysChallenges = (parsedUser.completedChallenges || []).filter((id: string) => id.endsWith(todayKey));
+
       setUserStats({
         streak: parsedUser.streak || 0,
         highestStreak: parsedUser.highestStreak || 0,
@@ -173,6 +178,7 @@ export default function DailyPage() {
         lastChallengeDate: parsedUser.lastChallengeDate,
         lastQotdDate: parsedUser.lastQotdDate,
         petsUnlocked: parsedUser.petsUnlocked || 0,
+        completedChallenges: todaysChallenges,
       });
     }
   }, []);
@@ -232,6 +238,9 @@ export default function DailyPage() {
     { difficulty: 'medium', count: 10, points: 75, color: 'yellow' },
     { difficulty: 'hard', count: 15, points: 150, color: 'red' },
   ];
+  
+  const todayKey = new Date().toISOString().split('T')[0];
+
 
   return (
     <div className="container mx-auto p-4 max-w-2xl">
@@ -326,23 +335,32 @@ export default function DailyPage() {
             </Tabs>
         </div>
         <div className="space-y-4">
-          {challenges.map(challenge => (
-            <Card key={challenge.difficulty} className={`border-${challenge.color}-200`}>
-              <CardHeader>
-                <CardTitle className="font-headline capitalize">{challenge.difficulty} Challenge</CardTitle>
-                <CardDescription>Complete a set of {challenge.count} {selectedCategory === 'gen_education' ? 'General' : 'Professional'} Education questions.</CardDescription>
-              </CardHeader>
-              <CardFooter className="flex justify-between items-center">
-                <div className={`flex items-center gap-1 font-semibold text-${challenge.color}-600`}>
-                  <Star className={`h-4 w-4 fill-${challenge.color}-500`} />
-                  <span>{challenge.points} Points</span>
-                </div>
-                <Button onClick={() => handleStartChallenge(challenge.difficulty, challenge.count)}>
-                  Start
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
+          {challenges.map(challenge => {
+             const challengeId = `${challenge.difficulty}-${selectedCategory}-${todayKey}`;
+             const isCompleted = userStats.completedChallenges.includes(challengeId);
+            return (
+                <Card key={challenge.difficulty} className={cn(isCompleted && "bg-muted/50", `border-${challenge.color}-200`)}>
+                  <CardHeader>
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <CardTitle className="font-headline capitalize">{challenge.difficulty} Challenge</CardTitle>
+                            <CardDescription>Complete a set of {challenge.count} {selectedCategory === 'gen_education' ? 'General' : 'Professional'} Education questions.</CardDescription>
+                        </div>
+                        {isCompleted && <Badge variant="secondary">Completed</Badge>}
+                    </div>
+                  </CardHeader>
+                  <CardFooter className="flex justify-between items-center">
+                    <div className={`flex items-center gap-1 font-semibold text-${challenge.color}-600`}>
+                      <Star className={`h-4 w-4 fill-${challenge.color}-500`} />
+                      <span>{challenge.points} Points</span>
+                    </div>
+                    <Button onClick={() => handleStartChallenge(challenge.difficulty, challenge.count)} disabled={isCompleted}>
+                      {isCompleted ? 'Done' : 'Start'}
+                    </Button>
+                  </CardFooter>
+                </Card>
+            )
+          })}
         </div>
       </section>
     </div>

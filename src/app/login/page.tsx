@@ -44,6 +44,7 @@ export default function LoginPage() {
       unlockedThemes: ['default'],
       activeTheme: 'default',
       unlockedPets: [],
+      completedChallenges: [],
     };
 
     localStorage.setItem("userProfile", JSON.stringify(userProfile));
