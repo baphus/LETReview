@@ -104,7 +104,7 @@ const MiniQuiz = ({ onCorrectAnswer, onIncorrectAnswer, onStreak }: { onCorrectA
 
 export default function TimerPage() {
   const { 
-    time, 
+    time: rawTime, 
     isActive, 
     mode, 
     sessions, 
@@ -125,6 +125,7 @@ export default function TimerPage() {
   const [showCombo, setShowCombo] = useState(false);
   const [showPoints, setShowPoints] = useState<{ show: boolean, points: number }>({ show: false, points: 0 });
 
+  const time = rawTime || 0;
   const minutes = Math.floor(time / 60);
   const seconds = time % 60;
   
