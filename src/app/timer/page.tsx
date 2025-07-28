@@ -115,6 +115,7 @@ export default function TimerPage() {
     SHORT_BREAK_TIME,
     LONG_BREAK_TIME,
     quizStreak,
+    highestQuizStreak,
     handleCorrectQuizAnswer,
     handleIncorrectQuizAnswer,
     timerEnded
@@ -123,7 +124,6 @@ export default function TimerPage() {
   const { toast } = useToast();
   const [showCombo, setShowCombo] = useState(false);
   const [showPoints, setShowPoints] = useState<{ show: boolean, points: number }>({ show: false, points: 0 });
-  const [userHighestStreak, setUserHighestStreak] = useState(0);
 
   const time = rawTime || 0;
   const minutes = Math.floor(time / 60);
@@ -135,26 +135,6 @@ export default function TimerPage() {
     return ((totalTime - time) / totalTime) * 100;
   }, [time, mode, FOCUS_TIME, SHORT_BREAK_TIME, LONG_BREAK_TIME]);
 
-
-  const loadUserStats = useCallback(() => {
-    const savedUser = localStorage.getItem("userProfile");
-    if(savedUser){
-        const user = JSON.parse(savedUser);
-        setUserHighestStreak(user.highestStreak || 0);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadUserStats();
-    
-    // Listen for storage changes to update the UI in real-time
-    const handleStorageChange = () => {
-        loadUserStats();
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, [loadUserStats]);
   
   const handleCorrectAnswer = (points: number) => {
     handleCorrectQuizAnswer(points);
@@ -169,7 +149,9 @@ export default function TimerPage() {
   };
   
   const handleStreak = () => {
-    if (quizStreak > 0) { // Only show combo after the first correct answer in a streak
+    // quizStreak from useTimer is not updated immediately, so we get it from the store
+    const currentStreak = useTimer.getState().quizStreak;
+    if (currentStreak > 1) { // Only show combo after the first correct answer in a streak
       setShowCombo(true);
       setTimeout(() => {
         setShowCombo(false);
@@ -286,9 +268,9 @@ export default function TimerPage() {
                     onIncorrectAnswer={handleIncorrectAnswer} 
                     onStreak={handleStreak}
                 />
-                 {showCombo && quizStreak > 1 && (
+                 {showCombo && useTimer.getState().quizStreak > 1 && (
                     <div className="absolute -top-4 -right-4 bg-destructive text-destructive-foreground px-3 py-1 rounded-full text-lg font-bold animate-combo-pop">
-                        🔥 Streak x{quizStreak}!
+                        🔥 Streak x{useTimer.getState().quizStreak}!
                     </div>
                 )}
                  {showPoints.show && (
@@ -321,7 +303,7 @@ export default function TimerPage() {
                 </CardTitle>
             </CardHeader>
             <CardContent>
-                <p className="text-2xl font-bold">{userHighestStreak}</p>
+                <p className="text-2xl font-bold">{highestQuizStreak}</p>
             </CardContent>
         </Card>
       </div>
