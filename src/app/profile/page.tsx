@@ -34,13 +34,13 @@ interface UserProfile {
 
 const themes = [
     { name: 'Default', value: 'default', cost: 0, colors: { primary: 'hsl(231 48% 48%)', accent: 'hsl(110 32% 48%)' } },
-    { name: 'Mint', value: 'mint', cost: 500, colors: { primary: 'hsl(160, 50%, 45%)', accent: 'hsl(200, 60%, 50%)' } },
-    { name: 'Sunset', value: 'sunset', cost: 500, colors: { primary: 'hsl(25, 80%, 55%)', accent: 'hsl(350, 70%, 60%)' } },
-    { name: 'Rose', value: 'rose', cost: 500, colors: { primary: 'hsl(340, 70%, 55%)', accent: 'hsl(280, 50%, 60%)' } },
+    { name: 'Mint', value: 'mint', cost: 100, colors: { primary: 'hsl(160, 50%, 45%)', accent: 'hsl(200, 60%, 50%)' } },
+    { name: 'Sunset', value: 'sunset', cost: 100, colors: { primary: 'hsl(25, 80%, 55%)', accent: 'hsl(350, 70%, 60%)' } },
+    { name: 'Rose', value: 'rose', cost: 100, colors: { primary: 'hsl(340, 70%, 55%)', accent: 'hsl(280, 50%, 60%)' } },
 ];
 
 const rarePets = [
-    { name: "Draco", cost: 2000, image: "https://placehold.co/100x100.png", hint: "fire breathing" },
+    { name: "Draco", cost: 1000, image: "https://placehold.co/100x100.png", hint: "fire breathing" },
 ]
 
 export default function ProfilePage() {
