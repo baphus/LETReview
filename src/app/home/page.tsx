@@ -125,10 +125,10 @@ export default function HomePage() {
       <section>
         <h2 className="text-xl font-bold font-headline mb-4">Your Stats</h2>
         <div className="grid grid-cols-2 gap-4">
-            <Card className="col-span-2 md:col-span-1 bg-primary/10 border-primary">
+            <Card className="col-span-2 md:col-span-1 bg-destructive/10 border-destructive">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-base font-bold text-primary">Daily Streak</CardTitle>
-                <Flame className="h-5 w-5 text-primary" />
+                <CardTitle className="text-base font-bold text-destructive">Daily Streak</CardTitle>
+                <Flame className="h-5 w-5 text-destructive" />
                 </CardHeader>
                 <CardContent>
                 <div className="text-3xl font-bold">{user.streak} days</div>

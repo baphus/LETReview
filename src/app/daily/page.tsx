@@ -252,7 +252,7 @@ export default function DailyPage() {
       <div className="grid grid-cols-2 gap-4 mb-6 text-center">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="flex items-center justify-center gap-2 text-lg">
+            <CardTitle className="flex items-center justify-center gap-2 text-lg text-destructive">
               <Flame className="text-destructive" />
               <span>Streak</span>
             </CardTitle>
