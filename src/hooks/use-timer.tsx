@@ -17,27 +17,43 @@ interface TimerState {
   focusSessionsCompleted: number;
   endTime: number | null;
   quizStreak: number;
+  highestQuizStreak: number;
   timerEnded: boolean;
 }
 
-interface TimerContextProps {
-  time: number;
-  isActive: boolean;
-  mode: "focus" | "shortBreak" | "longBreak";
-  sessions: number;
+interface TimerContextProps extends TimerState {
   toggleTimer: () => void;
   resetTimer: () => void;
   setMode: (newMode: "focus" | "shortBreak" | "longBreak") => void;
   FOCUS_TIME: number;
   SHORT_BREAK_TIME: number;
   LONG_BREAK_TIME: number;
-  quizStreak: number;
   handleCorrectQuizAnswer: (points: number) => void;
   handleIncorrectQuizAnswer: () => void;
-  timerEnded: boolean;
 }
 
 const TimerContext = createContext<TimerContextProps | undefined>(undefined);
+
+let stateStore: TimerState = {
+    time: FOCUS_TIME,
+    isActive: false,
+    mode: 'focus',
+    sessions: 0,
+    focusSessionsCompleted: 0,
+    endTime: null,
+    quizStreak: 0,
+    highestQuizStreak: 0,
+    timerEnded: false,
+};
+
+const listeners: Set<(state: TimerState) => void> = new Set();
+
+const dispatch = (newState: Partial<TimerState>) => {
+    stateStore = { ...stateStore, ...newState };
+    localStorage.setItem("pomodoroState", JSON.stringify(stateStore));
+    listeners.forEach(listener => listener(stateStore));
+};
+
 
 export function useTimer() {
   const context = useContext(TimerContext);
@@ -47,19 +63,21 @@ export function useTimer() {
   return context;
 }
 
-export function TimerProvider({ children }: { children: React.ReactNode }) {
-  const [timerState, setTimerState] = useState<TimerState>({
-    time: FOCUS_TIME,
-    isActive: false,
-    mode: 'focus',
-    sessions: 0,
-    focusSessionsCompleted: 0,
-    endTime: null,
-    quizStreak: 0,
-    timerEnded: false,
-  });
+// Add a static method to get the current state
+useTimer.getState = () => {
+  return stateStore;
+}
 
+export function TimerProvider({ children }: { children: React.ReactNode }) {
+  const [timerState, setTimerState] = useState<TimerState>(stateStore);
   const { toast } = useToast();
+
+  useEffect(() => {
+    listeners.add(setTimerState);
+    return () => {
+      listeners.delete(setTimerState);
+    };
+  }, []);
 
   const showNotification = useCallback((title: string, options?: NotificationOptions) => {
     if ('Notification' in window && Notification.permission === 'granted') {
@@ -71,14 +89,6 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
       Notification.requestPermission();
     }
-  }, []);
-  
-  const updateTimerState = useCallback((newState: Partial<TimerState>) => {
-    setTimerState(prevState => {
-      const updated = { ...prevState, ...newState };
-      localStorage.setItem("pomodoroState", JSON.stringify(updated));
-      return updated;
-    });
   }, []);
   
   const handleTimerEnd = useCallback(() => {
@@ -101,7 +111,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
            
            showNotification("Focus session complete!", { body: notificationBody });
 
-           updateTimerState({
+           dispatch({
                isActive: false,
                timerEnded: true,
                endTime: null,
@@ -111,7 +121,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
        }
     } else { // break is over
        showNotification("Break's over!", { body: "Time to start another focus session."});
-       updateTimerState({
+       dispatch({
         mode: 'focus',
         time: FOCUS_TIME,
         isActive: false,
@@ -119,7 +129,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
         endTime: null,
       });
     }
-  }, [showNotification, updateTimerState]);
+  }, [showNotification]);
 
   // Load state from localStorage on initial render
   useEffect(() => {
@@ -141,7 +151,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
                 const user = JSON.parse(savedUser);
                 parsedState.sessions = user.completedSessions || 0;
              }
-            setTimerState(parsedState);
+            dispatch(parsedState);
         } catch (error) {
             console.error("Failed to parse pomodoro state from localStorage", error);
             localStorage.removeItem("pomodoroState");
@@ -150,21 +160,22 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
         const savedUser = localStorage.getItem("userProfile");
         if (savedUser) {
             const user = JSON.parse(savedUser);
-            setTimerState(prevState => ({ ...prevState, sessions: user.completedSessions || 0 }));
+            dispatch({ sessions: user.completedSessions || 0 });
         }
     }
     requestNotificationPermission();
   }, [requestNotificationPermission, handleTimerEnd]);
 
   const resetTimer = useCallback(() => {
-    updateTimerState({
+    dispatch({
       isActive: false,
-      time: timerState.mode === 'focus' ? FOCUS_TIME : (timerState.mode === 'shortBreak' ? SHORT_BREAK_TIME : LONG_BREAK_TIME),
+      time: stateStore.mode === 'focus' ? FOCUS_TIME : (stateStore.mode === 'shortBreak' ? SHORT_BREAK_TIME : LONG_BREAK_TIME),
       endTime: null,
       quizStreak: 0,
+      highestQuizStreak: 0,
       timerEnded: false,
     });
-  }, [updateTimerState, timerState.mode]);
+  }, []);
   
 
   const handleCorrectQuizAnswer = useCallback((pointsGained: number) => {
@@ -175,31 +186,27 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem("userProfile", JSON.stringify(user));
     }
     
-    setTimerState(prevState => {
-      const newStreak = prevState.quizStreak + 1;
-      const updatedState = {
-        ...prevState,
+    const newStreak = stateStore.quizStreak + 1;
+    const newHighestStreak = Math.max(stateStore.highestQuizStreak, newStreak);
+    dispatch({
         quizStreak: newStreak,
-      };
-
-      localStorage.setItem("pomodoroState", JSON.stringify(updatedState));
-      return updatedState;
+        highestQuizStreak: newHighestStreak,
     });
 
   }, []);
 
   const handleIncorrectQuizAnswer = useCallback(() => {
-    if (timerState.quizStreak > 0) {
+    if (stateStore.quizStreak > 0) {
         toast({
             variant: "destructive",
             title: "Streak Lost!",
-            description: "Your multiplier has been reset.",
+            description: "Your current streak has been reset.",
         });
     }
-    updateTimerState({ 
+    dispatch({ 
       quizStreak: 0,
     });
-  }, [updateTimerState, timerState.quizStreak, toast]);
+  }, [toast]);
 
 
   useEffect(() => {
@@ -207,15 +214,14 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
 
     if (timerState.isActive && timerState.time > 0) {
       interval = setInterval(() => {
-        setTimerState(prevState => {
-            const newTime = prevState.time - 1;
-            if (newTime <= 0) {
-                if(interval) clearInterval(interval);
-                handleTimerEnd();
-                return { ...prevState, time: 0, isActive: false };
-            }
-            return { ...prevState, time: newTime };
-        });
+        const newTime = stateStore.time - 1;
+        if (newTime <= 0) {
+            if(interval) clearInterval(interval);
+            handleTimerEnd();
+            dispatch({ time: 0, isActive: false });
+        } else {
+            dispatch({ time: newTime });
+        }
       }, 1000);
     }
     
@@ -229,16 +235,17 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     const newEndTime = newIsActive ? Date.now() + timerState.time * 1000 : null;
 
     if (newIsActive) {
-        updateTimerState({
+        dispatch({
           isActive: true,
           endTime: newEndTime,
           timerEnded: false,
         });
     } else {
-        updateTimerState({ 
+        dispatch({ 
           isActive: false,
           endTime: null,
           quizStreak: 0,
+          highestQuizStreak: 0,
         }); 
     }
   };
@@ -256,31 +263,27 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
             newTime = LONG_BREAK_TIME;
             break;
     }
-    updateTimerState({
+    dispatch({
         isActive: false,
         mode: newMode,
         time: newTime,
         endTime: null,
         quizStreak: 0,
+        highestQuizStreak: 0,
         timerEnded: false,
     });
   }
 
   const value = {
-    time: timerState.time,
-    isActive: timerState.isActive,
-    mode: timerState.mode,
-    sessions: timerState.sessions,
+    ...timerState,
     toggleTimer,
     resetTimer,
     setMode,
     FOCUS_TIME,
     SHORT_BREAK_TIME,
     LONG_BREAK_TIME,
-    quizStreak: timerState.quizStreak,
     handleCorrectQuizAnswer,
     handleIncorrectQuizAnswer,
-    timerEnded: timerState.timerEnded,
   };
 
   return (
@@ -289,5 +292,3 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     </TimerContext.Provider>
   );
 }
-
-    

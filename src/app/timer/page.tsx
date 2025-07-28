@@ -44,8 +44,8 @@ const MiniQuiz = ({ onCorrectAnswer, onIncorrectAnswer, onStreak }: { onCorrectA
         setIsAnswered(true);
 
         if (correct) {
-            const streakMultiplier = 1 + ((quizStreak + 1) * 0.05);
-            const pointsGained = Math.floor(1 * streakMultiplier);
+            const { highestQuizStreak } = useTimer.getState();
+            const pointsGained = 1 * (highestQuizStreak + 1);
             onCorrectAnswer(pointsGained);
             onStreak();
             setTimeout(() => {
@@ -115,6 +115,7 @@ export default function TimerPage() {
     SHORT_BREAK_TIME,
     LONG_BREAK_TIME,
     quizStreak,
+    highestQuizStreak,
     handleCorrectQuizAnswer,
     handleIncorrectQuizAnswer,
     timerEnded
@@ -299,11 +300,11 @@ export default function TimerPage() {
             <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center justify-center gap-2">
                     <Zap className="text-yellow-500" />
-                    <span>Streak</span>
+                    <span>Highest Streak</span>
                 </CardTitle>
             </CardHeader>
             <CardContent>
-                <p className="text-2xl font-bold">{quizStreak}</p>
+                <p className="text-2xl font-bold">{highestQuizStreak}</p>
             </CardContent>
         </Card>
       </div>
