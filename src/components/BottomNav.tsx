@@ -17,7 +17,7 @@ const navItems = [
 
 export default function BottomNav() {
   const pathname = usePathname();
-  const { time, isActive, mode } = useTimer();
+  const { time, isActive } = useTimer();
 
   const TimerIndicator = () => {
     if (!isActive) return null;

@@ -118,7 +118,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <title>LETsReview</title>
+        <title>LETReview</title>
         <meta
           name="description"
           content="A mobile-first web application for studying the Licensure Exam for Teachers (LET) in the Philippines."

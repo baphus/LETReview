@@ -206,7 +206,7 @@ export default function ProfilePage() {
 
       <Card className="mt-6">
         <CardHeader>
-          <CardTitle>About LETsReview</CardTitle>
+          <CardTitle>About LETReview</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
@@ -234,5 +234,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-
-    

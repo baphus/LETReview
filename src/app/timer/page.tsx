@@ -10,6 +10,7 @@ import { useTimer } from "@/hooks/use-timer";
 import { sampleQuestions } from "@/lib/data";
 import type { QuizQuestion } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 
 const MiniQuiz = ({ onCorrectAnswer, onIncorrectAnswer }: { onCorrectAnswer: () => void, onIncorrectAnswer: () => void }) => {
@@ -106,9 +107,10 @@ export default function TimerPage() {
     sessions, 
     toggleTimer, 
     resetTimer: baseResetTimer,
+    setMode,
     FOCUS_TIME,
-    BREAK_TIME,
-    addCompletedSession,
+    SHORT_BREAK_TIME,
+    LONG_BREAK_TIME,
     quizStreak,
     streakMultiplier,
     sessionPoints,
@@ -121,11 +123,10 @@ export default function TimerPage() {
   const minutes = Math.floor(time / 60);
   const seconds = time % 60;
   
-  const progress = useMemo(() => (
-    mode === 'focus' 
-      ? (FOCUS_TIME - time) / FOCUS_TIME 
-      : (BREAK_TIME - time) / BREAK_TIME
-  ) * 100, [time, mode, FOCUS_TIME, BREAK_TIME]);
+  const progress = useMemo(() => {
+    const totalTime = mode === 'focus' ? FOCUS_TIME : (mode === 'shortBreak' ? SHORT_BREAK_TIME : LONG_BREAK_TIME);
+    return ((totalTime - time) / totalTime) * 100;
+  }, [time, mode, FOCUS_TIME, SHORT_BREAK_TIME, LONG_BREAK_TIME]);
 
 
   const handleTimerEnd = useCallback(() => {
@@ -163,6 +164,14 @@ export default function TimerPage() {
     baseResetTimer();
   }
 
+  const getModeTitle = () => {
+    switch (mode) {
+      case 'focus': return "Focus Session";
+      case 'shortBreak': return "Short Break";
+      case 'longBreak': return "Long Break";
+    }
+  }
+
   return (
     <div className="container mx-auto p-4 max-w-2xl flex flex-col">
       <header className="flex items-center gap-2 mb-6">
@@ -170,12 +179,27 @@ export default function TimerPage() {
         <h1 className="text-3xl font-bold font-headline">Pomodoro Timer</h1>
       </header>
 
+       <div className="flex justify-center mb-6">
+          <Tabs 
+            value={mode} 
+            onValueChange={(value) => setMode(value as "focus" | "shortBreak" | "longBreak")}
+            className="w-full max-w-sm"
+          >
+              <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="focus">Focus</TabsTrigger>
+                  <TabsTrigger value="shortBreak">Short Break</TabsTrigger>
+                  <TabsTrigger value="longBreak">Long Break</TabsTrigger>
+              </TabsList>
+          </Tabs>
+      </div>
+
+
       <div className="flex-1 flex flex-col justify-center items-center gap-6">
         <Card className="w-full max-w-sm">
           <CardHeader className="text-center">
             <CardTitle className="text-lg font-semibold flex items-center justify-center gap-2">
                 {mode === 'focus' ? <Clock className="h-5 w-5" /> : <Coffee className="h-5 w-5" />}
-                <span>{mode === "focus" ? "Focus Session" : "Short Break"}</span>
+                <span>{getModeTitle()}</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col items-center gap-6">

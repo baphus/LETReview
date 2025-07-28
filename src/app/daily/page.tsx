@@ -5,8 +5,9 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { CalendarDays, Flame, Gem, Shield, Star, Lock, RefreshCcw, HelpCircle } from "lucide-react";
-import { pets } from "@/lib/data";
+import { CalendarDays, Flame, Gem, Shield, Star, Lock, RefreshCcw, HelpCircle, CheckCircle, XCircle } from "lucide-react";
+import { pets, getQuestionOfTheDay } from "@/lib/data";
+import type { QuizQuestion } from "@/lib/types";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -22,6 +23,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 
 
 interface UserStats {
@@ -29,7 +31,99 @@ interface UserStats {
   highestStreak: number;
   points: number;
   lastChallengeDate?: string;
+  lastQotdDate?: string;
   petsUnlocked: number;
+}
+
+const QuestionOfTheDay = () => {
+    const { toast } = useToast();
+    const [question, setQuestion] = useState<QuizQuestion | null>(null);
+    const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+    const [isAnswered, setIsAnswered] = useState(false);
+    const [isCorrect, setIsCorrect] = useState(false);
+    
+    useEffect(() => {
+        setQuestion(getQuestionOfTheDay());
+        const savedUser = localStorage.getItem("userProfile");
+        if(savedUser){
+            const user = JSON.parse(savedUser);
+            const today = new Date().toDateString();
+            if(user.lastQotdDate === today){
+                setIsAnswered(true);
+                // We don't know what they answered, so we just show the correct one
+                setSelectedAnswer(getQuestionOfTheDay().answer);
+                setIsCorrect(true);
+            }
+        }
+    }, []);
+
+    const handleAnswer = (answer: string) => {
+        if (isAnswered) return;
+
+        const correct = answer === question?.answer;
+        setSelectedAnswer(answer);
+        setIsCorrect(correct);
+        setIsAnswered(true);
+
+        const savedUser = localStorage.getItem("userProfile");
+        if (savedUser) {
+            const user = JSON.parse(savedUser);
+            user.lastQotdDate = new Date().toDateString();
+            if (correct) {
+                user.points = (user.points || 0) + 5;
+                toast({ title: "Correct!", description: "You earned 5 points!", className: "bg-green-100 border-green-300" });
+            } else {
+                 toast({ variant: "destructive", title: "Incorrect", description: "Better luck tomorrow!" });
+            }
+            localStorage.setItem("userProfile", JSON.stringify(user));
+            // Force a re-render of the parent to update points display
+             window.dispatchEvent(new Event('storage'));
+        }
+    };
+
+    if (!question) return null;
+
+    return (
+        <Card className="mb-6">
+            <CardHeader>
+                <CardTitle className="font-headline text-2xl">Question of the Day</CardTitle>
+                <CardDescription>{question.question}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+                 {question.choices.map((choice, index) => {
+                    const isTheCorrectAnswer = choice === question.answer;
+                    const isSelected = choice === selectedAnswer;
+
+                    return (
+                        <Button
+                            key={`${choice}-${index}`}
+                            variant="outline"
+                            onClick={() => handleAnswer(choice)}
+                            disabled={isAnswered}
+                            className={cn(
+                                "h-auto whitespace-normal justify-start p-4 w-full text-left",
+                                isAnswered && isTheCorrectAnswer && "bg-green-100 border-green-300 hover:bg-green-100 text-green-800",
+                                isAnswered && isSelected && !isTheCorrectAnswer && "bg-red-100 border-red-300 hover:bg-red-100 text-red-800",
+                                isAnswered && !isSelected && !isTheCorrectAnswer && "opacity-60"
+                            )}
+                        >
+                            <div className="flex items-center justify-between w-full">
+                                <span>{choice}</span>
+                                {isAnswered && isTheCorrectAnswer && <CheckCircle className="h-5 w-5 text-green-500" />}
+                                {isAnswered && isSelected && !isTheCorrectAnswer && <XCircle className="h-5 w-5 text-red-500" />}
+                            </div>
+                        </Button>
+                    )
+                })}
+            </CardContent>
+            <CardFooter>
+                 <div className={`flex items-center gap-1 font-semibold text-green-600`}>
+                  <Star className={`h-4 w-4 fill-green-500`} />
+                  <span>5 Points</span>
+                </div>
+            </CardFooter>
+        </Card>
+    );
 }
 
 export default function DailyPage() {
@@ -78,6 +172,7 @@ export default function DailyPage() {
         highestStreak: parsedUser.highestStreak || 0,
         points: parsedUser.points || 0,
         lastChallengeDate: parsedUser.lastChallengeDate,
+        lastQotdDate: parsedUser.lastQotdDate,
         petsUnlocked: parsedUser.petsUnlocked || 0,
       });
     }
@@ -89,9 +184,14 @@ export default function DailyPage() {
     const handleFocus = () => {
       loadUserStats();
     };
+    const handleStorageChange = () => {
+        loadUserStats();
+    }
     window.addEventListener('focus', handleFocus);
+    window.addEventListener('storage', handleStorageChange);
     return () => {
       window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('storage', handleStorageChange);
     };
   }, []);
 
@@ -132,7 +232,7 @@ export default function DailyPage() {
     <div className="container mx-auto p-4 max-w-2xl">
       <header className="flex items-center gap-2 mb-6">
         <CalendarDays className="h-8 w-8 text-primary" />
-        <h1 className="text-3xl font-bold font-headline">Daily Challenge</h1>
+        <h1 className="text-3xl font-bold font-headline">Daily Activities</h1>
       </header>
 
       <div className="grid grid-cols-2 gap-4 mb-6 text-center">
@@ -159,6 +259,8 @@ export default function DailyPage() {
           </CardContent>
         </Card>
       </div>
+
+      <QuestionOfTheDay />
 
       {challengeCompletedToday && (
          <Card className="mb-6 bg-green-50 border-green-200">
@@ -208,7 +310,7 @@ export default function DailyPage() {
 
       <section>
         <div className="flex flex-col items-center gap-4 mb-4">
-            <h2 className="text-2xl font-bold font-headline">Today's Challenges</h2>
+            <h2 className="text-2xl font-bold font-headline">Daily Challenges</h2>
              <Tabs value={selectedCategory} onValueChange={(value) => {
                     setSelectedCategory(value as "gen_education" | "professional");
                 }}>
@@ -238,47 +340,6 @@ export default function DailyPage() {
           ))}
         </div>
       </section>
-
-      <section className="mt-8">
-        <h2 className="text-2xl font-bold font-headline mb-4">My Pets</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {pets.map((pet) => {
-            const isUnlocked = userStats.highestStreak >= pet.streak_req;
-            return (
-              <Card key={pet.name} className="flex flex-col items-center p-4 text-center relative">
-                 {isUnlocked ? (
-                    <Image 
-                        src={pet.image} 
-                        alt={pet.name} 
-                        width={80} 
-                        height={80} 
-                        className="rounded-full mb-2"
-                        data-ai-hint={pet.hint}
-                    />
-                 ) : (
-                    <div className="w-[80px] h-[80px] rounded-full mb-2 bg-muted flex items-center justify-center">
-                        <HelpCircle className="h-10 w-10 text-muted-foreground" />
-                    </div>
-                 )}
-                <p className="font-semibold text-sm">{isUnlocked ? pet.name : '????'}</p>
-                {isUnlocked ? (
-                  <Badge variant="default" className="mt-1">Unlocked</Badge>
-                ) : (
-                  <Badge variant="secondary" className="mt-1 flex items-center gap-1">
-                    <Lock className="h-3 w-3" />
-                    <span>{pet.unlock_criteria}</span>
-                  </Badge>
-                )}
-              </Card>
-            )
-          })}
-        </div>
-      </section>
-
     </div>
   );
 }
-
-    
-
-    

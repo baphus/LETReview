@@ -29,19 +29,11 @@ export default function LoginPage() {
       });
       return;
     }
-     if (!examDate) {
-      toast({
-        variant: "destructive",
-        title: "Exam date is required",
-        description: "Please select your exam date.",
-      });
-      return;
-    }
 
     const userProfile = {
       name: name.trim(),
       avatarUrl,
-      examDate: examDate.toISOString(),
+      examDate: examDate?.toISOString(),
       points: 0,
       streak: 0,
       highestStreak: 0,
@@ -84,7 +76,7 @@ export default function LoginPage() {
     <div className="container mx-auto p-4 max-w-sm flex items-center justify-center h-full">
       <Card className="w-full">
         <CardHeader className="text-center">
-          <CardTitle className="font-headline text-2xl">Welcome to LETsReview!</CardTitle>
+          <CardTitle className="font-headline text-2xl">Welcome to LETReview!</CardTitle>
           <CardDescription>Let's get you set up for success.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -123,7 +115,7 @@ export default function LoginPage() {
             />
           </div>
            <div className="space-y-2">
-            <Label htmlFor="exam-date">Exam Date</Label>
+            <Label htmlFor="exam-date">Exam Date (Optional)</Label>
             <DatePicker date={examDate} setDate={setExamDate} />
           </div>
         </CardContent>

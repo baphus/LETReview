@@ -1202,7 +1202,6 @@ export const sampleQuestions: QuizQuestion[] = [
     choices: ["Millionaires send checks anonymously", "Patrons check out donations by the size of the advertisement", "Grandparents stay with the Home for the Aged. They are nuisance to modern families", "An ambassador in Jeddah shelters battered Filipino OCW’s and avoid social gatherings to be able to save food for these refugees"],
     answer: "An ambassador in Jeddah shelters battered Filipino OCW’s and avoid social gatherings to be able to save food for these refugees",
   },
-  // Professional Education
   {
     id: 151,
     category: "professional",
@@ -2932,7 +2931,7 @@ export const sampleQuestions: QuizQuestion[] = [
     question: "Ang epiko tungkol sa kasaysayan ng pag-iibigan ng mga bathala na nagmula sa Iloilo ay ang ______ .",
     choices: ["Hinilawod", "Biag-ni- Lam-ang", "Bidasari", "Maragtas"],
     answer: "Hinilawod",
-    explanation: "The correct answer is A. Hinilawod is an epic from Panay."
+  explanation: "The correct answer is A. Hinilawod is an epic from Panay."
   },
   {
     id: 360,
@@ -3814,7 +3813,7 @@ export const sampleQuestions: QuizQuestion[] = [
     question: "Teacher E discussed how electricity flows through wires and what generates the electric charge. Then she gave the students wires, bulbs, switches, and dry cells and told the class to create a circuit that will increase the brightness of each bulb. Which one best describes the approach used?",
     choices: ["It used a taxonomy of basic thinking skills", "It was contructivist", "It helped students understand scientific methodolgy", "It used cooperative learning"],
     answer: "It was contructivist",
-    explanation: "The correct answer is B. This is a constructivist approach, as students are actively constructing their own understanding through a hands-on activity."
+  explanation: "The correct answer is B. This is a constructivist approach, as students are actively constructing their own understanding through a hands-on activity."
   },
   {
     id: 458,
@@ -4075,7 +4074,6 @@ export const sampleQuestions: QuizQuestion[] = [
     question: "Which is a true foundation of the social order?",
     choices: ["Obedient citizenry", "The reciprocation of rights and duties", "Strong political leadership", "Equitable distribution of wealth"],
     answer: "The reciprocation of rights and duties",
-    explanation: "The correct answer is B. A stable social order is based on a balance of rights and responsibilities."
   },
   {
     id: 487,
@@ -4336,7 +4334,7 @@ export const sampleQuestions: QuizQuestion[] = [
     question: "Standard deviation is to variability as mode to __________.",
     choices: ["coefficient of correlation", "central tendency", "discrimination index", "level of difficulty"],
     answer: "central tendency",
-    explanation: "The correct answer is D. The mode is a measure of central tendency."
+    explanation: "The correct answer is B. The mode is a measure of central tendency."
   },
   {
     id: 516,
@@ -4462,7 +4460,6 @@ export const sampleQuestions: QuizQuestion[] = [
     question: "Teacher A discovered that his pupils are very good in dramatizing. Which tool must have helped him discover his pupils' strength?",
     choices: ["Portfolio assessment", "Performance test", "Journal entry", "Paper-and-pencil test"],
     answer: "Performance test",
-    explanation: "The correct answer is B. A performance test, such as having students dramatize, would directly assess this skill."
   },
   {
     id: 530,
@@ -4561,7 +4558,7 @@ export const sampleQuestions: QuizQuestion[] = [
     question: "Helping in the development of graduates who aremaka-Diyosis an influence of",
     choices: ["naturalistic morality", "classical Christian morality", "situational morality", "dialectical morality"],
     answer: "classical Christian morality",
-    explanation: "The correct answer is B. The term 'maka-Diyos' (God-centered) is rooted in Christian morality."
+    explanation: "The term 'maka-Diyos' (God-centered) is rooted in Christian morality."
   },
   {
     id: 541,
@@ -4625,7 +4622,7 @@ export const sampleQuestions: QuizQuestion[] = [
     id: 548,
     category: "professional",
     difficulty: "medium",
-    question: "Mary Joy is an advocate of the principle \"making the most of your life\". Live life to the fullest. She is indeed an advocate of what kind of philosophy ?",
+    question: 'Mary Joy is an advocate of the principle "making the most of your life". Live life to the fullest. She is indeed an advocate of what kind of philosophy ?',
     choices: ["Humanism", "Idealism", "Realism", "Existentialism"],
     answer: "Humanism"
   },
@@ -4980,20 +4977,192 @@ export const sampleQuestions: QuizQuestion[] = [
     question: "Admits the existence of GOD.",
     choices: ["Agnosticism", "Atheism", "Hedonism", "Deism or Theism"],
     answer: "Deism or Theism"
+  },
+  {
+    id: 593,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "Each child has strengths, an activity in the classroom which integrates intra and interpersonal intelligence is ?",
+    choices: ["Independent study", "Board games", "Buzz session", "Dramatization"],
+    answer: "Dramatization",
+    explanation: "engages both self-reflection (intrapersonal) and interaction with others (interpersonal)."
+  },
+  {
+    id: 594,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "What educational practice is most closely related to the concept of social intelligence?",
+    choices: ["Independent projects", "Group dynamics", "Introspection exercises", "Critical thinking tasks"],
+    answer: "Group dynamics",
+    explanation: "Social intelligence involves understanding and managing social relationships, which is directly addressed in group dynamics."
+  },
+  {
+    id: 595,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "The ability to create new forms of expression is the characteristics of which type of intelligence ?",
+    choices: ["Visual/spatial", "Logical/mathematical", "Musical/rhythmic", "Bodily/kinesthetic"],
+    answer: "Musical/rhythmic",
+    explanation: "Musical intelligence involves skill in the performance, composition, and appreciation of musical patterns; create new forms of musical expression."
+  },
+  {
+    id: 596,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "The application of multiple intelligences in lesson planning aims to ?",
+    choices: ["Cater to all students' learning preferences", "Focus on students' strengths only", "Increase the difficulty of the material", "Decrease teacher preparation time"],
+    answer: "Cater to all students' learning preferences",
+    explanation: "the goal of integrating multiple intelligences is to reach students through various learning pathways and preferences."
+  },
+  {
+    id: 597,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "When a child can tell that a tall glass and a wide glass might hold the same amount of water which stage of development is represented ?",
+    choices: ["Sensorimotor", "Pre-operational", "Concrete operational", "Formal operational"],
+    answer: "Concrete operational",
+    explanation: "The understanding of conservation (that quantity remains the same despite changes in appearance) is a hallmark of the concrete operational stage."
+  },
+  {
+    id: 598,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "When a teacher consider that students have different multiple intelligence profiles, instructional practices are likely to be ?",
+    choices: ["Standardized", "Homogenized", "Individualized", "Uniform"],
+    answer: "Individualized",
+    explanation: "Recognizing diverse intelligences leads to instruction that's tailored to individual needs."
+  },
+  {
+    id: 599,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "An environment where student is free to express ideas is the key to encourage what type of thinking ?",
+    choices: ["Critical", "Creative", "Analytical", "Logical"],
+    answer: "Creative",
+    explanation: "Open, non-judgmental environments foster the risk-taking and exploration necessary for creative thinking."
+  },
+  {
+    id: 600,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "What is enhanced when a teacher allows students to participate in setting classroom rules ?",
+    choices: ["Autonomy", "Conformity", "Dependence", "Passivity"],
+    answer: "Autonomy",
+    explanation: "Involving students in rule-setting gives them a sense of ownership and control (autonomy) over their learning environment."
+  },
+  {
+    id: 601,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "What is exemplified by giving students opportunities to lead discussions and manage group projects ?",
+    choices: ["Shared governance", "Teacher autonomy", "Parent involvement", "Administrative control"],
+    answer: "Shared governance",
+    explanation: "Shared governance involves distributing leadership and decision-making responsibilities among members of a community, like students in a classroom."
+  },
+  {
+    id: 602,
+    category: "gen_education",
+    difficulty: "medium",
+    question: "Teacher decided to apply collaborative approach in teaching. What is likely to be the classroom set -up ?",
+    choices: ["Chairs are arranged in neat rows", "Learners work independently at their own pace", "The teacher lectures while learners listen", "Small group discussion are conducted "],
+    answer: "Small group discussion are conducted ",
+    explanation: "Collaboration is best supported by small group discussions and shared activities."
   }
-];
+]
+export const getQuestionOfTheDay = (): QuizQuestion => {
+    const today = new Date();
+    const dayOfYear = Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 1000 / 60 / 60 / 24);
+    const index = dayOfYear % sampleQuestions.length;
+    const question = { ...sampleQuestions[index] };
+
+    // Deterministically shuffle choices so they are not always in the same order
+    const dateString = today.toDateString();
+    const rng = getSeed(dateString + question.id);
+    question.choices = [...question.choices].sort(() => rng() - rng());
+
+    return question;
+};
+
+// Function to generate a seed from a string (e.g., today's date)
+const getSeed = (str: string) => {
+  let h = 1779033703, i = 0;
+  for (i = 0; i < str.length; i++) {
+    h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+    h = h << 13 | h >>> 19;
+  }
+  return () => {
+    h = Math.imul(h ^ h >>> 16, 2246822507);
+    h = Math.imul(h ^ h >>> 13, 3266489909);
+    return (h ^= h >>> 16) >>> 0;
+  }
+};
 
 export const pets: Pet[] = [
-    { name: "Pet Rock", unlock_criteria: "1-day streak", streak_req: 1, image: "https://placehold.co/200x200", hint: "rock stone" },
-    { name: "Goldfish", unlock_criteria: "3-day streak", streak_req: 3, image: "https://placehold.co/200x200", hint: "goldfish fishbowl" },
-    { name: "Turtle", unlock_criteria: "7-day streak", streak_req: 7, image: "https://placehold.co/200x200", hint: "sea turtle" },
-    { name: "Corgi", unlock_criteria: "14-day streak", streak_req: 14, image: "https://placehold.co/200x200", hint: "cute dog" },
-    { name: "Owl", unlock_criteria: "21-day streak", streak_req: 21, image: "https://placehold.co/200x200", hint: "wise owl" },
-    { name: "Panda", unlock_criteria: "30-day streak", streak_req: 30, image: "https://placehold.co/200x200", hint: "panda eating" },
-    { name: "T-Rex", unlock_criteria: "50-day streak", streak_req: 50, image: "https://placehold.co/200x200", hint: "dinosaur rex" },
-    { name: "Dragon", unlock_criteria: "75-day streak", streak_req: 75, image: "https://placehold.co/200x200", hint: "fantasy dragon" },
-    { name: "Phoenix", unlock_criteria: "100-day streak", streak_req: 100, image: "https://placehold.co/200x200", hint: "fire bird" },
+    {
+        name: "Rocky",
+        unlock_criteria: "1-day streak",
+        streak_req: 1,
+        image: "https://placehold.co/100x100.png",
+        hint: "very hard"
+    },
+    {
+        name: "Whiskers",
+        unlock_criteria: "3-day streak",
+        streak_req: 3,
+        image: "https://placehold.co/100x100.png",
+        hint: "Jerry's worst enemy"
+    },
+    {
+        name: "Goldie",
+        unlock_criteria: "7-day streak",
+        streak_req: 7,
+        image: "https://placehold.co/100x100.png",
+        hint: "Bloop bloop"
+    },
+    {
+        name: "Sonic",
+        unlock_criteria: "14-day streak",
+        streak_req: 14,
+        image: "https://placehold.co/100x100.png",
+        hint: "Outran the rabbit"
+    },
+     {
+        name: "Feathers",
+        unlock_criteria: "30-day streak",
+        streak_req: 30,
+        image: "https://placehold.co/100x100.png",
+        hint: "Higher and higher"
+    },
+    {
+        name: "Hoppy",
+        unlock_criteria: "50-day streak",
+        streak_req: 50,
+        image: "https://placehold.co/100x100.png",
+        hint: "Hop-hop"
+    },
+     {
+        name: "Spike",
+        unlock_criteria: "75-day streak",
+        streak_req: 75,
+        image: "https://placehold.co/100x100.png",
+        hint: "They see me rollin'"
+    },
+    {
+        name: "Phoenix",
+        unlock_criteria: "100-day streak",
+        streak_req: 100,
+        image: "https://placehold.co/100x100.png",
+        hint: "Mythical"
+    },
 ];
 
+const getDayOfYear = (date: Date): number => {
+    const start = new Date(date.getFullYear(), 0, 0);
+    const diff = (date.getTime() - start.getTime()) + ((start.getTimezoneOffset() - date.getTimezoneOffset()) * 60 * 1000);
+    const oneDay = 1000 * 60 * 60 * 24;
+    return Math.floor(diff / oneDay);
+};
     
+    
+
     

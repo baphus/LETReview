@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo, type FC, useEffect } from "react";
+import { useState, useMemo, type FC, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft,
@@ -197,6 +197,7 @@ interface ChallengeAnswer {
 export default function ReviewPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+
   const isChallenge = searchParams.get('challenge') === 'true';
   const challengeDifficulty = searchParams.get('difficulty') || 'easy';
   const challengeCount = parseInt(searchParams.get('count') || '0', 10);
@@ -283,11 +284,20 @@ export default function ReviewPage() {
 
   }, [category, isChallenge, challengeCount, challengeDifficulty, challengeCategory, isShuffled]);
 
+  const resetQuizState = useCallback(() => {
+    setCurrentIndex(0);
+    setQuizScore(0);
+    setShowResults(false);
+    setChallengeAnswers([]);
+    setAnsweredCurrent(false);
+  }, []);
+
   useEffect(() => {
     if (isChallenge) {
       setMode('quiz');
       setCategory(challengeCategory);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isChallenge, challengeCategory]);
 
   const currentQuestion = questions[currentIndex];
@@ -398,14 +408,6 @@ export default function ReviewPage() {
     setAnsweredCurrent(true);
   };
 
-  const resetQuizState = () => {
-    setCurrentIndex(0);
-    setQuizScore(0);
-    setShowResults(false);
-    setChallengeAnswers([]);
-    setAnsweredCurrent(false);
-  }
-
   const handleDialogClose = () => {
     setShowResults(false);
     if (isChallenge) {
@@ -430,7 +432,7 @@ export default function ReviewPage() {
       resetQuizState();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, category]);
+  }, [mode, category, isShuffled]);
   
   useEffect(() => {
     setAnsweredCurrent(
@@ -595,5 +597,3 @@ export default function ReviewPage() {
     </div>
   );
 }
-
-    
