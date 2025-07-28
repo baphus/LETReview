@@ -44,9 +44,20 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+   const applyActiveTheme = () => {
+        const savedUser = localStorage.getItem("userProfile");
+        if (savedUser) {
+            const user = JSON.parse(savedUser);
+            if (user.activeTheme && user.activeTheme !== 'default') {
+                document.documentElement.classList.add(user.activeTheme);
+            }
+        }
+    };
+
   useEffect(() => {
     if (isShowingSplash) return; // Wait for splash screen to finish
 
+    applyActiveTheme();
     const userProfile = localStorage.getItem("userProfile");
     if (!userProfile && pathname !== "/login") {
       router.replace("/login");

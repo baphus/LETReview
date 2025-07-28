@@ -48,6 +48,21 @@
     --input: 217.2 32.6% 17.5%;
     --ring: 231 48% 48%;
   }
+
+  .mint {
+    --primary: 160 50% 45%;
+    --accent: 200 60% 50%;
+  }
+
+  .sunset {
+      --primary: 25 80% 55%;
+      --accent: 350 70% 60%;
+  }
+
+  .rose {
+      --primary: 340 70% 55%;
+      --accent: 280 50% 60%;
+  }
 }
 
 @layer base {

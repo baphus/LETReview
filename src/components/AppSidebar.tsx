@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, CalendarDays, Clock, Home, User } from "lucide-react";
+import { BookOpen, CalendarDays, Clock, Home, User, Lightbulb } from "lucide-react";
 import {
   SidebarHeader,
   SidebarMenu,
@@ -21,6 +21,7 @@ import { useEffect, useState } from "react";
 const navItems = [
   { href: "/home", label: "Home", icon: Home },
   { href: "/", label: "Review", icon: BookOpen },
+  { href: "/quiz", label: "Quiz", icon: Lightbulb },
   { href: "/daily", label: "Daily", icon: CalendarDays },
   { href: "/timer", label: "Timer", icon: Clock },
 ];

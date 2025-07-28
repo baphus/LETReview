@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { User, Flame, Gem, Star, Award, Shield, Edit, Check, HelpCircle, Lock } from "lucide-react";
 import Image from "next/image";
-import { pets, getQuestionOfTheDay } from "@/lib/data";
+import { pets as streakPets } from "@/lib/data";
 import type { QuizQuestion } from "@/lib/types";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -15,7 +15,7 @@ import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import Countdown from "@/components/Countdown";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
@@ -29,7 +29,13 @@ interface UserProfile {
     highestStreak: number;
     completedSessions: number;
     petNames: Record<string, string>;
+    unlockedPets: string[];
 }
+
+const allPets = [
+    ...streakPets,
+    { name: "Draco", unlock_criteria: "Purchase in Store", streak_req: 999, image: "https://placehold.co/100x100.png", hint: "fire breathing" },
+];
 
 export default function HomePage() {
   const router = useRouter();
@@ -43,15 +49,14 @@ export default function HomePage() {
     const savedUser = localStorage.getItem("userProfile");
     if (savedUser) {
       const parsedUser = JSON.parse(savedUser);
-       if (!parsedUser.petNames) {
-        parsedUser.petNames = {};
-      }
+       if (!parsedUser.petNames) parsedUser.petNames = {};
+       if (!parsedUser.unlockedPets) parsedUser.unlockedPets = [];
       setUser(parsedUser);
     } else {
       router.push('/login');
     }
     
-    setQuestionOfTheDay(getQuestionOfTheDay());
+    // setQuestionOfTheDay(getQuestionOfTheDay());
 
      // This will run when the component mounts and also when the user navigates back to this page.
     const handleFocus = () => {
@@ -90,7 +95,9 @@ export default function HomePage() {
     }
   }
 
-  const unlockedPetsCount = pets.filter(p => user.highestStreak >= p.streak_req).length;
+  const unlockedStreakPetsCount = streakPets.filter(p => user.highestStreak >= p.streak_req).length;
+  const unlockedStorePetsCount = user.unlockedPets.length;
+  const unlockedPetsCount = unlockedStreakPetsCount + unlockedStorePetsCount;
 
   return (
     <div className="container mx-auto p-4 max-w-4xl">
@@ -112,26 +119,6 @@ export default function HomePage() {
       {user.examDate && <Countdown examDate={new Date(user.examDate)} />}
       
       <Separator className="my-6" />
-
-      <section>
-        <h2 className="text-xl font-bold font-headline mb-4">Question of the Day</h2>
-        {questionOfTheDay && (
-            <Card className="mb-6">
-                <CardHeader>
-                    <CardTitle className="font-headline text-lg flex items-center gap-2">
-                        <HelpCircle className="text-primary h-5 w-5" />
-                        <span>{questionOfTheDay.question}</span>
-                    </CardTitle>
-                    <CardDescription>Think you know the answer? Answer it in the Daily section for 5 points!</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Link href="/daily">
-                        <Button className="w-full">Go to Daily Challenges</Button>
-                    </Link>
-                </CardContent>
-            </Card>
-        )}
-      </section>
 
       <section>
         <h2 className="text-xl font-bold font-headline mb-4">Your Stats</h2>
@@ -176,12 +163,16 @@ export default function HomePage() {
       </section>
 
       <section className="mt-8">
-        <h2 className="text-xl font-bold font-headline mb-4">Pet Collection ({unlockedPetsCount}/{pets.length})</h2>
+        <h2 className="text-xl font-bold font-headline mb-4">Pet Collection ({unlockedPetsCount}/{allPets.length})</h2>
         <Card>
           <CardContent className="p-4">
+            <TooltipProvider>
             <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
-              {pets.map((pet) => {
-                const isUnlocked = user.highestStreak >= pet.streak_req;
+              {allPets.map((pet) => {
+                const isUnlockedByStreak = user.highestStreak >= pet.streak_req;
+                const isUnlockedByPurchase = user.unlockedPets.includes(pet.name);
+                const isUnlocked = isUnlockedByStreak || isUnlockedByPurchase;
+
                 return (
                   <div key={pet.name} className="flex flex-col items-center text-center">
                     <Tooltip>
@@ -240,6 +231,7 @@ export default function HomePage() {
                 )
             })}
             </div>
+            </TooltipProvider>
           </CardContent>
         </Card>
       </section>

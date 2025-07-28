@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo, type FC, useEffect, useCallback } from "react";
+import { useState, useMemo, type FC, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft,
@@ -11,6 +11,7 @@ import {
   XCircle,
   Trophy,
   Shuffle,
+  RefreshCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -99,11 +100,8 @@ const StudyCard: FC<{ question: QuizQuestion }> = ({ question }) => {
 const QuizCard: FC<{ 
   question: QuizQuestion;
   onAnswer: (correct: boolean, answer: string) => void;
-  isChallenge: boolean;
-  userAnswer?: string | null;
-  hasAnswered?: boolean;
-}> = ({ question, onAnswer, isChallenge, userAnswer, hasAnswered }) => {
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(userAnswer || null);
+}> = ({ question, onAnswer }) => {
+  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
 
   const handleAnswerClick = (answer: string) => {
     const correct = answer === question.answer;
@@ -112,8 +110,8 @@ const QuizCard: FC<{
   };
   
   useEffect(() => {
-    setSelectedAnswer(userAnswer || null);
-  }, [question, userAnswer]);
+    setSelectedAnswer(null);
+  }, [question]);
 
 
   return (
@@ -125,47 +123,25 @@ const QuizCard: FC<{
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {question.choices.map((choice, index) => {
                 const isSelected = selectedAnswer === choice;
-                const isTheCorrectAnswer = choice === question.answer;
-                
-                let isDisabled = false;
-                if (!isChallenge && hasAnswered) {
-                    isDisabled = true;
-                }
 
                 const getChallengeClass = () => {
                     if (isSelected) return "bg-muted border-primary";
                     return "hover:bg-muted cursor-pointer";
                 };
 
-                const getNonChallengeClass = () => {
-                    if (!hasAnswered) return "hover:bg-muted cursor-pointer";
-                    if (isTheCorrectAnswer) return "border-green-500 bg-green-50";
-                    if (isSelected && !isTheCorrectAnswer) return "border-red-500 bg-red-50";
-                    return "opacity-50";
-                };
-
                 return (
                     <Card 
                         key={`${choice}-${index}`}
-                        onClick={() => !isDisabled && handleAnswerClick(choice)}
-                        className={cn(
-                            "p-4 transition-all",
-                            isChallenge ? getChallengeClass() : getNonChallengeClass(),
-                            isDisabled ? "cursor-not-allowed" : "cursor-pointer"
-                        )}
+                        onClick={() => handleAnswerClick(choice)}
+                        className={cn("p-4 transition-all", getChallengeClass())}
                     >
                         <div className="flex items-center justify-between">
                             <p>{choice}</p>
-                            {!isChallenge && hasAnswered && isTheCorrectAnswer && <CheckCircle className="h-5 w-5 text-green-500" />}
-                            {!isChallenge && hasAnswered && isSelected && !isTheCorrectAnswer && <XCircle className="h-5 w-5 text-red-500" />}
                         </div>
                     </Card>
                 )
             })}
         </div>
-        {!isChallenge && hasAnswered && selectedAnswer && selectedAnswer !== question.answer && question.explanation && (
-           <p className="text-sm text-muted-foreground mt-4 p-2 bg-muted rounded-md">{question.explanation}</p>
-        )}
       </CardContent>
     </Card>
   );
@@ -194,7 +170,7 @@ interface ChallengeAnswer {
     question: string;
 }
 
-export default function ReviewPage() {
+function ReviewerPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -207,11 +183,10 @@ export default function ReviewPage() {
   const [category, setCategory] = useState<"gen_education" | "professional">(
     isChallenge ? challengeCategory : "gen_education"
   );
-  const [mode, setMode] = useState<"study" | "flashcard" | "quiz">("study");
+  const [mode, setMode] = useState<'study' | 'flashcard'>(isChallenge ? 'study' : 'study');
   const [currentIndex, setCurrentIndex] = useState(0);
   const [quizScore, setQuizScore] = useState(0);
   const [showResults, setShowResults] = useState(false);
-  const [answeredCurrent, setAnsweredCurrent] = useState(false);
   const [challengeAnswers, setChallengeAnswers] = useState<ChallengeAnswer[]>([]);
   const [passingScore, setPassingScore] = useState(85);
   const [isShuffled, setIsShuffled] = useState(false);
@@ -249,13 +224,18 @@ export default function ReviewPage() {
     localStorage.setItem('reviewProgress', JSON.stringify(progress));
   }, [category, mode, currentIndex, isChallenge, isShuffled]);
 
-  useEffect(() => {
+
+  const loadUserData = useCallback(() => {
     const savedUser = localStorage.getItem("userProfile");
     if(savedUser){
         const user = JSON.parse(savedUser);
         setPassingScore(user.passingScore || 85);
     }
-  }, [])
+  }, []);
+
+  useEffect(() => {
+    loadUserData();
+  }, [loadUserData])
 
 
   const questions = useMemo(() => {
@@ -263,7 +243,6 @@ export default function ReviewPage() {
       .filter((q) => q.category === category);
 
     if (isChallenge) {
-      // For challenges, get a deterministic random shuffle based on the date
        const today = new Date().toDateString();
        const rng = getSeed(today + challengeDifficulty + challengeCategory);
        const shuffled = baseQuestions
@@ -273,12 +252,10 @@ export default function ReviewPage() {
     }
 
     if(isShuffled) {
-        // Shuffle questions but keep choices in their original order for consistency in study/quiz mode
         return [...baseQuestions].sort(() => Math.random() - 0.5)
             .map(q => ({ ...q, choices: [...q.choices].sort(() => Math.random() - 0.5) }));
     }
     
-    // Always shuffle choices for variety, even if questions aren't shuffled
     return baseQuestions
       .map(q => ({ ...q, choices: [...q.choices].sort(() => Math.random() - 0.5) }));
 
@@ -289,16 +266,7 @@ export default function ReviewPage() {
     setQuizScore(0);
     setShowResults(false);
     setChallengeAnswers([]);
-    setAnsweredCurrent(false);
   }, []);
-
-  useEffect(() => {
-    if (isChallenge) {
-      setMode('quiz');
-      setCategory(challengeCategory);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isChallenge, challengeCategory]);
 
   const currentQuestion = questions[currentIndex];
 
@@ -315,7 +283,6 @@ export default function ReviewPage() {
         const user = JSON.parse(savedUser);
         const today = new Date().toDateString();
         
-        // Award points only if the challenge is passed and only once per day.
         if (passed && user.lastChallengeDate !== today) {
             user.streak = (user.streak || 0) + 1;
             if (user.streak > (user.highestStreak || 0)) {
@@ -342,21 +309,12 @@ export default function ReviewPage() {
   const handleNext = () => {
     if (currentIndex < questions.length - 1) {
         setCurrentIndex((prev) => prev + 1);
-        setAnsweredCurrent(false);
     } else {
-        if (mode === 'quiz') {
-            if (isChallenge) {
-                handleFinishChallenge();
-            } else {
-                setQuizScore(challengeAnswers.reduce((acc, ans) => acc + (ans.isCorrect ? 1 : 0), 0));
-                setShowResults(true);
-            }
+        if (isChallenge) {
+            handleFinishChallenge();
         } else {
-            setCurrentIndex(0); // Loop back to the start
+            setCurrentIndex(0); 
         }
-    }
-     if (mode === 'quiz' && !isChallenge) {
-      setAnsweredCurrent(false);
     }
   };
 
@@ -390,22 +348,10 @@ export default function ReviewPage() {
     
     setChallengeAnswers(newAnswers);
 
-    if (!isChallenge) {
-        if (correct) {
-            toast({
-                title: "Correct!",
-                description: "Nice work!",
-                className: "bg-green-100 border-green-300"
-            });
-        } else {
-             toast({
-                variant: "destructive",
-                title: "Incorrect",
-                description: "Better luck next time!",
-            });
-        }
-    }
-    setAnsweredCurrent(true);
+    // Auto-advance to next question in a challenge
+    setTimeout(() => {
+        handleNext();
+    }, 300);
   };
 
   const handleDialogClose = () => {
@@ -426,34 +372,55 @@ export default function ReviewPage() {
         description: isShuffled ? "Questions are now in order." : "Questions have been shuffled.",
     });
   }
+  
+  const handleSecondChance = () => {
+    const savedUser = localStorage.getItem("userProfile");
+    if (savedUser) {
+        let user = JSON.parse(savedUser);
+        if (user.points >= 50) {
+            user.points -= 50;
+            localStorage.setItem("userProfile", JSON.stringify(user));
+            toast({
+                title: "Second Chance!",
+                description: "You've spent 50 points to try again.",
+                className: "bg-green-100 border-green-300"
+            });
+            setShowResults(false);
+            resetQuizState();
+            // We don't need to re-route, just reset the state
+        } else {
+            toast({
+                variant: "destructive",
+                title: "Not enough points!",
+                description: "You need 50 points for a second chance."
+            });
+        }
+    }
+  }
 
   useEffect(() => {
-     if (!isChallenge) {
-      resetQuizState();
+    if (!isChallenge) {
+        resetQuizState();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, category, isShuffled]);
   
-  useEffect(() => {
-    setAnsweredCurrent(
-        challengeAnswers.some(a => a.questionId === currentQuestion?.id)
-    );
-  }, [currentIndex, challengeAnswers, currentQuestion]);
-
   const progressValue = questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
   
-  const userAnswerForCurrentQuestion = useMemo(() => {
-    if (!currentQuestion) return null;
-    return challengeAnswers.find(a => a.questionId === currentQuestion.id)?.userAnswer;
-  }, [currentQuestion, challengeAnswers]);
+  const isChallengeFailed = showResults && isChallenge && (quizScore / questions.length * 100) < passingScore;
+
+  if (isChallenge && !currentQuestion && challengeAnswers.length === questions.length && !showResults) {
+    handleFinishChallenge();
+    return null; // Or a loading indicator
+  }
 
   return (
     <div className="container mx-auto p-4 max-w-2xl">
        <Dialog open={showResults} onOpenChange={handleDialogClose}>
-        <DialogContent className="flex flex-col h-[90dvh] max-h-[600px]">
+        <DialogContent className="flex flex-col h-auto max-h-[90dvh]">
           <DialogHeader className="items-center text-center">
             <Trophy className="h-16 w-16 text-yellow-400" />
-            <DialogTitle className="text-2xl font-bold font-headline">Quiz Complete!</DialogTitle>
+            <DialogTitle className="text-2xl font-bold font-headline">Challenge Complete!</DialogTitle>
             <DialogDescription>
               You scored {quizScore} out of {questions.length}.
             </DialogDescription>
@@ -472,7 +439,7 @@ export default function ReviewPage() {
                   )
               )}
 
-              <ScrollArea className="h-96">
+              <ScrollArea className="h-64">
                   <div className="space-y-4 pr-6">
                       {challengeAnswers.map(answer => (
                           <div key={answer.questionId} className="text-sm p-3 rounded-md bg-muted">
@@ -499,8 +466,16 @@ export default function ReviewPage() {
               </ScrollArea>
           </div>
 
-          <DialogFooter className="mt-4 pt-4 border-t">
-            <Button onClick={handleDialogClose} className="w-full">{isChallenge ? 'Back to Challenges' : 'Try Again'}</Button>
+          <DialogFooter className="mt-4 pt-4 border-t flex-col sm:flex-col sm:space-x-0 gap-2">
+            {isChallengeFailed && (
+                <Button onClick={handleSecondChance} className="w-full">
+                    <RefreshCcw className="mr-2 h-4 w-4" />
+                    Try Again (50 Points)
+                </Button>
+            )}
+            <Button onClick={handleDialogClose} className="w-full" variant={isChallengeFailed ? "outline" : "default"}>
+                Back to Challenges
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -525,11 +500,10 @@ export default function ReviewPage() {
                 </Tabs>
 
                 <div className="flex gap-2 w-full sm:w-auto">
-                    <Tabs value={mode} onValueChange={(value) => setMode(value as "study" | "flashcard" | "quiz")} className="w-full">
-                        <TabsList className="grid w-full grid-cols-3">
+                    <Tabs value={mode} onValueChange={(value) => setMode(value as "study" | "flashcard")} className="w-full">
+                        <TabsList className="grid w-full grid-cols-2">
                             <TabsTrigger value="study">Study</TabsTrigger>
                             <TabsTrigger value="flashcard">Flashcard</TabsTrigger>
-                            <TabsTrigger value="quiz">Quiz</TabsTrigger>
                         </TabsList>
                     </Tabs>
                      <Button 
@@ -556,15 +530,17 @@ export default function ReviewPage() {
       <div className="my-6">
         {questions.length > 0 && currentQuestion ? (
           <>
-            {mode === 'study' && <StudyCard question={currentQuestion} />}
-            {mode === 'flashcard' && <Flashcard question={currentQuestion} />}
-            {mode === 'quiz' && <QuizCard 
+            {isChallenge ? (
+              <QuizCard 
                 question={currentQuestion} 
                 onAnswer={handleAnswer} 
-                isChallenge={isChallenge} 
-                userAnswer={userAnswerForCurrentQuestion}
-                hasAnswered={answeredCurrent}
-            />}
+              />
+            ) : (
+              <>
+                {mode === 'study' && <StudyCard question={currentQuestion} />}
+                {mode === 'flashcard' && <Flashcard question={currentQuestion} />}
+              </>
+            )}
           </>
         ) : (
           <Card className="h-80 flex justify-center items-center">
@@ -576,24 +552,43 @@ export default function ReviewPage() {
         )}
       </div>
 
-      <footer className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            Question {currentIndex + 1} of {questions.length}
-          </p>
-        </div>
-        <Progress value={progressValue} />
-        <div className="flex justify-between items-center">
-          <Button onClick={handlePrev} disabled={questions.length <= 1 || (isChallenge && currentIndex === 0)}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Previous
-          </Button>
-          <Button onClick={handleNext} disabled={!currentQuestion || (mode === 'quiz' && !answeredCurrent)}>
-            {currentIndex === questions.length - 1 ? 'Finish' : 'Next'}
-            {currentIndex < questions.length - 1 && <ArrowRight className="h-4 w-4 ml-2" />}
-          </Button>
-        </div>
-      </footer>
+      {!isChallenge && (
+         <footer className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+                Question {currentIndex + 1} of {questions.length}
+            </p>
+            </div>
+            <Progress value={progressValue} />
+            <div className="flex justify-between items-center">
+            <Button onClick={handlePrev} disabled={questions.length <= 1}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Previous
+            </Button>
+            <Button onClick={handleNext}>
+                {currentIndex === questions.length - 1 ? 'Finish' : 'Next'}
+                {currentIndex < questions.length - 1 && <ArrowRight className="h-4 w-4 ml-2" />}
+            </Button>
+            </div>
+        </footer>
+      )}
+
+       {isChallenge && (
+         <footer className="flex flex-col gap-4">
+            <Progress value={progressValue} />
+            <p className="text-sm text-muted-foreground text-center">
+                Question {currentIndex + 1} of {questions.length}
+            </p>
+        </footer>
+      )}
     </div>
   );
+}
+
+export default function ReviewPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <ReviewerPageContent />
+        </Suspense>
+    )
 }
