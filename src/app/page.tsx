@@ -20,7 +20,7 @@ const features = [
         "Learn at your own pace."
     ],
     link: "/review",
-    image: "https://placehold.co/400x600.png",
+    image: "https://placehold.co/350x500.png",
     image_hint: "studying app",
   },
   {
@@ -33,7 +33,7 @@ const features = [
         "Climb the leaderboard."
     ],
     link: "/daily",
-    image: "https://placehold.co/400x600.png",
+    image: "https://placehold.co/350x500.png",
     image_hint: "calendar daily challenges",
   },
   {
@@ -46,7 +46,7 @@ const features = [
         "Earn bonus points with mini-quizzes."
     ],
     link: "/timer",
-    image: "https://placehold.co/400x600.png",
+    image: "https://placehold.co/350x500.png",
     image_hint: "timer app",
   },
   {
@@ -59,7 +59,7 @@ const features = [
         "Make studying fun and engaging."
     ],
     link: "/home",
-    image: "https://placehold.co/400x600.png",
+    image: "https://placehold.co/350x500.png",
     image_hint: "gamified progress pets",
   }
 ];
@@ -93,14 +93,14 @@ export default function LandingPage() {
         </section>
 
         {/* App Preview Section */}
-        <section id="preview" className="w-full py-10">
+        <section id="preview" className="w-full py-12">
             <div className="container mx-auto px-4 md:px-6">
-                <div className="relative mx-auto max-w-4xl">
+                <div className="relative mx-auto max-w-3xl">
                     <Image
-                        src="https://placehold.co/1000x600.png"
+                        src="https://placehold.co/800x500.png"
                         alt="LETReview App Screenshot"
-                        width={1000}
-                        height={600}
+                        width={800}
+                        height={500}
                         className="rounded-lg border shadow-2xl"
                         data-ai-hint="app dashboard"
                     />
@@ -109,7 +109,7 @@ export default function LandingPage() {
         </section>
 
         {/* Features Section */}
-        <section id="features" className="w-full py-20 md:py-32 bg-dark text-white">
+        <section id="features" className="w-full py-20 md:py-24 bg-dark text-white">
           <div className="container mx-auto px-4 md:px-6 space-y-20">
             {features.map((feature, index) => (
               <div key={feature.title} className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
@@ -117,8 +117,8 @@ export default function LandingPage() {
                     <Image 
                         src={feature.image}
                         alt={feature.title}
-                        width={400}
-                        height={600}
+                        width={350}
+                        height={500}
                         className="rounded-lg border-4 border-white/10 shadow-2xl"
                         data-ai-hint={feature.image_hint}
                     />
