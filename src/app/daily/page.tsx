@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,7 +35,7 @@ interface UserStats {
   petsUnlocked: number;
 }
 
-const QuestionOfTheDay = () => {
+const QuestionOfTheDay = ({ onCorrectAnswer }: { onCorrectAnswer: () => void }) => {
     const { toast } = useToast();
     const [question, setQuestion] = useState<QuizQuestion | null>(null);
     const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
@@ -43,7 +43,8 @@ const QuestionOfTheDay = () => {
     const [isCorrect, setIsCorrect] = useState(false);
     
     useEffect(() => {
-        setQuestion(getQuestionOfTheDay());
+        const qotd = getQuestionOfTheDay();
+        setQuestion(qotd);
         const savedUser = localStorage.getItem("userProfile");
         if(savedUser){
             const user = JSON.parse(savedUser);
@@ -51,7 +52,7 @@ const QuestionOfTheDay = () => {
             if(user.lastQotdDate === today){
                 setIsAnswered(true);
                 // We don't know what they answered, so we just show the correct one
-                setSelectedAnswer(getQuestionOfTheDay().answer);
+                setSelectedAnswer(qotd.answer);
                 setIsCorrect(true);
             }
         }
@@ -70,14 +71,12 @@ const QuestionOfTheDay = () => {
             const user = JSON.parse(savedUser);
             user.lastQotdDate = new Date().toDateString();
             if (correct) {
-                user.points = (user.points || 0) + 5;
+                onCorrectAnswer();
                 toast({ title: "Correct!", description: "You earned 5 points!", className: "bg-green-100 border-green-300" });
             } else {
                  toast({ variant: "destructive", title: "Incorrect", description: "Better luck tomorrow!" });
             }
             localStorage.setItem("userProfile", JSON.stringify(user));
-            // Force a re-render of the parent to update points display
-             window.dispatchEvent(new Event('storage'));
         }
     };
 
@@ -139,7 +138,7 @@ export default function DailyPage() {
   const [streakBroken, setStreakBroken] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<"gen_education" | "professional">("gen_education");
 
-  const loadUserStats = () => {
+  const loadUserStats = useCallback(() => {
     const savedUser = localStorage.getItem("userProfile");
     if (savedUser) {
       const parsedUser = JSON.parse(savedUser);
@@ -176,7 +175,7 @@ export default function DailyPage() {
         petsUnlocked: parsedUser.petsUnlocked || 0,
       });
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadUserStats();
@@ -184,16 +183,11 @@ export default function DailyPage() {
     const handleFocus = () => {
       loadUserStats();
     };
-    const handleStorageChange = () => {
-        loadUserStats();
-    }
     window.addEventListener('focus', handleFocus);
-    window.addEventListener('storage', handleStorageChange);
     return () => {
       window.removeEventListener('focus', handleFocus);
-      window.removeEventListener('storage', handleStorageChange);
     };
-  }, []);
+  }, [loadUserStats]);
 
   const handleStartChallenge = (difficulty: 'easy' | 'medium' | 'hard', count: number) => {
     router.push(`/?challenge=true&difficulty=${difficulty}&count=${count}&category=${selectedCategory}`);
@@ -221,6 +215,17 @@ export default function DailyPage() {
       toast({ variant: "destructive", title: "Not enough points!", description: `You need ${restoreStreakCost} points to restore your streak.`});
     }
   };
+
+  const handleQotdCorrect = () => {
+    const savedUser = localStorage.getItem("userProfile");
+    if (savedUser) {
+        const user = JSON.parse(savedUser);
+        user.points = (user.points || 0) + 5;
+        localStorage.setItem("userProfile", JSON.stringify(user));
+        setUserStats(prev => ({ ...prev, points: user.points }));
+    }
+  };
+
 
   const challenges = [
     { difficulty: 'easy', count: 5, points: 25, color: 'green' },
@@ -260,7 +265,7 @@ export default function DailyPage() {
         </Card>
       </div>
 
-      <QuestionOfTheDay />
+      <QuestionOfTheDay onCorrectAnswer={handleQotdCorrect} />
 
       {challengeCompletedToday && (
          <Card className="mb-6 bg-green-50 border-green-200">
