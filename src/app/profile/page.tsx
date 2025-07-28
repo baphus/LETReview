@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -112,7 +111,7 @@ export default function ProfilePage() {
   const handleResetData = () => {
       localStorage.clear();
       document.documentElement.classList.remove('mint', 'sunset', 'rose');
-      router.push('/login');
+      router.push('/');
   };
 
   const handleAvatarClick = () => {
