@@ -270,8 +270,8 @@ function ReviewerPageContent() {
 
   const currentQuestion = questions[currentIndex];
 
-  const handleFinishChallenge = () => {
-    const finalScore = challengeAnswers.reduce((acc, ans) => acc + (ans.isCorrect ? 1 : 0), 0);
+  const handleFinishChallenge = (finalAnswers: ChallengeAnswer[]) => {
+    const finalScore = finalAnswers.reduce((acc, ans) => acc + (ans.isCorrect ? 1 : 0), 0);
     setQuizScore(finalScore);
     setShowResults(true);
 
@@ -311,7 +311,8 @@ function ReviewerPageContent() {
         setCurrentIndex((prev) => prev + 1);
     } else {
         if (isChallenge) {
-            handleFinishChallenge();
+            // We pass the challengeAnswers directly to avoid state update issues
+            handleFinishChallenge(challengeAnswers);
         } else {
             setCurrentIndex(0); 
         }
@@ -327,30 +328,24 @@ function ReviewerPageContent() {
   };
   
   const handleAnswer = (correct: boolean, answer: string) => {
-    const newAnswers = [...challengeAnswers];
-    const existingAnswerIndex = newAnswers.findIndex(a => a.questionId === currentQuestion.id);
-    
-    if (existingAnswerIndex !== -1) {
-        newAnswers[existingAnswerIndex] = {
-            ...newAnswers[existingAnswerIndex],
-            userAnswer: answer,
-            isCorrect: correct,
-        };
-    } else {
-        newAnswers.push({
-            questionId: currentQuestion.id,
-            userAnswer: answer,
-            correctAnswer: currentQuestion.answer,
-            isCorrect: correct,
-            question: currentQuestion.question,
-        });
-    }
-    
+    const newAnswer: ChallengeAnswer = {
+        questionId: currentQuestion.id,
+        userAnswer: answer,
+        correctAnswer: currentQuestion.answer,
+        isCorrect: correct,
+        question: currentQuestion.question,
+    };
+
+    const newAnswers = [...challengeAnswers.filter(a => a.questionId !== currentQuestion.id), newAnswer];
     setChallengeAnswers(newAnswers);
 
     // Auto-advance to next question in a challenge
     setTimeout(() => {
-        handleNext();
+        if (currentIndex < questions.length - 1) {
+             setCurrentIndex((prev) => prev + 1);
+        } else {
+            handleFinishChallenge(newAnswers);
+        }
     }, 300);
   };
 
@@ -410,7 +405,7 @@ function ReviewerPageContent() {
   const isChallengeFailed = showResults && isChallenge && (quizScore / questions.length * 100) < passingScore;
 
   if (isChallenge && !currentQuestion && challengeAnswers.length === questions.length && !showResults) {
-    handleFinishChallenge();
+    handleFinishChallenge(challengeAnswers);
     return null; // Or a loading indicator
   }
 
