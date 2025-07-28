@@ -234,11 +234,6 @@ export default function TimerPage() {
               </div>
             </CardContent>
           </Card>
-           {showCombo && quizStreak > 1 && (
-            <div className="absolute -top-4 -right-4 bg-accent text-accent-foreground px-3 py-1 rounded-full text-lg font-bold animate-combo-pop">
-              Streak x{quizStreak}!
-            </div>
-          )}
         </div>
 
         {timerEnded && mode === 'focus' && (
@@ -260,11 +255,18 @@ export default function TimerPage() {
 
         
         {isActive && mode === 'focus' && (
-            <MiniQuiz 
-                onCorrectAnswer={handleCorrectAnswer} 
-                onIncorrectAnswer={handleIncorrectAnswer} 
-                onStreak={handleStreak}
-            />
+            <div className="relative">
+                <MiniQuiz 
+                    onCorrectAnswer={handleCorrectAnswer} 
+                    onIncorrectAnswer={handleIncorrectAnswer} 
+                    onStreak={handleStreak}
+                />
+                 {showCombo && quizStreak > 1 && (
+                    <div className="absolute -top-4 -right-4 bg-accent text-accent-foreground px-3 py-1 rounded-full text-lg font-bold animate-combo-pop">
+                    Streak x{quizStreak}!
+                    </div>
+                )}
+            </div>
         )}
 
       </div>
@@ -307,3 +309,4 @@ export default function TimerPage() {
     </div>
   );
 }
+
