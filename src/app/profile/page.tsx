@@ -214,7 +214,7 @@ export default function ProfilePage() {
           </p>
           <br />
           <p className="text-sm text-muted-foreground italic">
-            This app is lovingly dedicated to my girlfriend, Trisha, an aspiring teacher who inspired this project.
+            This app is lovingly dedicated to my girlfriend, Yve, an aspiring teacher who inspired this project.
           </p>
         </CardContent>
       </Card>
