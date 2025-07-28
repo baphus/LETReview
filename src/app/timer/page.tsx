@@ -115,7 +115,6 @@ export default function TimerPage() {
     SHORT_BREAK_TIME,
     LONG_BREAK_TIME,
     quizStreak,
-    // highestQuizStreak, // This is now managed in userProfile
     handleCorrectQuizAnswer,
     handleIncorrectQuizAnswer,
     timerEnded
@@ -136,20 +135,21 @@ export default function TimerPage() {
   }, [time, mode, FOCUS_TIME, SHORT_BREAK_TIME, LONG_BREAK_TIME]);
 
 
+  const loadUserStats = useCallback(() => {
+    const savedUser = localStorage.getItem("userProfile");
+    if(savedUser){
+        const user = JSON.parse(savedUser);
+        setUserHighestStreak(user.highestStreak || 0);
+    }
+  }, []);
+
   useEffect(() => {
-    const loadUserStats = () => {
-        const savedUser = localStorage.getItem("userProfile");
-        if(savedUser){
-            const user = JSON.parse(savedUser);
-            setUserHighestStreak(user.highestStreak || 0);
-        }
-    };
     loadUserStats();
     
     // Listen for storage changes to update the UI in real-time
     window.addEventListener('storage', loadUserStats);
     return () => window.removeEventListener('storage', loadUserStats);
-  }, []);
+  }, [loadUserStats]);
   
   const handleCorrectAnswer = (points: number) => {
     handleCorrectQuizAnswer(points);

@@ -17,7 +17,6 @@ interface TimerState {
   focusSessionsCompleted: number;
   endTime: number | null;
   quizStreak: number;
-  highestQuizStreak: number;
   timerEnded: boolean;
 }
 
@@ -42,7 +41,6 @@ let stateStore: TimerState = {
     focusSessionsCompleted: 0,
     endTime: null,
     quizStreak: 0,
-    highestQuizStreak: 0,
     timerEnded: false,
 };
 
@@ -150,8 +148,6 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
              if (savedUser) {
                 const user = JSON.parse(savedUser);
                 parsedState.sessions = user.completedSessions || 0;
-                // Don't overwrite highest streak from profile with session streak
-                // parsedState.highestQuizStreak = user.highestStreak || 0;
              }
             dispatch(parsedState);
         } catch (error) {
@@ -162,7 +158,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
         const savedUser = localStorage.getItem("userProfile");
         if (savedUser) {
             const user = JSON.parse(savedUser);
-            dispatch({ sessions: user.completedSessions || 0, highestQuizStreak: user.highestStreak || 0 });
+            dispatch({ sessions: user.completedSessions || 0 });
         }
     }
     requestNotificationPermission();
@@ -181,7 +177,6 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
 
   const handleCorrectQuizAnswer = useCallback((pointsGained: number) => {
       const newStreak = stateStore.quizStreak + 1;
-      const newHighestStreak = Math.max(stateStore.highestQuizStreak, newStreak);
       
       const savedUser = localStorage.getItem("userProfile");
       if(savedUser) {
@@ -189,11 +184,13 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
           user.points = (user.points || 0) + pointsGained;
           user.highestStreak = Math.max(user.highestStreak || 0, newStreak);
           localStorage.setItem("userProfile", JSON.stringify(user));
+
+          // Manually trigger a storage event to notify other components
+          window.dispatchEvent(new Event('storage'));
       }
       
       dispatch({
           quizStreak: newStreak,
-          highestQuizStreak: newHighestStreak,
       });
 
   }, []);
