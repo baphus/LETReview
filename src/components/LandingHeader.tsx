@@ -17,9 +17,6 @@ export default function LandingHeader() {
         <Link href="#features" className="text-sm font-medium hover:underline underline-offset-4">
           Features
         </Link>
-        <Link href="#preview" className="text-sm font-medium hover:underline underline-offset-4">
-          Preview
-        </Link>
         <Link href="#testimonials" className="text-sm font-medium hover:underline underline-offset-4">
           Testimonials
         </Link>
