@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Clock, Coffee, Play, Pause, RotateCcw, Award, Zap, Sparkles, XCircle, ArrowRight, Gem, Bell } from "lucide-react";
+import { Clock, Coffee, Play, Pause, RotateCcw, Award, Zap, Sparkles, XCircle, ArrowRight, Gem, Bell, Flame } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTimer } from "@/hooks/use-timer";
 import { sampleQuestions } from "@/lib/data";
@@ -131,6 +131,7 @@ export default function TimerPage() {
   
   const progress = useMemo(() => {
     const totalTime = mode === 'focus' ? FOCUS_TIME : (mode === 'shortBreak' ? SHORT_BREAK_TIME : LONG_BREAK_TIME);
+    if(totalTime === 0 || time === undefined) return 0;
     return ((totalTime - time) / totalTime) * 100;
   }, [time, mode, FOCUS_TIME, SHORT_BREAK_TIME, LONG_BREAK_TIME]);
 
@@ -147,8 +148,12 @@ export default function TimerPage() {
     loadUserStats();
     
     // Listen for storage changes to update the UI in real-time
-    window.addEventListener('storage', loadUserStats);
-    return () => window.removeEventListener('storage', loadUserStats);
+    const handleStorageChange = () => {
+        loadUserStats();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, [loadUserStats]);
   
   const handleCorrectAnswer = (points: number) => {
@@ -282,8 +287,8 @@ export default function TimerPage() {
                     onStreak={handleStreak}
                 />
                  {showCombo && quizStreak > 1 && (
-                    <div className="absolute -top-4 -right-4 bg-accent text-accent-foreground px-3 py-1 rounded-full text-lg font-bold animate-combo-pop">
-                        Streak x{quizStreak}!
+                    <div className="absolute -top-4 -right-4 bg-destructive text-destructive-foreground px-3 py-1 rounded-full text-lg font-bold animate-combo-pop">
+                        🔥 Streak x{quizStreak}!
                     </div>
                 )}
                  {showPoints.show && (
@@ -310,8 +315,8 @@ export default function TimerPage() {
         </Card>
          <Card>
             <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center justify-center gap-2">
-                    <Zap className="text-yellow-500" />
+                <CardTitle className="text-sm flex items-center justify-center gap-2 text-destructive">
+                    <Flame className="text-destructive" />
                     <span>Highest Streak</span>
                 </CardTitle>
             </CardHeader>
