@@ -105,7 +105,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
                         if(savedUser) {
                             const user = JSON.parse(savedUser);
                             user.completedSessions = (user.completedSessions || 0) + 1;
-                            user.points = (user.points || 0) + (parsedState.sessionPoints || 0);
+                             // Points are now added in real-time, not here
                             localStorage.setItem("userProfile", JSON.stringify(user));
                             parsedState.sessions = user.completedSessions;
                         }
@@ -171,7 +171,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
       if(savedUser){
           const user = JSON.parse(savedUser);
           user.completedSessions = (user.completedSessions || 0) + 1;
-          user.points = (user.points || 0) + timerState.sessionPoints;
+          // Points are now added in real-time, not at the end.
           localStorage.setItem("userProfile", JSON.stringify(user));
           updateTimerState({ 
               sessions: user.completedSessions,
@@ -181,7 +181,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
            if (timerState.sessionPoints > 0) {
                 toast({
                     title: `Session Complete!`,
-                    description: `You earned ${timerState.sessionPoints} points.`,
+                    description: `You earned a total of ${timerState.sessionPoints} points.`,
                     className: "bg-green-100 border-green-300"
                 });
             }
@@ -189,22 +189,38 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   }, [updateTimerState, timerState.sessionPoints, toast, timerState.focusSessionsCompleted]);
 
   const handleCorrectQuizAnswer = useCallback(() => {
+    const pointsGained = Math.floor(1 * timerState.streakMultiplier);
+    
+    // Update user profile with new points immediately
+    const savedUser = localStorage.getItem("userProfile");
+    if(savedUser) {
+        const user = JSON.parse(savedUser);
+        user.points = (user.points || 0) + pointsGained;
+        localStorage.setItem("userProfile", JSON.stringify(user));
+    }
+    
+    // Update timer state
     setTimerState(prevState => {
       const newStreak = prevState.quizStreak + 1;
       const newMultiplier = 1 + (newStreak * 0.05);
-      const pointsEarned = Math.floor(1 * prevState.streakMultiplier);
       
       const updatedState = {
         ...prevState,
         quizStreak: newStreak,
         streakMultiplier: newMultiplier,
-        sessionPoints: prevState.sessionPoints + pointsEarned,
+        sessionPoints: prevState.sessionPoints + pointsGained,
       };
 
       localStorage.setItem("pomodoroState", JSON.stringify(updatedState));
       return updatedState;
     });
-  }, []);
+
+    toast({
+        title: `Correct! +${pointsGained} ${pointsGained > 1 ? 'Points' : 'Point'}`,
+        description: `Your streak is now ${timerState.quizStreak + 1}!`,
+        className: "bg-green-100 border-green-300"
+    });
+  }, [timerState.streakMultiplier, timerState.quizStreak, toast]);
 
   const handleIncorrectQuizAnswer = useCallback(() => {
     if (timerState.quizStreak > 0) {

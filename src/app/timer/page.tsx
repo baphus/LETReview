@@ -148,12 +148,6 @@ export default function TimerPage() {
   
   const handleCorrectAnswer = () => {
     handleCorrectQuizAnswer();
-    const pointsGained = Math.floor(1 * streakMultiplier);
-    toast({
-        title: `Correct! +${pointsGained} ${pointsGained > 1 ? 'Points' : 'Point'}`,
-        description: `Your streak is now ${quizStreak + 1}!`,
-        className: "bg-green-100 border-green-300"
-    });
   };
   
    const handleIncorrectAnswer = () => {
@@ -274,7 +268,7 @@ export default function TimerPage() {
             <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center justify-center gap-2">
                     <Gem className="text-green-500" />
-                    <span>Points to Gain</span>
+                    <span>Session Points</span>
                 </CardTitle>
             </CardHeader>
             <CardContent>
