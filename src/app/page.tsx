@@ -4,7 +4,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BookOpen, CalendarDays, Clock, Award, ChevronRight, Star } from "lucide-react";
+import { BookOpen, CalendarDays, Clock, Award, ChevronRight, Star, Check } from "lucide-react";
 import Image from 'next/image';
 import LandingHeader from "@/components/LandingHeader";
 import LandingFooter from "@/components/LandingFooter";
@@ -13,26 +13,54 @@ const features = [
   {
     icon: <BookOpen className="w-8 h-8 text-primary" />,
     title: "Comprehensive Reviewer",
-    description: "Tackle thousands of questions in both Study and Flashcard modes. Master General and Professional Education topics at your own pace.",
-    link: "/review"
+    description: "Tackle thousands of questions in both Study and Flashcard modes.",
+    benefits: [
+        "Master General and Professional Education topics.",
+        "Choose between study and flashcard modes.",
+        "Learn at your own pace."
+    ],
+    link: "/review",
+    image: "https://placehold.co/400x600.png",
+    image_hint: "studying app",
   },
   {
     icon: <CalendarDays className="w-8 h-8 text-primary" />,
     title: "Daily Challenges",
-    description: "Keep your skills sharp with daily questions and challenges. Earn points, build your streak, and climb the leaderboard.",
-    link: "/daily"
+    description: "Keep your skills sharp with daily questions and challenges.",
+    benefits: [
+        "Earn points for completing challenges.",
+        "Build your study streak.",
+        "Climb the leaderboard."
+    ],
+    link: "/daily",
+    image: "https://placehold.co/400x600.png",
+    image_hint: "calendar daily challenges",
   },
   {
     icon: <Clock className="w-8 h-8 text-primary" />,
     title: "Pomodoro Timer",
-    description: "Boost your productivity with a built-in Pomodoro timer. Stay focused during study sessions and take effective breaks.",
-    link: "/timer"
+    description: "Boost your productivity with a built-in Pomodoro timer.",
+    benefits: [
+        "Stay focused during study sessions.",
+        "Take effective breaks.",
+        "Earn bonus points with mini-quizzes."
+    ],
+    link: "/timer",
+    image: "https://placehold.co/400x600.png",
+    image_hint: "timer app",
   },
   {
     icon: <Award className="w-8 h-8 text-primary" />,
     title: "Gamified Progress",
-    description: "Stay motivated by earning points, unlocking cute pets, and customizing your app theme. Make studying fun!",
-    link: "/home"
+    description: "Stay motivated by earning points and unlocking rewards.",
+    benefits: [
+        "Unlock cute pets as you build your streak.",
+        "Customize your app theme.",
+        "Make studying fun and engaging."
+    ],
+    link: "/home",
+    image: "https://placehold.co/400x600.png",
+    image_hint: "gamified progress pets",
   }
 ];
 
@@ -64,56 +92,58 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Features Section */}
-        <section id="features" className="w-full py-20 md:py-32">
-          <div className="container mx-auto px-4 md:px-6">
-            <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
-              <div className="inline-block rounded-lg bg-secondary px-3 py-1 text-sm">Key Features</div>
-              <h2 className="text-3xl md:text-4xl font-bold tracking-tighter font-headline">Everything You Need to Succeed</h2>
-              <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                LETReview is packed with features designed to make your review sessions effective, engaging, and fun.
-              </p>
-            </div>
-            <div className="mx-auto grid items-start gap-8 sm:max-w-4xl sm:grid-cols-2 md:gap-12 lg:max-w-5xl lg:grid-cols-2">
-              {features.map((feature) => (
-                 <Card key={feature.title} className="p-6">
-                    <CardHeader className="p-0">
-                        <div className="flex items-center gap-4">
-                            {feature.icon}
-                            <CardTitle className="font-headline text-2xl">{feature.title}</CardTitle>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="p-0 mt-4">
-                        <p className="text-muted-foreground">{feature.description}</p>
-                    </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </section>
-        
         {/* App Preview Section */}
-        <section id="preview" className="w-full py-20 md:py-32 bg-primary/5">
+        <section id="preview" className="w-full py-10">
             <div className="container mx-auto px-4 md:px-6">
-                <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
-                    <h2 className="text-3xl md:text-4xl font-bold tracking-tighter font-headline">See it in Action</h2>
-                    <p className="max-w-[600px] text-muted-foreground md:text-xl/relaxed">
-                        Explore the clean and intuitive interface designed to keep you focused and motivated.
-                    </p>
-                </div>
-                <div className="mx-auto max-w-5xl">
+                <div className="relative mx-auto max-w-4xl">
                     <Image
-                        src="https://placehold.co/1200x800.png"
+                        src="https://placehold.co/1000x600.png"
                         alt="LETReview App Screenshot"
-                        width={1200}
-                        height={800}
+                        width={1000}
+                        height={600}
                         className="rounded-lg border shadow-2xl"
-                        data-ai-hint="app screenshot"
+                        data-ai-hint="app dashboard"
                     />
                 </div>
             </div>
         </section>
 
+        {/* Features Section */}
+        <section id="features" className="w-full py-20 md:py-32 bg-dark text-white">
+          <div className="container mx-auto px-4 md:px-6 space-y-20">
+            {features.map((feature, index) => (
+              <div key={feature.title} className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                <div className={`flex justify-center ${index % 2 === 1 ? 'md:order-2' : ''}`}>
+                    <Image 
+                        src={feature.image}
+                        alt={feature.title}
+                        width={400}
+                        height={600}
+                        className="rounded-lg border-4 border-white/10 shadow-2xl"
+                        data-ai-hint={feature.image_hint}
+                    />
+                </div>
+                <div className={`space-y-6 ${index % 2 === 1 ? 'md:order-1' : ''}`}>
+                  <div>
+                    <div className="inline-block rounded-lg bg-primary/20 text-primary px-3 py-1 text-sm mb-2">{feature.title}</div>
+                    <h2 className="text-3xl md:text-4xl font-bold tracking-tighter font-headline">
+                        {feature.description}
+                    </h2>
+                  </div>
+                  <ul className="space-y-4">
+                    {feature.benefits.map((benefit, i) => (
+                        <li key={i} className="flex items-start gap-3">
+                           <Check className="h-6 w-6 text-primary mt-1" />
+                           <span className="text-muted-foreground text-lg">{benefit}</span>
+                        </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+        
          {/* Testimonial Section */}
         <section id="testimonials" className="w-full py-20 md:py-32">
           <div className="container mx-auto grid items-center justify-center gap-4 px-4 text-center md:px-6">
