@@ -161,8 +161,10 @@ export default function HomePage() {
     if (!user?.dailyProgress) return [];
     return Object.entries(user.dailyProgress).reduce((acc, [dateStr, progress]) => {
         if (progress.qotdCompleted) {
-            const [year, month, day] = dateStr.split('-').map(Number);
-            acc.push(new Date(year, month - 1, day));
+            const date = new Date(dateStr);
+            // This ensures we are creating the date in the local timezone, not UTC
+            const localDate = new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+            acc.push(localDate);
         }
         return acc;
     }, [] as Date[]);
