@@ -17,6 +17,7 @@ import { Badge } from "./ui/badge";
 import { useTimer } from "@/hooks/use-timer";
 import { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
 import { useEffect, useState } from "react";
+import Logo from "./Logo";
 
 const navItems = [
   { href: "/home", label: "Home", icon: Home },
@@ -70,7 +71,7 @@ export function AppSidebar() {
     <>
       <SidebarHeader>
         <div className="flex items-center gap-2">
-          <BookOpen className="h-6 w-6 text-primary" />
+          <Logo className="h-6 w-6 text-primary" />
           <span className="font-bold text-lg group-data-[collapsible=icon]:hidden">
             LETReview
           </span>

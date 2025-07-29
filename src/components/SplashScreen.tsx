@@ -1,9 +1,9 @@
 
 "use client";
 
-import { BookOpen } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
+import Logo from './Logo';
 
 export default function SplashScreen() {
     const [visible, setVisible] = useState(true);
@@ -22,7 +22,7 @@ export default function SplashScreen() {
             visible ? "opacity-100" : "opacity-0 pointer-events-none"
         )}>
             <div className="animate-fade-in-up">
-                <BookOpen className="h-24 w-24 text-primary" />
+                <Logo className="h-24 w-24 text-primary" />
             </div>
             <h1 className="text-4xl font-bold font-headline mt-4 animate-fade-in-up" style={{ animationDelay: '200ms' }}>
                 LETReview

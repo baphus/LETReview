@@ -2,14 +2,14 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import Logo from "./Logo";
 
 export default function LandingHeader() {
   return (
     <header className="px-4 lg:px-6 h-16 flex items-center shadow-sm sticky top-0 bg-background/95 backdrop-blur z-10">
       <Link href="/" className="flex items-center justify-center">
-        <BookOpen className="h-6 w-6 text-primary" />
+        <Logo className="h-6 w-6 text-primary" />
         <span className="sr-only">LETReview</span>
         <span className="font-bold text-lg ml-2">LETReview</span>
       </Link>
