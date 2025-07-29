@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { BookOpen, CalendarDays, Clock, Home, User, Lightbulb } from "lucide-react";
 import {
   SidebarHeader,
@@ -33,19 +33,19 @@ interface UserProfile {
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { time, isActive } = useTimer();
   const { state: sidebarState } = useSidebar();
   const [user, setUser] = useState<UserProfile | null>(null);
 
   useEffect(() => {
-    // We need to check if window is defined, which means we are on the client
     if (typeof window !== 'undefined') {
         const savedUser = localStorage.getItem("userProfile");
         if (savedUser) {
             setUser(JSON.parse(savedUser));
         }
     }
-  }, [pathname]); // Rerun on route change to get latest data
+  }, [pathname]);
 
   const TimerIndicator = () => {
     if (!isActive) return null;
@@ -63,6 +63,8 @@ export function AppSidebar() {
       </Badge>
     );
   };
+  
+  const isChallenge = searchParams.get('challenge') === 'true';
 
   return (
     <>
@@ -76,12 +78,20 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarMenu className="flex-1">
         {navItems.map(({ href, label, icon: Icon }) => {
-            const isActive = (href === "/" && pathname === "/") || (href !== "/" && pathname.startsWith(href));
+            let isActivePath = false;
+            if (href === '/daily') {
+              isActivePath = pathname.startsWith('/daily') || (pathname.startsWith('/review') && isChallenge);
+            } else if (href === '/review') {
+              isActivePath = pathname.startsWith('/review') && !isChallenge;
+            } else {
+              isActivePath = pathname.startsWith(href);
+            }
+            
             return (
               <SidebarMenuItem key={href}>
                 <Link href={href} className="w-full">
                   <SidebarMenuButton
-                    isActive={isActive}
+                    isActive={isActivePath}
                     tooltip={{ children: label }}
                     className="justify-between h-12"
                   >

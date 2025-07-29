@@ -40,12 +40,17 @@ export default function BottomNav() {
       <div className="flex justify-around items-center h-16">
         {navItems.map(({ href, label, icon: Icon }) => {
           let isActivePath = false;
-          if (href === '/daily' && (pathname.startsWith('/daily') || (pathname.startsWith('/review') && isChallenge))) {
-              isActivePath = true;
-          } else if (href === '/review' && !isChallenge) {
-              isActivePath = pathname.startsWith(href);
-          } else if (href !== '/daily' && href !== '/review') {
-              isActivePath = pathname.startsWith(href);
+          // The /daily link is active on the /daily page OR on the /review page if it's a challenge
+          if (href === '/daily') {
+            isActivePath = pathname.startsWith('/daily') || (pathname.startsWith('/review') && isChallenge);
+          } 
+          // The /review link is active on the /review page ONLY if it's NOT a challenge
+          else if (href === '/review') {
+            isActivePath = pathname.startsWith('/review') && !isChallenge;
+          } 
+          // For all other links, use the default startsWith logic
+          else {
+            isActivePath = pathname.startsWith(href);
           }
 
           return (
