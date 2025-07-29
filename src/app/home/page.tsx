@@ -178,16 +178,26 @@ export default function HomePage() {
     if (!user) return false;
     return user.lastChallengeDate === todayKey;
   }, [user, todayKey]);
-
+  
   const unlockedPetsCount = useMemo(() => {
       if (!user) return 0;
-
-      const unlockedStreak = streakPets.filter(p => (user.highestStreak || 0) >= p.streak_req).length;
-      const unlockedAchievement = user.unlockedPets.filter(p => achievementPets.some(ap => ap.name === p)).length;
-      const unlockedPurchased = user.unlockedPets.filter(p => p === "Draco").length;
-      
-      return unlockedStreak + unlockedAchievement + unlockedPurchased;
+      return allPets.filter(pet => {
+          if (pet.unlock_criteria.includes('streak')) {
+              return (user.highestStreak || 0) >= pet.streak_req;
+          }
+          if (pet.unlock_criteria.includes('Purchase')) {
+              return user.unlockedPets.includes(pet.name);
+          }
+          if (pet.unlock_criteria.includes('Pomodoro')) {
+              return (user.completedSessions || 0) >= (pet.unlock_value || 0);
+          }
+          if (pet.unlock_criteria.includes('quiz streak')) {
+              return (user.highestQuizStreak || 0) >= (pet.unlock_value || 0);
+          }
+          return false;
+      }).length;
   }, [user]);
+
 
   const todaysProgress = user?.dailyProgress?.[todayKey] || {};
 
@@ -471,6 +481,8 @@ export default function HomePage() {
     </div>
   );
 }
+
+    
 
     
 
