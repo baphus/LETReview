@@ -16,6 +16,7 @@ export interface PetProfile {
   image: string;
   hint: string;
   unlock_value?: number;
+  cost?: number;
 }
 
 export interface DailyProgress {

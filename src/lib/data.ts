@@ -2866,7 +2866,7 @@ export const sampleQuestions: QuizQuestion[] = [
     category: "gen_education",
     difficulty: "easy",
     question: "Siya ang “Ama ng Zarsuelang Tagalog”?",
-    choices: ["Aurelio Tolentino", "N.V.M Gonzalez", "Alejandro Abadilla", "Severino Reyes"],
+    choices: ["Aurelio Tolentino", "N.V.M. Gonzalez", "Alejandro Abadilla", "Severino Reyes"],
     answer: "Severino Reyes",
     explanation: "The correct answer is D. Severino Reyes is considered the 'Father of the Tagalog Zarzuela'."
   },
@@ -5201,7 +5201,8 @@ export const achievementPets: PetProfile[] = [
     },
 ]
 
+export const rarePets: PetProfile[] = [
+    { name: "Draco", unlock_criteria: "Purchase in store", cost: 1000, image: "/pets/draco.png", hint: "fire breathing", streak_req: 0 },
+];
 
-export const rarePets = [
-    { name: "Draco", cost: 1000, image: "/pets/draco.png", hint: "fire breathing" },
-]
+    

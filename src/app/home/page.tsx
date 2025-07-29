@@ -182,7 +182,7 @@ export default function HomePage() {
       if (!user) return 0;
       return allPets.filter(pet => {
           let isUnlocked = false;
-          if (pet.unlock_criteria.includes('streak')) {
+          if (pet.unlock_criteria.includes('streak') && !pet.unlock_criteria.includes('quiz')) {
             isUnlocked = (user.highestStreak || 0) >= pet.streak_req;
           } else if (pet.unlock_criteria.includes('Purchase')) {
             isUnlocked = user.unlockedPets.includes(pet.name);
@@ -475,5 +475,6 @@ export default function HomePage() {
       </section>
     </div>
   );
+}
 
     
