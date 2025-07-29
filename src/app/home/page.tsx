@@ -21,7 +21,18 @@ import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
 import { addDays, format, isBefore, startOfYesterday, startOfDay, isSameDay } from "date-fns";
 import { DayDetailDialog } from "@/components/DayDetailDialog";
-
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface UserProfile {
     name: string;
@@ -50,6 +61,7 @@ const getTodayKey = () => format(new Date(), 'yyyy-MM-dd');
 export default function HomePage() {
   const router = useRouter();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   
   const [user, setUser] = useState<UserProfile | null>(null);
   const [editingPet, setEditingPet] = useState<string | null>(null);
@@ -158,30 +170,33 @@ export default function HomePage() {
   const qotdCompletedDays = useMemo(() => {
     if (!user?.dailyProgress) return [];
     return Object.entries(user.dailyProgress).reduce((acc, [dateStr, progress]) => {
-        if (progress.qotdCompleted) {
-            const date = new Date(dateStr);
-            const localDate = new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
-            acc.push(localDate);
-        }
-        return acc;
+      if (progress.qotdCompleted) {
+        // When parsing yyyy-mm-dd, it's treated as UTC. We need to account for timezone offset.
+        const [year, month, day] = dateStr.split('-').map(Number);
+        const date = new Date(year, month - 1, day);
+        acc.push(date);
+      }
+      return acc;
     }, [] as Date[]);
   }, [user?.dailyProgress]);
 
   const streakDays = useMemo(() => {
     if (!user) return [];
-    const yesterday = startOfYesterday();
-    return Array.from({ length: user.streak || 0 }, (_, i) => addDays(yesterday, -i));
-  }, [user]);
+    // Start from today if streak is secured, otherwise yesterday
+    const startDate = user.lastChallengeDate === todayKey ? startOfDay(new Date()) : startOfYesterday();
+    return Array.from({ length: user.streak || 0 }, (_, i) => addDays(startDate, -i));
+}, [user, todayKey]);
   
   const isStreakSecuredToday = useMemo(() => {
     if (!user) return false;
-    return user.lastChallengeDate === todayKey;
+    return (user.dailyProgress?.[todayKey]?.challengesCompleted?.length || 0) > 0;
   }, [user, todayKey]);
   
   const unlockedPetsCount = useMemo(() => {
       if (!user) return 0;
       return allPets.filter(pet => {
           if (!pet.unlock_criteria) return false;
+          
           let isUnlocked = false;
           if (pet.unlock_criteria.includes('streak') && !pet.unlock_criteria.includes('quiz')) {
             isUnlocked = (user.highestStreak || 0) >= pet.streak_req;
@@ -192,11 +207,12 @@ export default function HomePage() {
           } else if (pet.unlock_criteria.includes('quiz streak')) {
             isUnlocked = (user.highestQuizStreak || 0) >= (pet.unlock_value || 0);
           }
+
           return isUnlocked;
       }).length;
   }, [user]);
 
-  const todaysProgress = user?.dailyProgress?.[todayKey] || {};
+  const todaysProgress = user?.dailyProgress?.[todayKey] || { pointsEarned: 0, pomodorosCompleted: 0, qotdCompleted: false };
 
   const handlePetNameEdit = (originalName: string) => {
     if (!user) return;
@@ -233,6 +249,104 @@ export default function HomePage() {
     return null;
   }
   
+  const PetDisplay = ({ pet }: { pet: PetProfile }) => {
+    let isUnlocked = false;
+
+    if (pet.unlock_criteria.includes('streak') && !pet.unlock_criteria.includes('quiz')) {
+        isUnlocked = (user.highestStreak || 0) >= pet.streak_req;
+    } else if (pet.unlock_criteria.includes('Purchase')) {
+        isUnlocked = user.unlockedPets.includes(pet.name);
+    } else if (pet.unlock_criteria.includes('Pomodoro')) {
+        isUnlocked = (user.completedSessions || 0) >= (pet.unlock_value || 0);
+    } else if (pet.unlock_criteria.includes('quiz streak')) {
+        isUnlocked = (user.highestQuizStreak || 0) >= (pet.unlock_value || 0);
+    }
+
+    const petContent = (
+      <div className="relative">
+         <Image
+          src={pet.image}
+          alt={pet.name}
+          width={80}
+          height={80}
+          className={cn(
+              "rounded-full bg-muted p-2",
+              isUnlocked ? "animate-bob" : "grayscale opacity-50 blur-sm"
+          )}
+          data-ai-hint={pet.hint}
+        />
+        {!isUnlocked && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
+              { isMobile ? <HelpCircle className="h-6 w-6 text-white" /> : <Lock className="h-6 w-6 text-white" /> }
+          </div>
+        )}
+      </div>
+    );
+    
+    return (
+       <div key={pet.name} className="flex flex-col items-center text-center">
+            {isUnlocked || isMobile ? (
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        {petContent}
+                    </AlertDialogTrigger>
+                     {!isUnlocked && (
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>{pet.name} Hint</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    {pet.hint}
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogAction>Got it!</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    )}
+                </AlertDialog>
+            ) : (
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        {petContent}
+                    </TooltipTrigger>
+                    <TooltipContent>
+                       <p className="font-semibold">{pet.name}</p>
+                       <p className="text-sm text-muted-foreground">{pet.hint}</p>
+                    </TooltipContent>
+                </Tooltip>
+            )}
+
+            {isUnlocked ? (
+               editingPet === pet.name ? (
+                <div className="flex items-center gap-1 mt-1">
+                  <Input
+                    value={newPetName}
+                    onChange={(e) => setNewPetName(e.target.value)}
+                    className="text-sm h-7 w-20"
+                    onKeyDown={(e) => e.key === 'Enter' && handlePetNameSave(pet.name)}
+                  />
+                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handlePetNameSave(pet.name)}>
+                    <Check className="h-4 w-4 text-green-500" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center gap-1 mt-1">
+                  <p className="text-sm font-medium">{user.petNames[pet.name] || pet.name}</p>
+                  <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handlePetNameEdit(pet.name)}>
+                    <Edit className="h-3 w-3" />
+                  </Button>
+                </div>
+              )
+            ) : (
+                <p className="text-sm font-medium mt-1">???</p>
+            )}
+             <Badge variant="secondary" className="mt-1 text-center text-wrap h-auto">
+                {pet.unlock_criteria}
+            </Badge>
+          </div>
+    )
+  }
+
   return (
     <div className="container mx-auto p-4 max-w-4xl">
       <DayDetailDialog
@@ -273,7 +387,7 @@ export default function HomePage() {
         </Card>
       )}
 
-       <section className="mt-8">
+       <section className="mb-6">
         <h2 className="text-xl font-bold font-headline mb-4">Today's Progress</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
              <Card>
@@ -311,7 +425,7 @@ export default function HomePage() {
         </div>
        </section>
 
-        <section className="mt-8">
+        <section className="mb-6">
             <h2 className="text-xl font-bold font-headline mb-4">Question of the Day</h2>
             {questionOfTheDay && (
                 <Card>
@@ -410,78 +524,9 @@ export default function HomePage() {
           <CardContent className="p-4">
             <TooltipProvider>
             <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
-              {allPets.map((pet) => {
-                let isUnlocked = false;
-                if (!pet.unlock_criteria) {
-                  // handle cases where unlock_criteria might be undefined
-                } else if (pet.unlock_criteria.includes('streak') && !pet.unlock_criteria.includes('quiz')) {
-                  isUnlocked = (user.highestStreak || 0) >= pet.streak_req;
-                } else if (pet.unlock_criteria.includes('Purchase')) {
-                  isUnlocked = user.unlockedPets.includes(pet.name);
-                } else if (pet.unlock_criteria.includes('Pomodoro')) {
-                  isUnlocked = (user.completedSessions || 0) >= (pet.unlock_value || 0);
-                } else if (pet.unlock_criteria.includes('quiz streak')) {
-                  isUnlocked = (user.highestQuizStreak || 0) >= (pet.unlock_value || 0);
-                }
-
-                return (
-                  <div key={pet.name} className="flex flex-col items-center text-center">
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <div className="relative">
-                           <Image
-                            src={pet.image}
-                            alt={pet.name}
-                            width={80}
-                            height={80}
-                            className={cn(
-                                "rounded-full bg-muted p-2",
-                                isUnlocked ? "animate-bob" : "grayscale opacity-50 blur-sm"
-                            )}
-                            data-ai-hint={pet.hint}
-                          />
-                          {!isUnlocked && (
-                            <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
-                                <Lock className="h-6 w-6 text-white" />
-                            </div>
-                          )}
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                         <p className="font-semibold">{pet.name}</p>
-                         <p className="text-sm text-muted-foreground">{pet.hint}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                    {isUnlocked ? (
-                       editingPet === pet.name ? (
-                        <div className="flex items-center gap-1 mt-1">
-                          <Input
-                            value={newPetName}
-                            onChange={(e) => setNewPetName(e.target.value)}
-                            className="text-sm h-7 w-20"
-                            onKeyDown={(e) => e.key === 'Enter' && handlePetNameSave(pet.name)}
-                          />
-                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handlePetNameSave(pet.name)}>
-                            <Check className="h-4 w-4 text-green-500" />
-                          </Button>
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-center gap-1 mt-1">
-                          <p className="text-sm font-medium">{user.petNames[pet.name] || pet.name}</p>
-                          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handlePetNameEdit(pet.name)}>
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      )
-                    ) : (
-                        <p className="text-sm font-medium mt-1">???</p>
-                    )}
-                     <Badge variant="secondary" className="mt-1 text-center text-wrap h-auto">
-                        {pet.unlock_criteria}
-                    </Badge>
-                  </div>
-                )
-            })}
+              {allPets.map((pet) => (
+                <PetDisplay key={pet.name} pet={pet} />
+              ))}
             </div>
             </TooltipProvider>
           </CardContent>
@@ -490,5 +535,3 @@ export default function HomePage() {
     </div>
   );
 }
-
-    
