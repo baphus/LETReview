@@ -442,7 +442,8 @@ export default function HomePage() {
                         </div>
                       </TooltipTrigger>
                       <TooltipContent>
-                         <p className="text-sm text-muted-foreground">Unlock: {pet.unlock_criteria}</p>
+                         <p className="font-semibold">{pet.name}</p>
+                         <p className="text-sm text-muted-foreground">{pet.hint}</p>
                       </TooltipContent>
                     </Tooltip>
                     {isUnlocked ? (
@@ -483,7 +484,5 @@ export default function HomePage() {
     </div>
   );
 }
-
-    
 
     
