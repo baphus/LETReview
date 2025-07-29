@@ -5169,7 +5169,7 @@ export const pets: PetProfile[] = [
 export const achievementPets: PetProfile[] = [
     {
         name: "Owlbert",
-        unlock_criteria: "achievement: Complete 10 Pomodoro sessions",
+        unlock_criteria: "Complete 10 Pomodoro sessions",
         unlock_value: 10,
         streak_req: 0,
         image: "/pets/owlbert.png",
@@ -5177,7 +5177,7 @@ export const achievementPets: PetProfile[] = [
     },
     {
         name: "Einstein",
-        unlock_criteria: "achievement: Complete 50 Pomodoro sessions",
+        unlock_criteria: "Complete 50 Pomodoro sessions",
         unlock_value: 50,
         streak_req: 0,
         image: "/pets/einstein.png",
@@ -5185,7 +5185,7 @@ export const achievementPets: PetProfile[] = [
     },
     {
         name: "Sparky",
-        unlock_criteria: "achievement: Get a quiz streak of 10",
+        unlock_criteria: "Get a quiz streak of 10",
         unlock_value: 10,
         streak_req: 0,
         image: "/pets/sparky.png",
@@ -5193,7 +5193,7 @@ export const achievementPets: PetProfile[] = [
     },
     {
         name: "Bolt",
-        unlock_criteria: "achievement: Get a quiz streak of 25",
+        unlock_criteria: "Get a quiz streak of 25",
         unlock_value: 25,
         streak_req: 0,
         image: "/pets/bolt.png",
@@ -5205,5 +5205,3 @@ export const achievementPets: PetProfile[] = [
 export const rarePets = [
     { name: "Draco", cost: 1000, image: "/pets/draco.png", hint: "fire breathing" },
 ]
-
-    

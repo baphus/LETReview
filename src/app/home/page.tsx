@@ -70,9 +70,9 @@ export default function HomePage() {
       if (isAlreadyUnlocked) return;
 
       let isUnlockedNow = false;
-      if (pet.unlock_criteria.includes('Pomodoro') && updatedUser.completedSessions >= (pet.unlock_value || 0)) {
+      if (pet.unlock_criteria.includes('Pomodoro') && user.completedSessions >= (pet.unlock_value || 0)) {
         isUnlockedNow = true;
-      } else if (pet.unlock_criteria.includes('quiz streak') && updatedUser.highestQuizStreak >= (pet.unlock_value || 0)) {
+      } else if (pet.unlock_criteria.includes('quiz streak') && user.highestQuizStreak >= (pet.unlock_value || 0)) {
         isUnlockedNow = true;
       }
       // Add other achievement checks here
@@ -183,13 +183,19 @@ export default function HomePage() {
   };
 
   const unlockedStreakPetsCount = streakPets.filter(p => user.highestStreak >= p.streak_req).length;
-  const unlockedAchievementPetsCount = achievementPets.filter(p => user.unlockedPets.includes(p.name)).length;
-  const unlockedStorePetsCount = user.unlockedPets.filter(p => p === "Draco").length;
+  const unlockedAchievementPetsCount = achievementPets.filter(p => {
+    if (p.unlock_criteria.includes('Pomodoro')) {
+      return user.completedSessions >= (p.unlock_value || 0);
+    } else if (p.unlock_criteria.includes('quiz streak')) {
+      return user.highestQuizStreak >= (p.unlock_value || 0);
+    }
+    return false;
+  }).length;
+  const unlockedStorePetsCount = user.unlockedPets.includes("Draco") ? 1 : 0;
   const unlockedPetsCount = unlockedStreakPetsCount + unlockedAchievementPetsCount + unlockedStorePetsCount;
   
   const qotdCompletedDays = Object.entries(user.dailyProgress || {}).reduce((acc, [dateStr, progress]) => {
     if (progress.qotdCompleted) {
-        // Parse date string as local time
         const [year, month, day] = dateStr.split('-').map(Number);
         acc.push(new Date(year, month - 1, day));
     }
@@ -376,11 +382,13 @@ export default function HomePage() {
               {allPets.map((pet) => {
                 let isUnlocked = false;
                 if (pet.unlock_criteria.includes('streak')) {
-                    isUnlocked = user.highestStreak >= pet.streak_req;
+                  isUnlocked = user.highestStreak >= pet.streak_req;
                 } else if (pet.unlock_criteria.includes('Purchase')) {
-                     isUnlocked = user.unlockedPets.includes(pet.name);
-                } else if (pet.unlock_criteria.includes('achievement')) {
-                     isUnlocked = user.unlockedPets.includes(pet.name);
+                  isUnlocked = user.unlockedPets.includes(pet.name);
+                } else if (pet.unlock_criteria.includes('Pomodoro')) {
+                  isUnlocked = user.completedSessions >= (pet.unlock_value || 0);
+                } else if (pet.unlock_criteria.includes('quiz streak')) {
+                  isUnlocked = user.highestQuizStreak >= (pet.unlock_value || 0);
                 }
 
 
