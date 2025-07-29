@@ -181,6 +181,7 @@ export default function HomePage() {
   const unlockedPetsCount = useMemo(() => {
       if (!user) return 0;
       return allPets.filter(pet => {
+          if (!pet.unlock_criteria) return false;
           let isUnlocked = false;
           if (pet.unlock_criteria.includes('streak') && !pet.unlock_criteria.includes('quiz')) {
             isUnlocked = (user.highestStreak || 0) >= pet.streak_req;
@@ -219,7 +220,11 @@ export default function HomePage() {
   }
 
   const handleDayClick = (day: Date) => {
-    if (isBefore(day, addDays(startOfDay(new Date()), 1))) {
+    // Prevent opening dialog for today's date
+    if (isSameDay(day, startOfDay(new Date()))) {
+      return;
+    }
+    if (isBefore(day, startOfDay(new Date()))) {
       setSelectedDate(day);
     }
   };
@@ -401,7 +406,9 @@ export default function HomePage() {
             <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
               {allPets.map((pet) => {
                 let isUnlocked = false;
-                if (pet.unlock_criteria.includes('streak') && !pet.unlock_criteria.includes('quiz')) {
+                if (!pet.unlock_criteria) {
+                  // handle cases where unlock_criteria might be undefined
+                } else if (pet.unlock_criteria.includes('streak') && !pet.unlock_criteria.includes('quiz')) {
                   isUnlocked = (user.highestStreak || 0) >= pet.streak_req;
                 } else if (pet.unlock_criteria.includes('Purchase')) {
                   isUnlocked = user.unlockedPets.includes(pet.name);
@@ -476,5 +483,7 @@ export default function HomePage() {
     </div>
   );
 }
+
+    
 
     
