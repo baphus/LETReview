@@ -198,7 +198,6 @@ export default function HomePage() {
       }).length;
   }, [user]);
 
-
   const todaysProgress = user?.dailyProgress?.[todayKey] || {};
 
   const handlePetNameEdit = (originalName: string) => {
@@ -415,7 +414,6 @@ export default function HomePage() {
                   isUnlocked = (user.highestQuizStreak || 0) >= (pet.unlock_value || 0);
                 }
 
-
                 return (
                   <div key={pet.name} className="flex flex-col items-center text-center">
                     <Tooltip>
@@ -481,9 +479,3 @@ export default function HomePage() {
     </div>
   );
 }
-
-    
-
-    
-
-    
