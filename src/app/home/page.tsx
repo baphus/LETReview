@@ -142,12 +142,13 @@ export default function HomePage() {
   const unlockedStorePetsCount = user.unlockedPets.length;
   const unlockedPetsCount = unlockedStreakPetsCount + unlockedStorePetsCount;
   
-  const calendarCompletedDays = Object.entries(user.dailyProgress || {}).reduce((acc, [date, progress]) => {
-    if ((progress.challengesCompleted && progress.challengesCompleted.length > 0) || progress.qotdCompleted) {
+  const qotdCompletedDays = Object.entries(user.dailyProgress || {}).reduce((acc, [date, progress]) => {
+    if (progress.qotdCompleted) {
         acc.push(new Date(date));
     }
     return acc;
   }, [] as Date[]);
+
 
   // Streak days should be calculated from yesterday backwards
   const yesterday = new Date();
@@ -231,21 +232,21 @@ export default function HomePage() {
                         <CalendarCheck2 className="h-6 w-6 text-primary" />
                         <span>Daily Activity Calendar</span>
                     </CardTitle>
-                    <CardDescription>Days you completed a challenge or the QOTD are marked in green. Your current streak is marked with a flame. Keep your streak going to unlock new pets! Click a day to see details.</CardDescription>
+                    <CardDescription>Your current streak is marked with a flame (🔥) and completed Questions of the Day are marked with a check (✅). Click a day to see details.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex justify-center">
                    <Calendar
                         mode="multiple"
-                        selected={calendarCompletedDays}
                         onDayClick={handleDayClick}
                         disabled={{ after: new Date() }}
                         className="rounded-md border"
                         modifiers={{
                            streak: streakDays,
+                           qotd_completed: qotdCompletedDays
                         }}
                         modifiersClassNames={{
-                            selected: 'day-selected',
-                            streak: 'day-streak'
+                            streak: 'day-streak',
+                            qotd_completed: 'day-qotd-completed',
                         }}
                     />
                 </CardContent>

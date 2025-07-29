@@ -156,3 +156,21 @@
     right: -4px;
     font-size: 0.6rem;
 }
+
+.day-qotd-completed {
+    position: relative;
+}
+.day-qotd-completed::before {
+    content: '✅';
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    font-size: 0.6rem;
+}
+
+.day-streak.day-qotd-completed::after {
+    right: 0px; 
+}
+.day-streak.day-qotd-completed::before {
+    left: 0px;
+}
