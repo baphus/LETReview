@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { User, LogOut, Settings, Edit, Check, Camera, Palette, Gem } from "lucide-react";
+import { User, LogOut, Settings, Edit, Check, Camera, Palette, Gem, Trophy, Clock, Flame, Award } from "lucide-react";
 import { useEffect, useState, useRef, ChangeEvent } from "react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -15,7 +15,9 @@ import { DatePicker } from "@/components/ui/datepicker";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
-import { pets } from "@/lib/data";
+import { achievementPets, rarePets } from "@/lib/data";
+import { Progress } from "@/components/ui/progress";
+
 
 interface UserProfile {
     name: string;
@@ -25,8 +27,8 @@ interface UserProfile {
     points: number;
     streak: number;
     highestStreak: number;
+    highestQuizStreak: number;
     completedSessions: number;
-    petsUnlocked: number;
     unlockedThemes: string[];
     unlockedPets: string[];
     activeTheme: string;
@@ -39,9 +41,41 @@ const themes = [
     { name: 'Rose', value: 'rose', cost: 100, colors: { primary: 'hsl(340, 70%, 55%)', accent: 'hsl(280, 50%, 60%)' } },
 ];
 
-const rarePets = [
-    { name: "Draco", cost: 1000, image: "/pets/draco.png", hint: "fire breathing" },
-]
+const allAchievements = [
+  {
+    name: "Pomodoro Novice",
+    description: "Complete 10 Pomodoro sessions.",
+    petReward: "Owlbert",
+    icon: Clock,
+    target: 10,
+    getValue: (user: UserProfile) => user.completedSessions,
+  },
+  {
+    name: "Pomodoro Pro",
+    description: "Complete 50 Pomodoro sessions.",
+    petReward: "Einstein",
+    icon: Clock,
+    target: 50,
+    getValue: (user: UserProfile) => user.completedSessions,
+  },
+  {
+    name: "Quiz Whiz",
+    description: "Achieve a quiz streak of 10.",
+    petReward: "Sparky",
+    icon: Award,
+    target: 10,
+    getValue: (user: UserProfile) => user.highestQuizStreak,
+  },
+  {
+    name: "Quiz Master",
+    description: "Achieve a quiz streak of 25.",
+    petReward: "Bolt",
+    icon: Award,
+    target: 25,
+    getValue: (user: UserProfile) => user.highestQuizStreak,
+  },
+];
+
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -62,6 +96,8 @@ export default function ProfilePage() {
             unlockedThemes: parsedUser.unlockedThemes || ['default'],
             unlockedPets: parsedUser.unlockedPets || [],
             activeTheme: parsedUser.activeTheme || 'default',
+            highestQuizStreak: parsedUser.highestQuizStreak || 0,
+            completedSessions: parsedUser.completedSessions || 0,
         };
       setUser(fullUser);
       setNewName(fullUser.name);
@@ -248,6 +284,47 @@ export default function ProfilePage() {
             
         </CardContent>
       </Card>
+
+      <Card className="mt-6">
+        <CardHeader>
+            <CardTitle>Achievements</CardTitle>
+            <CardDescription>Unlock new pets by completing milestones.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+            {allAchievements.map(ach => {
+                const currentValue = ach.getValue(user);
+                const progress = Math.min((currentValue / ach.target) * 100, 100);
+                const isUnlocked = progress === 100;
+                return (
+                    <div key={ach.name} className={cn("p-4 rounded-lg border", isUnlocked ? "bg-green-50 border-green-200" : "bg-muted/30")}>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className={cn("p-2 rounded-full", isUnlocked ? "bg-green-200 text-green-700" : "bg-muted")}>
+                                    <ach.icon className="h-5 w-5" />
+                                </div>
+                                <div>
+                                    <p className="font-semibold">{ach.name}</p>
+                                    <p className="text-sm text-muted-foreground">{ach.description}</p>
+                                </div>
+                            </div>
+                             {isUnlocked && (
+                                <div className="flex flex-col items-center">
+                                    <Image src={achievementPets.find(p => p.name === ach.petReward)?.image || ''} alt={ach.petReward} width={40} height={40} className="rounded-full bg-white p-1" />
+                                    <p className="text-xs font-bold text-green-700">Unlocked!</p>
+                                </div>
+                            )}
+                        </div>
+                        {!isUnlocked && (
+                            <div className="mt-2">
+                                <Progress value={progress} />
+                                <p className="text-xs text-right text-muted-foreground mt-1">{currentValue} / {ach.target}</p>
+                            </div>
+                        )}
+                    </div>
+                )
+            })}
+        </CardContent>
+      </Card>
       
        <Card className="mt-6">
             <CardHeader>
@@ -380,3 +457,5 @@ export default function ProfilePage() {
     </div>
   );
 }
+
+    

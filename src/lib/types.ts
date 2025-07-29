@@ -15,6 +15,7 @@ export interface PetProfile {
   streak_req: number;
   image: string;
   hint: string;
+  unlock_value?: number;
 }
 
 export interface DailyProgress {

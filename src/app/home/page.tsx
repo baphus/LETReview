@@ -5,9 +5,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { User, Flame, Gem, Star, Award, Shield, Edit, Check, HelpCircle, Lock, CalendarCheck2, CheckCircle, Lightbulb } from "lucide-react";
+import { User, Flame, Gem, Star, Award, Shield, Edit, Check, HelpCircle, Lock, CalendarCheck2, CheckCircle, Lightbulb, TrendingUp } from "lucide-react";
 import Image from "next/image";
-import { pets as streakPets, getQuestionOfTheDay, getQuestionForDate } from "@/lib/data";
+import { pets as streakPets, getQuestionOfTheDay, achievementPets } from "@/lib/data";
 import type { QuizQuestion, DailyProgress, PetProfile } from "@/lib/types";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
@@ -41,6 +41,7 @@ interface UserProfile {
 
 const allPets: PetProfile[] = [
     ...streakPets,
+    ...achievementPets,
     { name: "Draco", unlock_criteria: "Purchase in Store", streak_req: 999, image: "/pets/draco.png", hint: "fire breathing" },
 ];
 
@@ -59,6 +60,40 @@ export default function HomePage() {
   
   const todayKey = useMemo(() => getTodayKey(), []);
   const todaysProgress = user?.dailyProgress?.[todayKey] || {};
+
+  const checkAchievements = (user: UserProfile): UserProfile => {
+    let updatedUser = { ...user };
+    let newPetsUnlocked = false;
+
+    achievementPets.forEach(pet => {
+      const isAlreadyUnlocked = updatedUser.unlockedPets.includes(pet.name);
+      if (isAlreadyUnlocked) return;
+
+      let isUnlockedNow = false;
+      if (pet.unlock_criteria.includes('Pomodoro') && updatedUser.completedSessions >= (pet.unlock_value || 0)) {
+        isUnlockedNow = true;
+      } else if (pet.unlock_criteria.includes('quiz streak') && updatedUser.highestQuizStreak >= (pet.unlock_value || 0)) {
+        isUnlockedNow = true;
+      }
+      // Add other achievement checks here
+
+      if (isUnlockedNow) {
+        updatedUser.unlockedPets = [...updatedUser.unlockedPets, pet.name];
+        newPetsUnlocked = true;
+        toast({
+          title: "New Pet Unlocked!",
+          description: `You've unlocked ${pet.name} for your achievements!`,
+          className: "bg-green-100 border-green-300"
+        });
+      }
+    });
+
+    if (newPetsUnlocked) {
+      localStorage.setItem("userProfile", JSON.stringify(updatedUser));
+    }
+    return updatedUser;
+  };
+
 
   const loadUser = useCallback(() => {
     const savedUser = localStorage.getItem("userProfile");
@@ -92,8 +127,9 @@ export default function HomePage() {
         
         parsedUser.lastLogin = todayKey;
 
-        localStorage.setItem("userProfile", JSON.stringify(parsedUser));
-        setUser(parsedUser);
+        const userWithAchievements = checkAchievements(parsedUser);
+        localStorage.setItem("userProfile", JSON.stringify(userWithAchievements));
+        setUser(userWithAchievements);
     } else {
         router.push('/login');
     }
@@ -147,8 +183,9 @@ export default function HomePage() {
   };
 
   const unlockedStreakPetsCount = streakPets.filter(p => user.highestStreak >= p.streak_req).length;
-  const unlockedStorePetsCount = user.unlockedPets.length;
-  const unlockedPetsCount = unlockedStreakPetsCount + unlockedStorePetsCount;
+  const unlockedAchievementPetsCount = achievementPets.filter(p => user.unlockedPets.includes(p.name)).length;
+  const unlockedStorePetsCount = user.unlockedPets.filter(p => p === "Draco").length;
+  const unlockedPetsCount = unlockedStreakPetsCount + unlockedAchievementPetsCount + unlockedStorePetsCount;
   
   const qotdCompletedDays = Object.entries(user.dailyProgress || {}).reduce((acc, [dateStr, progress]) => {
     if (progress.qotdCompleted) {
@@ -163,6 +200,7 @@ export default function HomePage() {
   // Streak days should be calculated from yesterday backwards
   const yesterday = startOfYesterday();
   const streakDays = Array.from({ length: user.streak }, (_, i) => addDays(yesterday, -i));
+  const isStreakSecuredToday = user.lastChallengeDate === todayKey;
   
   return (
     <div className="container mx-auto p-4 max-w-4xl">
@@ -188,6 +226,22 @@ export default function HomePage() {
 
       {user.examDate && <Countdown examDate={new Date(user.examDate)} />}
       
+      {!isStreakSecuredToday && (
+         <Card className="mb-6 bg-blue-50 border-blue-200">
+          <CardHeader>
+            <CardTitle className="text-center text-blue-800 font-headline flex items-center justify-center gap-2">
+                <Flame className="h-6 w-6"/> Secure Your Streak!
+            </CardTitle>
+            <CardDescription className="text-center text-blue-600">You haven't completed a daily challenge yet. Finish one to maintain your streak.</CardDescription>
+          </CardHeader>
+          <CardFooter>
+            <Link href="/daily" className="w-full">
+                <Button className="w-full">Go to Daily Challenges</Button>
+            </Link>
+          </CardFooter>
+        </Card>
+      )}
+
       <Separator className="my-6" />
 
       <section>
@@ -320,9 +374,15 @@ export default function HomePage() {
             <TooltipProvider>
             <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
               {allPets.map((pet) => {
-                const isUnlockedByStreak = user.highestStreak >= pet.streak_req;
-                const isUnlockedByPurchase = user.unlockedPets.includes(pet.name);
-                const isUnlocked = isUnlockedByStreak || isUnlockedByPurchase;
+                let isUnlocked = false;
+                if (pet.unlock_criteria.includes('streak')) {
+                    isUnlocked = user.highestStreak >= pet.streak_req;
+                } else if (pet.unlock_criteria.includes('Purchase')) {
+                     isUnlocked = user.unlockedPets.includes(pet.name);
+                } else if (pet.unlock_criteria.includes('achievement')) {
+                     isUnlocked = user.unlockedPets.includes(pet.name);
+                }
+
 
                 return (
                   <div key={pet.name} className="flex flex-col items-center text-center">
@@ -336,7 +396,7 @@ export default function HomePage() {
                             height={80}
                             className={cn(
                                 "rounded-full bg-muted p-2",
-                                isUnlocked ? "animate-bob" : "grayscale opacity-50"
+                                isUnlocked ? "animate-bob" : "grayscale opacity-50 blur-sm"
                             )}
                             data-ai-hint={pet.hint}
                           />
@@ -348,7 +408,7 @@ export default function HomePage() {
                         </div>
                       </TooltipTrigger>
                       <TooltipContent>
-                         <p className="text-sm text-muted-foreground">Hint: "{pet.hint}"</p>
+                         <p className="text-sm text-muted-foreground">Unlock: {pet.unlock_criteria}</p>
                       </TooltipContent>
                     </Tooltip>
                     {isUnlocked ? (
@@ -365,7 +425,7 @@ export default function HomePage() {
                           </Button>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-1 mt-1">
+                        <div className="flex items-center justify-center gap-1 mt-1">
                           <p className="text-sm font-medium">{user.petNames[pet.name] || pet.name}</p>
                           <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handlePetNameEdit(pet.name)}>
                             <Edit className="h-3 w-3" />
@@ -375,7 +435,7 @@ export default function HomePage() {
                     ) : (
                         <p className="text-sm font-medium mt-1">???</p>
                     )}
-                     <Badge variant="secondary" className="mt-1">
+                     <Badge variant="secondary" className="mt-1 text-center">
                         {pet.unlock_criteria}
                     </Badge>
                   </div>
