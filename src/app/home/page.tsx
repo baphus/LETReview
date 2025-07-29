@@ -10,7 +10,7 @@ import Image from "next/image";
 import { pets as streakPets, getQuestionOfTheDay, achievementPets } from "@/lib/data";
 import type { QuizQuestion, DailyProgress, PetProfile } from "@/lib/types";
 import { useEffect, useState, useMemo, useCallback } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -45,13 +45,12 @@ const allPets: PetProfile[] = [
     { name: "Draco", unlock_criteria: "Purchase in Store", streak_req: 999, image: "/pets/draco.png", hint: "fire breathing" },
 ];
 
-// Function to get local date string in YYYY-MM-DD format
 const getTodayKey = () => format(new Date(), 'yyyy-MM-dd');
 
 export default function HomePage() {
   const router = useRouter();
-  const pathname = usePathname();
   const { toast } = useToast();
+  
   const [user, setUser] = useState<UserProfile | null>(null);
   const [editingPet, setEditingPet] = useState<string | null>(null);
   const [newPetName, setNewPetName] = useState("");
@@ -65,7 +64,6 @@ export default function HomePage() {
     let newPetsUnlocked = false;
     let statsUpdated = false;
 
-    // Check for new highest streaks
     if (user.streak > (user.highestStreak || 0)) {
         updatedUser.highestStreak = user.streak;
         statsUpdated = true;
@@ -77,17 +75,15 @@ export default function HomePage() {
         statsUpdated = true;
     }
 
-
     achievementPets.forEach(pet => {
       let isAlreadyUnlocked = updatedUser.unlockedPets.includes(pet.name);
-
       if (isAlreadyUnlocked) return;
 
       let isUnlockedNow = false;
-      if (pet.unlock_criteria.includes('Pomodoro') && (updatedUser.completedSessions || 0) >= (pet.unlock_value || 0)) {
-        isUnlockedNow = true;
-      } else if (pet.unlock_criteria.includes('quiz streak') && (updatedUser.highestQuizStreak || 0) >= (pet.unlock_value || 0)) {
-        isUnlockedNow = true;
+      if (pet.unlock_criteria.includes('Pomodoro')) {
+        isUnlockedNow = (updatedUser.completedSessions || 0) >= (pet.unlock_value || 0);
+      } else if (pet.unlock_criteria.includes('quiz streak')) {
+        isUnlockedNow = (updatedUser.highestQuizStreak || 0) >= (pet.unlock_value || 0);
       }
 
       if (isUnlockedNow) {
@@ -114,19 +110,16 @@ export default function HomePage() {
     if (savedUser) {
         let parsedUser: UserProfile = JSON.parse(savedUser);
 
-        // Initialize missing fields for backward compatibility
         if (!parsedUser.petNames) parsedUser.petNames = {};
         if (!parsedUser.unlockedPets) parsedUser.unlockedPets = [];
         if (!parsedUser.dailyProgress) parsedUser.dailyProgress = {};
         if (!parsedUser.highestQuizStreak) parsedUser.highestQuizStreak = 0;
         
-        const lastLoginDate = parsedUser.lastLogin ? startOfDay(new Date(parsedUser.lastLogin)) : startOfDay(new Date('1970-01-01'));
+        const lastLoginDate = parsedUser.lastLogin ? startOfDay(new Date(parsedUser.lastLogin)) : startOfDay(new Date());
         const today = startOfDay(new Date());
 
-        // Check if last login was before today to check for streak
         if (isBefore(lastLoginDate, today)) {
             const yesterday = startOfYesterday();
-             // Check if last challenge date was before yesterday to break the streak
             const lastChallengeDate = parsedUser.lastChallengeDate ? startOfDay(new Date(parsedUser.lastChallengeDate)) : null;
 
             if (parsedUser.streak > 0 && lastChallengeDate && isBefore(lastChallengeDate, yesterday)) {
@@ -156,19 +149,18 @@ export default function HomePage() {
     
     const handleFocus = () => loadUser();
     window.addEventListener('focus', handleFocus);
-    window.addEventListener('storage', handleFocus); // Listen for storage changes from other tabs/pages
+    window.addEventListener('storage', handleFocus);
 
     return () => {
       window.removeEventListener('focus', handleFocus);
       window.removeEventListener('storage', handleFocus);
     };
-  }, [loadUser, pathname]);
+  }, [loadUser]);
   
   const qotdCompletedDays = useMemo(() => {
     if (!user?.dailyProgress) return [];
     return Object.entries(user.dailyProgress).reduce((acc, [dateStr, progress]) => {
         if (progress.qotdCompleted) {
-            // Create date in a way that avoids timezone issues
             const [year, month, day] = dateStr.split('-').map(Number);
             acc.push(new Date(year, month - 1, day));
         }
@@ -176,7 +168,6 @@ export default function HomePage() {
     }, [] as Date[]);
   }, [user?.dailyProgress]);
 
-  // Streak days should be calculated from yesterday backwards
   const streakDays = useMemo(() => {
     if (!user) return [];
     const yesterday = startOfYesterday();
@@ -222,14 +213,13 @@ export default function HomePage() {
   }
 
   const handleDayClick = (day: Date) => {
-    // Only set the date if it's today or in the past
     if (isBefore(day, addDays(startOfDay(new Date()), 1))) {
       setSelectedDate(day);
     }
   };
   
   if (!user) {
-    return null; // Or a loading spinner
+    return null;
   }
   
   return (
