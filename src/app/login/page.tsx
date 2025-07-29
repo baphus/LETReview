@@ -49,7 +49,6 @@ export default function LoginPage() {
       unlockedThemes: ['default'],
       activeTheme: 'default',
       unlockedPets: [],
-      completedChallenges: [],
       dailyProgress: {},
       lastLogin: getTodayKey(),
     };
@@ -139,5 +138,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
-    
