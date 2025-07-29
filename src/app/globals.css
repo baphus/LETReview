@@ -157,10 +157,10 @@
     font-size: 0.6rem;
 }
 
-.day-qotd-completed {
+.day-qotd_completed {
     position: relative;
 }
-.day-qotd-completed::before {
+.day-qotd_completed::before {
     content: '✅';
     position: absolute;
     top: -4px;
@@ -168,9 +168,11 @@
     font-size: 0.6rem;
 }
 
-.day-streak.day-qotd-completed::after {
+.day-streak.day-qotd_completed::after {
     right: 0px; 
 }
-.day-streak.day-qotd-completed::before {
+.day-streak.day-qotd_completed::before {
     left: 0px;
 }
+
+    

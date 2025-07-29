@@ -273,6 +273,68 @@ export default function HomePage() {
         </Card>
       )}
 
+       <section className="mt-8">
+        <h2 className="text-xl font-bold font-headline mb-4">Today's Progress</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+             <Card>
+                <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">Points Earned Today</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-2xl font-bold flex items-center gap-2"><Gem className="h-5 w-5 text-accent" />{todaysProgress.pointsEarned || 0}</p>
+                </CardContent>
+             </Card>
+             <Card>
+                <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">Pomodoros Today</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-2xl font-bold flex items-center gap-2"><Award className="h-5 w-5 text-muted-foreground" />{todaysProgress.pomodorosCompleted || 0}</p>
+                </CardContent>
+             </Card>
+             <Card>
+                <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">QOTD</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    {todaysProgress.qotdCompleted ? (
+                        <Badge variant="secondary" className="text-green-600 border-green-300">
+                            <CheckCircle className="h-4 w-4 mr-1"/> Answered
+                        </Badge>
+                    ) : (
+                        <Badge variant="outline">
+                            <HelpCircle className="h-4 w-4 mr-1"/> Pending
+                        </Badge>
+                    )}
+                </CardContent>
+             </Card>
+        </div>
+       </section>
+
+        <section className="mt-8">
+            <h2 className="text-xl font-bold font-headline mb-4">Question of the Day</h2>
+            {questionOfTheDay && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center justify-between">
+                            <span className="text-lg">{questionOfTheDay.question}</span>
+                        </CardTitle>
+                        
+                    </CardHeader>
+                    {!todaysProgress.qotdCompleted && (
+                        <CardFooter>
+                            <Link href="/daily" className="w-full">
+                                <Button className="w-full">
+                                    <Lightbulb className="mr-2 h-4 w-4" />
+                                    Answer Now
+                                </Button>
+                            </Link>
+                        </CardFooter>
+                    )}
+                </Card>
+            )}
+        </section>
+
       <Separator className="my-6" />
 
       <section>
@@ -318,85 +380,29 @@ export default function HomePage() {
       </section>
 
        <section className="mt-8">
-        <h2 className="text-xl font-bold font-headline mb-4">Today's Progress</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card className="md:col-span-2">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <CalendarCheck2 className="h-6 w-6 text-primary" />
-                        <span>Daily Activity Calendar</span>
-                    </CardTitle>
-                    <CardDescription>Your current streak is marked with a flame (🔥) and completed Questions of the Day are marked with a check (✅). Click a day to see details.</CardDescription>
-                </CardHeader>
-                <CardContent className="flex justify-center">
-                   <Calendar
-                        mode="multiple"
-                        onDayClick={handleDayClick}
-                        disabled={{ after: new Date() }}
-                        className="rounded-md border"
-                        modifiers={{
-                           streak: streakDays,
-                           qotd_completed: qotdCompletedDays
-                        }}
-                        modifiersClassNames={{
-                            streak: 'day-streak',
-                            qotd_completed: 'day-qotd-completed',
-                        }}
-                    />
-                </CardContent>
-            </Card>
-             <Card>
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">Points Earned Today</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-2xl font-bold flex items-center gap-2"><Gem className="h-5 w-5 text-accent" />{todaysProgress.pointsEarned || 0}</p>
-                </CardContent>
-             </Card>
-             <Card>
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">Pomodoros Today</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-2xl font-bold flex items-center gap-2"><Award className="h-5 w-5 text-muted-foreground" />{todaysProgress.pomodorosCompleted || 0}</p>
-                </CardContent>
-             </Card>
-        </div>
+        <h2 className="text-xl font-bold font-headline mb-4">Activity Calendar</h2>
+        <Card>
+            <CardHeader>
+                <CardDescription>Your current streak is marked with a flame (🔥) and completed Questions of the Day are marked with a check (✅). Click a past day to see details.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex justify-center">
+               <Calendar
+                    mode="multiple"
+                    onDayClick={handleDayClick}
+                    disabled={{ after: new Date() }}
+                    className="rounded-md border"
+                    modifiers={{
+                       streak: streakDays,
+                       qotd_completed: qotdCompletedDays
+                    }}
+                    modifiersClassNames={{
+                        streak: 'day-streak',
+                        qotd_completed: 'day-qotd-completed',
+                    }}
+                />
+            </CardContent>
+        </Card>
        </section>
-
-        <section className="mt-8">
-            <h2 className="text-xl font-bold font-headline mb-4">Question of the Day</h2>
-            {questionOfTheDay && (
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center justify-between">
-                            <span className="text-lg">{questionOfTheDay.question}</span>
-                            {todaysProgress.qotdCompleted ? (
-                                <Badge variant="secondary" className="text-green-600 border-green-300">
-                                    <CheckCircle className="h-4 w-4 mr-1"/> Answered
-                                </Badge>
-                            ) : (
-                                <Badge variant="outline">
-                                    <HelpCircle className="h-4 w-4 mr-1"/> Pending
-                                </Badge>
-                            )}
-                        </CardTitle>
-                        
-                    </CardHeader>
-                    {!todaysProgress.qotdCompleted && (
-                        <CardFooter>
-                            <Link href="/daily" className="w-full">
-                                <Button className="w-full">
-                                    <Lightbulb className="mr-2 h-4 w-4" />
-                                    Answer Now
-                                </Button>
-                            </Link>
-                        </CardFooter>
-                    )}
-                </Card>
-            )}
-        </section>
-
 
       <section className="mt-8">
         <h2 className="text-xl font-bold font-headline mb-4">Pet Collection ({unlockedPetsCount}/{allPets.length})</h2>
