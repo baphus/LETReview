@@ -61,7 +61,6 @@ export default function HomePage() {
   
   const checkAchievements = useCallback((user: UserProfile): UserProfile => {
     let updatedUser = { ...user };
-    let newPetsUnlocked = false;
     let statsUpdated = false;
 
     if (user.streak > (user.highestStreak || 0)) {
@@ -88,7 +87,6 @@ export default function HomePage() {
 
       if (isUnlockedNow) {
         updatedUser.unlockedPets = [...new Set([...updatedUser.unlockedPets, pet.name])];
-        newPetsUnlocked = true;
         statsUpdated = true;
         toast({
           title: "New Pet Unlocked!",
@@ -473,5 +471,7 @@ export default function HomePage() {
     </div>
   );
 }
+
+    
 
     
