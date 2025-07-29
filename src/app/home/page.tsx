@@ -10,7 +10,7 @@ import Image from "next/image";
 import { pets as streakPets, getQuestionOfTheDay, getQuestionForDate } from "@/lib/data";
 import type { QuizQuestion, DailyProgress, PetProfile } from "@/lib/types";
 import { useEffect, useState, useMemo, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -45,6 +45,7 @@ const allPets: PetProfile[] = [
 
 export default function HomePage() {
   const router = useRouter();
+  const pathname = usePathname();
   const { toast } = useToast();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [editingPet, setEditingPet] = useState<string | null>(null);
@@ -103,7 +104,7 @@ export default function HomePage() {
       window.removeEventListener('focus', handleFocus);
       window.removeEventListener('storage', handleFocus);
     };
-  }, [loadUser]);
+  }, [loadUser, pathname]);
 
 
   if (!user) {
