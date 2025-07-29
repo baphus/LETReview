@@ -1,5 +1,5 @@
 
-import type { QuizQuestion, Pet } from "./types";
+import type { QuizQuestion, PetProfile } from "./types";
 
 export const sampleQuestions: QuizQuestion[] = [
   {
@@ -838,7 +838,7 @@ export const sampleQuestions: QuizQuestion[] = [
     id: 105,
     category: "gen_education",
     difficulty: "hard",
-    question: "The ratio of the number of red, green, and blue balls in a box is 2:5:6. How many green balls are there if there are 52 balls in all?",
+    question: "The ratio of the number of red, green, and blue balls in a a box is 2:5:6. How many green balls are there if there are 52 balls in all?",
     choices: ["4", "8", "20", "24"],
     answer: "20",
   },
@@ -4457,7 +4457,7 @@ export const sampleQuestions: QuizQuestion[] = [
     id: 529,
     category: "professional",
     difficulty: "easy",
-    question: "Teacher A discovered that his pupils are very good in dramatizing. Which tool must have helped him discover his pupils' strength?",
+    question: "Teacher A discovered that his pupils are very good in dramatizing. Which tool must have helped him discover his pupils’ strength?",
     choices: ["Portfolio assessment", "Performance test", "Journal entry", "Paper-and-pencil test"],
     answer: "Performance test",
   },
@@ -5069,20 +5069,6 @@ export const sampleQuestions: QuizQuestion[] = [
     explanation: "Collaboration is best supported by small group discussions and shared activities."
   }
 ]
-export const getQuestionOfTheDay = (): QuizQuestion => {
-    const today = new Date();
-    const dayOfYear = Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 1000 / 60 / 60 / 24);
-    const index = dayOfYear % sampleQuestions.length;
-    const question = { ...sampleQuestions[index] };
-
-    // Deterministically shuffle choices so they are not always in the same order
-    const dateString = today.toDateString();
-    const rng = getSeed(dateString + question.id);
-    question.choices = [...question.choices].sort(() => rng() - rng());
-
-    return question;
-};
-
 // Function to generate a seed from a string (e.g., today's date)
 const getSeed = (str: string) => {
   let h = 1779033703, i = 0;
@@ -5097,7 +5083,31 @@ const getSeed = (str: string) => {
   }
 };
 
-export const pets: Pet[] = [
+const getDayOfYear = (date: Date): number => {
+    const start = new Date(date.getFullYear(), 0, 0);
+    const diff = (date.getTime() - start.getTime()) + ((start.getTimezoneOffset() - date.getTimezoneOffset()) * 60 * 1000);
+    const oneDay = 1000 * 60 * 60 * 24;
+    return Math.floor(diff / oneDay);
+};
+
+export const getQuestionForDate = (date: Date): QuizQuestion => {
+    const dayOfYear = getDayOfYear(date);
+    const index = dayOfYear % sampleQuestions.length;
+    const question = { ...sampleQuestions[index] };
+
+    // Deterministically shuffle choices so they are not always in the same order
+    const dateString = date.toDateString();
+    const rng = getSeed(dateString + question.id);
+    question.choices = [...question.choices].sort(() => rng() - rng());
+
+    return question;
+}
+
+export const getQuestionOfTheDay = (): QuizQuestion => {
+    return getQuestionForDate(new Date());
+};
+
+export const pets: PetProfile[] = [
     {
         name: "Rocky",
         unlock_criteria: "1-day streak",
@@ -5156,13 +5166,9 @@ export const pets: Pet[] = [
     },
 ];
 
-const getDayOfYear = (date: Date): number => {
-    const start = new Date(date.getFullYear(), 0, 0);
-    const diff = (date.getTime() - start.getTime()) + ((start.getTimezoneOffset() - date.getTimezoneOffset()) * 60 * 1000);
-    const oneDay = 1000 * 60 * 60 * 24;
-    return Math.floor(diff / oneDay);
-};
     
+    
+
     
 
     

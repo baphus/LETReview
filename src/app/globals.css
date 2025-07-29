@@ -24,6 +24,7 @@
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 231 48% 48%;
+    --radius: 0.5rem;
     --dark-background: 222.2 84% 4.9%;
   }
 
@@ -140,3 +141,20 @@
     animation-delay: 400ms;
   }
 }
+
+.day-streak {
+    border-radius: 9999px;
+    font-weight: bold;
+    color: hsl(var(--destructive-foreground));
+    background-color: hsl(var(--destructive));
+    position: relative;
+}
+.day-streak::after {
+    content: '🔥';
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    font-size: 0.6rem;
+}
+
+    

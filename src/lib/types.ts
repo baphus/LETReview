@@ -9,7 +9,7 @@ export interface QuizQuestion {
   explanation?: string;
 }
 
-export interface Pet {
+export interface PetProfile {
   name: string;
   unlock_criteria: string;
   streak_req: number;
@@ -23,3 +23,5 @@ export interface DailyProgress {
     pomodorosCompleted?: number;
     pointsEarned?: number;
 }
+
+    

@@ -7,8 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { User, Flame, Gem, Star, Award, Shield, Edit, Check, HelpCircle, Lock, CalendarCheck2, CheckCircle, Lightbulb } from "lucide-react";
 import Image from "next/image";
-import { pets as streakPets, getQuestionOfTheDay } from "@/lib/data";
-import type { QuizQuestion, DailyProgress } from "@/lib/types";
+import { pets as streakPets, getQuestionOfTheDay, getQuestionForDate } from "@/lib/data";
+import type { QuizQuestion, DailyProgress, PetProfile } from "@/lib/types";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -19,7 +19,8 @@ import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/comp
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
-import { addDays, format, isBefore, startOfYesterday } from "date-fns";
+import { addDays, format, isBefore, startOfYesterday, startOfDay } from "date-fns";
+import { DayDetailDialog } from "@/components/DayDetailDialog";
 
 
 interface UserProfile {
@@ -37,7 +38,7 @@ interface UserProfile {
     lastLogin: string;
 }
 
-const allPets = [
+const allPets: PetProfile[] = [
     ...streakPets,
     { name: "Draco", unlock_criteria: "Purchase in Store", streak_req: 999, image: "https://placehold.co/100x100.png", hint: "fire breathing" },
 ];
@@ -49,6 +50,7 @@ export default function HomePage() {
   const [editingPet, setEditingPet] = useState<string | null>(null);
   const [newPetName, setNewPetName] = useState("");
   const [questionOfTheDay, setQuestionOfTheDay] = useState<QuizQuestion | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   
   const todayKey = useMemo(() => new Date().toISOString().split('T')[0], []);
   const todaysProgress = user?.dailyProgress?.[todayKey] || {};
@@ -128,6 +130,13 @@ export default function HomePage() {
     }
   }
 
+  const handleDayClick = (day: Date) => {
+    // Only set the date if it's today or in the past
+    if (isBefore(day, addDays(startOfDay(new Date()), 1))) {
+      setSelectedDate(day);
+    }
+  };
+
   const unlockedStreakPetsCount = streakPets.filter(p => user.highestStreak >= p.streak_req).length;
   const unlockedStorePetsCount = user.unlockedPets.length;
   const unlockedPetsCount = unlockedStreakPetsCount + unlockedStorePetsCount;
@@ -139,9 +148,15 @@ export default function HomePage() {
     return acc;
   }, [] as Date[]);
 
+  const streakDays = Array.from({ length: user.streak }, (_, i) => addDays(new Date(), -i));
 
   return (
     <div className="container mx-auto p-4 max-w-4xl">
+      <DayDetailDialog
+        date={selectedDate}
+        onClose={() => setSelectedDate(null)}
+        userProgress={selectedDate ? user.dailyProgress[format(selectedDate, 'yyyy-MM-dd')] : undefined}
+      />
       <header className="flex justify-between items-center mb-6">
         <div>
             <h1 className="text-3xl font-bold font-headline">Home</h1>
@@ -212,21 +227,20 @@ export default function HomePage() {
                         <CalendarCheck2 className="h-6 w-6 text-primary" />
                         <span>Daily Activity Calendar</span>
                     </CardTitle>
-                    <CardDescription>Days you completed a challenge or the QOTD are marked. Keep your streak going to unlock new pets!</CardDescription>
+                    <CardDescription>Days you completed a challenge or the QOTD are marked. Keep your streak going to unlock new pets! Click a day to see details.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex justify-center">
                    <Calendar
                         mode="multiple"
                         selected={calendarCompletedDays}
+                        onDayClick={handleDayClick}
+                        disabled={{ after: new Date() }}
                         className="rounded-md border"
                         modifiers={{
-                           streak: { from: addDays(new Date(), -user.streak), to: new Date() }
+                           streak: streakDays
                         }}
-                        modifiersStyles={{
-                            streak: { 
-                                border: '2px solid hsl(var(--destructive))',
-                                color: 'hsl(var(--destructive))',
-                            }
+                        modifiersClassNames={{
+                            streak: 'day-streak'
                         }}
                     />
                 </CardContent>
@@ -360,3 +374,5 @@ export default function HomePage() {
     </div>
   );
 }
+
+    
