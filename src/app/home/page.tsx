@@ -36,6 +36,7 @@ interface UserProfile {
     unlockedPets: string[];
     dailyProgress: Record<string, DailyProgress>;
     lastLogin: string;
+    lastChallengeDate?: string;
 }
 
 const allPets: PetProfile[] = [
@@ -148,8 +149,9 @@ export default function HomePage() {
   
   const qotdCompletedDays = Object.entries(user.dailyProgress || {}).reduce((acc, [date, progress]) => {
     if (progress.qotdCompleted) {
-        const d = new Date(date);
-        d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
+        // The date string is 'YYYY-MM-DD'. Appending 'T00:00:00' makes sure it's parsed in the local timezone,
+        // preventing it from shifting to the previous day.
+        const d = new Date(`${date}T00:00:00`);
         acc.push(d);
     }
     return acc;
@@ -157,7 +159,7 @@ export default function HomePage() {
 
 
   // Streak days should be calculated from yesterday backwards
-  const yesterday = new Date();
+  const yesterday = startOfDay(new Date());
   yesterday.setDate(yesterday.getDate() - 1);
   const streakDays = Array.from({ length: user.streak }, (_, i) => addDays(yesterday, -i));
   
@@ -386,5 +388,7 @@ export default function HomePage() {
     </div>
   );
 }
+
+    
 
     
