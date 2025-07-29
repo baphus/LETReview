@@ -40,7 +40,7 @@ interface UserProfile {
 
 const allPets: PetProfile[] = [
     ...streakPets,
-    { name: "Draco", unlock_criteria: "Purchase in Store", streak_req: 999, image: "https://placehold.co/100x100.png", hint: "fire breathing" },
+    { name: "Draco", unlock_criteria: "Purchase in Store", streak_req: 999, image: "/pets/draco.png", hint: "fire breathing" },
 ];
 
 export default function HomePage() {
@@ -149,20 +149,11 @@ export default function HomePage() {
     return acc;
   }, [] as Date[]);
 
-  const streakDays = Array.from({ length: user.streak }, (_, i) => addDays(new Date(), -i));
-
-  const streakAndCompletedDays = streakDays.filter(streakDay => 
-    calendarCompletedDays.some(completedDay => isSameDay(streakDay, completedDay))
-  );
+  // Streak days should be calculated from yesterday backwards
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const streakDays = Array.from({ length: user.streak }, (_, i) => addDays(yesterday, -i));
   
-  // Filter out the days that are in both from the individual arrays
-  const pureStreakDays = streakDays.filter(streakDay => 
-    !streakAndCompletedDays.some(bothDay => isSameDay(streakDay, bothDay))
-  );
-  const pureCompletedDays = calendarCompletedDays.filter(completedDay => 
-    !streakAndCompletedDays.some(bothDay => isSameDay(completedDay, bothDay))
-  );
-
   return (
     <div className="container mx-auto p-4 max-w-4xl">
       <DayDetailDialog
@@ -240,22 +231,21 @@ export default function HomePage() {
                         <CalendarCheck2 className="h-6 w-6 text-primary" />
                         <span>Daily Activity Calendar</span>
                     </CardTitle>
-                    <CardDescription>Days you completed a challenge or the QOTD are marked in green. Your current streak is marked in red. Keep your streak going to unlock new pets! Click a day to see details.</CardDescription>
+                    <CardDescription>Days you completed a challenge or the QOTD are marked in green. Your current streak is marked with a flame. Keep your streak going to unlock new pets! Click a day to see details.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex justify-center">
                    <Calendar
                         mode="multiple"
-                        selected={pureCompletedDays}
+                        selected={calendarCompletedDays}
                         onDayClick={handleDayClick}
                         disabled={{ after: new Date() }}
                         className="rounded-md border"
                         modifiers={{
-                           streak: pureStreakDays,
-                           'streak-and-completed': streakAndCompletedDays,
+                           streak: streakDays,
                         }}
                         modifiersClassNames={{
-                            streak: 'day-streak',
-                            'streak-and-completed': 'day-streak-and-completed'
+                            selected: 'day-selected',
+                            streak: 'day-streak'
                         }}
                     />
                 </CardContent>

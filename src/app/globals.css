@@ -141,29 +141,15 @@
   }
 }
 
+.day-selected {
+    background-color: hsl(var(--accent)) !important;
+    color: hsl(var(--accent-foreground)) !important;
+}
+
 .day-streak {
-    border-radius: var(--radius);
-    font-weight: bold;
-    color: hsl(var(--destructive-foreground));
-    background-color: hsl(var(--destructive));
     position: relative;
 }
 .day-streak::after {
-    content: '🔥';
-    position: absolute;
-    top: -4px;
-    right: -4px;
-    font-size: 0.6rem;
-}
-
-.day-streak-and-completed {
-    border-radius: var(--radius);
-    font-weight: bold;
-    color: hsl(var(--destructive-foreground));
-    background: linear-gradient(45deg, hsl(var(--destructive)), hsl(var(--accent)));
-    position: relative;
-}
-.day-streak-and-completed::after {
     content: '🔥';
     position: absolute;
     top: -4px;
