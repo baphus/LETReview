@@ -139,7 +139,4 @@
   .animation-delay-400 {
     animation-delay: 400ms;
   }
-  .bg-dark {
-    background-color: hsl(var(--dark-background));
-  }
 }
