@@ -60,7 +60,7 @@ export default function HomePage() {
   
   const todayKey = useMemo(() => getTodayKey(), []);
   
-  const checkAchievements = (user: UserProfile): UserProfile => {
+  const checkAchievements = useCallback((user: UserProfile): UserProfile => {
     let updatedUser = { ...user };
     let newPetsUnlocked = false;
     let statsUpdated = false;
@@ -84,12 +84,11 @@ export default function HomePage() {
       if (isAlreadyUnlocked) return;
 
       let isUnlockedNow = false;
-      if (pet.unlock_criteria.includes('Pomodoro') && (user.completedSessions || 0) >= (pet.unlock_value || 0)) {
+      if (pet.unlock_criteria.includes('Pomodoro') && (updatedUser.completedSessions || 0) >= (pet.unlock_value || 0)) {
         isUnlockedNow = true;
-      } else if (pet.unlock_criteria.includes('quiz streak') && (user.highestQuizStreak || 0) >= (pet.unlock_value || 0)) {
+      } else if (pet.unlock_criteria.includes('quiz streak') && (updatedUser.highestQuizStreak || 0) >= (pet.unlock_value || 0)) {
         isUnlockedNow = true;
       }
-      // Add other achievement checks here
 
       if (isUnlockedNow) {
         updatedUser.unlockedPets = [...new Set([...updatedUser.unlockedPets, pet.name])];
@@ -107,7 +106,7 @@ export default function HomePage() {
       localStorage.setItem("userProfile", JSON.stringify(updatedUser));
     }
     return updatedUser;
-  };
+  }, [toast]);
 
 
   const loadUser = useCallback(() => {
@@ -148,7 +147,7 @@ export default function HomePage() {
     } else {
         router.push('/login');
     }
-  }, [router, todayKey, toast]);
+  }, [router, todayKey, toast, checkAchievements]);
 
 
   useEffect(() => {
@@ -165,17 +164,19 @@ export default function HomePage() {
     };
   }, [loadUser, pathname]);
   
-  const qotdCompletedDays = useMemo(() => Object.entries(user?.dailyProgress || {}).reduce((acc, [dateStr, progress]) => {
-    if (progress.qotdCompleted) {
-        // Create date in a way that avoids timezone issues
-        const [year, month, day] = dateStr.split('-').map(Number);
-        acc.push(new Date(year, month - 1, day));
-    }
-    return acc;
-  }, [] as Date[]), [user?.dailyProgress]);
+  const qotdCompletedDays = useMemo(() => {
+    if (!user?.dailyProgress) return [];
+    return Object.entries(user.dailyProgress).reduce((acc, [dateStr, progress]) => {
+        if (progress.qotdCompleted) {
+            // Create date in a way that avoids timezone issues
+            const [year, month, day] = dateStr.split('-').map(Number);
+            acc.push(new Date(year, month - 1, day));
+        }
+        return acc;
+    }, [] as Date[]);
+  }, [user?.dailyProgress]);
 
   // Streak days should be calculated from yesterday backwards
-  const yesterday = startOfYesterday();
   const streakDays = useMemo(() => {
     if (!user) return [];
     const yesterday = startOfYesterday();
@@ -481,3 +482,4 @@ export default function HomePage() {
   );
 }
 
+    
