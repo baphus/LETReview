@@ -59,8 +59,7 @@ export default function HomePage() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   
   const todayKey = useMemo(() => getTodayKey(), []);
-  const todaysProgress = user?.dailyProgress?.[todayKey] || {};
-
+  
   const checkAchievements = (user: UserProfile): UserProfile => {
     let updatedUser = { ...user };
     let newPetsUnlocked = false;
@@ -170,12 +169,10 @@ export default function HomePage() {
     };
   }, [loadUser, pathname]);
 
+  const todaysProgress = user?.dailyProgress?.[todayKey] || {};
 
-  if (!user) {
-    return null; // Or a loading spinner
-  }
-  
   const handlePetNameEdit = (originalName: string) => {
+    if (!user) return;
     setEditingPet(originalName);
     setNewPetName(user.petNames[originalName] || originalName);
   };
@@ -230,11 +227,22 @@ export default function HomePage() {
     return acc;
   }, [] as Date[]), [user?.dailyProgress]);
 
-
   // Streak days should be calculated from yesterday backwards
   const yesterday = startOfYesterday();
-  const streakDays = Array.from({ length: user.streak }, (_, i) => addDays(yesterday, -i));
-  const isStreakSecuredToday = user.lastChallengeDate === todayKey;
+  const streakDays = useMemo(() => {
+    if (!user) return [];
+    return Array.from({ length: user.streak }, (_, i) => addDays(yesterday, -i));
+  }, [user, yesterday]);
+  
+  const isStreakSecuredToday = useMemo(() => {
+    if (!user) return false;
+    return user.lastChallengeDate === todayKey;
+  }, [user, todayKey]);
+
+
+  if (!user) {
+    return null; // Or a loading spinner
+  }
   
   return (
     <div className="container mx-auto p-4 max-w-4xl">
@@ -485,5 +493,3 @@ export default function HomePage() {
     </div>
   );
 }
-
-    
