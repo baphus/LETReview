@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { format } from "date-fns";
 
 
 const Flashcard: FC<{ question: QuizQuestion }> = ({ question }) => {
@@ -165,6 +166,9 @@ const getSeed = (str: string) => {
   }
 };
 
+// Function to get local date string in YYYY-MM-DD format
+const getTodayKey = () => format(new Date(), 'yyyy-MM-dd');
+
 
 interface ChallengeAnswer {
     questionId: number;
@@ -285,7 +289,7 @@ function ReviewerPageContent() {
     const savedUser = localStorage.getItem("userProfile");
     if (savedUser) {
         const user = JSON.parse(savedUser);
-        const todayKey = new Date().toISOString().split('T')[0];
+        const todayKey = getTodayKey();
         
         if (!user.dailyProgress) user.dailyProgress = {};
         if (!user.dailyProgress[todayKey]) user.dailyProgress[todayKey] = {};
@@ -611,3 +615,5 @@ export default function ReviewPage() {
         </Suspense>
     )
 }
+
+    

@@ -3,6 +3,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
 
 const FOCUS_TIME = 25 * 60; // 25 minutes
 const SHORT_BREAK_TIME = 5 * 60; // 5 minutes
@@ -56,6 +57,8 @@ const dispatch = (newState: Partial<TimerState>) => {
     listeners.forEach(listener => listener(stateStore));
 };
 
+// Function to get local date string in YYYY-MM-DD format
+const getTodayKey = () => format(new Date(), 'yyyy-MM-dd');
 
 export function useTimer() {
   const context = useContext(TimerContext);
@@ -101,7 +104,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
        const savedUser = localStorage.getItem("userProfile");
        if(savedUser){
            let user = JSON.parse(savedUser);
-           const todayKey = new Date().toISOString().split('T')[0];
+           const todayKey = getTodayKey();
 
            user.completedSessions = (user.completedSessions || 0) + 1;
            
@@ -167,7 +170,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
              const savedUser = localStorage.getItem("userProfile");
              if (savedUser) {
                 const user = JSON.parse(savedUser);
-                const todayKey = new Date().toISOString().split('T')[0];
+                const todayKey = getTodayKey();
                 parsedState.sessions = user.completedSessions || 0;
                 parsedState.todaysSessions = user.dailyProgress?.[todayKey]?.pomodorosCompleted || 0;
                 parsedState.highestQuizStreak = user.highestQuizStreak || 0;
@@ -181,7 +184,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
         const savedUser = localStorage.getItem("userProfile");
         if (savedUser) {
             const user = JSON.parse(savedUser);
-            const todayKey = new Date().toISOString().split('T')[0];
+            const todayKey = getTodayKey();
             dispatch({ 
                 sessions: user.completedSessions || 0,
                 todaysSessions: user.dailyProgress?.[todayKey]?.pomodorosCompleted || 0,
@@ -210,7 +213,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
       const savedUser = localStorage.getItem("userProfile");
       if(savedUser) {
           const user = JSON.parse(savedUser);
-          const todayKey = new Date().toISOString().split('T')[0];
+          const todayKey = getTodayKey();
           user.points = (user.points || 0) + pointsGained;
 
           if (!user.dailyProgress) user.dailyProgress = {};
@@ -324,3 +327,5 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     </TimerContext.Provider>
   );
 }
+
+    

@@ -44,6 +44,9 @@ const allPets: PetProfile[] = [
     { name: "Draco", unlock_criteria: "Purchase in Store", streak_req: 999, image: "/pets/draco.png", hint: "fire breathing" },
 ];
 
+// Function to get local date string in YYYY-MM-DD format
+const getTodayKey = () => format(new Date(), 'yyyy-MM-dd');
+
 export default function HomePage() {
   const router = useRouter();
   const pathname = usePathname();
@@ -54,7 +57,7 @@ export default function HomePage() {
   const [questionOfTheDay, setQuestionOfTheDay] = useState<QuizQuestion | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   
-  const todayKey = useMemo(() => new Date().toISOString().split('T')[0], []);
+  const todayKey = useMemo(() => getTodayKey(), []);
   const todaysProgress = user?.dailyProgress?.[todayKey] || {};
 
   const loadUser = useCallback(() => {
@@ -68,7 +71,7 @@ export default function HomePage() {
         if (!parsedUser.dailyProgress) parsedUser.dailyProgress = {};
         if (!parsedUser.highestQuizStreak) parsedUser.highestQuizStreak = 0;
         
-        const lastLoginDate = new Date(parsedUser.lastLogin || '1970-01-01');
+        const lastLoginDate = parsedUser.lastLogin ? startOfDay(new Date(parsedUser.lastLogin)) : startOfDay(new Date('1970-01-01'));
         const today = startOfDay(new Date());
 
         // Check if last login was before today to check for streak
@@ -147,20 +150,18 @@ export default function HomePage() {
   const unlockedStorePetsCount = user.unlockedPets.length;
   const unlockedPetsCount = unlockedStreakPetsCount + unlockedStorePetsCount;
   
-  const qotdCompletedDays = Object.entries(user.dailyProgress || {}).reduce((acc, [date, progress]) => {
+  const qotdCompletedDays = Object.entries(user.dailyProgress || {}).reduce((acc, [dateStr, progress]) => {
     if (progress.qotdCompleted) {
-        // The date string is 'YYYY-MM-DD'. Appending 'T00:00:00' makes sure it's parsed in the local timezone,
-        // preventing it from shifting to the previous day.
-        const d = new Date(`${date}T00:00:00`);
-        acc.push(d);
+        // Parse date string as local time
+        const [year, month, day] = dateStr.split('-').map(Number);
+        acc.push(new Date(year, month - 1, day));
     }
     return acc;
   }, [] as Date[]);
 
 
   // Streak days should be calculated from yesterday backwards
-  const yesterday = startOfDay(new Date());
-  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterday = startOfYesterday();
   const streakDays = Array.from({ length: user.streak }, (_, i) => addDays(yesterday, -i));
   
   return (
@@ -388,7 +389,5 @@ export default function HomePage() {
     </div>
   );
 }
-
-    
 
     

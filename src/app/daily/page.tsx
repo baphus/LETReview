@@ -24,7 +24,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { startOfDay, isBefore, startOfYesterday } from 'date-fns';
+import { startOfDay, isBefore, startOfYesterday, format } from 'date-fns';
 
 
 interface UserStats {
@@ -36,6 +36,9 @@ interface UserStats {
   completedChallenges: string[];
   dailyProgress: Record<string, DailyProgress>;
 }
+
+// Function to get local date string in YYYY-MM-DD format
+const getTodayKey = () => format(new Date(), 'yyyy-MM-dd');
 
 const QuestionOfTheDay = ({ onCorrectAnswer }: { onCorrectAnswer: () => void }) => {
     const { toast } = useToast();
@@ -50,7 +53,7 @@ const QuestionOfTheDay = ({ onCorrectAnswer }: { onCorrectAnswer: () => void }) 
         const savedUser = localStorage.getItem("userProfile");
         if(savedUser){
             const user = JSON.parse(savedUser);
-            const todayKey = new Date().toISOString().split('T')[0];
+            const todayKey = getTodayKey();
             if(user.dailyProgress?.[todayKey]?.qotdCompleted){
                 setIsAnswered(true);
                 // We don't know what they answered, so we just show the correct one
@@ -71,7 +74,7 @@ const QuestionOfTheDay = ({ onCorrectAnswer }: { onCorrectAnswer: () => void }) 
         const savedUser = localStorage.getItem("userProfile");
         if (savedUser) {
             let user = JSON.parse(savedUser);
-            const todayKey = new Date().toISOString().split('T')[0];
+            const todayKey = getTodayKey();
 
             if (!user.dailyProgress) user.dailyProgress = {};
             if (!user.dailyProgress[todayKey]) user.dailyProgress[todayKey] = { pointsEarned: 0, pomodorosCompleted: 0, challengesCompleted: [], qotdCompleted: false };
@@ -147,7 +150,7 @@ export default function DailyPage() {
   const [challengeCompletedToday, setChallengeCompletedToday] = useState(false);
   const [streakBroken, setStreakBroken] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<"gen_education" | "professional">("gen_education");
-  const todayKey = new Date().toISOString().split('T')[0];
+  const todayKey = getTodayKey();
 
   const loadUserStats = useCallback(() => {
     const savedUser = localStorage.getItem("userProfile");
@@ -232,7 +235,7 @@ export default function DailyPage() {
         const user = JSON.parse(savedUser);
         user.points = (user.points || 0) + 5;
         
-        const todayKey = new Date().toISOString().split('T')[0];
+        const todayKey = getTodayKey();
         if (!user.dailyProgress) user.dailyProgress = {};
         if (!user.dailyProgress[todayKey]) user.dailyProgress[todayKey] = { pointsEarned: 0, pomodorosCompleted: 0, challengesCompleted: [], qotdCompleted: false };
         user.dailyProgress[todayKey].pointsEarned = (user.dailyProgress[todayKey].pointsEarned || 0) + 5;
@@ -373,3 +376,5 @@ export default function DailyPage() {
     </div>
   );
 }
+
+    

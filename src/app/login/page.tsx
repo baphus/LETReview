@@ -11,6 +11,10 @@ import { User, Camera, CalendarIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DatePicker } from "@/components/ui/datepicker";
 import { Label } from "@/components/ui/label";
+import { format } from "date-fns";
+
+// Function to get local date string in YYYY-MM-DD format
+const getTodayKey = () => format(new Date(), 'yyyy-MM-dd');
 
 export default function LoginPage() {
   const router = useRouter();
@@ -47,7 +51,7 @@ export default function LoginPage() {
       unlockedPets: [],
       completedChallenges: [],
       dailyProgress: {},
-      lastLogin: new Date().toISOString().split('T')[0],
+      lastLogin: getTodayKey(),
     };
 
     localStorage.setItem("userProfile", JSON.stringify(userProfile));
@@ -135,3 +139,5 @@ export default function LoginPage() {
     </div>
   );
 }
+
+    
