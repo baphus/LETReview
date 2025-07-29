@@ -142,7 +142,7 @@
 }
 
 .day-streak {
-    border-radius: 9999px;
+    border-radius: var(--radius);
     font-weight: bold;
     color: hsl(var(--destructive-foreground));
     background-color: hsl(var(--destructive));
@@ -157,7 +157,7 @@
 }
 
 .day-streak-and-completed {
-    border-radius: 9999px;
+    border-radius: var(--radius);
     font-weight: bold;
     color: hsl(var(--destructive-foreground));
     background: linear-gradient(45deg, hsl(var(--destructive)), hsl(var(--accent)));
