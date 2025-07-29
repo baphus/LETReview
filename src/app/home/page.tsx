@@ -193,23 +193,20 @@ export default function HomePage() {
   }, [user, todayKey]);
   
   const unlockedPetsCount = useMemo(() => {
-      if (!user) return 0;
-      return allPets.filter(pet => {
-          if (!pet.unlock_criteria) return false;
-          
-          let isUnlocked = false;
-          if (pet.unlock_criteria.includes('streak') && !pet.unlock_criteria.includes('quiz')) {
-            isUnlocked = (user.highestStreak || 0) >= pet.streak_req;
-          } else if (pet.unlock_criteria.includes('Purchase')) {
-            isUnlocked = user.unlockedPets.includes(pet.name);
-          } else if (pet.unlock_criteria.includes('Pomodoro')) {
-            isUnlocked = (user.completedSessions || 0) >= (pet.unlock_value || 0);
-          } else if (pet.unlock_criteria.includes('quiz streak')) {
-            isUnlocked = (user.highestQuizStreak || 0) >= (pet.unlock_value || 0);
-          }
-
-          return isUnlocked;
-      }).length;
+    if (!user) return 0;
+    return allPets.filter(pet => {
+      if (!pet.unlock_criteria) return false;
+      if (pet.unlock_criteria.includes('streak') && !pet.unlock_criteria.includes('quiz')) {
+        return (user.highestStreak || 0) >= pet.streak_req;
+      } else if (pet.unlock_criteria.includes('Purchase')) {
+        return user.unlockedPets.includes(pet.name);
+      } else if (pet.unlock_criteria.includes('Pomodoro')) {
+        return (user.completedSessions || 0) >= (pet.unlock_value || 0);
+      } else if (pet.unlock_criteria.includes('quiz streak')) {
+        return (user.highestQuizStreak || 0) >= (pet.unlock_value || 0);
+      }
+      return false;
+    }).length;
   }, [user]);
 
   const todaysProgress = user?.dailyProgress?.[todayKey] || { pointsEarned: 0, pomodorosCompleted: 0, qotdCompleted: false };
@@ -262,59 +259,26 @@ export default function HomePage() {
         isUnlocked = (user.highestQuizStreak || 0) >= (pet.unlock_value || 0);
     }
 
-    const petContent = (
-      <div className="relative">
-         <Image
-          src={pet.image}
-          alt={pet.name}
-          width={80}
-          height={80}
-          className={cn(
-              "rounded-full bg-muted p-2",
-              isUnlocked ? "animate-bob" : "grayscale opacity-50 blur-sm"
-          )}
-          data-ai-hint={pet.hint}
-        />
-        {!isUnlocked && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
-              { isMobile ? <HelpCircle className="h-6 w-6 text-white" /> : <Lock className="h-6 w-6 text-white" /> }
-          </div>
-        )}
-      </div>
-    );
-    
     return (
        <div key={pet.name} className="flex flex-col items-center text-center">
-            {isUnlocked || isMobile ? (
-                <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                        {petContent}
-                    </AlertDialogTrigger>
-                     {!isUnlocked && (
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>{pet.name} Hint</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    {pet.hint}
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogAction>Got it!</AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    )}
-                </AlertDialog>
-            ) : (
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        {petContent}
-                    </TooltipTrigger>
-                    <TooltipContent>
-                       <p className="font-semibold">{pet.name}</p>
-                       <p className="text-sm text-muted-foreground">{pet.hint}</p>
-                    </TooltipContent>
-                </Tooltip>
+        <div className="relative">
+          <Image
+            src={pet.image}
+            alt={pet.name}
+            width={80}
+            height={80}
+            className={cn(
+                "rounded-full bg-muted p-2",
+                isUnlocked ? "animate-bob" : "grayscale opacity-50 blur-sm"
             )}
+            data-ai-hint={pet.hint}
+          />
+          {!isUnlocked && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
+              <Lock className="h-6 w-6 text-white" />
+            </div>
+          )}
+        </div>
 
             {isUnlocked ? (
                editingPet === pet.name ? (
