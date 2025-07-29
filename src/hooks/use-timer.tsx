@@ -327,5 +327,3 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     </TimerContext.Provider>
   );
 }
-
-    
