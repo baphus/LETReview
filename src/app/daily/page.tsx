@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -23,6 +24,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { startOfDay, isBefore, startOfYesterday } from 'date-fns';
 
 
 interface UserStats {
@@ -155,14 +157,12 @@ export default function DailyPage() {
       const isCompletedToday = (parsedUser.dailyProgress?.[todayKey]?.challengesCompleted?.length || 0) > 0;
       setChallengeCompletedToday(isCompletedToday);
       
-      const lastDateString = parsedUser.lastChallengeDate;
-      if (lastDateString) {
-          const lastDate = new Date(lastDateString);
-          const yesterday = new Date();
-          yesterday.setDate(yesterday.getDate() - 1);
-          yesterday.setHours(0, 0, 0, 0);
+      const lastChallengeDateString = parsedUser.lastChallengeDate;
+      if (lastChallengeDateString) {
+          const lastChallengeDate = startOfDay(new Date(lastChallengeDateString));
+          const yesterday = startOfYesterday();
 
-          if (parsedUser.streak > 0 && lastDate.getTime() < yesterday.getTime()) {
+          if (parsedUser.streak > 0 && isBefore(lastChallengeDate, yesterday)) {
             setStreakBroken(true);
             parsedUser.streak = 0;
             localStorage.setItem("userProfile", JSON.stringify(parsedUser));

@@ -67,12 +67,16 @@ export default function HomePage() {
         if (!parsedUser.dailyProgress) parsedUser.dailyProgress = {};
         if (!parsedUser.highestQuizStreak) parsedUser.highestQuizStreak = 0;
         
-        const lastLoginDate = new Date(parsedUser.lastLogin || todayKey);
-        const yesterday = startOfYesterday();
+        const lastLoginDate = new Date(parsedUser.lastLogin || '1970-01-01');
+        const today = startOfDay(new Date());
 
-        // Check if last login was before yesterday to break the streak
-        if (isBefore(lastLoginDate, yesterday)) {
-            if (parsedUser.streak > 0) {
+        // Check if last login was before today to check for streak
+        if (isBefore(lastLoginDate, today)) {
+            const yesterday = startOfYesterday();
+             // Check if last challenge date was before yesterday to break the streak
+            const lastChallengeDate = parsedUser.lastChallengeDate ? startOfDay(new Date(parsedUser.lastChallengeDate)) : null;
+
+            if (parsedUser.streak > 0 && lastChallengeDate && isBefore(lastChallengeDate, yesterday)) {
                  toast({
                     variant: 'destructive',
                     title: 'Streak Lost!',
@@ -144,7 +148,9 @@ export default function HomePage() {
   
   const qotdCompletedDays = Object.entries(user.dailyProgress || {}).reduce((acc, [date, progress]) => {
     if (progress.qotdCompleted) {
-        acc.push(new Date(date));
+        const d = new Date(date);
+        d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
+        acc.push(d);
     }
     return acc;
   }, [] as Date[]);
