@@ -5112,7 +5112,7 @@ export const pets: PetProfile[] = [
         name: "Rocky",
         unlock_criteria: "1-day streak",
         streak_req: 1,
-        image: "https://placehold.co/100x100.png",
+        image: "https://i.ibb.co/kVvDTQqx/Chat-GPT-Image-Jul-29-2025-04-02-06-PM.png",
         hint: "very hard"
     },
     {
