@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { BookOpen, CalendarDays, Clock, Home, Lightbulb } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTimer } from "@/hooks/use-timer";
@@ -18,6 +18,7 @@ const navItems = [
 
 export default function BottomNav() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { time, isActive } = useTimer();
 
   const TimerIndicator = () => {
@@ -32,11 +33,21 @@ export default function BottomNav() {
     );
   };
 
+  const isChallenge = searchParams.get('challenge') === 'true';
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-card border-t shadow-t-lg md:hidden">
       <div className="flex justify-around items-center h-16">
         {navItems.map(({ href, label, icon: Icon }) => {
-          const isActivePath = (href === "/review" && pathname === "/review") || (href !== "/review" && pathname.startsWith(href));
+          let isActivePath = false;
+          if (href === '/daily' && (pathname.startsWith('/daily') || (pathname.startsWith('/review') && isChallenge))) {
+              isActivePath = true;
+          } else if (href === '/review' && !isChallenge) {
+              isActivePath = pathname.startsWith(href);
+          } else if (href !== '/daily' && href !== '/review') {
+              isActivePath = pathname.startsWith(href);
+          }
+
           return (
             <Link
               key={href}
