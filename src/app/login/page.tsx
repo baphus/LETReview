@@ -37,6 +37,7 @@ export default function LoginPage() {
       points: 0,
       streak: 0,
       highestStreak: 0,
+      highestQuizStreak: 0,
       completedSessions: 0,
       petsUnlocked: 0,
       petNames: {},

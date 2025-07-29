@@ -100,21 +100,26 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     if (currentMode === "focus") {
        const savedUser = localStorage.getItem("userProfile");
        if(savedUser){
-           const user = JSON.parse(savedUser);
+           let user = JSON.parse(savedUser);
            const todayKey = new Date().toISOString().split('T')[0];
 
            user.completedSessions = (user.completedSessions || 0) + 1;
            
            if (!user.dailyProgress) user.dailyProgress = {};
-           if (!user.dailyProgress[todayKey]) user.dailyProgress[todayKey] = {};
+           if (!user.dailyProgress[todayKey]) user.dailyProgress[todayKey] = { pointsEarned: 0, pomodorosCompleted: 0, challengesCompleted: [], qotdCompleted: false };
            user.dailyProgress[todayKey].pomodorosCompleted = (user.dailyProgress[todayKey].pomodorosCompleted || 0) + 1;
            
+           // Update highest quiz streak from the session into the main profile
+           if (stateStore.highestQuizStreak > (user.highestQuizStreak || 0)) {
+               user.highestQuizStreak = stateStore.highestQuizStreak;
+           }
+
            localStorage.setItem("userProfile", JSON.stringify(user));
             // Manually trigger a storage event to notify other components like the home page
            window.dispatchEvent(new Event('storage'));
 
            const updatedFocusSessions = (currentState.focusSessionsCompleted || 0) + 1;
-           const newTodaysSessions = (currentState.todaysSessions || 0) + 1;
+           const newTodaysSessions = user.dailyProgress[todayKey].pomodorosCompleted;
 
 
            const notificationBody = (updatedFocusSessions % SESSIONS_UNTIL_LONG_BREAK === 0) 
@@ -165,6 +170,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
                 const todayKey = new Date().toISOString().split('T')[0];
                 parsedState.sessions = user.completedSessions || 0;
                 parsedState.todaysSessions = user.dailyProgress?.[todayKey]?.pomodorosCompleted || 0;
+                parsedState.highestQuizStreak = user.highestQuizStreak || 0;
              }
             dispatch(parsedState);
         } catch (error) {
@@ -179,6 +185,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
             dispatch({ 
                 sessions: user.completedSessions || 0,
                 todaysSessions: user.dailyProgress?.[todayKey]?.pomodorosCompleted || 0,
+                highestQuizStreak: user.highestQuizStreak || 0,
             });
         }
     }
@@ -207,7 +214,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
           user.points = (user.points || 0) + pointsGained;
 
           if (!user.dailyProgress) user.dailyProgress = {};
-          if (!user.dailyProgress[todayKey]) user.dailyProgress[todayKey] = {};
+          if (!user.dailyProgress[todayKey]) user.dailyProgress[todayKey] = { pointsEarned: 0, pomodorosCompleted: 0, challengesCompleted: [], qotdCompleted: false };
           user.dailyProgress[todayKey].pointsEarned = (user.dailyProgress[todayKey].pointsEarned || 0) + pointsGained;
 
           localStorage.setItem("userProfile", JSON.stringify(user));

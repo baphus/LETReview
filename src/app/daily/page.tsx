@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -69,16 +68,16 @@ const QuestionOfTheDay = ({ onCorrectAnswer }: { onCorrectAnswer: () => void }) 
 
         const savedUser = localStorage.getItem("userProfile");
         if (savedUser) {
-            const user = JSON.parse(savedUser);
+            let user = JSON.parse(savedUser);
             const todayKey = new Date().toISOString().split('T')[0];
 
             if (!user.dailyProgress) user.dailyProgress = {};
-            if (!user.dailyProgress[todayKey]) user.dailyProgress[todayKey] = {};
+            if (!user.dailyProgress[todayKey]) user.dailyProgress[todayKey] = { pointsEarned: 0, pomodorosCompleted: 0, challengesCompleted: [], qotdCompleted: false };
             
             user.dailyProgress[todayKey].qotdCompleted = true;
 
             if (correct) {
-                onCorrectAnswer();
+                onCorrectAnswer(); // This updates the state in the parent component
                 toast({ title: "Correct!", description: "You earned 5 points!", className: "bg-green-100 border-green-300" });
             } else {
                  toast({ variant: "destructive", title: "Incorrect", description: "Better luck tomorrow!" });
@@ -235,7 +234,7 @@ export default function DailyPage() {
         
         const todayKey = new Date().toISOString().split('T')[0];
         if (!user.dailyProgress) user.dailyProgress = {};
-        if (!user.dailyProgress[todayKey]) user.dailyProgress[todayKey] = {};
+        if (!user.dailyProgress[todayKey]) user.dailyProgress[todayKey] = { pointsEarned: 0, pomodorosCompleted: 0, challengesCompleted: [], qotdCompleted: false };
         user.dailyProgress[todayKey].pointsEarned = (user.dailyProgress[todayKey].pointsEarned || 0) + 5;
 
         localStorage.setItem("userProfile", JSON.stringify(user));

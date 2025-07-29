@@ -300,7 +300,7 @@ export default function TimerPage() {
             <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center justify-center gap-2 text-destructive">
                     <Flame className="text-destructive" />
-                    <span>Highest Streak</span>
+                    <span>Highest Quiz Streak</span>
                 </CardTitle>
             </CardHeader>
             <CardContent>

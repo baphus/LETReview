@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { User, Flame, Gem, Star, Award, Shield, Edit, Check, HelpCircle, Lock, CalendarCheck2, CheckCircle } from "lucide-react";
+import { User, Flame, Gem, Star, Award, Shield, Edit, Check, HelpCircle, Lock, CalendarCheck2, CheckCircle, Lightbulb } from "lucide-react";
 import Image from "next/image";
 import { pets as streakPets, getQuestionOfTheDay } from "@/lib/data";
 import type { QuizQuestion, DailyProgress } from "@/lib/types";
@@ -29,6 +29,7 @@ interface UserProfile {
     points: number;
     streak: number;
     highestStreak: number;
+    highestQuizStreak: number;
     completedSessions: number;
     petNames: Record<string, string>;
     unlockedPets: string[];
@@ -61,6 +62,7 @@ export default function HomePage() {
         if (!parsedUser.petNames) parsedUser.petNames = {};
         if (!parsedUser.unlockedPets) parsedUser.unlockedPets = [];
         if (!parsedUser.dailyProgress) parsedUser.dailyProgress = {};
+        if (!parsedUser.highestQuizStreak) parsedUser.highestQuizStreak = 0;
         
         const lastLoginDate = new Date(parsedUser.lastLogin || todayKey);
         const yesterday = startOfYesterday();
@@ -89,6 +91,7 @@ export default function HomePage() {
 
   useEffect(() => {
     loadUser();
+    setQuestionOfTheDay(getQuestionOfTheDay());
     
     const handleFocus = () => loadUser();
     window.addEventListener('focus', handleFocus);
@@ -181,7 +184,7 @@ export default function HomePage() {
             </Card>
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Highest Streak</CardTitle>
+                <CardTitle className="text-sm font-medium">Highest Daily Streak</CardTitle>
                 <Shield className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
@@ -190,11 +193,11 @@ export default function HomePage() {
             </Card>
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Pomodoro Sessions</CardTitle>
+                <CardTitle className="text-sm font-medium">Highest Quiz Streak</CardTitle>
                 <Award className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                <div className="text-2xl font-bold">{user.completedSessions}</div>
+                <div className="text-2xl font-bold">{user.highestQuizStreak}</div>
                 </CardContent>
             </Card>
         </div>
@@ -209,13 +212,22 @@ export default function HomePage() {
                         <CalendarCheck2 className="h-6 w-6 text-primary" />
                         <span>Daily Activity Calendar</span>
                     </CardTitle>
-                    <CardDescription>Days you completed a challenge or the QOTD are marked.</CardDescription>
+                    <CardDescription>Days you completed a challenge or the QOTD are marked. Keep your streak going to unlock new pets!</CardDescription>
                 </CardHeader>
                 <CardContent className="flex justify-center">
                    <Calendar
                         mode="multiple"
                         selected={calendarCompletedDays}
                         className="rounded-md border"
+                        modifiers={{
+                           streak: { from: addDays(new Date(), -user.streak), to: new Date() }
+                        }}
+                        modifiersStyles={{
+                            streak: { 
+                                border: '2px solid hsl(var(--destructive))',
+                                color: 'hsl(var(--destructive))',
+                            }
+                        }}
                     />
                 </CardContent>
             </Card>
@@ -235,20 +247,42 @@ export default function HomePage() {
                     <p className="text-2xl font-bold flex items-center gap-2"><Award className="h-5 w-5 text-muted-foreground" />{todaysProgress.pomodorosCompleted || 0}</p>
                 </CardContent>
              </Card>
-              <Card className="md:col-span-2">
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">Question of the Day</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    {todaysProgress.qotdCompleted ? (
-                        <p className="text-2xl font-bold flex items-center gap-2 text-green-600"><CheckCircle className="h-6 w-6" />Answered</p>
-                    ) : (
-                        <p className="text-2xl font-bold flex items-center gap-2 text-muted-foreground"><HelpCircle className="h-6 w-6" />Pending</p>
-                    )}
-                </CardContent>
-             </Card>
         </div>
        </section>
+
+        <section className="mt-8">
+            <h2 className="text-xl font-bold font-headline mb-4">Question of the Day</h2>
+            {questionOfTheDay && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center justify-between">
+                            <span className="text-lg">{questionOfTheDay.question}</span>
+                            {todaysProgress.qotdCompleted ? (
+                                <Badge variant="secondary" className="text-green-600 border-green-300">
+                                    <CheckCircle className="h-4 w-4 mr-1"/> Answered
+                                </Badge>
+                            ) : (
+                                <Badge variant="outline">
+                                    <HelpCircle className="h-4 w-4 mr-1"/> Pending
+                                </Badge>
+                            )}
+                        </CardTitle>
+                        
+                    </CardHeader>
+                    {!todaysProgress.qotdCompleted && (
+                        <CardFooter>
+                            <Link href="/daily" className="w-full">
+                                <Button className="w-full">
+                                    <Lightbulb className="mr-2 h-4 w-4" />
+                                    Answer Now
+                                </Button>
+                            </Link>
+                        </CardFooter>
+                    )}
+                </Card>
+            )}
+        </section>
+
 
       <section className="mt-8">
         <h2 className="text-xl font-bold font-headline mb-4">Pet Collection ({unlockedPetsCount}/{allPets.length})</h2>
