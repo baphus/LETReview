@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -39,7 +40,7 @@ const themes = [
 ];
 
 const rarePets = [
-    { name: "Draco", cost: 1000, image: "https://placehold.co/100x100.png", hint: "fire breathing" },
+    { name: "Draco", cost: 1000, image: "/pets/draco.png", hint: "fire breathing" },
 ]
 
 export default function ProfilePage() {

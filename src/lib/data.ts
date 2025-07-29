@@ -1846,7 +1846,7 @@ export const sampleQuestions: QuizQuestion[] = [
     id: 231,
     category: "professional",
     difficulty: "hard",
-    question: "A child was punished for cheating in an exam. For sure the child wont cheat again in short span of time, but this does not guarantee that the child won’t cheat ever again. Based on Thorndike’s theory on punishment and learning, this shows that _____.",
+    question: "A child who gets punished for cheating in an exam. For sure the child wont cheat again in short span of time, but this does not guarantee that the child won’t cheat ever again. Based on Thorndike’s theory on punishment and learning, this shows that _____.",
     choices: ["punishment strengthens a response", "punishment doesn’t remove a response", "punishment removes response", "punishment weakens a response"],
     answer: "punishment doesn’t remove a response",
   },
@@ -5112,56 +5112,56 @@ export const pets: PetProfile[] = [
         name: "Rocky",
         unlock_criteria: "1-day streak",
         streak_req: 1,
-        image: "https://i.ibb.co/kVvDTQqx/Chat-GPT-Image-Jul-29-2025-04-02-06-PM.png",
+        image: "/pets/rocky.png",
         hint: "very hard"
     },
     {
         name: "Whiskers",
         unlock_criteria: "3-day streak",
         streak_req: 3,
-        image: "https://placehold.co/100x100.png",
+        image: "/pets/whiskers.png",
         hint: "Jerry's worst enemy"
     },
     {
         name: "Goldie",
         unlock_criteria: "7-day streak",
         streak_req: 7,
-        image: "https://placehold.co/100x100.png",
+        image: "/pets/goldie.png",
         hint: "Bloop bloop"
     },
     {
         name: "Sonic",
         unlock_criteria: "14-day streak",
         streak_req: 14,
-        image: "https://placehold.co/100x100.png",
+        image: "/pets/sonic.png",
         hint: "Outran the rabbit"
     },
      {
         name: "Feathers",
         unlock_criteria: "30-day streak",
         streak_req: 30,
-        image: "https://placehold.co/100x100.png",
+        image: "/pets/feathers.png",
         hint: "Higher and higher"
     },
     {
         name: "Hoppy",
         unlock_criteria: "50-day streak",
         streak_req: 50,
-        image: "https://placehold.co/100x100.png",
+        image: "/pets/hoppy.png",
         hint: "Hop-hop"
     },
      {
         name: "Spike",
         unlock_criteria: "75-day streak",
         streak_req: 75,
-        image: "https://placehold.co/100x100.png",
+        image: "/pets/spike.png",
         hint: "They see me rollin'"
     },
     {
         name: "Phoenix",
         unlock_criteria: "100-day streak",
         streak_req: 100,
-        image: "https://placehold.co/100x100.png",
+        image: "/pets/phoenix.png",
         hint: "Mythical"
     },
 ];

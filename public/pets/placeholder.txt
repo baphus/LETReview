@@ -1,0 +1,1 @@
+You can place your pet images in this directory. For example, add 'rocky.png', 'whiskers.png', etc. and they will be used in the app. You can delete this file.
