@@ -64,9 +64,28 @@ export default function HomePage() {
   const checkAchievements = (user: UserProfile): UserProfile => {
     let updatedUser = { ...user };
     let newPetsUnlocked = false;
+    let statsUpdated = false;
+
+    // Check for new highest streaks
+    if (updatedUser.streak > (updatedUser.highestStreak || 0)) {
+        updatedUser.highestStreak = updatedUser.streak;
+        statsUpdated = true;
+    }
+    
+    const pomodoroState = JSON.parse(localStorage.getItem("pomodoroState") || "{}");
+    if (pomodoroState.highestQuizStreak > (updatedUser.highestQuizStreak || 0)) {
+        updatedUser.highestQuizStreak = pomodoroState.highestQuizStreak;
+        statsUpdated = true;
+    }
+
 
     achievementPets.forEach(pet => {
-      const isAlreadyUnlocked = updatedUser.unlockedPets.includes(pet.name);
+      let isAlreadyUnlocked = false;
+      // We check the unlockedPets array for achievement pets
+      if (pet.unlock_criteria.includes('Pomodoro') || pet.unlock_criteria.includes('quiz streak')) {
+        isAlreadyUnlocked = updatedUser.unlockedPets.includes(pet.name);
+      }
+
       if (isAlreadyUnlocked) return;
 
       let isUnlockedNow = false;
@@ -80,6 +99,7 @@ export default function HomePage() {
       if (isUnlockedNow) {
         updatedUser.unlockedPets = [...updatedUser.unlockedPets, pet.name];
         newPetsUnlocked = true;
+        statsUpdated = true;
         toast({
           title: "New Pet Unlocked!",
           description: `You've unlocked ${pet.name} for your achievements!`,
@@ -88,7 +108,7 @@ export default function HomePage() {
       }
     });
 
-    if (newPetsUnlocked) {
+    if (statsUpdated) {
       localStorage.setItem("userProfile", JSON.stringify(updatedUser));
     }
     return updatedUser;
@@ -182,25 +202,33 @@ export default function HomePage() {
     }
   };
 
-  const unlockedStreakPetsCount = streakPets.filter(p => user.highestStreak >= p.streak_req).length;
-  const unlockedAchievementPetsCount = achievementPets.filter(p => {
-    if (p.unlock_criteria.includes('Pomodoro')) {
-      return user.completedSessions >= (p.unlock_value || 0);
-    } else if (p.unlock_criteria.includes('quiz streak')) {
-      return user.highestQuizStreak >= (p.unlock_value || 0);
-    }
-    return false;
-  }).length;
-  const unlockedStorePetsCount = user.unlockedPets.includes("Draco") ? 1 : 0;
-  const unlockedPetsCount = unlockedStreakPetsCount + unlockedAchievementPetsCount + unlockedStorePetsCount;
-  
-  const qotdCompletedDays = Object.entries(user.dailyProgress || {}).reduce((acc, [dateStr, progress]) => {
+  const unlockedPetsCount = useMemo(() => {
+      if (!user) return 0;
+
+      const unlockedStreak = streakPets.filter(p => user.highestStreak >= p.streak_req).length;
+      
+      const unlockedAchievement = achievementPets.filter(p => {
+          if (p.unlock_criteria.includes('Pomodoro')) {
+              return user.completedSessions >= (p.unlock_value || 0);
+          } else if (p.unlock_criteria.includes('quiz streak')) {
+              return user.highestQuizStreak >= (p.unlock_value || 0);
+          }
+          return false;
+      }).length;
+      
+      const unlockedPurchased = user.unlockedPets.filter(p => p === "Draco").length;
+      
+      return unlockedStreak + unlockedAchievement + unlockedPurchased;
+  }, [user]);
+
+  const qotdCompletedDays = useMemo(() => Object.entries(user?.dailyProgress || {}).reduce((acc, [dateStr, progress]) => {
     if (progress.qotdCompleted) {
+        // Create date in a way that avoids timezone issues
         const [year, month, day] = dateStr.split('-').map(Number);
         acc.push(new Date(year, month - 1, day));
     }
     return acc;
-  }, [] as Date[]);
+  }, [] as Date[]), [user?.dailyProgress]);
 
 
   // Streak days should be calculated from yesterday backwards
@@ -443,7 +471,7 @@ export default function HomePage() {
                     ) : (
                         <p className="text-sm font-medium mt-1">???</p>
                     )}
-                     <Badge variant="secondary" className="mt-1 text-center">
+                     <Badge variant="secondary" className="mt-1 text-center text-wrap h-auto">
                         {pet.unlock_criteria}
                     </Badge>
                   </div>
