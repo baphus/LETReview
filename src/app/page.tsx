@@ -109,7 +109,7 @@ export default function LandingPage() {
         </section>
 
         {/* Features Section */}
-        <section id="features" className="w-full py-20 md:py-24 bg-dark text-white">
+        <section id="features" className="w-full py-20 md:py-24 bg-muted">
           <div className="container mx-auto px-4 md:px-6 space-y-20">
             {features.map((feature, index) => (
               <div key={feature.title} className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
@@ -126,7 +126,7 @@ export default function LandingPage() {
                 <div className={`space-y-6 ${index % 2 === 1 ? 'md:order-1' : ''}`}>
                   <div>
                     <div className="inline-block rounded-lg bg-primary/20 text-primary px-3 py-1 text-sm mb-2">{feature.title}</div>
-                    <h2 className="text-3xl md:text-4xl font-bold tracking-tighter font-headline">
+                    <h2 className="text-3xl md:text-4xl font-bold tracking-tighter font-headline text-foreground">
                         {feature.description}
                     </h2>
                   </div>
