@@ -21,9 +21,11 @@ export interface PetProfile {
 
 export interface DailyProgress {
     qotdCompleted?: boolean;
+    qotdAnswer?: string;
     challengesCompleted?: string[];
     pomodorosCompleted?: number;
     pointsEarned?: number;
 }
 
+    
     

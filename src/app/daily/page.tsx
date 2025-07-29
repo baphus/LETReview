@@ -54,11 +54,19 @@ const QuestionOfTheDay = ({ onCorrectAnswer }: { onCorrectAnswer: () => void }) 
         if(savedUser){
             const user = JSON.parse(savedUser);
             const todayKey = getTodayKey();
-            if(user.dailyProgress?.[todayKey]?.qotdCompleted){
+            const todaysProgress = user.dailyProgress?.[todayKey];
+
+            if(todaysProgress?.qotdCompleted){
                 setIsAnswered(true);
-                // We don't know what they answered, so we just show the correct one
-                setSelectedAnswer(qotd.answer);
-                setIsCorrect(true);
+                const previousAnswer = todaysProgress.qotdAnswer;
+                if (previousAnswer) {
+                    setSelectedAnswer(previousAnswer);
+                    setIsCorrect(previousAnswer === qotd.answer);
+                } else {
+                    // Fallback for older data structure
+                    setSelectedAnswer(qotd.answer);
+                    setIsCorrect(true);
+                }
             }
         }
     }, []);
@@ -80,6 +88,7 @@ const QuestionOfTheDay = ({ onCorrectAnswer }: { onCorrectAnswer: () => void }) 
             if (!user.dailyProgress[todayKey]) user.dailyProgress[todayKey] = { pointsEarned: 0, pomodorosCompleted: 0, challengesCompleted: [], qotdCompleted: false };
             
             user.dailyProgress[todayKey].qotdCompleted = true;
+            user.dailyProgress[todayKey].qotdAnswer = answer;
 
             if (correct) {
                 onCorrectAnswer(); // This updates the state in the parent component
@@ -376,5 +385,7 @@ export default function DailyPage() {
     </div>
   );
 }
+
+    
 
     
