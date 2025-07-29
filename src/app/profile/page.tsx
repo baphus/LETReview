@@ -48,7 +48,7 @@ const allAchievements = [
     petReward: "Owlbert",
     icon: Clock,
     target: 10,
-    getValue: (user: UserProfile) => user.completedSessions,
+    getValue: (user: UserProfile) => user.completedSessions || 0,
   },
   {
     name: "Pomodoro Pro",
@@ -56,7 +56,7 @@ const allAchievements = [
     petReward: "Einstein",
     icon: Clock,
     target: 50,
-    getValue: (user: UserProfile) => user.completedSessions,
+    getValue: (user: UserProfile) => user.completedSessions || 0,
   },
   {
     name: "Quiz Whiz",
@@ -64,7 +64,7 @@ const allAchievements = [
     petReward: "Sparky",
     icon: Award,
     target: 10,
-    getValue: (user: UserProfile) => user.highestQuizStreak,
+    getValue: (user: UserProfile) => user.highestQuizStreak || 0,
   },
   {
     name: "Quiz Master",
@@ -72,7 +72,7 @@ const allAchievements = [
     petReward: "Bolt",
     icon: Award,
     target: 25,
-    getValue: (user: UserProfile) => user.highestQuizStreak,
+    getValue: (user: UserProfile) => user.highestQuizStreak || 0,
   },
 ];
 
@@ -216,7 +216,7 @@ export default function ProfilePage() {
         const updatedUser = {
             ...user,
             points: user.points - cost,
-            unlockedPets: [...user.unlockedPets, petName],
+            unlockedPets: [...new Set([...user.unlockedPets, petName])],
         };
         saveUser(updatedUser);
         toast({ title: "Pet Unlocked!", description: `You spent ${cost} points to get ${petName}!`, className: "bg-green-100 border-green-300"});
@@ -458,4 +458,3 @@ export default function ProfilePage() {
   );
 }
 
-    
