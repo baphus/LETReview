@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Separator } from "@/components/ui/separator";
 import { User, Flame, Gem, Star, Award, Shield, Edit, Check, HelpCircle, Lock, CalendarCheck2, CheckCircle, Lightbulb, TrendingUp } from "lucide-react";
 import Image from "next/image";
-import { pets as streakPets, getQuestionOfTheDay, achievementPets } from "@/lib/data";
+import { pets as streakPets, getQuestionOfTheDay, achievementPets, rarePets } from "@/lib/data";
 import type { QuizQuestion, DailyProgress, PetProfile } from "@/lib/types";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
@@ -42,7 +42,7 @@ interface UserProfile {
 const allPets: PetProfile[] = [
     ...streakPets,
     ...achievementPets,
-    { name: "Draco", unlock_criteria: "Purchase in Store", streak_req: 999, image: "/pets/draco.png", hint: "fire breathing" },
+    ...rarePets
 ];
 
 const getTodayKey = () => format(new Date(), 'yyyy-MM-dd');
@@ -160,7 +160,6 @@ export default function HomePage() {
     return Object.entries(user.dailyProgress).reduce((acc, [dateStr, progress]) => {
         if (progress.qotdCompleted) {
             const date = new Date(dateStr);
-            // This ensures we are creating the date in the local timezone, not UTC
             const localDate = new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
             acc.push(localDate);
         }
@@ -182,19 +181,17 @@ export default function HomePage() {
   const unlockedPetsCount = useMemo(() => {
       if (!user) return 0;
       return allPets.filter(pet => {
+          let isUnlocked = false;
           if (pet.unlock_criteria.includes('streak')) {
-              return (user.highestStreak || 0) >= pet.streak_req;
+            isUnlocked = (user.highestStreak || 0) >= pet.streak_req;
+          } else if (pet.unlock_criteria.includes('Purchase')) {
+            isUnlocked = user.unlockedPets.includes(pet.name);
+          } else if (pet.unlock_criteria.includes('Pomodoro')) {
+            isUnlocked = (user.completedSessions || 0) >= (pet.unlock_value || 0);
+          } else if (pet.unlock_criteria.includes('quiz streak')) {
+            isUnlocked = (user.highestQuizStreak || 0) >= (pet.unlock_value || 0);
           }
-          if (pet.unlock_criteria.includes('Purchase')) {
-              return user.unlockedPets.includes(pet.name);
-          }
-          if (pet.unlock_criteria.includes('Pomodoro')) {
-              return (user.completedSessions || 0) >= (pet.unlock_value || 0);
-          }
-          if (pet.unlock_criteria.includes('quiz streak')) {
-              return (user.highestQuizStreak || 0) >= (pet.unlock_value || 0);
-          }
-          return false;
+          return isUnlocked;
       }).length;
   }, [user]);
 
@@ -404,7 +401,7 @@ export default function HomePage() {
             <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
               {allPets.map((pet) => {
                 let isUnlocked = false;
-                if (pet.unlock_criteria.includes('streak')) {
+                if (pet.unlock_criteria.includes('streak') && !pet.unlock_criteria.includes('quiz')) {
                   isUnlocked = (user.highestStreak || 0) >= pet.streak_req;
                 } else if (pet.unlock_criteria.includes('Purchase')) {
                   isUnlocked = user.unlockedPets.includes(pet.name);
@@ -478,4 +475,5 @@ export default function HomePage() {
       </section>
     </div>
   );
-}
+
+    
