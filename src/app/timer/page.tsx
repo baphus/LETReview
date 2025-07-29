@@ -107,7 +107,8 @@ export default function TimerPage() {
     time: rawTime, 
     isActive, 
     mode, 
-    sessions, 
+    sessions,
+    todaysSessions,
     toggleTimer, 
     resetTimer: baseResetTimer,
     setMode,
@@ -288,11 +289,11 @@ export default function TimerPage() {
             <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center justify-center gap-2">
                     <Award className="text-primary" />
-                    <span>Completed</span>
+                    <span>Today's Sessions</span>
                 </CardTitle>
             </CardHeader>
             <CardContent>
-                <p className="text-2xl font-bold">{sessions}</p>
+                <p className="text-2xl font-bold">{todaysSessions}</p>
             </CardContent>
         </Card>
          <Card>

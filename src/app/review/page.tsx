@@ -28,6 +28,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 const Flashcard: FC<{ question: QuizQuestion }> = ({ question }) => {
   const [isFlipped, setIsFlipped] = useState(false);
  
+  useEffect(() => {
+    setIsFlipped(false);
+  }, [question]);
+
   return (
     <div className="flashcard-container cursor-pointer" onClick={() => setIsFlipped(!isFlipped)}>
       <div className={cn("flashcard w-full h-80 relative", { "is-flipped": isFlipped })}>
@@ -281,35 +285,40 @@ function ReviewerPageContent() {
     const savedUser = localStorage.getItem("userProfile");
     if (savedUser) {
         const user = JSON.parse(savedUser);
-        const today = new Date();
-        const todayString = today.toDateString();
+        const todayKey = new Date().toISOString().split('T')[0];
         
-        const challengeId = `${challengeDifficulty}-${challengeCategory}-${today.toISOString().split('T')[0]}`;
+        if (!user.dailyProgress) user.dailyProgress = {};
+        if (!user.dailyProgress[todayKey]) user.dailyProgress[todayKey] = {};
+
+        const challengeId = `${challengeDifficulty}-${challengeCategory}`;
         
         // Only mark challenge as completed if PASSED
         if (passed) {
-            if (!user.completedChallenges) {
-                user.completedChallenges = [];
+            if (!user.dailyProgress[todayKey].challengesCompleted) {
+                user.dailyProgress[todayKey].challengesCompleted = [];
             }
-            // Clear out challenges from other days to avoid bloating local storage
-            const todayKey = today.toISOString().split('T')[0];
-            user.completedChallenges = (user.completedChallenges || []).filter((id: string) => id.endsWith(todayKey));
             
-            if (!user.completedChallenges.includes(challengeId)) {
-                user.completedChallenges.push(challengeId);
+            const alreadyCompletedToday = user.dailyProgress[todayKey].challengesCompleted.includes(challengeId);
+
+            if (!alreadyCompletedToday) {
+                user.dailyProgress[todayKey].challengesCompleted.push(challengeId);
             }
 
             // Award points and streak only on the first pass of the day for any challenge
-            if (user.lastChallengeDate !== todayString) {
+            const wasAnyChallengeCompletedToday = user.lastChallengeDate === todayKey;
+            
+            if (!wasAnyChallengeCompletedToday) {
                 user.streak = (user.streak || 0) + 1;
                 if (user.streak > (user.highestStreak || 0)) {
                     user.highestStreak = user.streak;
                 }
-                user.lastChallengeDate = todayString;
+                user.lastChallengeDate = todayKey;
 
                 const pointsMap = { easy: 25, medium: 75, hard: 150 };
                 const pointsEarned = pointsMap[challengeDifficulty as keyof typeof pointsMap] || 0;
                 user.points = (user.points || 0) + pointsEarned;
+                user.dailyProgress[todayKey].pointsEarned = (user.dailyProgress[todayKey].pointsEarned || 0) + pointsEarned;
+
 
                 toast({
                     title: "Challenge Passed!",
@@ -317,11 +326,23 @@ function ReviewerPageContent() {
                     className: "bg-green-100 border-green-300"
                 });
             } else {
-                 toast({
-                    title: "Challenge Passed!",
-                    description: `You passed another challenge!`,
-                    className: "bg-green-100 border-green-300"
-                });
+                 if (!alreadyCompletedToday) {
+                    const pointsMap = { easy: 25, medium: 75, hard: 150 };
+                    const pointsEarned = pointsMap[challengeDifficulty as keyof typeof pointsMap] || 0;
+                    user.points = (user.points || 0) + pointsEarned;
+                    user.dailyProgress[todayKey].pointsEarned = (user.dailyProgress[todayKey].pointsEarned || 0) + pointsEarned;
+                    toast({
+                        title: "Challenge Passed!",
+                        description: `You passed another challenge and earned ${pointsEarned} points!`,
+                        className: "bg-green-100 border-green-300"
+                    });
+                 } else {
+                     toast({
+                        title: "Challenge Complete!",
+                        description: `You've already earned points for this challenge today.`,
+                        className: "bg-blue-100 border-blue-300"
+                    });
+                 }
             }
         }
         
@@ -335,7 +356,6 @@ function ReviewerPageContent() {
         setCurrentIndex((prev) => prev + 1);
     } else {
         if (isChallenge) {
-            // We pass the challengeAnswers directly to avoid state update issues
             handleFinishChallenge(challengeAnswers);
         } else {
             setCurrentIndex(0); 
@@ -591,4 +611,3 @@ export default function ReviewPage() {
         </Suspense>
     )
 }
-

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { CalendarDays, Flame, Gem, Shield, Star, Lock, RefreshCcw, HelpCircle, CheckCircle, XCircle } from "lucide-react";
 import { pets, getQuestionOfTheDay } from "@/lib/data";
-import type { QuizQuestion } from "@/lib/types";
+import type { QuizQuestion, DailyProgress } from "@/lib/types";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -31,9 +31,9 @@ interface UserStats {
   highestStreak: number;
   points: number;
   lastChallengeDate?: string;
-  lastQotdDate?: string;
   petsUnlocked: number;
   completedChallenges: string[];
+  dailyProgress: Record<string, DailyProgress>;
 }
 
 const QuestionOfTheDay = ({ onCorrectAnswer }: { onCorrectAnswer: () => void }) => {
@@ -49,8 +49,8 @@ const QuestionOfTheDay = ({ onCorrectAnswer }: { onCorrectAnswer: () => void }) 
         const savedUser = localStorage.getItem("userProfile");
         if(savedUser){
             const user = JSON.parse(savedUser);
-            const today = new Date().toDateString();
-            if(user.lastQotdDate === today){
+            const todayKey = new Date().toISOString().split('T')[0];
+            if(user.dailyProgress?.[todayKey]?.qotdCompleted){
                 setIsAnswered(true);
                 // We don't know what they answered, so we just show the correct one
                 setSelectedAnswer(qotd.answer);
@@ -70,7 +70,13 @@ const QuestionOfTheDay = ({ onCorrectAnswer }: { onCorrectAnswer: () => void }) 
         const savedUser = localStorage.getItem("userProfile");
         if (savedUser) {
             const user = JSON.parse(savedUser);
-            user.lastQotdDate = new Date().toDateString();
+            const todayKey = new Date().toISOString().split('T')[0];
+
+            if (!user.dailyProgress) user.dailyProgress = {};
+            if (!user.dailyProgress[todayKey]) user.dailyProgress[todayKey] = {};
+            
+            user.dailyProgress[todayKey].qotdCompleted = true;
+
             if (correct) {
                 onCorrectAnswer();
                 toast({ title: "Correct!", description: "You earned 5 points!", className: "bg-green-100 border-green-300" });
@@ -135,53 +141,50 @@ export default function DailyPage() {
     points: 0,
     petsUnlocked: 0,
     completedChallenges: [],
+    dailyProgress: {},
   });
   const [challengeCompletedToday, setChallengeCompletedToday] = useState(false);
   const [streakBroken, setStreakBroken] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<"gen_education" | "professional">("gen_education");
+  const todayKey = new Date().toISOString().split('T')[0];
 
   const loadUserStats = useCallback(() => {
     const savedUser = localStorage.getItem("userProfile");
     if (savedUser) {
       const parsedUser = JSON.parse(savedUser);
 
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const lastDate = parsedUser.lastChallengeDate ? new Date(parsedUser.lastChallengeDate) : null;
-      lastDate?.setHours(0, 0, 0, 0);
-
-      const todayString = today.toDateString();
-      const lastDateString = lastDate?.toDateString();
-
-      const isCompletedToday = lastDateString === todayString;
+      const isCompletedToday = (parsedUser.dailyProgress?.[todayKey]?.challengesCompleted?.length || 0) > 0;
       setChallengeCompletedToday(isCompletedToday);
+      
+      const lastDateString = parsedUser.lastChallengeDate;
+      if (lastDateString) {
+          const lastDate = new Date(lastDateString);
+          const yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+          yesterday.setHours(0, 0, 0, 0);
 
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      yesterday.setHours(0, 0, 0, 0);
-
-      if (parsedUser.streak > 0 && lastDate && lastDate.getTime() < yesterday.getTime()) {
-        setStreakBroken(true);
-        parsedUser.streak = 0;
-        localStorage.setItem("userProfile", JSON.stringify(parsedUser));
-      } else {
-        setStreakBroken(false);
+          if (parsedUser.streak > 0 && lastDate.getTime() < yesterday.getTime()) {
+            setStreakBroken(true);
+            parsedUser.streak = 0;
+            localStorage.setItem("userProfile", JSON.stringify(parsedUser));
+          } else {
+            setStreakBroken(false);
+          }
       }
       
-      const todayKey = new Date().toISOString().split('T')[0];
-      const todaysChallenges = (parsedUser.completedChallenges || []).filter((id: string) => id.endsWith(todayKey));
+      const todaysChallenges = parsedUser.dailyProgress?.[todayKey]?.challengesCompleted || [];
 
       setUserStats({
         streak: parsedUser.streak || 0,
         highestStreak: parsedUser.highestStreak || 0,
         points: parsedUser.points || 0,
         lastChallengeDate: parsedUser.lastChallengeDate,
-        lastQotdDate: parsedUser.lastQotdDate,
         petsUnlocked: parsedUser.petsUnlocked || 0,
         completedChallenges: todaysChallenges,
+        dailyProgress: parsedUser.dailyProgress || {},
       });
     }
-  }, []);
+  }, [todayKey]);
 
   useEffect(() => {
     loadUserStats();
@@ -190,8 +193,10 @@ export default function DailyPage() {
       loadUserStats();
     };
     window.addEventListener('focus', handleFocus);
+    window.addEventListener('storage', handleFocus);
     return () => {
       window.removeEventListener('focus', handleFocus);
+       window.removeEventListener('storage', handleFocus);
     };
   }, [loadUserStats]);
 
@@ -227,6 +232,12 @@ export default function DailyPage() {
     if (savedUser) {
         const user = JSON.parse(savedUser);
         user.points = (user.points || 0) + 5;
+        
+        const todayKey = new Date().toISOString().split('T')[0];
+        if (!user.dailyProgress) user.dailyProgress = {};
+        if (!user.dailyProgress[todayKey]) user.dailyProgress[todayKey] = {};
+        user.dailyProgress[todayKey].pointsEarned = (user.dailyProgress[todayKey].pointsEarned || 0) + 5;
+
         localStorage.setItem("userProfile", JSON.stringify(user));
         setUserStats(prev => ({ ...prev, points: user.points }));
     }
@@ -238,9 +249,6 @@ export default function DailyPage() {
     { difficulty: 'medium', count: 10, points: 75, color: 'yellow' },
     { difficulty: 'hard', count: 15, points: 150, color: 'red' },
   ];
-  
-  const todayKey = new Date().toISOString().split('T')[0];
-
 
   return (
     <div className="container mx-auto p-4 max-w-2xl">
@@ -336,7 +344,7 @@ export default function DailyPage() {
         </div>
         <div className="space-y-4">
           {challenges.map(challenge => {
-             const challengeId = `${challenge.difficulty}-${selectedCategory}-${todayKey}`;
+             const challengeId = `${challenge.difficulty}-${selectedCategory}`;
              const isCompleted = userStats.completedChallenges.includes(challengeId);
             return (
                 <Card key={challenge.difficulty} className={cn(isCompleted && "bg-muted/50", `border-${challenge.color}-200`)}>

@@ -5,11 +5,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { User, Flame, Gem, Star, Award, Shield, Edit, Check, HelpCircle, Lock } from "lucide-react";
+import { User, Flame, Gem, Star, Award, Shield, Edit, Check, HelpCircle, Lock, CalendarCheck2, CheckCircle } from "lucide-react";
 import Image from "next/image";
-import { pets as streakPets } from "@/lib/data";
-import type { QuizQuestion } from "@/lib/types";
-import { useEffect, useState } from "react";
+import { pets as streakPets, getQuestionOfTheDay } from "@/lib/data";
+import type { QuizQuestion, DailyProgress } from "@/lib/types";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,8 @@ import Countdown from "@/components/Countdown";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { Calendar } from "@/components/ui/calendar";
+import { addDays, format, isBefore, startOfYesterday } from "date-fns";
 
 
 interface UserProfile {
@@ -30,6 +32,8 @@ interface UserProfile {
     completedSessions: number;
     petNames: Record<string, string>;
     unlockedPets: string[];
+    dailyProgress: Record<string, DailyProgress>;
+    lastLogin: string;
 }
 
 const allPets = [
@@ -44,34 +48,58 @@ export default function HomePage() {
   const [editingPet, setEditingPet] = useState<string | null>(null);
   const [newPetName, setNewPetName] = useState("");
   const [questionOfTheDay, setQuestionOfTheDay] = useState<QuizQuestion | null>(null);
+  
+  const todayKey = useMemo(() => new Date().toISOString().split('T')[0], []);
+  const todaysProgress = user?.dailyProgress?.[todayKey] || {};
 
-  useEffect(() => {
+  const loadUser = useCallback(() => {
     const savedUser = localStorage.getItem("userProfile");
     if (savedUser) {
-      const parsedUser = JSON.parse(savedUser);
-       if (!parsedUser.petNames) parsedUser.petNames = {};
-       if (!parsedUser.unlockedPets) parsedUser.unlockedPets = [];
-      setUser(parsedUser);
-    } else {
-      router.push('/login');
-    }
-    
-    // setQuestionOfTheDay(getQuestionOfTheDay());
+        let parsedUser: UserProfile = JSON.parse(savedUser);
 
-     // This will run when the component mounts and also when the user navigates back to this page.
-    const handleFocus = () => {
-      const savedUser = localStorage.getItem("userProfile");
-       if (savedUser) {
-          const parsedUser = JSON.parse(savedUser);
-          if (!parsedUser.unlockedPets) parsedUser.unlockedPets = [];
-          setUser(parsedUser);
-       }
-    };
+        // Initialize missing fields for backward compatibility
+        if (!parsedUser.petNames) parsedUser.petNames = {};
+        if (!parsedUser.unlockedPets) parsedUser.unlockedPets = [];
+        if (!parsedUser.dailyProgress) parsedUser.dailyProgress = {};
+        
+        const lastLoginDate = new Date(parsedUser.lastLogin || todayKey);
+        const yesterday = startOfYesterday();
+
+        // Check if last login was before yesterday to break the streak
+        if (isBefore(lastLoginDate, yesterday)) {
+            if (parsedUser.streak > 0) {
+                 toast({
+                    variant: 'destructive',
+                    title: 'Streak Lost!',
+                    description: `You missed a day and lost your ${parsedUser.streak}-day streak.`,
+                });
+                parsedUser.streak = 0;
+            }
+        }
+        
+        parsedUser.lastLogin = todayKey;
+
+        localStorage.setItem("userProfile", JSON.stringify(parsedUser));
+        setUser(parsedUser);
+    } else {
+        router.push('/login');
+    }
+  }, [router, todayKey, toast]);
+
+
+  useEffect(() => {
+    loadUser();
+    
+    const handleFocus = () => loadUser();
     window.addEventListener('focus', handleFocus);
+    window.addEventListener('storage', handleFocus); // Listen for storage changes from other tabs/pages
+
     return () => {
       window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('storage', handleFocus);
     };
-  }, [router]);
+  }, [loadUser]);
+
 
   if (!user) {
     return null; // Or a loading spinner
@@ -100,6 +128,14 @@ export default function HomePage() {
   const unlockedStreakPetsCount = streakPets.filter(p => user.highestStreak >= p.streak_req).length;
   const unlockedStorePetsCount = user.unlockedPets.length;
   const unlockedPetsCount = unlockedStreakPetsCount + unlockedStorePetsCount;
+  
+  const calendarCompletedDays = Object.entries(user.dailyProgress || {}).reduce((acc, [date, progress]) => {
+    if ((progress.challengesCompleted && progress.challengesCompleted.length > 0) || progress.qotdCompleted) {
+        acc.push(new Date(date));
+    }
+    return acc;
+  }, [] as Date[]);
+
 
   return (
     <div className="container mx-auto p-4 max-w-4xl">
@@ -124,8 +160,8 @@ export default function HomePage() {
 
       <section>
         <h2 className="text-xl font-bold font-headline mb-4">Your Stats</h2>
-        <div className="grid grid-cols-2 gap-4">
-            <Card className="col-span-2 md:col-span-1 bg-destructive/10 border-destructive">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Card className="col-span-2 md:col-span-2 bg-destructive/10 border-destructive">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-base font-bold text-destructive">Daily Streak</CardTitle>
                 <Flame className="h-5 w-5 text-destructive" />
@@ -134,7 +170,7 @@ export default function HomePage() {
                 <div className="text-3xl font-bold">{user.streak} days</div>
                 </CardContent>
             </Card>
-            <Card className="col-span-2 md:col-span-1 bg-accent/10 border-accent">
+            <Card className="col-span-2 md:col-span-2 bg-accent/10 border-accent">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-base font-bold text-accent">Total Points</CardTitle>
                 <Gem className="h-5 w-5 text-accent" />
@@ -163,6 +199,56 @@ export default function HomePage() {
             </Card>
         </div>
       </section>
+
+       <section className="mt-8">
+        <h2 className="text-xl font-bold font-headline mb-4">Today's Progress</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card className="md:col-span-2">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <CalendarCheck2 className="h-6 w-6 text-primary" />
+                        <span>Daily Activity Calendar</span>
+                    </CardTitle>
+                    <CardDescription>Days you completed a challenge or the QOTD are marked.</CardDescription>
+                </CardHeader>
+                <CardContent className="flex justify-center">
+                   <Calendar
+                        mode="multiple"
+                        selected={calendarCompletedDays}
+                        className="rounded-md border"
+                    />
+                </CardContent>
+            </Card>
+             <Card>
+                <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">Points Earned Today</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-2xl font-bold flex items-center gap-2"><Gem className="h-5 w-5 text-accent" />{todaysProgress.pointsEarned || 0}</p>
+                </CardContent>
+             </Card>
+             <Card>
+                <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">Pomodoros Today</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-2xl font-bold flex items-center gap-2"><Award className="h-5 w-5 text-muted-foreground" />{todaysProgress.pomodorosCompleted || 0}</p>
+                </CardContent>
+             </Card>
+              <Card className="md:col-span-2">
+                <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">Question of the Day</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    {todaysProgress.qotdCompleted ? (
+                        <p className="text-2xl font-bold flex items-center gap-2 text-green-600"><CheckCircle className="h-6 w-6" />Answered</p>
+                    ) : (
+                        <p className="text-2xl font-bold flex items-center gap-2 text-muted-foreground"><HelpCircle className="h-6 w-6" />Pending</p>
+                    )}
+                </CardContent>
+             </Card>
+        </div>
+       </section>
 
       <section className="mt-8">
         <h2 className="text-xl font-bold font-headline mb-4">Pet Collection ({unlockedPetsCount}/{allPets.length})</h2>

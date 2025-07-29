@@ -13,7 +13,8 @@ interface TimerState {
   time: number;
   isActive: boolean;
   mode: "focus" | "shortBreak" | "longBreak";
-  sessions: number;
+  sessions: number; // total sessions
+  todaysSessions: number;
   focusSessionsCompleted: number;
   endTime: number | null;
   quizStreak: number;
@@ -39,6 +40,7 @@ let stateStore: TimerState = {
     isActive: false,
     mode: 'focus',
     sessions: 0,
+    todaysSessions: 0,
     focusSessionsCompleted: 0,
     endTime: null,
     quizStreak: 0,
@@ -99,11 +101,21 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
        const savedUser = localStorage.getItem("userProfile");
        if(savedUser){
            const user = JSON.parse(savedUser);
-           const updatedSessions = (user.completedSessions || 0) + 1;
-           user.completedSessions = updatedSessions;
+           const todayKey = new Date().toISOString().split('T')[0];
+
+           user.completedSessions = (user.completedSessions || 0) + 1;
+           
+           if (!user.dailyProgress) user.dailyProgress = {};
+           if (!user.dailyProgress[todayKey]) user.dailyProgress[todayKey] = {};
+           user.dailyProgress[todayKey].pomodorosCompleted = (user.dailyProgress[todayKey].pomodorosCompleted || 0) + 1;
+           
            localStorage.setItem("userProfile", JSON.stringify(user));
+            // Manually trigger a storage event to notify other components like the home page
+           window.dispatchEvent(new Event('storage'));
 
            const updatedFocusSessions = (currentState.focusSessionsCompleted || 0) + 1;
+           const newTodaysSessions = (currentState.todaysSessions || 0) + 1;
+
 
            const notificationBody = (updatedFocusSessions % SESSIONS_UNTIL_LONG_BREAK === 0) 
                ? `Time for a long break.` 
@@ -115,7 +127,8 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
                isActive: false,
                timerEnded: true,
                endTime: null,
-               sessions: updatedSessions,
+               sessions: user.completedSessions,
+               todaysSessions: newTodaysSessions,
                focusSessionsCompleted: updatedFocusSessions,
            });
        }
@@ -149,7 +162,9 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
              const savedUser = localStorage.getItem("userProfile");
              if (savedUser) {
                 const user = JSON.parse(savedUser);
+                const todayKey = new Date().toISOString().split('T')[0];
                 parsedState.sessions = user.completedSessions || 0;
+                parsedState.todaysSessions = user.dailyProgress?.[todayKey]?.pomodorosCompleted || 0;
              }
             dispatch(parsedState);
         } catch (error) {
@@ -160,7 +175,11 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
         const savedUser = localStorage.getItem("userProfile");
         if (savedUser) {
             const user = JSON.parse(savedUser);
-            dispatch({ sessions: user.completedSessions || 0 });
+            const todayKey = new Date().toISOString().split('T')[0];
+            dispatch({ 
+                sessions: user.completedSessions || 0,
+                todaysSessions: user.dailyProgress?.[todayKey]?.pomodorosCompleted || 0,
+            });
         }
     }
     requestNotificationPermission();
@@ -184,7 +203,13 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
       const savedUser = localStorage.getItem("userProfile");
       if(savedUser) {
           const user = JSON.parse(savedUser);
+          const todayKey = new Date().toISOString().split('T')[0];
           user.points = (user.points || 0) + pointsGained;
+
+          if (!user.dailyProgress) user.dailyProgress = {};
+          if (!user.dailyProgress[todayKey]) user.dailyProgress[todayKey] = {};
+          user.dailyProgress[todayKey].pointsEarned = (user.dailyProgress[todayKey].pointsEarned || 0) + pointsGained;
+
           localStorage.setItem("userProfile", JSON.stringify(user));
           // Manually trigger a storage event to notify other components
           window.dispatchEvent(new Event('storage'));

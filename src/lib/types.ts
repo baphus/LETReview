@@ -16,3 +16,10 @@ export interface Pet {
   image: string;
   hint: string;
 }
+
+export interface DailyProgress {
+    qotdCompleted?: boolean;
+    challengesCompleted?: string[];
+    pomodorosCompleted?: number;
+    pointsEarned?: number;
+}

@@ -45,6 +45,8 @@ export default function LoginPage() {
       activeTheme: 'default',
       unlockedPets: [],
       completedChallenges: [],
+      dailyProgress: {},
+      lastLogin: new Date().toISOString().split('T')[0],
     };
 
     localStorage.setItem("userProfile", JSON.stringify(userProfile));
