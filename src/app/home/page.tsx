@@ -19,7 +19,7 @@ import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/comp
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
-import { addDays, format, isBefore, startOfYesterday, startOfDay } from "date-fns";
+import { addDays, format, isBefore, startOfYesterday, startOfDay, isSameDay } from "date-fns";
 import { DayDetailDialog } from "@/components/DayDetailDialog";
 
 
@@ -151,6 +151,18 @@ export default function HomePage() {
 
   const streakDays = Array.from({ length: user.streak }, (_, i) => addDays(new Date(), -i));
 
+  const streakAndCompletedDays = streakDays.filter(streakDay => 
+    calendarCompletedDays.some(completedDay => isSameDay(streakDay, completedDay))
+  );
+  
+  // Filter out the days that are in both from the individual arrays
+  const pureStreakDays = streakDays.filter(streakDay => 
+    !streakAndCompletedDays.some(bothDay => isSameDay(streakDay, bothDay))
+  );
+  const pureCompletedDays = calendarCompletedDays.filter(completedDay => 
+    !streakAndCompletedDays.some(bothDay => isSameDay(completedDay, bothDay))
+  );
+
   return (
     <div className="container mx-auto p-4 max-w-4xl">
       <DayDetailDialog
@@ -228,20 +240,22 @@ export default function HomePage() {
                         <CalendarCheck2 className="h-6 w-6 text-primary" />
                         <span>Daily Activity Calendar</span>
                     </CardTitle>
-                    <CardDescription>Days you completed a challenge or the QOTD are marked. Keep your streak going to unlock new pets! Click a day to see details.</CardDescription>
+                    <CardDescription>Days you completed a challenge or the QOTD are marked in green. Your current streak is marked in red. Keep your streak going to unlock new pets! Click a day to see details.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex justify-center">
                    <Calendar
                         mode="multiple"
-                        selected={calendarCompletedDays}
+                        selected={pureCompletedDays}
                         onDayClick={handleDayClick}
                         disabled={{ after: new Date() }}
                         className="rounded-md border"
                         modifiers={{
-                           streak: streakDays
+                           streak: pureStreakDays,
+                           'streak-and-completed': streakAndCompletedDays,
                         }}
                         modifiersClassNames={{
-                            streak: 'day-streak'
+                            streak: 'day-streak',
+                            'streak-and-completed': 'day-streak-and-completed'
                         }}
                     />
                 </CardContent>
