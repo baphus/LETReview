@@ -1,4 +1,4 @@
-# **App Name**: LETReviewBuddy
+# **App Name**: LETReview
 
 ## Core Features:
 
