@@ -20,7 +20,7 @@ const features = [
         "Learn at your own pace."
     ],
     link: "/review",
-    image: "https://placehold.co/350x500.png",
+    image: "/images/landing/feature-reviewer.png",
     image_hint: "studying app",
   },
   {
@@ -33,7 +33,7 @@ const features = [
         "Climb the leaderboard."
     ],
     link: "/daily",
-    image: "https://placehold.co/350x500.png",
+    image: "/images/landing/feature-challenges.png",
     image_hint: "calendar daily challenges",
   },
   {
@@ -46,7 +46,7 @@ const features = [
         "Earn bonus points with mini-quizzes."
     ],
     link: "/timer",
-    image: "https://placehold.co/350x500.png",
+    image: "/images/landing/feature-timer.png",
     image_hint: "timer app",
   },
   {
@@ -59,7 +59,7 @@ const features = [
         "Make studying fun and engaging."
     ],
     link: "/home",
-    image: "https://placehold.co/350x500.png",
+    image: "/images/landing/feature-progress.png",
     image_hint: "gamified progress pets",
   }
 ];
@@ -97,7 +97,7 @@ export default function LandingPage() {
             <div className="container mx-auto px-4 md:px-6">
                 <div className="relative mx-auto max-w-5xl">
                     <Image
-                        src="https://placehold.co/1200x750.png"
+                        src="/images/landing/app-preview.png"
                         alt="LETReview App Screenshot"
                         width={1200}
                         height={750}
