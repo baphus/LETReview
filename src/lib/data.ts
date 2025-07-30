@@ -5172,7 +5172,7 @@ export const achievementPets: PetProfile[] = [
         unlock_criteria: "Complete 10 Pomodoro sessions",
         unlock_value: 10,
         streak_req: 0,
-        image: "/public/pets/owlbert.png",
+        image: "/pets/owlbert.png",
         hint: "wise choice",
     },
     {
@@ -5180,7 +5180,7 @@ export const achievementPets: PetProfile[] = [
         unlock_criteria: "Complete 50 Pomodoro sessions",
         unlock_value: 50,
         streak_req: 0,
-        image: "/public/pets/einstein.png",
+        image: "/pets/einstein.png",
         hint: "E=mc^2",
     },
     {
