@@ -94,9 +94,9 @@ export default function LandingPage() {
                  <Image 
                     src="/images/landing/app-preview.png"
                     alt="App Preview"
-                    width={400}
-                    height={800}
-                    className="rounded-lg border-4 border-foreground/5 shadow-2xl"
+                    width={450}
+                    height={900}
+                    className="rounded-lg border-4 border-foreground/5 shadow-2xl w-full max-w-[450px] h-auto"
                     data-ai-hint="app screenshot"
                  />
               </div>
