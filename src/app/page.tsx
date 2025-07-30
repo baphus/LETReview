@@ -92,22 +92,6 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* App Preview Section */}
-        <section id="preview" className="w-full py-12">
-            <div className="container mx-auto px-4 md:px-6">
-                <div className="relative mx-auto max-w-5xl">
-                    <Image
-                        src="/images/landing/app-preview.png"
-                        alt="LETReview App Screenshot"
-                        width={1200}
-                        height={750}
-                        className="rounded-lg border shadow-2xl"
-                        data-ai-hint="app dashboard"
-                    />
-                </div>
-            </div>
-        </section>
-
         {/* Features Section */}
         <section id="features" className="w-full py-20 md:py-24 bg-slate-900">
           <div className="container mx-auto px-4 md:px-6 space-y-20">
