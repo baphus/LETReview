@@ -71,22 +71,34 @@ export default function LandingPage() {
 
       <main className="flex-1">
         {/* Hero Section */}
-        <section id="home" className="w-full py-20 md:py-32 bg-primary/5 text-center">
+        <section id="home" className="w-full py-20 md:py-32 bg-primary/5">
           <div className="container mx-auto px-4 md:px-6">
-            <div className="grid gap-6 items-center">
-              <div className="flex flex-col justify-center space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
+              <div className="flex flex-col justify-center space-y-4 text-center md:text-left">
                 <h1 className="text-4xl md:text-6xl font-bold tracking-tighter font-headline">
                   Ace the LET, One Question at a Time.
                 </h1>
-                <p className="max-w-[600px] mx-auto text-muted-foreground md:text-xl">
+                <p className="max-w-[600px] mx-auto md:mx-0 text-muted-foreground md:text-xl">
                   Your personalized and gamified review partner for the Licensure Examination for Teachers. Study smarter, not harder.
                 </p>
-                <Link href="/login" className="mx-auto">
-                  <Button size="lg" className="mt-4">
-                    Get Started for Free
-                    <ChevronRight className="w-5 h-5 ml-2" />
-                  </Button>
-                </Link>
+                <div className="mx-auto md:mx-0">
+                  <Link href="/login">
+                    <Button size="lg" className="mt-4">
+                      Get Started for Free
+                      <ChevronRight className="w-5 h-5 ml-2" />
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+               <div className="flex justify-center">
+                 <Image 
+                    src="/images/landing/app-preview.png"
+                    alt="App Preview"
+                    width={350}
+                    height={700}
+                    className="rounded-lg border-4 border-foreground/5 shadow-2xl"
+                    data-ai-hint="app screenshot"
+                 />
               </div>
             </div>
           </div>
