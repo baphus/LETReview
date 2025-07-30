@@ -1,26 +1,42 @@
-# LETReviewBuddy: Your Gamified LET Review Partner
+# LETReview: Your Gamified LET Review Partner
 
 ![LETReview App Screenshot](/public/images/landing/app-preview.png)
 
-Ace the Licensure Examination for Teachers (LET) with a review experience that's effective, engaging, and fun! LETReviewBuddy is a mobile-first web application designed to help aspiring educators in the Philippines prepare for their board exams through a personalized and gamified approach.
+Ace the Licensure Examination for Teachers (LET) with a review experience that's effective, engaging, and fun! LETReview is a mobile-first web application designed to help aspiring educators in the Philippines prepare for their board exams through a personalized and gamified approach.
 
 ## ✨ Key Features
 
-- **📚 Comprehensive Question Reviewer**: Dive into thousands of questions covering both General and Professional Education. Choose between two modes:
-    - **Study Mode**: View questions with answers and explanations to build a strong foundation.
-    - **Flashcard Mode**: Test your recall by flipping cards to reveal the answers.
-- **🏆 Daily Challenges & Gamification**: Stay motivated and consistent with daily challenges at varying difficulty levels.
-    - **Earn Points**: Get points for completing challenges and answering the "Question of the Day".
-    - **Build Streaks**: Maintain a daily study streak to unlock rewards.
-    - **Collect Pets**: Unlock cute and rare companion pets by maintaining streaks or purchasing them in the store.
-    - **Customize Themes**: Use your points to unlock new color themes and personalize your app experience.
-- **⏱️ Productivity-Boosting Pomodoro Timer**:
-    - Master your study schedule with a built-in Pomodoro timer to manage focus and break periods.
-    - Engage with a mini-quiz during focus sessions to earn bonus points and boost your highest streak.
-- **📊 Personalized Profile & Progress Tracking**:
-    - Monitor your performance with detailed statistics on your points, streaks, and completed sessions.
-    - Set your exam date and see a live countdown to stay focused on your goal.
-    - Customize your profile with a personal avatar and pet nicknames.
+Our goal is to make studying for the LET an enjoyable and motivating experience. Here are some of the core features we've built to help you succeed:
+
+### 📚 Comprehensive Question Reviewer
+Tackle thousands of questions covering both General and Professional Education. Choose the mode that fits your study style.
+- **Study Mode**: Master concepts by reviewing questions with answers and detailed explanations.
+- **Flashcard Mode**: Test your recall and solidify your knowledge with a classic flashcard experience.
+
+![Reviewer Feature](/public/images/landing/feature-reviewer.png)
+
+### 🏆 Daily Challenges & Gamification
+Stay consistent and motivated with our gamified system.
+- **Daily Challenges**: Keep your skills sharp with new questions and challenges every day.
+- **Earn Points & Build Streaks**: Get rewarded for your hard work and maintain a study streak to unlock rewards.
+- **Unlock Pets & Themes**: Use your points to collect cute companion pets and personalize your app with custom themes.
+
+![Challenges Feature](/public/images/landing/feature-challenges.png)
+
+### ⏱️ Productivity-Boosting Pomodoro Timer
+Master your study schedule and enhance your focus.
+- **Built-in Timer**: Use the Pomodoro technique to manage study and break periods effectively.
+- **Earn Bonus Points**: Take on mini-quizzes during focus sessions to earn extra points and boost your highest streak.
+
+![Timer Feature](/public/images/landing/feature-timer.png)
+
+### 📊 Personalized Progress Tracking
+Monitor your performance and stay focused on your goals.
+- **Detailed Stats**: Track your points, streaks, and completed study sessions.
+- **Exam Countdown**: Set your exam date to see a live countdown and keep your goal in sight.
+- **Customize Your Profile**: Personalize your avatar and give your unlocked pets unique nicknames.
+
+![Progress Feature](/public/gimages/landing/feature-progress.png)
 
 ## 💻 Tech Stack
 
@@ -51,7 +67,7 @@ Make sure you have Node.js and npm (or yarn) installed on your machine.
    ```
 2. Navigate to the project directory:
    ```sh
-   cd letreviewbuddy
+   cd letreview
    ```
 3. Install NPM packages:
    ```sh
@@ -67,9 +83,13 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result. You can start editing the page by modifying `src/app/page.tsx`. The page auto-updates as you edit the file.
 
-## 🤝 Contributing
+## 🤝 Contributing & Feedback
 
-Contributions, issues, and feature requests are welcome! Feel free to check the [issues page](https://github.com/your-username/letreviewbuddy/issues).
+Contributions, issues, and feature requests are welcome! If you have suggestions for improvement or want to report a bug, please feel free to check the [issues page](https://github.com/your-username/letreview/issues) or reach out. Your feedback is highly appreciated.
+
+## ❤️ Dedication
+
+This app is lovingly dedicated to my girlfriend, Yve, an aspiring teacher who inspired this project.
 
 ## 📄 License
 
