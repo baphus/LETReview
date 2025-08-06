@@ -186,9 +186,12 @@ export default function HomePage() {
     if (!user?.dailyProgress) return [];
     return Object.entries(user.dailyProgress).reduce((acc, [dateStr, progress]) => {
       if (progress.qotdCompleted) {
-        // When parsing yyyy-mm-dd, it's treated as UTC. We need to account for timezone offset.
-        const [year, month, day] = dateStr.split('-').map(Number);
-        const date = new Date(year, month - 1, day);
+        // When parsing yyyy-mm-dd, it's treated as UTC. This can cause off-by-one day errors.
+        // new Date(string) can be unreliable. Explicitly parse and construct in local time.
+        const [year, month, day] = dateStr.split('-').map(s => parseInt(s, 10));
+        const date = new Date();
+        date.setFullYear(year, month - 1, day);
+        date.setHours(0, 0, 0, 0);
         acc.push(date);
       }
       return acc;
@@ -275,7 +278,7 @@ export default function HomePage() {
     }
 
     return (
-       <div key={pet.name} className="flex flex-col items-center text-center">
+       <div key={pet.name} className="flex flex-col items-center text-center animate-fade-in-up">
         <div className="relative">
           <Image
             src={pet.image}
@@ -369,7 +372,7 @@ export default function HomePage() {
        <section className="mb-6">
         <h2 className="text-xl font-bold font-headline mb-4">Today's Progress</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-             <Card>
+             <Card className="animate-fade-in-up">
                 <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium">Points Earned Today</CardTitle>
                 </CardHeader>
@@ -377,7 +380,7 @@ export default function HomePage() {
                     <p className="text-2xl font-bold flex items-center gap-2"><Gem className="h-5 w-5 text-accent" />{todaysProgress.pointsEarned || 0}</p>
                 </CardContent>
              </Card>
-             <Card>
+             <Card className="animate-fade-in-up" style={{ animationDelay: '200ms' }}>
                 <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium">Pomodoros Today</CardTitle>
                 </CardHeader>
@@ -385,7 +388,7 @@ export default function HomePage() {
                     <p className="text-2xl font-bold flex items-center gap-2"><Award className="h-5 w-5 text-muted-foreground" />{todaysProgress.pomodorosCompleted || 0}</p>
                 </CardContent>
              </Card>
-             <Card>
+             <Card className="animate-fade-in-up" style={{ animationDelay: '400ms' }}>
                 <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium">QOTD</CardTitle>
                 </CardHeader>
@@ -476,13 +479,13 @@ export default function HomePage() {
         <h2 className="text-xl font-bold font-headline mb-4">Activity Calendar</h2>
         <Card>
             <CardHeader>
-                <CardDescription>Your current streak is marked with a flame (🔥) and completed Questions of the Day are marked with a check (✅). Click a past day to see details.</CardDescription>
+                <CardDescription>Your current streak is marked in blue, and completed Questions of the Day are marked in green. Click a past day to see details.</CardDescription>
             </CardHeader>
             <CardContent className="flex justify-center">
                <Calendar
                     mode="multiple"
                     onDayClick={handleDayClick}
-                    disabled={{ after: new Date() }}
+                    disabled={{ before: new Date(new Date().setDate(new Date().getDate() - 365)), after: new Date() }}
                     className="rounded-md border"
                     modifiers={{
                        streak: streakDays,
@@ -490,7 +493,7 @@ export default function HomePage() {
                     }}
                     modifiersClassNames={{
                         streak: 'day-streak',
-                        qotd_completed: 'day-qotd-completed',
+                        qotd_completed: 'day-qotd_completed',
                     }}
                 />
             </CardContent>

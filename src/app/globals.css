@@ -142,31 +142,32 @@
   }
 }
 
+/* Calendar Modifier Styles */
 .day-selected {
     background-color: hsl(var(--accent)) !important;
     color: hsl(var(--accent-foreground)) !important;
 }
 
-.day-streak::after,
-.day-qotd_completed::before {
-  position: absolute;
-  font-size: 0.6rem;
-  line-height: 1;
+.day-streak {
+    background-color: hsl(var(--primary) / 0.1) !important;
+    color: hsl(var(--primary)) !important;
+    font-weight: bold;
 }
 
-.day-streak::after {
-  content: '🔥';
-  top: 2px;
-  right: 2px;
+.day-qotd_completed {
+    background-color: hsl(140 80% 40% / 0.1) !important;
+    color: hsl(140 80% 40%) !important;
 }
 
-.day-qotd_completed::before {
-  content: '✅';
-  top: 2px;
-  right: 2px;
+/* When a day has both streak and qotd, combine colors */
+.day-streak.day-qotd_completed {
+    background: linear-gradient(
+        45deg, 
+        hsl(var(--primary) / 0.2), 
+        hsl(140 80% 40% / 0.2)
+    ) !important;
 }
 
-.day-streak.day-qotd_completed::before {
-  top: auto;
-  bottom: 2px;
+.day-today {
+    border: 1px solid hsl(var(--primary));
 }
