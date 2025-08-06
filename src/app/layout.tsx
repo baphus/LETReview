@@ -18,7 +18,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import SplashScreen from "@/components/SplashScreen";
+import { SplashScreenHandler } from "@/components/SplashScreen";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const spaceGrotesk = Space_Grotesk({
@@ -30,36 +30,26 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-  const [isShowingSplash, setIsShowingSplash] = useState(true);
 
   useEffect(() => {
     // Force dark mode
     document.documentElement.classList.add('dark');
-
-     const splashShown = sessionStorage.getItem("splashShown");
-    if (splashShown) {
-        setIsShowingSplash(false);
-    } else {
-        setTimeout(() => {
-            setIsShowingSplash(false);
-            sessionStorage.setItem("splashShown", "true");
-        }, 3000); 
-    }
-  }, [pathname]);
+  }, []);
 
    const applyActiveTheme = () => {
         const savedUser = localStorage.getItem("userProfile");
         if (savedUser) {
             const user = JSON.parse(savedUser);
             if (user.activeTheme && user.activeTheme !== 'default') {
+                document.documentElement.classList.remove('mint', 'sunset', 'rose');
                 document.documentElement.classList.add(user.activeTheme);
+            } else {
+                 document.documentElement.classList.remove('mint', 'sunset', 'rose');
             }
         }
     };
 
   useEffect(() => {
-    if (isShowingSplash) return;
-
     applyActiveTheme();
     const userProfile = localStorage.getItem("userProfile");
     const isAuthPage = pathname === "/login";
@@ -71,12 +61,8 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
     } else {
       setIsCheckingAuth(false);
     }
-  }, [pathname, router, isShowingSplash]);
+  }, [pathname, router]);
 
-  if (isShowingSplash) {
-    return <SplashScreen />;
-  }
-  
   const isAppPage = pathname !== '/login';
 
   if (isCheckingAuth && isAppPage) {
@@ -154,6 +140,7 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${spaceGrotesk.variable} font-body antialiased flex flex-col h-dvh bg-background`}
       >
+        <SplashScreenHandler />
         <RootLayoutContent>{children}</RootLayoutContent>
       </body>
     </html>

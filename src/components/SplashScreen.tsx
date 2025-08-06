@@ -5,17 +5,7 @@ import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import Logo from './Logo';
 
-export default function SplashScreen() {
-    const [visible, setVisible] = useState(true);
-
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setVisible(false);
-        }, 2500); // Start fade out after 2.5s
-
-        return () => clearTimeout(timer);
-    }, []);
-
+export function SplashScreen({ visible }: { visible: boolean }) {
     return (
         <div className={cn(
             "fixed inset-0 z-50 flex flex-col items-center justify-center bg-background transition-opacity duration-500",
@@ -32,4 +22,34 @@ export default function SplashScreen() {
             </p>
         </div>
     );
+}
+
+export function SplashScreenHandler() {
+    const [isShowingSplash, setIsShowingSplash] = useState(true);
+    const [isClient, setIsClient] = useState(false);
+  
+    useEffect(() => {
+      setIsClient(true);
+    }, []);
+  
+    useEffect(() => {
+      if (!isClient) return;
+  
+      const splashShown = sessionStorage.getItem("splashShown");
+      if (splashShown) {
+          setIsShowingSplash(false);
+      } else {
+          const timer = setTimeout(() => {
+              setIsShowingSplash(false);
+              sessionStorage.setItem("splashShown", "true");
+          }, 3000);
+          return () => clearTimeout(timer);
+      }
+    }, [isClient]);
+  
+    if (!isClient) {
+      return null; // Don't render anything on the server to prevent mismatch
+    }
+  
+    return <SplashScreen visible={isShowingSplash} />;
 }
