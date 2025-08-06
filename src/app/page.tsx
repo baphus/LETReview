@@ -4,13 +4,24 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
+import { auth } from "@/lib/firebase";
+import { onAuthStateChanged } from "firebase/auth";
 
-// This page is now a placeholder that redirects to the login page.
 export default function RootPage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace("/login");
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        localStorage.setItem('currentUser', user.uid);
+        router.replace("/home");
+      } else {
+        localStorage.removeItem('currentUser');
+        router.replace("/login");
+      }
+    });
+
+    return () => unsubscribe();
   }, [router]);
 
   // Return a loading state while redirecting

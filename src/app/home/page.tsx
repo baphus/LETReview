@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -34,6 +35,7 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface UserProfile {
+    uid: string;
     name: string;
     avatarUrl: string;
     examDate?: string;
@@ -69,6 +71,10 @@ export default function HomePage() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   
   const todayKey = useMemo(() => getTodayKey(), []);
+
+  const saveUser = useCallback((userToSave: UserProfile) => {
+    localStorage.setItem(`userProfile_${userToSave.uid}`, JSON.stringify(userToSave));
+  }, []);
   
   const checkAchievements = useCallback((user: UserProfile): UserProfile => {
     let updatedUser = { ...user };
@@ -108,15 +114,17 @@ export default function HomePage() {
     });
 
     if (statsUpdated) {
-      localStorage.setItem("userProfile", JSON.stringify(updatedUser));
+      saveUser(updatedUser);
     }
     return updatedUser;
-  }, [toast]);
+  }, [toast, saveUser]);
 
 
   const loadUser = useCallback(() => {
-    const savedUser = localStorage.getItem("userProfile");
-    if (savedUser) {
+    const currentUid = localStorage.getItem('currentUser');
+    if (currentUid) {
+      const savedUser = localStorage.getItem(`userProfile_${currentUid}`);
+      if (savedUser) {
         let parsedUser: UserProfile = JSON.parse(savedUser);
 
         if (!parsedUser.petNames) parsedUser.petNames = {};
@@ -144,12 +152,15 @@ export default function HomePage() {
         parsedUser.lastLogin = todayKey;
 
         const userWithAchievements = checkAchievements(parsedUser);
-        localStorage.setItem("userProfile", JSON.stringify(userWithAchievements));
+        saveUser(userWithAchievements);
         setUser(userWithAchievements);
+      } else {
+        router.push('/login');
+      }
     } else {
         router.push('/login');
     }
-  }, [router, todayKey, toast, checkAchievements]);
+  }, [router, todayKey, toast, checkAchievements, saveUser]);
 
 
   useEffect(() => {
@@ -220,7 +231,7 @@ export default function HomePage() {
     if (user && newPetName.trim()) {
         const updatedPetNames = { ...user.petNames, [originalName]: newPetName.trim() };
         const updatedUser = { ...user, petNames: updatedPetNames };
-        localStorage.setItem("userProfile", JSON.stringify(updatedUser));
+        saveUser(updatedUser);
         setUser(updatedUser);
         setEditingPet(null);
         toast({

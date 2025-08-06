@@ -30,6 +30,7 @@ const navItems = [
 interface UserProfile {
     name: string;
     avatarUrl: string;
+    uid: string;
 }
 
 export function AppSidebar() {
@@ -41,12 +42,15 @@ export function AppSidebar() {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-        const savedUser = localStorage.getItem("userProfile");
-        if (savedUser) {
-            setUser(JSON.parse(savedUser));
+        const currentUid = localStorage.getItem('currentUser');
+        if (currentUid) {
+            const savedUser = localStorage.getItem(`userProfile_${currentUid}`);
+            if (savedUser) {
+                setUser(JSON.parse(savedUser));
+            }
         }
     }
-  }, [pathname]);
+  }, [pathname]); // Rerun on navigation
 
   const TimerIndicator = () => {
     if (!isActive) return null;
@@ -143,5 +147,3 @@ export function AppSidebar() {
     </>
   );
 }
-
-    

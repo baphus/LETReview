@@ -99,9 +99,10 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   const handleTimerEnd = useCallback(() => {
     const currentState = JSON.parse(localStorage.getItem("pomodoroState") || "{}");
     const currentMode = currentState.mode || 'focus';
+    const currentUid = localStorage.getItem('currentUser');
 
-    if (currentMode === "focus") {
-       const savedUser = localStorage.getItem("userProfile");
+    if (currentMode === "focus" && currentUid) {
+       const savedUser = localStorage.getItem(`userProfile_${currentUid}`);
        if(savedUser){
            let user = JSON.parse(savedUser);
            const todayKey = getTodayKey();
@@ -117,7 +118,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
                user.highestQuizStreak = stateStore.highestQuizStreak;
            }
 
-           localStorage.setItem("userProfile", JSON.stringify(user));
+           localStorage.setItem(`userProfile_${currentUid}`, JSON.stringify(user));
             // Manually trigger a storage event to notify other components like the home page
            window.dispatchEvent(new Event('storage'));
 
@@ -155,6 +156,8 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   // Load state from localStorage on initial render
   useEffect(() => {
     const savedState = localStorage.getItem("pomodoroState");
+    const currentUid = localStorage.getItem('currentUser');
+
     if (savedState) {
         try {
             const parsedState: TimerState = JSON.parse(savedState);
@@ -167,21 +170,23 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
                     return;
                 }
             }
-             const savedUser = localStorage.getItem("userProfile");
-             if (savedUser) {
-                const user = JSON.parse(savedUser);
-                const todayKey = getTodayKey();
-                parsedState.sessions = user.completedSessions || 0;
-                parsedState.todaysSessions = user.dailyProgress?.[todayKey]?.pomodorosCompleted || 0;
-                parsedState.highestQuizStreak = user.highestQuizStreak || 0;
-             }
+            if (currentUid) {
+                 const savedUser = localStorage.getItem(`userProfile_${currentUid}`);
+                 if (savedUser) {
+                    const user = JSON.parse(savedUser);
+                    const todayKey = getTodayKey();
+                    parsedState.sessions = user.completedSessions || 0;
+                    parsedState.todaysSessions = user.dailyProgress?.[todayKey]?.pomodorosCompleted || 0;
+                    parsedState.highestQuizStreak = user.highestQuizStreak || 0;
+                 }
+            }
             dispatch(parsedState);
         } catch (error) {
             console.error("Failed to parse pomodoro state from localStorage", error);
             localStorage.removeItem("pomodoroState");
         }
-    } else {
-        const savedUser = localStorage.getItem("userProfile");
+    } else if (currentUid) {
+        const savedUser = localStorage.getItem(`userProfile_${currentUid}`);
         if (savedUser) {
             const user = JSON.parse(savedUser);
             const todayKey = getTodayKey();
@@ -209,20 +214,23 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   const handleCorrectQuizAnswer = useCallback((pointsGained: number) => {
       const newStreak = stateStore.quizStreak + 1;
       const newHighestStreak = Math.max(stateStore.highestQuizStreak, newStreak);
+      const currentUid = localStorage.getItem('currentUser');
       
-      const savedUser = localStorage.getItem("userProfile");
-      if(savedUser) {
-          const user = JSON.parse(savedUser);
-          const todayKey = getTodayKey();
-          user.points = (user.points || 0) + pointsGained;
+      if(currentUid) {
+          const savedUser = localStorage.getItem(`userProfile_${currentUid}`);
+          if(savedUser) {
+            const user = JSON.parse(savedUser);
+            const todayKey = getTodayKey();
+            user.points = (user.points || 0) + pointsGained;
 
-          if (!user.dailyProgress) user.dailyProgress = {};
-          if (!user.dailyProgress[todayKey]) user.dailyProgress[todayKey] = { pointsEarned: 0, pomodorosCompleted: 0, challengesCompleted: [], qotdCompleted: false };
-          user.dailyProgress[todayKey].pointsEarned = (user.dailyProgress[todayKey].pointsEarned || 0) + pointsGained;
+            if (!user.dailyProgress) user.dailyProgress = {};
+            if (!user.dailyProgress[todayKey]) user.dailyProgress[todayKey] = { pointsEarned: 0, pomodorosCompleted: 0, challengesCompleted: [], qotdCompleted: false };
+            user.dailyProgress[todayKey].pointsEarned = (user.dailyProgress[todayKey].pointsEarned || 0) + pointsGained;
 
-          localStorage.setItem("userProfile", JSON.stringify(user));
-          // Manually trigger a storage event to notify other components
-          window.dispatchEvent(new Event('storage'));
+            localStorage.setItem(`userProfile_${currentUid}`, JSON.stringify(user));
+            // Manually trigger a storage event to notify other components
+            window.dispatchEvent(new Event('storage'));
+          }
       }
       
       dispatch({

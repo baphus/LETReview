@@ -28,6 +28,7 @@ import { startOfDay, isBefore, startOfYesterday, format } from 'date-fns';
 
 
 interface UserStats {
+  uid: string;
   streak: number;
   highestStreak: number;
   points: number;
@@ -40,7 +41,7 @@ interface UserStats {
 // Function to get local date string in YYYY-MM-DD format
 const getTodayKey = () => format(new Date(), 'yyyy-MM-dd');
 
-const QuestionOfTheDay = ({ onCorrectAnswer }: { onCorrectAnswer: () => void }) => {
+const QuestionOfTheDay = ({ onCorrectAnswer, userUid }: { onCorrectAnswer: () => void, userUid: string | null }) => {
     const { toast } = useToast();
     const [question, setQuestion] = useState<QuizQuestion | null>(null);
     const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
@@ -48,9 +49,10 @@ const QuestionOfTheDay = ({ onCorrectAnswer }: { onCorrectAnswer: () => void }) 
     const [isCorrect, setIsCorrect] = useState(false);
     
     useEffect(() => {
+        if (!userUid) return;
         const qotd = getQuestionOfTheDay();
         setQuestion(qotd);
-        const savedUser = localStorage.getItem("userProfile");
+        const savedUser = localStorage.getItem(`userProfile_${userUid}`);
         if(savedUser){
             const user = JSON.parse(savedUser);
             const todayKey = getTodayKey();
@@ -69,17 +71,17 @@ const QuestionOfTheDay = ({ onCorrectAnswer }: { onCorrectAnswer: () => void }) 
                 }
             }
         }
-    }, []);
+    }, [userUid]);
 
     const handleAnswer = (answer: string) => {
-        if (isAnswered) return;
+        if (isAnswered || !userUid) return;
 
         const correct = answer === question?.answer;
         setSelectedAnswer(answer);
         setIsCorrect(correct);
         setIsAnswered(true);
 
-        const savedUser = localStorage.getItem("userProfile");
+        const savedUser = localStorage.getItem(`userProfile_${userUid}`);
         if (savedUser) {
             let user = JSON.parse(savedUser);
             const todayKey = getTodayKey();
@@ -96,7 +98,7 @@ const QuestionOfTheDay = ({ onCorrectAnswer }: { onCorrectAnswer: () => void }) 
             } else {
                  toast({ variant: "destructive", title: "Incorrect", description: "Better luck tomorrow!" });
             }
-            localStorage.setItem("userProfile", JSON.stringify(user));
+            localStorage.setItem(`userProfile_${userUid}`, JSON.stringify(user));
         }
     };
 
@@ -159,54 +161,53 @@ const QuestionOfTheDay = ({ onCorrectAnswer }: { onCorrectAnswer: () => void }) 
 export default function DailyPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [userStats, setUserStats] = useState<UserStats>({
-    streak: 0,
-    highestStreak: 0,
-    points: 0,
-    petsUnlocked: 0,
-    completedChallenges: [],
-    dailyProgress: {},
-  });
+  const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [challengeCompletedToday, setChallengeCompletedToday] = useState(false);
   const [streakBroken, setStreakBroken] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<"custom">("custom");
   const todayKey = getTodayKey();
 
   const loadUserStats = useCallback(() => {
-    const savedUser = localStorage.getItem("userProfile");
-    if (savedUser) {
-      const parsedUser = JSON.parse(savedUser);
+    const currentUid = localStorage.getItem('currentUser');
+    if (currentUid) {
+      const savedUser = localStorage.getItem(`userProfile_${currentUid}`);
+      if (savedUser) {
+        const parsedUser = JSON.parse(savedUser);
 
-      const isCompletedToday = (parsedUser.dailyProgress?.[todayKey]?.challengesCompleted?.length || 0) > 0;
-      setChallengeCompletedToday(isCompletedToday);
-      
-      const lastChallengeDateString = parsedUser.lastChallengeDate;
-      if (lastChallengeDateString) {
-          const lastChallengeDate = startOfDay(new Date(lastChallengeDateString));
-          const yesterday = startOfYesterday();
+        const isCompletedToday = (parsedUser.dailyProgress?.[todayKey]?.challengesCompleted?.length || 0) > 0;
+        setChallengeCompletedToday(isCompletedToday);
+        
+        const lastChallengeDateString = parsedUser.lastChallengeDate;
+        if (lastChallengeDateString) {
+            const lastChallengeDate = startOfDay(new Date(lastChallengeDateString));
+            const yesterday = startOfYesterday();
 
-          if (parsedUser.streak > 0 && isBefore(lastChallengeDate, yesterday)) {
-            setStreakBroken(true);
-            parsedUser.streak = 0;
-            localStorage.setItem("userProfile", JSON.stringify(parsedUser));
-          } else {
-            setStreakBroken(false);
-          }
+            if (parsedUser.streak > 0 && isBefore(lastChallengeDate, yesterday)) {
+              setStreakBroken(true);
+              parsedUser.streak = 0;
+              localStorage.setItem(`userProfile_${currentUid}`, JSON.stringify(parsedUser));
+            } else {
+              setStreakBroken(false);
+            }
+        }
+        
+        const todaysChallenges = parsedUser.dailyProgress?.[todayKey]?.challengesCompleted || [];
+
+        setUserStats({
+          uid: currentUid,
+          streak: parsedUser.streak || 0,
+          highestStreak: parsedUser.highestStreak || 0,
+          points: parsedUser.points || 0,
+          lastChallengeDate: parsedUser.lastChallengeDate,
+          petsUnlocked: parsedUser.petsUnlocked || 0,
+          completedChallenges: todaysChallenges,
+          dailyProgress: parsedUser.dailyProgress || {},
+        });
       }
-      
-      const todaysChallenges = parsedUser.dailyProgress?.[todayKey]?.challengesCompleted || [];
-
-      setUserStats({
-        streak: parsedUser.streak || 0,
-        highestStreak: parsedUser.highestStreak || 0,
-        points: parsedUser.points || 0,
-        lastChallengeDate: parsedUser.lastChallengeDate,
-        petsUnlocked: parsedUser.petsUnlocked || 0,
-        completedChallenges: todaysChallenges,
-        dailyProgress: parsedUser.dailyProgress || {},
-      });
+    } else {
+        router.push('/login');
     }
-  }, [todayKey]);
+  }, [todayKey, router]);
 
   useEffect(() => {
     loadUserStats();
@@ -226,31 +227,33 @@ export default function DailyPage() {
     router.push(`/review?challenge=true&difficulty=${difficulty}&count=${count}&category=${selectedCategory}`);
   };
   
-  const restoreStreakCost = Math.min(250, (userStats.highestStreak || 0) * 10);
+  const restoreStreakCost = Math.min(250, (userStats?.highestStreak || 0) * 10);
 
   const handleRestoreStreak = () => {
-     if (userStats.points >= restoreStreakCost) {
-      const savedUser = localStorage.getItem("userProfile");
+     if (!userStats || userStats.points < restoreStreakCost) {
+        toast({ variant: "destructive", title: "Not enough points!", description: `You need ${restoreStreakCost} points to restore your streak.`});
+        return;
+     }
+
+      const savedUser = localStorage.getItem(`userProfile_${userStats.uid}`);
       if (savedUser) {
         const user = JSON.parse(savedUser);
         user.points -= restoreStreakCost;
         user.streak = user.highestStreak;
-        localStorage.setItem("userProfile", JSON.stringify(user));
+        localStorage.setItem(`userProfile_${userStats.uid}`, JSON.stringify(user));
         setStreakBroken(false);
-        setUserStats(prev => ({ ...prev, points: user.points, streak: user.streak }));
+        setUserStats(prev => prev ? ({ ...prev, points: user.points, streak: user.streak }) : null);
         toast({
           title: "Streak Restored!",
           description: `You spent ${restoreStreakCost} points.`,
           className: "bg-primary border-primary text-primary-foreground"
         });
       }
-    } else {
-      toast({ variant: "destructive", title: "Not enough points!", description: `You need ${restoreStreakCost} points to restore your streak.`});
-    }
   };
 
   const handleQotdCorrect = () => {
-    const savedUser = localStorage.getItem("userProfile");
+    if (!userStats) return;
+    const savedUser = localStorage.getItem(`userProfile_${userStats.uid}`);
     if (savedUser) {
         const user = JSON.parse(savedUser);
         user.points = (user.points || 0) + 5;
@@ -260,10 +263,12 @@ export default function DailyPage() {
         if (!user.dailyProgress[todayKey]) user.dailyProgress[todayKey] = { pointsEarned: 0, pomodorosCompleted: 0, challengesCompleted: [], qotdCompleted: false };
         user.dailyProgress[todayKey].pointsEarned = (user.dailyProgress[todayKey].pointsEarned || 0) + 5;
 
-        localStorage.setItem("userProfile", JSON.stringify(user));
-        setUserStats(prev => ({ ...prev, points: user.points }));
+        localStorage.setItem(`userProfile_${userStats.uid}`, JSON.stringify(user));
+        setUserStats(prev => prev ? ({ ...prev, points: user.points }) : null);
     }
   };
+
+  if (!userStats) return null;
 
 
   const challenges = [
@@ -304,7 +309,7 @@ export default function DailyPage() {
         </Card>
       </div>
 
-      <QuestionOfTheDay onCorrectAnswer={handleQotdCorrect} />
+      <QuestionOfTheDay onCorrectAnswer={handleQotdCorrect} userUid={userStats.uid} />
 
       {challengeCompletedToday && (
          <Card className="mb-6 bg-green-500/10 border-green-500/20">
@@ -397,5 +402,3 @@ export default function DailyPage() {
     </div>
   );
 }
-
-    

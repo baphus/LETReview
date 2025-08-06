@@ -12,6 +12,8 @@ import { useToast } from "@/hooks/use-toast";
 import { DatePicker } from "@/components/ui/datepicker";
 import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
+import { auth } from '@/lib/firebase';
+import { GoogleAuthProvider, signInWithPopup, User as FirebaseUser } from "firebase/auth";
 
 // Function to get local date string in YYYY-MM-DD format
 const getTodayKey = () => format(new Date(), 'yyyy-MM-dd');
@@ -24,42 +26,65 @@ export default function LoginPage() {
   const [examDate, setExamDate] = useState<Date>();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleLogin = () => {
-    if (!name.trim()) {
+  const handleGoogleSignIn = async () => {
+    const provider = new GoogleAuthProvider();
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const firebaseUser = result.user;
+      
+      const userProfileKey = `userProfile_${firebaseUser.uid}`;
+      const existingUser = localStorage.getItem(userProfileKey);
+
+      if (existingUser) {
+        // User exists, just log them in
+         const user = JSON.parse(existingUser);
+         user.lastLogin = getTodayKey();
+         localStorage.setItem(userProfileKey, JSON.stringify(user));
+      } else {
+        // New user, create profile
+         const userProfile = {
+            uid: firebaseUser.uid,
+            name: firebaseUser.displayName || name.trim() || 'Anonymous',
+            avatarUrl: firebaseUser.photoURL || avatarUrl,
+            examDate: examDate?.toISOString(),
+            points: 0,
+            streak: 0,
+            highestStreak: 0,
+            highestQuizStreak: 0,
+            completedSessions: 0,
+            petNames: {},
+            passingScore: 75,
+            unlockedThemes: ['default'],
+            activeTheme: 'default',
+            themeMode: 'dark', // Default to dark mode for new users
+            unlockedPets: [],
+            dailyProgress: {},
+            lastLogin: getTodayKey(),
+          };
+        localStorage.setItem(userProfileKey, JSON.stringify(userProfile));
+        localStorage.setItem('currentUser', firebaseUser.uid);
+         // Clear any existing custom questions for a new user
+        localStorage.removeItem(`customQuestions_${firebaseUser.uid}`);
+      }
+
+       localStorage.setItem('currentUser', firebaseUser.uid);
+      router.push("/home");
+      toast({
+          title: "Successfully signed in!",
+          description: "Welcome to MyReviewer!",
+          className: "bg-primary border-primary text-primary-foreground",
+      });
+
+    } catch (error: any) {
+      console.error("Google Sign-In Error: ", error);
       toast({
         variant: "destructive",
-        title: "Name is required",
-        description: "Please enter your name to continue.",
+        title: "Sign-in Failed",
+        description: error.message,
       });
-      return;
     }
-
-    const userProfile = {
-      name: name.trim(),
-      avatarUrl,
-      examDate: examDate?.toISOString(),
-      points: 0,
-      streak: 0,
-      highestStreak: 0,
-      highestQuizStreak: 0,
-      completedSessions: 0,
-      petsUnlocked: 0,
-      petNames: {},
-      passingScore: 75,
-      unlockedThemes: ['default'],
-      activeTheme: 'default',
-      themeMode: 'dark', // Default to dark mode for new users
-      unlockedPets: [],
-      dailyProgress: {},
-      lastLogin: getTodayKey(),
-    };
-
-    localStorage.setItem("userProfile", JSON.stringify(userProfile));
-    // Clear any existing custom questions for a new user
-    localStorage.removeItem("customQuestions");
-    router.push("/home");
   };
-  
+
   const handleAvatarClick = () => {
     fileInputRef.current?.click();
   };
@@ -93,50 +118,11 @@ export default function LoginPage() {
           <CardDescription>Let's get you set up for success.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="flex flex-col items-center gap-4">
-             <div className="relative">
-                <Avatar className="h-24 w-24 border-4 border-primary">
-                  <AvatarImage src={avatarUrl} alt={name} data-ai-hint="profile picture" />
-                  <AvatarFallback>
-                    <User className="h-12 w-12" />
-                  </AvatarFallback>
-                </Avatar>
-                <Button 
-                    size="icon" 
-                    className="absolute bottom-0 right-0 rounded-full h-8 w-8"
-                    onClick={handleAvatarClick}
-                >
-                    <Camera className="h-4 w-4" />
-                </Button>
-                <input 
-                    type="file" 
-                    ref={fileInputRef} 
-                    className="hidden" 
-                    accept="image/*"
-                    onChange={handleFileChange} 
-                />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="name">Your Name</Label>
-            <Input
-              id="name"
-              type="text"
-              placeholder="e.g. Juan Dela Cruz"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </div>
-           <div className="space-y-2">
-            <Label htmlFor="exam-date">Exam Date (Optional)</Label>
-            <DatePicker date={examDate} setDate={setExamDate} />
-          </div>
-        </CardContent>
-        <CardFooter>
-          <Button className="w-full" onClick={handleLogin}>
-            Start Reviewing
+          <Button className="w-full" onClick={handleGoogleSignIn}>
+            <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 126 23.4 172.9 61.9l-67.4 64.8C297.6 112.3 274.7 104 248 104c-57.8 0-104.5 47.2-104.5 104.8s46.7 104.8 104.5 104.8c63.8 0 94.9-50.8 98.2-74.3H248v-85.3h236.1c2.3 12.7 3.9 26.9 3.9 41.4z"></path></svg>
+            Sign in with Google
           </Button>
-        </CardFooter>
+        </CardContent>
       </Card>
     </div>
   );

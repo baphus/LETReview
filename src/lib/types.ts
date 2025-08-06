@@ -7,7 +7,7 @@ export interface QuizQuestion {
   choices: string[];
   answer: string;
   explanation?: string;
-  image?: string; // Optional image URL
+  image?: string; // Optional image URL or base64 data URI
 }
 
 export type QuizQuestionForm = Omit<QuizQuestion, 'id' | 'category'> & {
@@ -32,5 +32,3 @@ export interface DailyProgress {
     pomodorosCompleted?: number;
     pointsEarned?: number;
 }
-
-    

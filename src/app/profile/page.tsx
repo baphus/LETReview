@@ -34,9 +34,11 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Switch } from "@/components/ui/switch";
+import { auth } from "@/lib/firebase";
 
 
 interface UserProfile {
+    uid: string;
     name: string;
     avatarUrl: string;
     examDate?: string;
@@ -79,32 +81,37 @@ export default function ProfilePage() {
   };
 
   useEffect(() => {
-    const savedUser = localStorage.getItem("userProfile");
-    if (savedUser) {
-      const parsedUser = JSON.parse(savedUser);
-       const fullUser: UserProfile = {
-            ...parsedUser,
-            unlockedThemes: parsedUser.unlockedThemes || ['default'],
-            unlockedPets: parsedUser.unlockedPets || [],
-            activeTheme: parsedUser.activeTheme || 'default',
-            themeMode: parsedUser.themeMode || 'dark',
-            highestQuizStreak: parsedUser.highestQuizStreak || 0,
-            completedSessions: parsedUser.completedSessions || 0,
-        };
-      setUser(fullUser);
-      setNewName(fullUser.name);
-      if (fullUser.examDate) {
-        setExamDate(new Date(fullUser.examDate));
+    const currentUid = localStorage.getItem('currentUser');
+    if (currentUid) {
+      const savedUser = localStorage.getItem(`userProfile_${currentUid}`);
+      if (savedUser) {
+        const parsedUser = JSON.parse(savedUser);
+         const fullUser: UserProfile = {
+              ...parsedUser,
+              unlockedThemes: parsedUser.unlockedThemes || ['default'],
+              unlockedPets: parsedUser.unlockedPets || [],
+              activeTheme: parsedUser.activeTheme || 'default',
+              themeMode: parsedUser.themeMode || 'dark',
+              highestQuizStreak: parsedUser.highestQuizStreak || 0,
+              completedSessions: parsedUser.completedSessions || 0,
+          };
+        setUser(fullUser);
+        setNewName(fullUser.name);
+        if (fullUser.examDate) {
+          setExamDate(new Date(fullUser.examDate));
+        }
+        setPassingScore(fullUser.passingScore || 75);
+        applyUserTheme(fullUser.themeMode, fullUser.activeTheme);
+      } else {
+         router.push('/login');
       }
-      setPassingScore(fullUser.passingScore || 75);
-      applyUserTheme(fullUser.themeMode, fullUser.activeTheme);
     } else {
         router.push('/login');
     }
   }, [router]);
 
   const saveUser = (updatedUser: UserProfile) => {
-    localStorage.setItem("userProfile", JSON.stringify(updatedUser));
+    localStorage.setItem(`userProfile_${updatedUser.uid}`, JSON.stringify(updatedUser));
     setUser(updatedUser);
     // Dispatch a storage event to notify other parts of the app (like layout) about the change
     window.dispatchEvent(new Event('storage'));
@@ -139,15 +146,14 @@ export default function ProfilePage() {
     }
   }
 
-  const handleResetData = () => {
-      localStorage.clear();
-      document.documentElement.classList.remove('dark', 'light', 'mint', 'sunset', 'rose');
-      document.documentElement.classList.add('dark'); // Default to dark after reset
-      router.push('/');
-      toast({
-          title: "Data Reset",
-          description: "All your data has been cleared.",
-          className: "bg-primary border-primary text-primary-foreground"
+  const handleSignOut = () => {
+      auth.signOut().then(() => {
+        localStorage.removeItem('currentUser');
+        router.push('/login');
+        toast({
+            title: "Signed Out",
+            description: "You have been successfully signed out.",
+        });
       });
   };
 
@@ -451,24 +457,24 @@ export default function ProfilePage() {
                         </div>
                     </AccordionTrigger>
                     <AccordionContent className="pt-4">
-                       <p className="text-sm text-muted-foreground mb-4">This action is irreversible. All your progress, points, and pets will be permanently deleted.</p>
+                       <p className="text-sm text-muted-foreground mb-4">This action will sign you out of your account on this device.</p>
                        <AlertDialog>
                             <AlertDialogTrigger asChild>
                                 <Button variant="destructive" className="w-full">
                                     <LogOut className="mr-2 h-4 w-4" />
-                                    Reset All Data
+                                    Sign Out
                                 </Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                                 <AlertDialogHeader>
-                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                <AlertDialogTitle>Are you sure you want to sign out?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    This action cannot be undone. This will permanently delete all your application data from this device.
+                                    You can always sign back in with your Google account.
                                 </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleResetData}>Yes, delete everything</AlertDialogAction>
+                                <AlertDialogAction onClick={handleSignOut}>Sign Out</AlertDialogAction>
                                 </AlertDialogFooter>
                             </AlertDialogContent>
                         </AlertDialog>
@@ -480,5 +486,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-
-    

@@ -19,6 +19,8 @@ import {
 } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { SplashScreenHandler } from "@/components/SplashScreen";
+import { auth } from "@/lib/firebase";
+import { onAuthStateChanged } from "firebase/auth";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const spaceGrotesk = Space_Grotesk({
@@ -32,7 +34,12 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   const applyUserTheme = () => {
-    const savedUser = localStorage.getItem("userProfile");
+    const currentUid = localStorage.getItem('currentUser');
+    if (!currentUid) {
+        document.documentElement.classList.add('dark');
+        return;
+    };
+    const savedUser = localStorage.getItem(`userProfile_${currentUid}`);
     if (savedUser) {
         const user = JSON.parse(savedUser);
 
@@ -56,37 +63,44 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
     // Listen for storage changes to re-apply theme
     window.addEventListener('storage', applyUserTheme);
 
-    const userProfile = localStorage.getItem("userProfile");
-    const isAuthPage = pathname === "/login";
-    
-    if (!userProfile && !isAuthPage) {
-      router.replace("/login");
-    } else if (userProfile && isAuthPage) {
-      router.replace("/home");
-    } else {
-      setIsCheckingAuth(false);
-    }
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+        const isAuthPage = pathname === "/login";
+        if (user) {
+             if (isAuthPage) {
+                router.replace("/home");
+            }
+        } else {
+             if (!isAuthPage) {
+                router.replace("/login");
+            }
+        }
+         setIsCheckingAuth(false);
+    });
+
      return () => {
       window.removeEventListener('storage', applyUserTheme);
+      unsubscribe();
     };
   }, [pathname, router]);
 
   const isAppPage = pathname !== '/login';
 
-  if (isCheckingAuth && isAppPage) {
+  if (isCheckingAuth) {
     return (
-      <div className="flex flex-col h-dvh">
-        <main className="flex-1 overflow-y-auto p-4">
-          <div className="flex items-center gap-2 mb-6">
-            <Skeleton className="h-8 w-8" />
-            <Skeleton className="h-8 w-48" />
-          </div>
-          <Skeleton className="h-64 w-full" />
-        </main>
-        <Skeleton className="h-16 w-full" />
-      </div>
+        <div className="flex flex-col h-dvh">
+            {/* This is a simplified skeleton for the initial auth check */}
+            <main className="flex-1 overflow-y-auto p-4">
+                <div className="flex items-center gap-2 mb-6">
+                    <Skeleton className="h-8 w-8" />
+                    <Skeleton className="h-8 w-48" />
+                </div>
+                <Skeleton className="h-64 w-full" />
+            </main>
+            <Skeleton className="h-16 w-full md:hidden" />
+        </div>
     );
   }
+
 
   if (!isAppPage) {
     return (

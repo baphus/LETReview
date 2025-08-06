@@ -1,3 +1,4 @@
+
 import type { QuizQuestion, PetProfile } from "./types";
 
 // This file now contains only placeholder data.
@@ -17,7 +18,10 @@ export const sampleQuestions: QuizQuestion[] = [
 // Function to load questions from local storage or use sample if none exist
 export const loadQuestions = (): QuizQuestion[] => {
   if (typeof window !== 'undefined') {
-    const savedQuestions = localStorage.getItem('customQuestions');
+    const currentUid = localStorage.getItem('currentUser');
+    if (!currentUid) return sampleQuestions;
+    
+    const savedQuestions = localStorage.getItem(`customQuestions_${currentUid}`);
     if (savedQuestions) {
       try {
         const parsedQuestions = JSON.parse(savedQuestions);
@@ -36,7 +40,10 @@ export const loadQuestions = (): QuizQuestion[] => {
 // Function to save questions to local storage
 export const saveQuestions = (questions: QuizQuestion[]) => {
   if (typeof window !== 'undefined') {
-    localStorage.setItem('customQuestions', JSON.stringify(questions));
+    const currentUid = localStorage.getItem('currentUser');
+    if (!currentUid) return;
+
+    localStorage.setItem(`customQuestions_${currentUid}`, JSON.stringify(questions));
      // Dispatch a storage event to notify other components like the quiz pages
     window.dispatchEvent(new Event('storage'));
   }
@@ -180,5 +187,3 @@ export const achievementPets: PetProfile[] = [
 export const rarePets: PetProfile[] = [
     { name: "Draco", unlock_criteria: "Purchase in store", cost: 1000, image: "/pets/draco.png", hint: "fire breathing", streak_req: 0 },
 ];
-
-    

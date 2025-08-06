@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef, ChangeEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,7 +14,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { loadQuestions, saveQuestions } from '@/lib/data';
 import type { QuizQuestion, QuizQuestionForm } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { Trash, Edit, PlusCircle, ArrowLeft } from 'lucide-react';
+import { Trash, Edit, PlusCircle, ArrowLeft, Image as ImageIcon } from 'lucide-react';
+import Image from 'next/image';
 import {
   Dialog,
   DialogContent,
@@ -56,7 +57,7 @@ import { cn } from '@/lib/utils';
 const questionFormSchema = z.object({
   id: z.number().optional(),
   question: z.string().min(10, 'Question must be at least 10 characters long.'),
-  image: z.string().url().optional().or(z.literal('')),
+  image: z.string().optional().or(z.literal('')),
   choices: z.array(z.string().min(1, "Choice can't be empty.")).min(2, 'Must have at least 2 choices.').max(4, 'Cannot have more than 4 choices.'),
   answer: z.string().min(1, 'Answer is required.'),
   explanation: z.string().optional(),
@@ -92,6 +93,27 @@ const QuestionForm = ({
     control: form.control,
     name: 'choices',
   });
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+  const [imagePreview, setImagePreview] = useState<string | null>(initialData?.image || null);
+
+  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+        if (file.size > 2 * 1024 * 1024) { // 2MB limit
+            toast({ variant: "destructive", title: "Image too large", description: "Please select an image smaller than 2MB." });
+            return;
+        }
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            const base64String = reader.result as string;
+            form.setValue('image', base64String);
+            setImagePreview(base64String);
+        };
+        reader.readAsDataURL(file);
+    }
+  };
 
   const handleSubmit = (data: QuizQuestionForm) => {
     onSubmit(data);
@@ -100,14 +122,16 @@ const QuestionForm = ({
   };
   
   useEffect(() => {
-    form.reset(initialData || {
+    const defaultValues = initialData || {
       question: '',
       image: '',
       choices: ['', '', '', ''],
       answer: '',
       explanation: '',
       difficulty: 'easy',
-    });
+    };
+    form.reset(defaultValues);
+    setImagePreview(defaultValues.image || null);
   }, [initialData, form]);
 
   return (
@@ -133,19 +157,20 @@ const QuestionForm = ({
                 </FormItem>
             )}
             />
-            <FormField
-            control={form.control}
-            name="image"
-            render={({ field }) => (
-                <FormItem>
-                <FormLabel>Image URL (Optional)</FormLabel>
+            
+            <FormItem>
+                <FormLabel>Image (Optional)</FormLabel>
                 <FormControl>
-                    <Input placeholder="https://example.com/image.png" {...field} />
+                    <div className="flex items-center gap-4">
+                        <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
+                           <ImageIcon className="mr-2 h-4 w-4"/> Upload Image
+                        </Button>
+                        <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageChange} />
+                        {imagePreview && <Image src={imagePreview} alt="Preview" width={40} height={40} className="rounded-md object-cover" />}
+                    </div>
                 </FormControl>
                 <FormMessage />
-                </FormItem>
-            )}
-            />
+            </FormItem>
             
             <div>
                 <Label>Choices</Label>
@@ -344,6 +369,11 @@ export default function QuestionsPage() {
                 className="flex flex-col cursor-pointer hover:border-primary transition-colors"
                 onClick={() => handleEditQuestion(q)}
             >
+                {q.image && (
+                   <div className="relative w-full h-32">
+                        <Image src={q.image} alt={q.question} layout="fill" objectFit="cover" className="rounded-t-lg" />
+                   </div>
+                )}
                 <CardContent className="p-4 flex-1">
                     <p className="font-semibold text-sm line-clamp-4">{q.question}</p>
                 </CardContent>
