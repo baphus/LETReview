@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -379,9 +380,9 @@ export default function ProfilePage() {
                                 <div className="space-y-2">
                                     {questions.length > 0 ? (
                                         questions.map(q => (
-                                            <div key={q.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
-                                                <p className="text-sm truncate pr-2">{q.question}</p>
-                                                <div className="flex items-center gap-1">
+                                            <div key={q.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50 gap-2">
+                                                <p className="text-sm truncate flex-1 min-w-0">{q.question}</p>
+                                                <div className="flex items-center gap-1 flex-shrink-0">
                                                      <Button variant="ghost" size="icon" disabled>
                                                         <Edit className="h-4 w-4" />
                                                     </Button>
