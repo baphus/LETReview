@@ -45,7 +45,7 @@ export default function LoginPage() {
       completedSessions: 0,
       petsUnlocked: 0,
       petNames: {},
-      passingScore: 85,
+      passingScore: 75,
       unlockedThemes: ['default'],
       activeTheme: 'default',
       unlockedPets: [],
@@ -54,6 +54,8 @@ export default function LoginPage() {
     };
 
     localStorage.setItem("userProfile", JSON.stringify(userProfile));
+    // Clear any existing custom questions for a new user
+    localStorage.removeItem("customQuestions");
     router.push("/home");
   };
   
@@ -86,7 +88,7 @@ export default function LoginPage() {
     <div className="container mx-auto p-4 max-w-sm flex items-center justify-center h-full">
       <Card className="w-full">
         <CardHeader className="text-center">
-          <CardTitle className="font-headline text-2xl">Welcome to LETReview</CardTitle>
+          <CardTitle className="font-headline text-2xl">Welcome to MyReviewer</CardTitle>
           <CardDescription>Let's get you set up for success.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">

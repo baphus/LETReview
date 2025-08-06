@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { User, LogOut, Settings, Edit, Check, Camera, Palette, Gem, Trophy, Clock, Flame, Award } from "lucide-react";
+import { User, LogOut, Settings, Edit, Check, Camera, Palette, Gem, Trophy, Clock, Flame, Award, PlusCircle, Trash2 } from "lucide-react";
 import { useEffect, useState, useRef, ChangeEvent } from "react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -15,9 +15,24 @@ import { DatePicker } from "@/components/ui/datepicker";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
-import { achievementPets, rarePets } from "@/lib/data";
+import { achievementPets, rarePets, loadQuestions } from "@/lib/data";
 import { Progress } from "@/components/ui/progress";
+import type { QuizQuestion } from "@/lib/types";
+import { useForm, useFieldArray, SubmitHandler } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Textarea } from "@/components/ui/textarea";
 
+const questionSchema = z.object({
+  question: z.string().min(10, "Question must be at least 10 characters long."),
+  image: z.string().url().optional().or(z.literal('')),
+  choices: z.array(z.object({ value: z.string().min(1, "Choice cannot be empty.") })).min(2, "Must have at least two choices."),
+  answer: z.string().min(1, "You must select a correct answer."),
+  explanation: z.string().optional(),
+});
+
+type QuestionFormValues = z.infer<typeof questionSchema>;
 
 interface UserProfile {
     name: string;
@@ -35,7 +50,7 @@ interface UserProfile {
 }
 
 const themes = [
-    { name: 'Default', value: 'default', cost: 0, colors: { primary: 'hsl(231 48% 48%)', accent: 'hsl(110 32% 48%)' } },
+    { name: 'Default', value: 'default', cost: 0, colors: { primary: 'hsl(217.2 91.2% 59.8%)', accent: 'hsl(217.2 32.6% 20%)' } },
     { name: 'Mint', value: 'mint', cost: 100, colors: { primary: 'hsl(160, 50%, 45%)', accent: 'hsl(200, 60%, 50%)' } },
     { name: 'Sunset', value: 'sunset', cost: 100, colors: { primary: 'hsl(25, 80%, 55%)', accent: 'hsl(350, 70%, 60%)' } },
     { name: 'Rose', value: 'rose', cost: 100, colors: { primary: 'hsl(340, 70%, 55%)', accent: 'hsl(280, 50%, 60%)' } },
@@ -85,7 +100,24 @@ export default function ProfilePage() {
   const [newName, setNewName] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [examDate, setExamDate] = useState<Date | undefined>(undefined);
-  const [passingScore, setPassingScore] = useState(85);
+  const [passingScore, setPassingScore] = useState(75);
+  const [questions, setQuestions] = useState<QuizQuestion[]>([]);
+
+  const form = useForm<QuestionFormValues>({
+    resolver: zodResolver(questionSchema),
+    defaultValues: {
+      question: "",
+      image: "",
+      choices: [{ value: "" }, { value: "" }],
+      answer: "",
+      explanation: "",
+    },
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "choices",
+  });
 
   useEffect(() => {
     const savedUser = localStorage.getItem("userProfile");
@@ -104,8 +136,9 @@ export default function ProfilePage() {
       if (fullUser.examDate) {
         setExamDate(new Date(fullUser.examDate));
       }
-      setPassingScore(fullUser.passingScore || 85);
+      setPassingScore(fullUser.passingScore || 75);
       applyTheme(fullUser.activeTheme);
+      setQuestions(loadQuestions());
     } else {
         router.push('/login');
     }
@@ -187,13 +220,12 @@ export default function ProfilePage() {
   const handleThemeAction = (themeValue: string, cost: number) => {
     if (!user) return;
     
-    // If theme is unlocked, activate it
     if (user.unlockedThemes.includes(themeValue)) {
         const updatedUser = { ...user, activeTheme: themeValue };
         saveUser(updatedUser);
         applyTheme(themeValue);
         toast({ title: "Theme Activated!", className: "bg-green-100 border-green-300"});
-    } else { // If theme is locked, try to buy it
+    } else {
         if (user.points >= cost) {
             const updatedUser = { 
                 ...user, 
@@ -223,6 +255,29 @@ export default function ProfilePage() {
       } else {
         toast({ variant: "destructive", title: "Not enough points!"});
       }
+  }
+
+  const onQuestionSubmit: SubmitHandler<QuestionFormValues> = (data) => {
+    const newQuestion: QuizQuestion = {
+        id: Date.now(),
+        category: 'custom',
+        difficulty: 'easy', // Or some other logic
+        question: data.question,
+        choices: data.choices.map(c => c.value),
+        answer: data.answer,
+        explanation: data.explanation,
+        image: data.image
+    };
+
+    const updatedQuestions = [...questions, newQuestion];
+    localStorage.setItem("customQuestions", JSON.stringify(updatedQuestions));
+    setQuestions(updatedQuestions);
+    form.reset();
+    toast({
+        title: "Question Added!",
+        description: "Your new question has been saved to your reviewer.",
+        className: "bg-green-100 border-green-300"
+    });
   }
 
   if (!user) {
@@ -284,6 +339,108 @@ export default function ProfilePage() {
             
         </CardContent>
       </Card>
+      
+      <Card className="mt-6">
+        <CardHeader>
+            <CardTitle>Add a New Question</CardTitle>
+            <CardDescription>Expand your custom reviewer by adding new questions.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onQuestionSubmit)} className="space-y-6">
+              <FormField
+                control={form.control}
+                name="question"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Question</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="What is the capital of..." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="image"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Image URL (Optional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="https://example.com/image.png" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div>
+                <Label>Choices</Label>
+                <div className="space-y-2 mt-2">
+                  {fields.map((field, index) => (
+                    <FormField
+                      key={field.id}
+                      control={form.control}
+                      name={`choices.${index}.value`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <div className="flex items-center gap-2">
+                           <FormControl>
+                                <Input {...field} placeholder={`Choice ${index + 1}`} />
+                           </FormControl>
+                           <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} disabled={fields.length <= 2}>
+                               <Trash2 className="h-4 w-4" />
+                           </Button>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  ))}
+                </div>
+                <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => append({ value: "" })}>
+                    <PlusCircle className="mr-2 h-4 w-4" /> Add Choice
+                </Button>
+              </div>
+              
+              <FormField
+                control={form.control}
+                name="answer"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Correct Answer</FormLabel>
+                    <FormControl>
+                       <Input placeholder="Enter the exact text of the correct choice" {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      Copy and paste the correct choice text here.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="explanation"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Explanation (Optional)</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Explain why this is the correct answer..." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <Button type="submit">Save Question</Button>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
+
 
       <Card className="mt-6">
         <CardHeader>
@@ -296,10 +453,10 @@ export default function ProfilePage() {
                 const progress = Math.min((currentValue / ach.target) * 100, 100);
                 const isUnlocked = progress === 100;
                 return (
-                    <div key={ach.name} className={cn("p-4 rounded-lg border", isUnlocked ? "bg-green-50 border-green-200" : "bg-muted/30")}>
+                    <div key={ach.name} className={cn("p-4 rounded-lg border", isUnlocked ? "bg-green-50/10 border-green-500/20" : "bg-muted/30")}>
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                                <div className={cn("p-2 rounded-full", isUnlocked ? "bg-green-200 text-green-700" : "bg-muted")}>
+                                <div className={cn("p-2 rounded-full", isUnlocked ? "bg-green-500/20 text-green-400" : "bg-muted")}>
                                     <ach.icon className="h-5 w-5" />
                                 </div>
                                 <div>
@@ -309,8 +466,8 @@ export default function ProfilePage() {
                             </div>
                              {isUnlocked && (
                                 <div className="flex flex-col items-center">
-                                    <Image src={achievementPets.find(p => p.name === ach.petReward)?.image || ''} alt={ach.petReward} width={40} height={40} className="rounded-full bg-white p-1" />
-                                    <p className="text-xs font-bold text-green-700">Unlocked!</p>
+                                    <Image src={achievementPets.find(p => p.name === ach.petReward)?.image || ''} alt={ach.petReward} width={40} height={40} className="rounded-full bg-card p-1" />
+                                    <p className="text-xs font-bold text-green-400">Unlocked!</p>
                                 </div>
                             )}
                         </div>
@@ -429,15 +586,15 @@ export default function ProfilePage() {
 
       <Card className="mt-6">
         <CardHeader>
-          <CardTitle>About LETReview</CardTitle>
+          <CardTitle>About MyReviewer</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            This app is a review companion designed to help aspiring educators prepare for the Licensure Examination for Teachers (LET) in the Philippines.
+            This app is a review companion designed to help you create your own personalized reviewer for any subject.
           </p>
           <br />
           <p className="text-sm text-muted-foreground italic">
-            This app is lovingly dedicated to my girlfriend, Yve, an aspiring teacher who inspired this project.
+            This app is lovingly dedicated to my girlfriend, Yve, who inspired this project.
           </p>
         </CardContent>
       </Card>
@@ -457,4 +614,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-

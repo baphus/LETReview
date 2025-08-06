@@ -1,12 +1,13 @@
 
 export interface QuizQuestion {
   id: number;
-  category: "gen_education" | "professional";
+  category: "gen_education" | "professional" | "custom";
   difficulty: "easy" | "medium" | "hard";
   question: string;
   choices: string[];
   answer: string;
   explanation?: string;
+  image?: string; // Optional image URL
 }
 
 export interface PetProfile {
@@ -26,6 +27,3 @@ export interface DailyProgress {
     pomodorosCompleted?: number;
     pointsEarned?: number;
 }
-
-    
-    

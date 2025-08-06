@@ -1,17 +1,18 @@
-# LETReview: Your Gamified LET Review Partner
+# MyReviewer: Your Personalized Review Partner
 
-![LETReview App Screenshot](/public/images/landing/app-preview.png)
+![MyReviewer App Screenshot](/public/images/landing/app-preview.png)
 
-Ace the Licensure Examination for Teachers (LET) with a review experience that's effective, engaging, and fun! LETReview is a mobile-first web application designed to help aspiring educators in the Philippines prepare for their board exams through a personalized and gamified approach.
+Create your own personalized reviewer for any subject! MyReviewer is a mobile-first web application designed to help you study for any exam through a personalized and gamified approach.
 
 ## ✨ Key Features
 
-Our goal is to make studying for the LET an enjoyable and motivating experience. Here are some of the core features we've built to help you succeed:
+Our goal is to make studying an enjoyable and motivating experience. Here are some of the core features we've built to help you succeed:
 
-### 📚 Comprehensive Question Reviewer
-Tackle thousands of questions covering both General and Professional Education. Choose the mode that fits your study style.
+### 📚 Custom Question Reviewer
+Tackle your own questions covering any subject you need. Choose the mode that fits your study style.
 - **Study Mode**: Master concepts by reviewing questions with answers and detailed explanations.
 - **Flashcard Mode**: Test your recall and solidify your knowledge with a classic flashcard experience.
+- **Add Images**: Enhance your questions with images for a more visual learning experience.
 
 ![Reviewer Feature](/public/images/landing/feature-reviewer.png)
 
@@ -36,7 +37,7 @@ Monitor your performance and stay focused on your goals.
 - **Exam Countdown**: Set your exam date to see a live countdown and keep your goal in sight.
 - **Customize Your Profile**: Personalize your avatar and give your unlocked pets unique nicknames.
 
-![Progress Feature](/public/gimages/landing/feature-progress.png)
+![Progress Feature](/public/images/landing/feature-progress.png)
 
 ## 💻 Tech Stack
 
@@ -63,11 +64,11 @@ Make sure you have Node.js and npm (or yarn) installed on your machine.
 
 1. Clone the repository:
    ```sh
-   git clone https://github.com/your-username/letreview.git
+   git clone https://github.com/your-username/myreviewer.git
    ```
 2. Navigate to the project directory:
    ```sh
-   cd letreview
+   cd myreviewer
    ```
 3. Install NPM packages:
    ```sh
@@ -85,11 +86,11 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 ## 🤝 Contributing & Feedback
 
-Contributions, issues, and feature requests are welcome! If you have suggestions for improvement or want to report a bug, please feel free to check the [issues page](https://github.com/your-username/letreview/issues) or reach out. Your feedback is highly appreciated.
+Contributions, issues, and feature requests are welcome! If you have suggestions for improvement or want to report a bug, please feel free to check the [issues page](https://github.com/your-username/myreviewer/issues) or reach out. Your feedback is highly appreciated.
 
 ## ❤️ Dedication
 
-This app is lovingly dedicated to my girlfriend, Yve, an aspiring teacher who inspired this project.
+This app is lovingly dedicated to my girlfriend, Yve, who inspired this project.
 
 ## 📄 License
 

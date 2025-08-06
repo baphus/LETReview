@@ -92,7 +92,7 @@ const QuestionOfTheDay = ({ onCorrectAnswer }: { onCorrectAnswer: () => void }) 
 
             if (correct) {
                 onCorrectAnswer(); // This updates the state in the parent component
-                toast({ title: "Correct!", description: "You earned 5 points!", className: "bg-green-100 border-green-300" });
+                toast({ title: "Correct!", description: "You earned 5 points!", className: "bg-green-500/10 border-green-500/20 text-foreground" });
             } else {
                  toast({ variant: "destructive", title: "Incorrect", description: "Better luck tomorrow!" });
             }
@@ -104,6 +104,17 @@ const QuestionOfTheDay = ({ onCorrectAnswer }: { onCorrectAnswer: () => void }) 
 
     return (
         <Card className="mb-6">
+             {question.image && (
+                <div className="relative w-full h-48 mb-4">
+                    <Image 
+                        src={question.image} 
+                        alt={question.question} 
+                        layout="fill" 
+                        objectFit="contain"
+                        className="rounded-t-lg"
+                    />
+                </div>
+            )}
             <CardHeader>
                 <CardTitle className="font-headline text-2xl">Question of the Day</CardTitle>
                 <CardDescription>{question.question}</CardDescription>
@@ -121,23 +132,23 @@ const QuestionOfTheDay = ({ onCorrectAnswer }: { onCorrectAnswer: () => void }) 
                             disabled={isAnswered}
                             className={cn(
                                 "h-auto whitespace-normal justify-start p-4 w-full text-left",
-                                isAnswered && isTheCorrectAnswer && "bg-green-100 border-green-300 hover:bg-green-100 text-green-800",
-                                isAnswered && isSelected && !isTheCorrectAnswer && "bg-red-100 border-red-300 hover:bg-red-100 text-red-800",
+                                isAnswered && isTheCorrectAnswer && "bg-green-500/10 border-green-500/30 hover:bg-green-500/10 text-foreground",
+                                isAnswered && isSelected && !isTheCorrectAnswer && "bg-red-500/10 border-red-500/30 hover:bg-red-500/10 text-foreground",
                                 isAnswered && !isSelected && !isTheCorrectAnswer && "opacity-60"
                             )}
                         >
                             <div className="flex items-center justify-between w-full">
                                 <span>{choice}</span>
-                                {isAnswered && isTheCorrectAnswer && <CheckCircle className="h-5 w-5 text-green-500" />}
-                                {isAnswered && isSelected && !isTheCorrectAnswer && <XCircle className="h-5 w-5 text-red-500" />}
+                                {isAnswered && isTheCorrectAnswer && <CheckCircle className="h-5 w-5 text-green-400" />}
+                                {isAnswered && isSelected && !isTheCorrectAnswer && <XCircle className="h-5 w-5 text-red-400" />}
                             </div>
                         </Button>
                     )
                 })}
             </CardContent>
             <CardFooter>
-                 <div className={`flex items-center gap-1 font-semibold text-green-600`}>
-                  <Star className={`h-4 w-4 fill-green-500`} />
+                 <div className={`flex items-center gap-1 font-semibold text-green-400`}>
+                  <Star className={`h-4 w-4 fill-green-400`} />
                   <span>5 Points</span>
                 </div>
             </CardFooter>
@@ -158,7 +169,7 @@ export default function DailyPage() {
   });
   const [challengeCompletedToday, setChallengeCompletedToday] = useState(false);
   const [streakBroken, setStreakBroken] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<"gen_education" | "professional">("gen_education");
+  const [selectedCategory, setSelectedCategory] = useState<"custom">("custom");
   const todayKey = getTodayKey();
 
   const loadUserStats = useCallback(() => {
@@ -230,7 +241,7 @@ export default function DailyPage() {
         toast({
           title: "Streak Restored!",
           description: `You spent ${restoreStreakCost} points.`,
-          className: "bg-green-100 border-green-300"
+          className: "bg-green-500/10 border-green-500/20 text-foreground"
         });
       }
     } else {
@@ -296,23 +307,23 @@ export default function DailyPage() {
       <QuestionOfTheDay onCorrectAnswer={handleQotdCorrect} />
 
       {challengeCompletedToday && (
-         <Card className="mb-6 bg-green-50 border-green-200">
+         <Card className="mb-6 bg-green-500/10 border-green-500/20">
           <CardHeader>
-            <CardTitle className="text-center text-green-800 font-headline">
+            <CardTitle className="text-center text-green-400 font-headline">
               Streak secured for today!
             </CardTitle>
-            <CardDescription className="text-center text-green-600">You can still complete other challenges for extra points.</CardDescription>
+            <CardDescription className="text-center text-green-500">You can still complete other challenges for extra points.</CardDescription>
           </CardHeader>
         </Card>
       )}
 
       {streakBroken && !challengeCompletedToday && (
-        <Card className="mb-6 bg-amber-50 border-amber-200">
+        <Card className="mb-6 bg-amber-500/10 border-amber-500/20">
           <CardHeader>
-            <CardTitle className="text-center text-amber-800 font-headline">
+            <CardTitle className="text-center text-amber-400 font-headline">
               Oh no! You lost your streak.
             </CardTitle>
-            <CardDescription className="text-center text-amber-600">
+            <CardDescription className="text-center text-amber-500">
               Restore your {userStats.highestStreak}-day streak for {restoreStreakCost} points or start a new challenge.
             </CardDescription>
           </CardHeader>
@@ -344,33 +355,34 @@ export default function DailyPage() {
       <section>
         <div className="flex flex-col items-center gap-4 mb-4">
             <h2 className="text-2xl font-bold font-headline">Daily Challenges</h2>
-             <Tabs value={selectedCategory} onValueChange={(value) => {
-                    setSelectedCategory(value as "gen_education" | "professional");
-                }}>
-                <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="gen_education">General Education</TabsTrigger>
-                    <TabsTrigger value="professional">Professional Education</TabsTrigger>
-                </TabsList>
-            </Tabs>
+            <p className="text-muted-foreground">Select a difficulty to start a challenge with your custom questions.</p>
         </div>
         <div className="space-y-4">
           {challenges.map(challenge => {
-             const challengeId = `${challenge.difficulty}-${selectedCategory}`;
+             const challengeId = `${challenge.difficulty}-custom`;
              const isCompleted = userStats.completedChallenges.includes(challengeId);
             return (
-                <Card key={challenge.difficulty} className={cn(isCompleted && "bg-muted/50", `border-${challenge.color}-200`)}>
+                <Card key={challenge.difficulty} className={cn(isCompleted && "bg-muted/50", `border-${challenge.color}-500/20`)}>
                   <CardHeader>
                     <div className="flex justify-between items-start">
                         <div>
                             <CardTitle className="font-headline capitalize">{challenge.difficulty} Challenge</CardTitle>
-                            <CardDescription>Complete a set of {challenge.count} {selectedCategory === 'gen_education' ? 'General' : 'Professional'} Education questions.</CardDescription>
+                            <CardDescription>Complete a set of {challenge.count} questions.</CardDescription>
                         </div>
                         {isCompleted && <Badge variant="secondary">Completed</Badge>}
                     </div>
                   </CardHeader>
                   <CardFooter className="flex justify-between items-center">
-                    <div className={`flex items-center gap-1 font-semibold text-${challenge.color}-600`}>
-                      <Star className={`h-4 w-4 fill-${challenge.color}-500`} />
+                    <div className={cn('flex items-center gap-1 font-semibold', {
+                        'text-green-400': challenge.color === 'green',
+                        'text-yellow-400': challenge.color === 'yellow',
+                        'text-red-400': challenge.color === 'red',
+                    })}>
+                      <Star className={cn('h-4 w-4', {
+                        'fill-green-400': challenge.color === 'green',
+                        'fill-yellow-400': challenge.color === 'yellow',
+                        'fill-red-400': challenge.color === 'red',
+                      })} />
                       <span>{challenge.points} Points</span>
                     </div>
                     <Button onClick={() => handleStartChallenge(challenge.difficulty, challenge.count)} disabled={isCompleted}>
@@ -385,7 +397,3 @@ export default function DailyPage() {
     </div>
   );
 }
-
-    
-
-    

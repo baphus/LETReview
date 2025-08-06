@@ -13,11 +13,12 @@ import {
   Shuffle,
   Lightbulb,
 } from "lucide-react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { sampleQuestions } from "@/lib/data";
+import { loadQuestions } from "@/lib/data";
 import type { QuizQuestion } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -47,6 +48,17 @@ const QuizCard: FC<{
 
   return (
     <Card className="w-full min-h-80 shadow-lg relative p-6">
+       {question.image && (
+        <div className="relative w-full h-48 mb-4">
+            <Image 
+                src={question.image} 
+                alt={question.question} 
+                layout="fill" 
+                objectFit="contain"
+                className="rounded-md"
+            />
+        </div>
+      )}
       <CardHeader className="p-0 mb-4">
         <CardTitle className="font-headline text-xl md:text-2xl">{question.question}</CardTitle>
       </CardHeader>
@@ -68,8 +80,8 @@ const QuizCard: FC<{
 
                 const getNonChallengeClass = () => {
                     if (!hasAnswered) return "hover:bg-muted cursor-pointer";
-                    if (isTheCorrectAnswer) return "border-green-500 bg-green-50";
-                    if (isSelected && !isTheCorrectAnswer) return "border-red-500 bg-red-50";
+                    if (isTheCorrectAnswer) return "border-green-500 bg-green-50/10";
+                    if (isSelected && !isTheCorrectAnswer) return "border-red-500 bg-red-50/10";
                     return "opacity-50";
                 };
 
@@ -78,7 +90,7 @@ const QuizCard: FC<{
                         key={`${choice}-${index}`}
                         onClick={() => !isDisabled && handleAnswerClick(choice)}
                         className={cn(
-                            "p-4 transition-all",
+                            "p-4 transition-all h-auto",
                             isChallenge ? getChallengeClass() : getNonChallengeClass(),
                             isDisabled ? "cursor-not-allowed" : "cursor-pointer"
                         )}
@@ -93,7 +105,10 @@ const QuizCard: FC<{
             })}
         </div>
         {!isChallenge && hasAnswered && selectedAnswer !== question.answer && question.explanation && (
-           <p className="text-sm text-muted-foreground mt-4 p-2 bg-muted rounded-md">{question.explanation}</p>
+           <div className="mt-4 p-4 bg-muted/50 rounded-md border">
+              <h4 className="font-semibold mb-1">Explanation</h4>
+              <p className="text-sm text-muted-foreground">{question.explanation}</p>
+            </div>
         )}
       </CardContent>
     </Card>
@@ -112,7 +127,8 @@ interface ChallengeAnswer {
 export default function QuizPage() {
   const router = useRouter();
 
-  const [category, setCategory] = useState<"gen_education" | "professional">("gen_education");
+  const [allQuestions, setAllQuestions] = useState<QuizQuestion[]>([]);
+  const [category, setCategory] = useState<"gen_education" | "professional" | "custom">("custom");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [quizScore, setQuizScore] = useState(0);
   const [showResults, setShowResults] = useState(false);
@@ -122,9 +138,13 @@ export default function QuizPage() {
   
   const { toast } = useToast();
 
+  useEffect(() => {
+    setAllQuestions(loadQuestions());
+  }, []);
+
   const questions = useMemo(() => {
-    let baseQuestions = sampleQuestions
-      .filter((q) => q.category === category);
+    // For now, we only have one category 'custom'. This can be expanded later.
+    let baseQuestions = allQuestions;
 
     if(isShuffled) {
         return [...baseQuestions].sort(() => Math.random() - 0.5)
@@ -134,7 +154,7 @@ export default function QuizPage() {
     return baseQuestions
       .map(q => ({ ...q, choices: [...q.choices].sort(() => Math.random() - 0.5) }));
 
-  }, [category, isShuffled]);
+  }, [allQuestions, isShuffled]);
 
   const resetQuizState = useCallback(() => {
     setCurrentIndex(0);
@@ -192,10 +212,10 @@ export default function QuizPage() {
         toast({
             title: "Correct!",
             description: "Nice work!",
-            className: "bg-green-100 border-green-300"
+            className: "bg-green-100/10 border-green-500/20 text-foreground"
         });
     } else {
-            toast({
+        toast({
             variant: "destructive",
             title: "Incorrect",
             description: "Better luck next time!",
@@ -222,12 +242,14 @@ export default function QuizPage() {
   useEffect(() => {
     resetQuizState();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category, isShuffled]);
+  }, [isShuffled]);
   
   useEffect(() => {
-    setAnsweredCurrent(
-        challengeAnswers.some(a => a.questionId === currentQuestion?.id)
-    );
+    if (currentQuestion) {
+        setAnsweredCurrent(
+            challengeAnswers.some(a => a.questionId === currentQuestion.id)
+        );
+    }
   }, [currentIndex, challengeAnswers, currentQuestion]);
 
   const progressValue = questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
@@ -256,17 +278,17 @@ export default function QuizPage() {
                           <div key={answer.questionId} className="text-sm p-3 rounded-md bg-muted">
                               <p className="font-semibold mb-1">{answer.question}</p>
                               {answer.isCorrect ? (
-                                  <div className="flex items-center gap-2 text-green-600">
+                                  <div className="flex items-center gap-2 text-green-400">
                                       <CheckCircle className="h-4 w-4 shrink-0" /> 
                                       <span>Your answer: {answer.userAnswer}</span>
                                   </div>
                               ) : (
                                   <div className="space-y-1">
-                                      <div className="flex items-center gap-2 text-red-600">
+                                      <div className="flex items-center gap-2 text-red-400">
                                           <XCircle className="h-4 w-4 shrink-0" />
                                           <span>Your answer: {answer.userAnswer}</span>
                                       </div>
-                                          <div className="flex items-center gap-2 text-green-600 pl-6">
+                                          <div className="flex items-center gap-2 text-green-400 pl-6">
                                           <span>Correct answer: {answer.correctAnswer}</span>
                                       </div>
                                   </div>
@@ -292,14 +314,7 @@ export default function QuizPage() {
             </header>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
-                <Tabs value={category} onValueChange={(value) => {
-                    setCategory(value as "gen_education" | "professional");
-                }}>
-                <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="gen_education">General Education</TabsTrigger>
-                    <TabsTrigger value="professional">Professional Education</TabsTrigger>
-                </TabsList>
-                </Tabs>
+                <p className="text-muted-foreground text-sm">Reviewing your custom questions.</p>
 
                 <div className="flex gap-2 w-full sm:w-auto">
                      <Button 
@@ -329,7 +344,8 @@ export default function QuizPage() {
         ) : (
           <Card className="h-80 flex justify-center items-center">
              <div className="text-center text-muted-foreground">
-              <p>No questions found for this criteria.</p>
+              <p>No questions found.</p>
+              <p>Add some questions on the Profile page to get started!</p>
             </div>
           </Card>
         )}

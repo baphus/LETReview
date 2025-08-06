@@ -33,6 +33,9 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
   const [isShowingSplash, setIsShowingSplash] = useState(pathname === "/");
 
   useEffect(() => {
+    // Force dark mode
+    document.documentElement.classList.add('dark');
+
     if (pathname === '/') {
         setIsShowingSplash(true);
          const splashShown = sessionStorage.getItem("splashShown");
@@ -134,12 +137,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className="dark">
       <head>
-        <title>LETReview</title>
+        <title>MyReviewer</title>
         <meta
           name="description"
-          content="A mobile-first web application for studying the Licensure Exam for Teachers (LET) in the Philippines."
+          content="A mobile-first web application for creating your own personalized reviewer."
         />
         <link rel="manifest" href="/manifest.json" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />

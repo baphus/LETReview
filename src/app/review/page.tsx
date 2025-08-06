@@ -13,11 +13,12 @@ import {
   Shuffle,
   RefreshCcw,
 } from "lucide-react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { sampleQuestions } from "@/lib/data";
+import { loadQuestions } from "@/lib/data";
 import type { QuizQuestion } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -39,6 +40,11 @@ const Flashcard: FC<{ question: QuizQuestion }> = ({ question }) => {
         {/* Front of Card */}
         <div className="flashcard-front absolute w-full h-full">
           <Card className="h-full flex flex-col justify-center items-center text-center p-6 shadow-lg">
+            {question.image && (
+                <div className="relative w-full h-32 mb-4">
+                    <Image src={question.image} alt={question.question} layout="fill" objectFit="contain" className="rounded-md"/>
+                </div>
+            )}
             <CardHeader>
               <CardTitle className="font-headline text-xl md:text-2xl">
                 {question.question}
@@ -67,6 +73,17 @@ const Flashcard: FC<{ question: QuizQuestion }> = ({ question }) => {
 const StudyCard: FC<{ question: QuizQuestion }> = ({ question }) => {
   return (
     <Card className="w-full min-h-80 shadow-lg relative p-6">
+      {question.image && (
+        <div className="relative w-full h-48 mb-4">
+            <Image 
+                src={question.image} 
+                alt={question.question} 
+                layout="fill" 
+                objectFit="contain"
+                className="rounded-md"
+            />
+        </div>
+      )}
       <CardHeader className="p-0 mb-4">
         <CardTitle className="font-headline text-xl md:text-2xl">{question.question}</CardTitle>
       </CardHeader>
@@ -78,12 +95,12 @@ const StudyCard: FC<{ question: QuizQuestion }> = ({ question }) => {
                     <Card 
                         key={`${choice}-${index}`}
                         className={cn(
-                            "p-4",
-                            isCorrect ? "border-green-500 bg-green-50" : "bg-muted/40"
+                            "p-4 h-auto",
+                            isCorrect ? "border-green-500 bg-green-50/10" : "bg-muted/40"
                         )}
                     >
                         <div className="flex items-center justify-between">
-                            <p className={cn(isCorrect && "font-semibold text-green-800")}>{choice}</p>
+                            <p className={cn(isCorrect && "font-semibold text-green-400")}>{choice}</p>
                             {isCorrect && <CheckCircle className="h-5 w-5 text-green-500" />}
                         </div>
                     </Card>
@@ -91,9 +108,9 @@ const StudyCard: FC<{ question: QuizQuestion }> = ({ question }) => {
             })}
         </div>
         {question.explanation && (
-          <div className="p-4 bg-blue-50 border-blue-200 rounded-md">
-            <h4 className="font-semibold text-blue-800 mb-1">Explanation</h4>
-            <p className="text-sm text-blue-700">{question.explanation}</p>
+          <div className="p-4 bg-blue-500/10 border-blue-500/20 rounded-md mt-4">
+            <h4 className="font-semibold text-blue-400 mb-1">Explanation</h4>
+            <p className="text-sm text-blue-300">{question.explanation}</p>
           </div>
         )}
       </CardContent>
@@ -121,6 +138,17 @@ const QuizCard: FC<{
 
   return (
     <Card className="w-full min-h-80 shadow-lg relative p-6">
+       {question.image && (
+        <div className="relative w-full h-48 mb-4">
+            <Image 
+                src={question.image} 
+                alt={question.question} 
+                layout="fill" 
+                objectFit="contain"
+                className="rounded-md"
+            />
+        </div>
+      )}
       <CardHeader className="p-0 mb-4">
         <CardTitle className="font-headline text-xl md:text-2xl">{question.question}</CardTitle>
       </CardHeader>
@@ -138,7 +166,7 @@ const QuizCard: FC<{
                     <Card 
                         key={`${choice}-${index}`}
                         onClick={() => handleAnswerClick(choice)}
-                        className={cn("p-4 transition-all", getChallengeClass())}
+                        className={cn("p-4 transition-all h-auto", getChallengeClass())}
                     >
                         <div className="flex items-center justify-between">
                             <p>{choice}</p>
@@ -185,31 +213,32 @@ function ReviewerPageContent() {
   const isChallenge = searchParams.get('challenge') === 'true';
   const challengeDifficulty = searchParams.get('difficulty') || 'easy';
   const challengeCount = parseInt(searchParams.get('count') || '0', 10);
-  const challengeCategory = searchParams.get('category') as "gen_education" | "professional" || "gen_education";
+  const challengeCategory = searchParams.get('category') as "gen_education" | "professional" | "custom" || "custom";
 
-  
-  const [category, setCategory] = useState<"gen_education" | "professional">(
-    isChallenge ? challengeCategory : "gen_education"
-  );
+  const [allQuestions, setAllQuestions] = useState<QuizQuestion[]>([]);
   const [mode, setMode] = useState<'study' | 'flashcard'>(isChallenge ? 'study' : 'study');
   const [currentIndex, setCurrentIndex] = useState(0);
   const [quizScore, setQuizScore] = useState(0);
   const [showResults, setShowResults] = useState(false);
   const [challengeAnswers, setChallengeAnswers] = useState<ChallengeAnswer[]>([]);
-  const [passingScore, setPassingScore] = useState(85);
+  const [passingScore, setPassingScore] = useState(75);
   const [isShuffled, setIsShuffled] = useState(false);
   
   const { toast } = useToast();
 
+   // Load questions on mount
+   useEffect(() => {
+    setAllQuestions(loadQuestions());
+  }, []);
+
    // Load state from localStorage on initial mount
   useEffect(() => {
-    if (isChallenge) return; // Don't load state for challenges
+    if (isChallenge) return;
 
     const savedProgress = localStorage.getItem('reviewProgress');
     if (savedProgress) {
       try {
-        const { category, mode, currentIndex, isShuffled: savedIsShuffled } = JSON.parse(savedProgress);
-        setCategory(category || 'gen_education');
+        const { mode, currentIndex, isShuffled: savedIsShuffled } = JSON.parse(savedProgress);
         setMode(mode || 'study');
         setCurrentIndex(currentIndex || 0);
         setIsShuffled(savedIsShuffled || false);
@@ -221,23 +250,22 @@ function ReviewerPageContent() {
 
   // Save state to localStorage whenever it changes
   useEffect(() => {
-    if (isChallenge) return; // Don't save state for challenges
+    if (isChallenge) return;
 
     const progress = {
-      category,
       mode,
       currentIndex,
       isShuffled,
     };
     localStorage.setItem('reviewProgress', JSON.stringify(progress));
-  }, [category, mode, currentIndex, isChallenge, isShuffled]);
+  }, [mode, currentIndex, isChallenge, isShuffled]);
 
 
   const loadUserData = useCallback(() => {
     const savedUser = localStorage.getItem("userProfile");
     if(savedUser){
         const user = JSON.parse(savedUser);
-        setPassingScore(user.passingScore || 85);
+        setPassingScore(user.passingScore || 75);
     }
   }, []);
 
@@ -247,8 +275,9 @@ function ReviewerPageContent() {
 
 
   const questions = useMemo(() => {
-    let baseQuestions = sampleQuestions
-      .filter((q) => q.category === category);
+    // In this new version, we only have one category "custom"
+    // The filter is kept for potential future expansion.
+    let baseQuestions = allQuestions.filter((q) => q.category === 'custom');
 
     if (isChallenge) {
        const today = new Date().toDateString();
@@ -267,7 +296,7 @@ function ReviewerPageContent() {
     return baseQuestions
       .map(q => ({ ...q, choices: [...q.choices].sort(() => Math.random() - 0.5) }));
 
-  }, [category, isChallenge, challengeCount, challengeDifficulty, challengeCategory, isShuffled]);
+  }, [allQuestions, isChallenge, challengeCount, challengeDifficulty, challengeCategory, isShuffled]);
   
   const currentQuestion = questions[currentIndex];
 
@@ -294,9 +323,8 @@ function ReviewerPageContent() {
         if (!user.dailyProgress) user.dailyProgress = {};
         if (!user.dailyProgress[todayKey]) user.dailyProgress[todayKey] = {};
 
-        const challengeId = `${challengeDifficulty}-${challengeCategory}`;
+        const challengeId = `${challengeDifficulty}-custom`; // Category is always custom now
         
-        // Only mark challenge as completed if PASSED
         if (passed) {
             if (!user.dailyProgress[todayKey].challengesCompleted) {
                 user.dailyProgress[todayKey].challengesCompleted = [];
@@ -308,7 +336,6 @@ function ReviewerPageContent() {
                 user.dailyProgress[todayKey].challengesCompleted.push(challengeId);
             }
 
-            // Award points and streak only on the first pass of the day for any challenge
             const wasAnyChallengeCompletedToday = user.lastChallengeDate === todayKey;
             
             if (!wasAnyChallengeCompletedToday) {
@@ -327,7 +354,7 @@ function ReviewerPageContent() {
                 toast({
                     title: "Challenge Passed!",
                     description: `You earned ${pointsEarned} points and secured your streak!`,
-                    className: "bg-green-100 border-green-300"
+                    className: "bg-green-100/10 border-green-500/20 text-foreground"
                 });
             } else {
                  if (!alreadyCompletedToday) {
@@ -338,13 +365,13 @@ function ReviewerPageContent() {
                     toast({
                         title: "Challenge Passed!",
                         description: `You passed another challenge and earned ${pointsEarned} points!`,
-                        className: "bg-green-100 border-green-300"
+                        className: "bg-green-100/10 border-green-500/20 text-foreground"
                     });
                  } else {
                      toast({
                         title: "Challenge Complete!",
                         description: `You've already earned points for this challenge today.`,
-                        className: "bg-blue-100 border-blue-300"
+                        className: "bg-blue-100/10 border-blue-500/20 text-foreground"
                     });
                  }
             }
@@ -387,7 +414,6 @@ function ReviewerPageContent() {
     const newAnswers = [...challengeAnswers.filter(a => a.questionId !== currentQuestion.id), newAnswer];
     setChallengeAnswers(newAnswers);
 
-    // Auto-advance to next question in a challenge
     setTimeout(() => {
         if (currentIndex < questions.length - 1) {
              setCurrentIndex((prev) => prev + 1);
@@ -426,7 +452,7 @@ function ReviewerPageContent() {
         resetQuizState();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, category, isShuffled]);
+  }, [mode, isShuffled]);
   
   const progressValue = questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
   
@@ -452,11 +478,11 @@ function ReviewerPageContent() {
           <div className="flex-1 min-h-0 flex flex-col">
               {isChallenge && (
                   isChallengePassed ? (
-                      <div className="text-center text-green-600 font-semibold p-4 bg-green-50 rounded-md mb-4">
+                      <div className="text-center text-green-400 font-semibold p-4 bg-green-50/10 rounded-md mb-4">
                           <p>Congratulations! You passed the challenge.</p>
                       </div>
                   ) : (
-                      <div className="text-center text-red-600 font-semibold p-4 bg-red-50 rounded-md mb-4">
+                      <div className="text-center text-red-400 font-semibold p-4 bg-red-50/10 rounded-md mb-4">
                           <p>So close! You needed {passingScore}% to pass. Don't give up!</p>
                       </div>
                   )
@@ -468,17 +494,17 @@ function ReviewerPageContent() {
                           <div key={answer.questionId} className="text-sm p-3 rounded-md bg-muted">
                               <p className="font-semibold mb-1">{answer.question}</p>
                               {answer.isCorrect ? (
-                                  <div className="flex items-center gap-2 text-green-600">
+                                  <div className="flex items-center gap-2 text-green-400">
                                       <CheckCircle className="h-4 w-4 shrink-0" /> 
                                       <span>Your answer: {answer.userAnswer}</span>
                                   </div>
                               ) : (
                                   <div className="space-y-1">
-                                      <div className="flex items-center gap-2 text-red-600">
+                                      <div className="flex items-center gap-2 text-red-400">
                                           <XCircle className="h-4 w-4 shrink-0" />
                                           <span>Your answer: {answer.userAnswer}</span>
                                       </div>
-                                          <div className="flex items-center gap-2 text-green-600 pl-6">
+                                          <div className="flex items-center gap-2 text-green-400 pl-6">
                                           <span>Correct answer: {answer.correctAnswer}</span>
                                       </div>
                                   </div>
@@ -513,14 +539,7 @@ function ReviewerPageContent() {
             </header>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
-                <Tabs value={category} onValueChange={(value) => {
-                    setCategory(value as "gen_education" | "professional");
-                }}>
-                <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="gen_education">General Education</TabsTrigger>
-                    <TabsTrigger value="professional">Professional Education</TabsTrigger>
-                </TabsList>
-                </Tabs>
+                 <p className="text-muted-foreground text-sm">Reviewing your custom questions.</p>
 
                 <div className="flex gap-2 w-full sm:w-auto">
                     <Tabs value={mode} onValueChange={(value) => setMode(value as "study" | "flashcard")} className="w-full">
@@ -546,7 +565,7 @@ function ReviewerPageContent() {
       {isChallenge && (
          <header className="flex flex-col gap-4 mb-6 text-center">
             <h1 className="text-3xl font-bold font-headline capitalize">{challengeDifficulty} Daily Challenge</h1>
-            <p className="text-muted-foreground">Answer all {questions.length} {challengeCategory === 'gen_education' ? 'General' : 'Professional'} Education questions. You need {passingScore}% to pass.</p>
+            <p className="text-muted-foreground">Answer all {questions.length} questions. You need {passingScore}% to pass.</p>
         </header>
       )}
       
@@ -568,8 +587,8 @@ function ReviewerPageContent() {
         ) : (
           <Card className="h-80 flex justify-center items-center">
              <div className="text-center text-muted-foreground">
-              <p>No questions found for this criteria.</p>
-              {isChallenge && <p>Please check back tomorrow for new questions.</p>}
+              <p>No questions found.</p>
+              {isChallenge ? <p>Check back tomorrow for new questions.</p> : <p>Add some questions on the Profile page to get started!</p>}
             </div>
           </Card>
         )}
@@ -589,7 +608,7 @@ function ReviewerPageContent() {
                 Previous
             </Button>
             <Button onClick={handleNext}>
-                {currentIndex === questions.length - 1 ? 'Finish' : 'Next'}
+                {currentIndex === questions.length - 1 ? 'Start Over' : 'Next'}
                 {currentIndex < questions.length - 1 && <ArrowRight className="h-4 w-4 ml-2" />}
             </Button>
             </div>
@@ -615,5 +634,3 @@ export default function ReviewPage() {
         </Suspense>
     )
 }
-
-    
