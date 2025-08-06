@@ -27,24 +27,24 @@
   }
 
   .dark {
-    --background: 220 14% 10%; /* Dark Notion-style background */
-    --foreground: 210 40% 98%; /* Light text */
-    --card: 220 14% 14%; /* Slightly lighter card background */
+    --background: 224 10% 10%; /* Darker, more neutral gray */
+    --foreground: 210 40% 98%;
+    --card: 224 10% 12%; /* Slightly lighter than background */
     --card-foreground: 210 40% 98%;
-    --popover: 220 14% 10%;
+    --popover: 224 10% 10%;
     --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%; /* Brighter blue for primary actions */
+    --primary: 217.2 91.2% 59.8%;
     --primary-foreground: 210 40% 98%;
-    --secondary: 217.2 32.6% 20%; /* Darker secondary */
+    --secondary: 224 10% 18%; /* Lighter gray for secondary elements */
     --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 20%;
+    --muted: 224 10% 18%;
     --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 20%;
+    --accent: 224 10% 18%;
     --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 50.6%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 25%; /* Subtle border */
-    --input: 217.2 32.6% 25%;
+    --border: 224 10% 20%; /* Subtle border */
+    --input: 224 10% 20%;
     --ring: 217.2 91.2% 59.8%;
   }
 
