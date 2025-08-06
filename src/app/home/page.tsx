@@ -90,6 +90,11 @@ export default function HomePage() {
         updatedUser.highestQuizStreak = pomodoroState.highestQuizStreak;
         statsUpdated = true;
     }
+    // Also update completed sessions from the timer state if it's not reflected yet.
+    if (pomodoroState.sessions > (user.completedSessions || 0)) {
+        updatedUser.completedSessions = pomodoroState.sessions;
+        statsUpdated = true;
+    }
 
     achievementPets.forEach(pet => {
       let isAlreadyUnlocked = updatedUser.unlockedPets.includes(pet.name);
@@ -211,9 +216,9 @@ export default function HomePage() {
       } else if (pet.unlock_criteria.includes('Purchase')) {
         return user.unlockedPets.includes(pet.name);
       } else if (pet.unlock_criteria.includes('Pomodoro')) {
-        return (user.completedSessions || 0) >= (pet.unlock_value || 0);
+        return user.unlockedPets.includes(pet.name);
       } else if (pet.unlock_criteria.includes('quiz streak')) {
-        return (user.highestQuizStreak || 0) >= (pet.unlock_value || 0);
+        return user.unlockedPets.includes(pet.name);
       }
       return false;
     }).length;
