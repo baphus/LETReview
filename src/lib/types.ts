@@ -10,6 +10,11 @@ export interface QuizQuestion {
   image?: string; // Optional image URL
 }
 
+export type QuizQuestionForm = Omit<QuizQuestion, 'id' | 'category'> & {
+    id?: number;
+};
+
+
 export interface PetProfile {
   name: string;
   unlock_criteria: string;
@@ -27,3 +32,5 @@ export interface DailyProgress {
     pomodorosCompleted?: number;
     pointsEarned?: number;
 }
+
+    

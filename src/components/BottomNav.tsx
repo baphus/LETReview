@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { BookOpen, CalendarDays, Clock, Home, Lightbulb } from "lucide-react";
+import { BookOpen, CalendarDays, Clock, Home, Lightbulb, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTimer } from "@/hooks/use-timer";
 import { Badge } from "./ui/badge";
@@ -11,9 +11,9 @@ import { Badge } from "./ui/badge";
 const navItems = [
   { href: "/home", label: "Home", icon: Home },
   { href: "/review", label: "Review", icon: BookOpen },
-  { href: "/quiz", label: "Quiz", icon: Lightbulb },
   { href: "/daily", label: "Daily", icon: CalendarDays },
   { href: "/timer", label: "Timer", icon: Clock },
+  { href: "/profile", label: "Profile", icon: User },
 ];
 
 export default function BottomNav() {
@@ -66,7 +66,7 @@ export default function BottomNav() {
                 <Icon className="h-6 w-6 mb-1" />
                 {href === '/timer' && <TimerIndicator />}
               </div>
-              <span>{label}</span>
+              <span className="text-xs">{label}</span>
             </Link>
           );
         })}
@@ -74,3 +74,5 @@ export default function BottomNav() {
     </nav>
   );
 }
+
+    

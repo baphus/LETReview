@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { BookOpen, CalendarDays, Clock, Home, User, Lightbulb } from "lucide-react";
+import { BookOpen, CalendarDays, Clock, Home, User, Lightbulb, BookCopy } from "lucide-react";
 import {
   SidebarHeader,
   SidebarMenu,
@@ -119,7 +119,7 @@ export function AppSidebar() {
             <SidebarFooter>
                 <Link href="/profile" className="w-full">
                     <SidebarMenuButton
-                        isActive={pathname === '/profile'}
+                        isActive={pathname.startsWith('/profile')}
                         tooltip={{ children: user.name }}
                         className="h-14"
                     >
@@ -143,3 +143,5 @@ export function AppSidebar() {
     </>
   );
 }
+
+    

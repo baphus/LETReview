@@ -19,14 +19,29 @@ export const loadQuestions = (): QuizQuestion[] => {
   if (typeof window !== 'undefined') {
     const savedQuestions = localStorage.getItem('customQuestions');
     if (savedQuestions) {
-      const parsedQuestions = JSON.parse(savedQuestions);
-      if (parsedQuestions.length > 0) {
-        return parsedQuestions;
+      try {
+        const parsedQuestions = JSON.parse(savedQuestions);
+        if (Array.isArray(parsedQuestions) && parsedQuestions.length > 0) {
+          return parsedQuestions;
+        }
+      } catch (e) {
+        console.error("Failed to parse questions from localStorage", e);
+        return sampleQuestions;
       }
     }
   }
   return sampleQuestions;
 };
+
+// Function to save questions to local storage
+export const saveQuestions = (questions: QuizQuestion[]) => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('customQuestions', JSON.stringify(questions));
+     // Dispatch a storage event to notify other components like the quiz pages
+    window.dispatchEvent(new Event('storage'));
+  }
+};
+
 
 // Function to generate a seed from a string (e.g., today's date)
 const getSeed = (str: string) => {
@@ -51,6 +66,7 @@ const getDayOfYear = (date: Date): number => {
 
 export const getQuestionForDate = (date: Date): QuizQuestion => {
     const questions = loadQuestions();
+    if (questions.length === 0) return sampleQuestions[0];
     const dayOfYear = getDayOfYear(date);
     const index = dayOfYear % questions.length;
     const question = { ...questions[index] };
@@ -164,3 +180,5 @@ export const achievementPets: PetProfile[] = [
 export const rarePets: PetProfile[] = [
     { name: "Draco", unlock_criteria: "Purchase in store", cost: 1000, image: "/pets/draco.png", hint: "fire breathing", streak_req: 0 },
 ];
+
+    

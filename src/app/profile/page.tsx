@@ -4,8 +4,9 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { User, LogOut, Settings, Edit, Check, Camera, Palette, Gem, Brush, AlertTriangle, Moon, Sun } from "lucide-react";
+import { User, LogOut, Settings, Edit, Check, Camera, Palette, Gem, Brush, AlertTriangle, Moon, Sun, BookCopy } from "lucide-react";
 import { useEffect, useState, useRef, ChangeEvent } from "react";
+import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
@@ -288,6 +289,23 @@ export default function ProfilePage() {
                     </AccordionContent>
                 </AccordionItem>
                 
+                 <AccordionItem value="questions">
+                    <AccordionTrigger>
+                        <div className="flex items-center gap-3">
+                            <BookCopy className="h-5 w-5" />
+                            <span className="font-semibold">Question Bank</span>
+                        </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-4 space-y-4">
+                       <p className="text-sm text-muted-foreground">Manage your custom questions here. You can add, edit, and delete questions.</p>
+                        <Link href="/profile/questions" className="w-full">
+                            <Button className="w-full">
+                                Manage Questions
+                            </Button>
+                        </Link>
+                    </AccordionContent>
+                </AccordionItem>
+                
                 <AccordionItem value="settings">
                     <AccordionTrigger>
                          <div className="flex items-center gap-3">
@@ -462,3 +480,5 @@ export default function ProfilePage() {
     </div>
   );
 }
+
+    
