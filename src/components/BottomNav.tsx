@@ -36,7 +36,7 @@ export default function BottomNav() {
   const isChallenge = searchParams.get('challenge') === 'true';
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-card border-t shadow-t-lg md:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 bg-card border-t shadow-t-lg md:hidden pb-4">
       <div className="flex justify-around items-center h-16">
         {navItems.map(({ href, label, icon: Icon }) => {
           let isActivePath = false;
