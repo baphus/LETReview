@@ -1,12 +1,12 @@
 
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { CalendarDays, Flame, Gem, Shield, Star, Lock, RefreshCcw, HelpCircle, CheckCircle, XCircle } from "lucide-react";
-import { pets, getQuestionOfTheDay } from "@/lib/data";
+import { pets, getQuestionOfTheDay, loadQuestions } from "@/lib/data";
 import type { QuizQuestion, DailyProgress } from "@/lib/types";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +25,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { startOfDay, isBefore, startOfYesterday, format } from 'date-fns';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 
 
 interface UserStats {
@@ -165,6 +166,7 @@ export default function DailyPage() {
   const [challengeCompletedToday, setChallengeCompletedToday] = useState(false);
   const [streakBroken, setStreakBroken] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<"custom">("custom");
+  const [questionCounts, setQuestionCounts] = useState({ easy: 0, medium: 0, hard: 0 });
   const todayKey = getTodayKey();
 
   const loadUserStats = useCallback(() => {
@@ -211,6 +213,14 @@ export default function DailyPage() {
 
   useEffect(() => {
     loadUserStats();
+    
+    const allQuestions = loadQuestions();
+    setQuestionCounts({
+        easy: allQuestions.filter(q => q.difficulty === 'easy' && q.category === 'custom').length,
+        medium: allQuestions.filter(q => q.difficulty === 'medium' && q.category === 'custom').length,
+        hard: allQuestions.filter(q => q.difficulty === 'hard' && q.category === 'custom').length,
+    });
+    
     // This will run when the component mounts and also when the user navigates back to this page.
     const handleFocus = () => {
       loadUserStats();
@@ -279,6 +289,7 @@ export default function DailyPage() {
 
   return (
     <div className="container mx-auto p-4 max-w-2xl">
+    <TooltipProvider>
       <header className="flex items-center gap-2 mb-6">
         <CalendarDays className="h-8 w-8 text-primary" />
         <h1 className="text-3xl font-bold font-headline">Daily Activities</h1>
@@ -366,13 +377,15 @@ export default function DailyPage() {
           {challenges.map(challenge => {
              const challengeId = `${challenge.difficulty}-custom`;
              const isCompleted = userStats.completedChallenges.includes(challengeId);
+             const hasEnoughQuestions = questionCounts[challenge.difficulty as keyof typeof questionCounts] >= challenge.count;
+
             return (
-                <Card key={challenge.difficulty} className={cn(isCompleted && "bg-muted/50", `border-${challenge.color}-500/20`)}>
+                <Card key={challenge.difficulty} className={cn((isCompleted || !hasEnoughQuestions) && "bg-muted/50", `border-${challenge.color}-500/20`)}>
                   <CardHeader>
                     <div className="flex justify-between items-start">
                         <div>
                             <CardTitle className="font-headline capitalize">{challenge.difficulty} Challenge</CardTitle>
-                            <CardDescription>Complete a set of {challenge.count} questions.</CardDescription>
+                            <CardDescription>Complete a set of {challenge.count} questions. ({questionCounts[challenge.difficulty as keyof typeof questionCounts]} available)</CardDescription>
                         </div>
                         {isCompleted && <Badge variant="secondary">Completed</Badge>}
                     </div>
@@ -390,15 +403,29 @@ export default function DailyPage() {
                       })} />
                       <span>{challenge.points} Points</span>
                     </div>
-                    <Button onClick={() => handleStartChallenge(challenge.difficulty, challenge.count)} disabled={isCompleted}>
-                      {isCompleted ? 'Done' : 'Start'}
-                    </Button>
+                     <Tooltip>
+                        <TooltipTrigger asChild>
+                            <span tabIndex={0}>
+                                 <Button onClick={() => handleStartChallenge(challenge.difficulty, challenge.count)} disabled={isCompleted || !hasEnoughQuestions}>
+                                  {isCompleted ? 'Done' : 'Start'}
+                                </Button>
+                            </span>
+                        </TooltipTrigger>
+                        {!hasEnoughQuestions && (
+                            <TooltipContent>
+                                <p>Not enough {challenge.difficulty} questions. Add more in your question bank.</p>
+                            </TooltipContent>
+                        )}
+                    </Tooltip>
                   </CardFooter>
                 </Card>
             )
           })}
         </div>
       </section>
+    </TooltipProvider>
     </div>
   );
 }
+
+    
