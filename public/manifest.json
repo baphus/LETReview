@@ -1,7 +1,7 @@
 {
-  "name": "LETReviewBuddy",
+  "name": "MyReviewer",
   "short_name": "LETBuddy",
-  "description": "A mobile-first web application for studying the Licensure Exam for Teachers (LET) in the Philippines.",
+  "description": "A mobile-first web application for studying any test with gamified features to keep you engaged.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#FAFAFF",
