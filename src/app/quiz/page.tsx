@@ -132,7 +132,6 @@ export default function QuizPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [quizScore, setQuizScore] = useState(0);
   const [showResults, setShowResults] = useState(false);
-  const [answeredCurrent, setAnsweredCurrent] = useState(false);
   const [challengeAnswers, setChallengeAnswers] = useState<ChallengeAnswer[]>([]);
   const [isShuffled, setIsShuffled] = useState(false);
   
@@ -212,7 +211,7 @@ export default function QuizPage() {
         toast({
             title: "Correct!",
             description: "Nice work!",
-            className: "bg-green-100/10 border-green-500/20 text-foreground"
+            className: "bg-primary border-primary text-primary-foreground"
         });
     } else {
         toast({
@@ -372,3 +371,5 @@ export default function QuizPage() {
     </div>
   );
 }
+
+    

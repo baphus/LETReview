@@ -92,7 +92,7 @@ const QuestionOfTheDay = ({ onCorrectAnswer }: { onCorrectAnswer: () => void }) 
 
             if (correct) {
                 onCorrectAnswer(); // This updates the state in the parent component
-                toast({ title: "Correct!", description: "You earned 5 points!", className: "bg-green-500/10 border-green-500/20 text-foreground" });
+                toast({ title: "Correct!", description: "You earned 5 points!", className: "bg-primary border-primary text-primary-foreground" });
             } else {
                  toast({ variant: "destructive", title: "Incorrect", description: "Better luck tomorrow!" });
             }
@@ -241,7 +241,7 @@ export default function DailyPage() {
         toast({
           title: "Streak Restored!",
           description: `You spent ${restoreStreakCost} points.`,
-          className: "bg-green-500/10 border-green-500/20 text-foreground"
+          className: "bg-primary border-primary text-primary-foreground"
         });
       }
     } else {
@@ -397,3 +397,5 @@ export default function DailyPage() {
     </div>
   );
 }
+
+    

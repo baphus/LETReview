@@ -157,7 +157,7 @@ export default function ProfilePage() {
         toast({
           title: "Success",
           description: "Your name has been updated.",
-          className: "bg-green-100 border-green-300"
+          className: "bg-primary border-primary text-primary-foreground"
         });
     }
   };
@@ -173,7 +173,7 @@ export default function ProfilePage() {
         toast({
           title: "Success",
           description: "Your settings have been saved.",
-          className: "bg-green-100 border-green-300"
+          className: "bg-primary border-primary text-primary-foreground"
         });
     }
   }
@@ -224,7 +224,7 @@ export default function ProfilePage() {
         const updatedUser = { ...user, activeTheme: themeValue };
         saveUser(updatedUser);
         applyTheme(themeValue);
-        toast({ title: "Theme Activated!", className: "bg-green-100 border-green-300"});
+        toast({ title: "Theme Activated!", className: "bg-primary border-primary text-primary-foreground"});
     } else {
         if (user.points >= cost) {
             const updatedUser = { 
@@ -235,7 +235,7 @@ export default function ProfilePage() {
             };
             saveUser(updatedUser);
             applyTheme(themeValue);
-            toast({ title: "Theme Unlocked!", description: `You spent ${cost} points.`, className: "bg-green-100 border-green-300"});
+            toast({ title: "Theme Unlocked!", description: `You spent ${cost} points.`, className: "bg-primary border-primary text-primary-foreground"});
         } else {
             toast({ variant: "destructive", title: "Not enough points!"});
         }
@@ -251,7 +251,7 @@ export default function ProfilePage() {
             unlockedPets: [...new Set([...user.unlockedPets, petName])],
         };
         saveUser(updatedUser);
-        toast({ title: "Pet Unlocked!", description: `You spent ${cost} points to get ${petName}!`, className: "bg-green-100 border-green-300"});
+        toast({ title: "Pet Unlocked!", description: `You spent ${cost} points to get ${petName}!`, className: "bg-primary border-primary text-primary-foreground"});
       } else {
         toast({ variant: "destructive", title: "Not enough points!"});
       }
@@ -276,7 +276,7 @@ export default function ProfilePage() {
     toast({
         title: "Question Added!",
         description: "Your new question has been saved to your reviewer.",
-        className: "bg-green-100 border-green-300"
+        className: "bg-primary border-primary text-primary-foreground"
     });
   }
 
@@ -614,3 +614,5 @@ export default function ProfilePage() {
     </div>
   );
 }
+
+    
