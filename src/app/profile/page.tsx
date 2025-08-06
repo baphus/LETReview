@@ -4,7 +4,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { User, LogOut, Settings, Edit, Check, Camera, Palette, Gem, Trophy, Clock, Flame, Award, PlusCircle, Trash2, ChevronDown, BookCopy, Brush, Bell, Shield, AlertTriangle } from "lucide-react";
+import { User, LogOut, Settings, Edit, Check, Camera, Palette, Gem, Brush, AlertTriangle } from "lucide-react";
 import { useEffect, useState, useRef, ChangeEvent } from "react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -14,14 +14,7 @@ import { DatePicker } from "@/components/ui/datepicker";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
-import { achievementPets, rarePets, loadQuestions } from "@/lib/data";
-import { Progress } from "@/components/ui/progress";
-import type { QuizQuestion } from "@/lib/types";
-import { useForm, useFieldArray, SubmitHandler } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Textarea } from "@/components/ui/textarea";
+import { rarePets } from "@/lib/data";
 import {
   Accordion,
   AccordionContent,
@@ -39,16 +32,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-
-const questionSchema = z.object({
-  question: z.string().min(10, "Question must be at least 10 characters long."),
-  image: z.string().url().optional().or(z.literal('')),
-  choices: z.array(z.object({ value: z.string().min(1, "Choice cannot be empty.") })).min(2, "Must have at least two choices."),
-  answer: z.string().min(1, "You must select a correct answer."),
-  explanation: z.string().optional(),
-});
-
-type QuestionFormValues = z.infer<typeof questionSchema>;
 
 interface UserProfile {
     name: string;
@@ -81,28 +64,6 @@ export default function ProfilePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [examDate, setExamDate] = useState<Date | undefined>(undefined);
   const [passingScore, setPassingScore] = useState(75);
-  const [questions, setQuestions] = useState<QuizQuestion[]>([]);
-  const [questionToDelete, setQuestionToDelete] = useState<QuizQuestion | null>(null);
-
-  const form = useForm<QuestionFormValues>({
-    resolver: zodResolver(questionSchema),
-    defaultValues: {
-      question: "",
-      image: "",
-      choices: [{ value: "" }, { value: "" }],
-      answer: "",
-      explanation: "",
-    },
-  });
-
-  const { fields, append, remove } = useFieldArray({
-    control: form.control,
-    name: "choices",
-  });
-  
-  const loadAndSetQuestions = () => {
-    setQuestions(loadQuestions());
-  };
 
   useEffect(() => {
     const savedUser = localStorage.getItem("userProfile");
@@ -123,7 +84,6 @@ export default function ProfilePage() {
       }
       setPassingScore(fullUser.passingScore || 75);
       applyTheme(fullUser.activeTheme);
-      loadAndSetQuestions();
     } else {
         router.push('/login');
     }
@@ -247,64 +207,12 @@ export default function ProfilePage() {
       }
   }
 
-  const onQuestionSubmit: SubmitHandler<QuestionFormValues> = (data) => {
-    const newQuestion: QuizQuestion = {
-        id: Date.now(),
-        category: 'custom',
-        difficulty: 'easy', // Or some other logic
-        question: data.question,
-        choices: data.choices.map(c => c.value),
-        answer: data.answer,
-        explanation: data.explanation,
-        image: data.image
-    };
-
-    const updatedQuestions = [...questions, newQuestion];
-    localStorage.setItem("customQuestions", JSON.stringify(updatedQuestions));
-    loadAndSetQuestions();
-    form.reset();
-    toast({
-        title: "Question Added!",
-        description: "Your new question has been saved to your question bank.",
-        className: "bg-primary border-primary text-primary-foreground"
-    });
-  }
-  
-  const confirmDeleteQuestion = () => {
-    if (!questionToDelete) return;
-
-    const updatedQuestions = questions.filter(q => q.id !== questionToDelete.id);
-    localStorage.setItem("customQuestions", JSON.stringify(updatedQuestions));
-    loadAndSetQuestions();
-    setQuestionToDelete(null); // Close the dialog
-    toast({
-        title: "Question Deleted",
-        description: "The question has been removed from your question bank.",
-        className: "bg-primary border-primary text-primary-foreground"
-    });
-  };
-
   if (!user) {
     return null; // Or a loading spinner
   }
 
   return (
     <div className="container mx-auto p-4 max-w-2xl">
-      <AlertDialog open={!!questionToDelete} onOpenChange={() => setQuestionToDelete(null)}>
-        <AlertDialogContent>
-            <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete the question: "{questionToDelete?.question}"
-            </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteQuestion}>Delete</AlertDialogAction>
-            </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
       <header className="flex items-center gap-4 mb-6">
         <h1 className="text-2xl font-bold font-headline">Profile & Settings</h1>
       </header>
@@ -363,140 +271,6 @@ export default function ProfilePage() {
                     </AccordionContent>
                 </AccordionItem>
                 
-                <AccordionItem value="questions">
-                    <AccordionTrigger>
-                        <div className="flex items-center gap-3">
-                            <BookCopy className="h-5 w-5" />
-                            <span className="font-semibold">Question Bank</span>
-                        </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="pt-4 space-y-6">
-                        <Card>
-                             <CardHeader>
-                                <CardTitle>Manage Your Questions</CardTitle>
-                                <CardDescription>View, edit, or delete your custom questions.</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-2">
-                                    {questions.length > 0 ? (
-                                        questions.map(q => (
-                                            <div key={q.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50 gap-2">
-                                                <p className="text-sm truncate flex-1 min-w-0">{q.question}</p>
-                                                <div className="flex items-center gap-1 flex-shrink-0">
-                                                     <Button variant="ghost" size="icon" disabled>
-                                                        <Edit className="h-4 w-4" />
-                                                    </Button>
-                                                    <Button variant="ghost" size="icon" onClick={() => setQuestionToDelete(q)}>
-                                                        <Trash2 className="h-4 w-4 text-destructive" />
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <p className="text-sm text-muted-foreground text-center py-4">Your question bank is empty.</p>
-                                    )}
-                                </div>
-                            </CardContent>
-                        </Card>
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Add a New Question</CardTitle>
-                                <CardDescription>Expand your custom reviewer by adding new questions.</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                            <Form {...form}>
-                                <form onSubmit={form.handleSubmit(onQuestionSubmit)} className="space-y-6">
-                                <FormField
-                                    control={form.control}
-                                    name="question"
-                                    render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Question</FormLabel>
-                                        <FormControl>
-                                        <Textarea placeholder="What is the capital of..." {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="image"
-                                    render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Image URL (Optional)</FormLabel>
-                                        <FormControl>
-                                        <Input placeholder="https://example.com/image.png" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                    )}
-                                />
-                                <div>
-                                    <Label>Choices</Label>
-                                    <div className="space-y-2 mt-2">
-                                    {fields.map((field, index) => (
-                                        <FormField
-                                        key={field.id}
-                                        control={form.control}
-                                        name={`choices.${index}.value`}
-                                        render={({ field }) => (
-                                            <FormItem>
-                                            <div className="flex items-center gap-2">
-                                            <FormControl>
-                                                    <Input {...field} placeholder={`Choice ${index + 1}`} />
-                                            </FormControl>
-                                            <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} disabled={fields.length <= 2}>
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                            </div>
-                                            <FormMessage />
-                                            </FormItem>
-                                        )}
-                                        />
-                                    ))}
-                                    </div>
-                                    <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => append({ value: "" })}>
-                                        <PlusCircle className="mr-2 h-4 w-4" /> Add Choice
-                                    </Button>
-                                </div>
-                                <FormField
-                                    control={form.control}
-                                    name="answer"
-                                    render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Correct Answer</FormLabel>
-                                        <FormControl>
-                                        <Input placeholder="Enter the exact text of the correct choice" {...field} />
-                                        </FormControl>
-                                        <FormDescription>
-                                        Copy and paste the correct choice text here.
-                                        </FormDescription>
-                                        <FormMessage />
-                                    </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="explanation"
-                                    render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Explanation (Optional)</FormLabel>
-                                        <FormControl>
-                                        <Textarea placeholder="Explain why this is the correct answer..." {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                    )}
-                                />
-                                <Button type="submit">Save Question</Button>
-                                </form>
-                            </Form>
-                            </CardContent>
-                        </Card>
-                    </AccordionContent>
-                </AccordionItem>
-
                 <AccordionItem value="settings">
                     <AccordionTrigger>
                          <div className="flex items-center gap-3">
@@ -646,3 +420,5 @@ export default function ProfilePage() {
     </div>
   );
 }
+
+    
