@@ -30,25 +30,20 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-  const [isShowingSplash, setIsShowingSplash] = useState(pathname === "/");
+  const [isShowingSplash, setIsShowingSplash] = useState(true);
 
   useEffect(() => {
     // Force dark mode
     document.documentElement.classList.add('dark');
 
-    if (pathname === '/') {
-        setIsShowingSplash(true);
-         const splashShown = sessionStorage.getItem("splashShown");
-        if (splashShown) {
-            setIsShowingSplash(false);
-        } else {
-            setTimeout(() => {
-                setIsShowingSplash(false);
-                sessionStorage.setItem("splashShown", "true");
-            }, 3000); 
-        }
-    } else {
+     const splashShown = sessionStorage.getItem("splashShown");
+    if (splashShown) {
         setIsShowingSplash(false);
+    } else {
+        setTimeout(() => {
+            setIsShowingSplash(false);
+            sessionStorage.setItem("splashShown", "true");
+        }, 3000); 
     }
   }, [pathname]);
 
@@ -67,7 +62,7 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
 
     applyActiveTheme();
     const userProfile = localStorage.getItem("userProfile");
-    const isAuthPage = pathname === "/login" || pathname === "/";
+    const isAuthPage = pathname === "/login";
     
     if (!userProfile && !isAuthPage) {
       router.replace("/login");
@@ -78,11 +73,11 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
     }
   }, [pathname, router, isShowingSplash]);
 
-  if (isShowingSplash && pathname === "/") {
+  if (isShowingSplash) {
     return <SplashScreen />;
   }
   
-  const isAppPage = !['/', '/login'].includes(pathname);
+  const isAppPage = pathname !== '/login';
 
   if (isCheckingAuth && isAppPage) {
     return (
