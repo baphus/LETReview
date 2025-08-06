@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, type FC, useEffect, useCallback, Suspense } from "react";
@@ -96,7 +95,7 @@ const StudyCard: FC<{ question: QuizQuestion }> = ({ question }) => {
                         key={`${choice}-${index}`}
                         className={cn(
                             "p-4 h-auto",
-                            isCorrect ? "border-green-500 bg-green-50/10" : "bg-muted/40"
+                            isCorrect ? "border-green-500 bg-green-500/10" : "bg-muted/40"
                         )}
                     >
                         <div className="flex items-center justify-between">
@@ -354,7 +353,7 @@ function ReviewerPageContent() {
                 toast({
                     title: "Challenge Passed!",
                     description: `You earned ${pointsEarned} points and secured your streak!`,
-                    className: "bg-green-100/10 border-green-500/20 text-foreground"
+                    className: "bg-primary border-primary text-primary-foreground"
                 });
             } else {
                  if (!alreadyCompletedToday) {
@@ -365,13 +364,13 @@ function ReviewerPageContent() {
                     toast({
                         title: "Challenge Passed!",
                         description: `You passed another challenge and earned ${pointsEarned} points!`,
-                        className: "bg-green-100/10 border-green-500/20 text-foreground"
+                        className: "bg-primary border-primary text-primary-foreground"
                     });
                  } else {
                      toast({
                         title: "Challenge Complete!",
                         description: `You've already earned points for this challenge today.`,
-                        className: "bg-blue-100/10 border-blue-500/20 text-foreground"
+                        className: "bg-primary border-primary text-primary-foreground"
                     });
                  }
             }
@@ -549,7 +548,7 @@ function ReviewerPageContent() {
                         </TabsList>
                     </Tabs>
                      <Button 
-                        variant={isShuffled ? "default" : "outline"} 
+                        variant={isShuffled ? "secondary" : "outline"} 
                         size="icon" 
                         onClick={handleShuffleToggle}
                         aria-label="Shuffle questions"

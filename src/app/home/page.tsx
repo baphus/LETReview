@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -418,7 +417,7 @@ export default function HomePage() {
       <section>
         <h2 className="text-xl font-bold font-headline mb-4">Your Stats</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card className="col-span-2 md:col-span-2 bg-destructive/10 border-destructive">
+            <Card className="col-span-2 md:col-span-2 bg-gradient-to-tr from-destructive/20 to-destructive/10 border-destructive/20">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-base font-bold text-destructive">Daily Streak</CardTitle>
                 <Flame className="h-5 w-5 text-destructive" />
@@ -427,10 +426,10 @@ export default function HomePage() {
                 <div className="text-3xl font-bold">{user.streak} days</div>
                 </CardContent>
             </Card>
-            <Card className="col-span-2 md:col-span-2 bg-accent/10 border-accent">
+            <Card className="col-span-2 md:col-span-2 bg-gradient-to-tr from-primary/20 to-primary/10 border-primary/20">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-base font-bold text-accent">Total Points</CardTitle>
-                <Gem className="h-5 w-5 text-accent" />
+                <CardTitle className="text-base font-bold text-primary">Total Points</CardTitle>
+                <Gem className="h-5 w-5 text-primary" />
                 </CardHeader>
                 <CardContent>
                 <div className="text-3xl font-bold">{user.points}</div>
@@ -499,5 +498,3 @@ export default function HomePage() {
     </div>
   );
 }
-
-    

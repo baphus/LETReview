@@ -1,11 +1,9 @@
-
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { User, LogOut, Settings, Edit, Check, Camera, Palette, Gem, Trophy, Clock, Flame, Award, PlusCircle, Trash2 } from "lucide-react";
+import { User, LogOut, Settings, Edit, Check, Camera, Palette, Gem, Trophy, Clock, Flame, Award, PlusCircle, Trash2, ChevronDown, BookCopy, Brush, Bell, Shield, AlertTriangle } from "lucide-react";
 import { useEffect, useState, useRef, ChangeEvent } from "react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -23,6 +21,23 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const questionSchema = z.object({
   question: z.string().min(10, "Question must be at least 10 characters long."),
@@ -56,42 +71,6 @@ const themes = [
     { name: 'Rose', value: 'rose', cost: 100, colors: { primary: 'hsl(340, 70%, 55%)', accent: 'hsl(280, 50%, 60%)' } },
 ];
 
-const allAchievements = [
-  {
-    name: "Pomodoro Novice",
-    description: "Complete 10 Pomodoro sessions.",
-    petReward: "Owlbert",
-    icon: Clock,
-    target: 10,
-    getValue: (user: UserProfile) => user.completedSessions || 0,
-  },
-  {
-    name: "Pomodoro Pro",
-    description: "Complete 50 Pomodoro sessions.",
-    petReward: "Einstein",
-    icon: Clock,
-    target: 50,
-    getValue: (user: UserProfile) => user.completedSessions || 0,
-  },
-  {
-    name: "Quiz Whiz",
-    description: "Achieve a quiz streak of 10.",
-    petReward: "Sparky",
-    icon: Award,
-    target: 10,
-    getValue: (user: UserProfile) => user.highestQuizStreak || 0,
-  },
-  {
-    name: "Quiz Master",
-    description: "Achieve a quiz streak of 25.",
-    petReward: "Bolt",
-    icon: Award,
-    target: 25,
-    getValue: (user: UserProfile) => user.highestQuizStreak || 0,
-  },
-];
-
-
 export default function ProfilePage() {
   const router = useRouter();
   const { toast } = useToast();
@@ -102,6 +81,7 @@ export default function ProfilePage() {
   const [examDate, setExamDate] = useState<Date | undefined>(undefined);
   const [passingScore, setPassingScore] = useState(75);
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
+  const [questionToDelete, setQuestionToDelete] = useState<QuizQuestion | null>(null);
 
   const form = useForm<QuestionFormValues>({
     resolver: zodResolver(questionSchema),
@@ -118,6 +98,10 @@ export default function ProfilePage() {
     control: form.control,
     name: "choices",
   });
+  
+  const loadAndSetQuestions = () => {
+    setQuestions(loadQuestions());
+  };
 
   useEffect(() => {
     const savedUser = localStorage.getItem("userProfile");
@@ -138,7 +122,7 @@ export default function ProfilePage() {
       }
       setPassingScore(fullUser.passingScore || 75);
       applyTheme(fullUser.activeTheme);
-      setQuestions(loadQuestions());
+      loadAndSetQuestions();
     } else {
         router.push('/login');
     }
@@ -182,6 +166,11 @@ export default function ProfilePage() {
       localStorage.clear();
       document.documentElement.classList.remove('mint', 'sunset', 'rose');
       router.push('/');
+      toast({
+          title: "Data Reset",
+          description: "All your data has been cleared.",
+          className: "bg-primary border-primary text-primary-foreground"
+      });
   };
 
   const handleAvatarClick = () => {
@@ -271,14 +260,28 @@ export default function ProfilePage() {
 
     const updatedQuestions = [...questions, newQuestion];
     localStorage.setItem("customQuestions", JSON.stringify(updatedQuestions));
-    setQuestions(updatedQuestions);
+    loadAndSetQuestions();
     form.reset();
     toast({
         title: "Question Added!",
-        description: "Your new question has been saved to your reviewer.",
+        description: "Your new question has been saved to your question bank.",
         className: "bg-primary border-primary text-primary-foreground"
     });
   }
+  
+  const confirmDeleteQuestion = () => {
+    if (!questionToDelete) return;
+
+    const updatedQuestions = questions.filter(q => q.id !== questionToDelete.id);
+    localStorage.setItem("customQuestions", JSON.stringify(updatedQuestions));
+    loadAndSetQuestions();
+    setQuestionToDelete(null); // Close the dialog
+    toast({
+        title: "Question Deleted",
+        description: "The question has been removed from your question bank.",
+        className: "bg-primary border-primary text-primary-foreground"
+    });
+  };
 
   if (!user) {
     return null; // Or a loading spinner
@@ -286,333 +289,359 @@ export default function ProfilePage() {
 
   return (
     <div className="container mx-auto p-4 max-w-2xl">
+      <AlertDialog open={!!questionToDelete} onOpenChange={() => setQuestionToDelete(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the question: "{questionToDelete?.question}"
+            </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteQuestion}>Delete</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <header className="flex items-center gap-4 mb-6">
         <h1 className="text-2xl font-bold font-headline">Profile & Settings</h1>
       </header>
       
-      <Card>
-        <CardHeader>
-            <CardTitle>Edit Profile</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-            <div className="flex flex-col items-center gap-4">
-                <div className="relative">
-                    <Avatar className="h-24 w-24 border-4 border-primary">
-                    <AvatarImage src={user.avatarUrl} alt={user.name} data-ai-hint="profile picture" />
-                    <AvatarFallback>
-                        <User className="h-12 w-12" />
-                    </AvatarFallback>
-                    </Avatar>
-                    <Button 
-                        size="icon" 
-                        className="absolute bottom-0 right-0 rounded-full h-8 w-8"
-                        onClick={handleAvatarClick}
-                    >
-                        <Camera className="h-4 w-4" />
-                    </Button>
-                    <input 
-                        type="file" 
-                        ref={fileInputRef} 
-                        className="hidden" 
-                        accept="image/*"
-                        onChange={handleFileChange} 
-                    />
-                </div>
-                <div className="text-center w-full max-w-xs">
-                    {editingName ? (
-                    <div className="flex items-center gap-2">
-                        <Input value={newName} onChange={(e) => setNewName(e.target.value)} className="text-xl font-bold font-headline h-auto p-1" onKeyDown={(e) => e.key === 'Enter' && handleNameSave()} />
-                        <Button size="icon" variant="ghost" onClick={handleNameSave}>
-                        <Check className="h-5 w-5 text-green-500" />
-                        </Button>
-                    </div>
-                    ) : (
-                    <div className="flex items-center justify-center gap-2">
-                        <h2 className="text-xl font-bold font-headline">{user.name}</h2>
-                        <Button size="icon" variant="ghost" onClick={() => setEditingName(true)}>
-                        <Edit className="h-5 w-5" />
-                        </Button>
-                    </div>
-                    )}
-                </div>
-            </div>
-            
-        </CardContent>
-      </Card>
-      
-      <Card className="mt-6">
-        <CardHeader>
-            <CardTitle>Add a New Question</CardTitle>
-            <CardDescription>Expand your custom reviewer by adding new questions.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onQuestionSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="question"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Question</FormLabel>
-                    <FormControl>
-                      <Textarea placeholder="What is the capital of..." {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="image"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Image URL (Optional)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="https://example.com/image.png" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div>
-                <Label>Choices</Label>
-                <div className="space-y-2 mt-2">
-                  {fields.map((field, index) => (
-                    <FormField
-                      key={field.id}
-                      control={form.control}
-                      name={`choices.${index}.value`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <div className="flex items-center gap-2">
-                           <FormControl>
-                                <Input {...field} placeholder={`Choice ${index + 1}`} />
-                           </FormControl>
-                           <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} disabled={fields.length <= 2}>
-                               <Trash2 className="h-4 w-4" />
-                           </Button>
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  ))}
-                </div>
-                <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => append({ value: "" })}>
-                    <PlusCircle className="mr-2 h-4 w-4" /> Add Choice
-                </Button>
-              </div>
-              
-              <FormField
-                control={form.control}
-                name="answer"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Correct Answer</FormLabel>
-                    <FormControl>
-                       <Input placeholder="Enter the exact text of the correct choice" {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      Copy and paste the correct choice text here.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="explanation"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Explanation (Optional)</FormLabel>
-                    <FormControl>
-                      <Textarea placeholder="Explain why this is the correct answer..." {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <Button type="submit">Save Question</Button>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
-
-
-      <Card className="mt-6">
-        <CardHeader>
-            <CardTitle>Achievements</CardTitle>
-            <CardDescription>Unlock new pets by completing milestones.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-            {allAchievements.map(ach => {
-                const currentValue = ach.getValue(user);
-                const progress = Math.min((currentValue / ach.target) * 100, 100);
-                const isUnlocked = progress === 100;
-                return (
-                    <div key={ach.name} className={cn("p-4 rounded-lg border", isUnlocked ? "bg-green-50/10 border-green-500/20" : "bg-muted/30")}>
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className={cn("p-2 rounded-full", isUnlocked ? "bg-green-500/20 text-green-400" : "bg-muted")}>
-                                    <ach.icon className="h-5 w-5" />
-                                </div>
-                                <div>
-                                    <p className="font-semibold">{ach.name}</p>
-                                    <p className="text-sm text-muted-foreground">{ach.description}</p>
-                                </div>
-                            </div>
-                             {isUnlocked && (
-                                <div className="flex flex-col items-center">
-                                    <Image src={achievementPets.find(p => p.name === ach.petReward)?.image || ''} alt={ach.petReward} width={40} height={40} className="rounded-full bg-card p-1" />
-                                    <p className="text-xs font-bold text-green-400">Unlocked!</p>
-                                </div>
-                            )}
+        <div className="space-y-6">
+            <Accordion type="single" collapsible defaultValue="profile">
+                <AccordionItem value="profile">
+                    <AccordionTrigger>
+                        <div className="flex items-center gap-3">
+                            <User className="h-5 w-5" />
+                            <span className="font-semibold">Edit Profile</span>
                         </div>
-                        {!isUnlocked && (
-                            <div className="mt-2">
-                                <Progress value={progress} />
-                                <p className="text-xs text-right text-muted-foreground mt-1">{currentValue} / {ach.target}</p>
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-4">
+                        <div className="flex flex-col items-center gap-4">
+                            <div className="relative">
+                                <Avatar className="h-24 w-24 border-4 border-primary">
+                                <AvatarImage src={user.avatarUrl} alt={user.name} data-ai-hint="profile picture" />
+                                <AvatarFallback>
+                                    <User className="h-12 w-12" />
+                                </AvatarFallback>
+                                </Avatar>
+                                <Button 
+                                    size="icon" 
+                                    className="absolute bottom-0 right-0 rounded-full h-8 w-8"
+                                    onClick={handleAvatarClick}
+                                >
+                                    <Camera className="h-4 w-4" />
+                                </Button>
+                                <input 
+                                    type="file" 
+                                    ref={fileInputRef} 
+                                    className="hidden" 
+                                    accept="image/*"
+                                    onChange={handleFileChange} 
+                                />
                             </div>
-                        )}
-                    </div>
-                )
-            })}
-        </CardContent>
-      </Card>
-      
-       <Card className="mt-6">
-            <CardHeader>
-                <CardTitle>App Settings</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-                <div className="space-y-2">
-                    <Label htmlFor="exam-date">Exam Date</Label>
-                    <DatePicker date={examDate} setDate={setExamDate} />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="passing-score">Challenge Passing Score: <span className="font-bold text-primary">{passingScore}%</span></Label>
-                    <Slider
-                        id="passing-score"
-                        min={50}
-                        max={100}
-                        step={5}
-                        value={[passingScore]}
-                        onValueChange={(value) => setPassingScore(value[0])}
-                    />
-                </div>
-                 <Button className="w-full" onClick={handleSettingsSave}>
-                    Save Settings
-                </Button>
-            </CardContent>
-        </Card>
+                            <div className="text-center w-full max-w-xs">
+                                {editingName ? (
+                                <div className="flex items-center gap-2">
+                                    <Input value={newName} onChange={(e) => setNewName(e.target.value)} className="text-xl font-bold font-headline h-auto p-1" onKeyDown={(e) => e.key === 'Enter' && handleNameSave()} />
+                                    <Button size="icon" variant="ghost" onClick={handleNameSave}>
+                                    <Check className="h-5 w-5 text-green-500" />
+                                    </Button>
+                                </div>
+                                ) : (
+                                <div className="flex items-center justify-center gap-2">
+                                    <h2 className="text-xl font-bold font-headline">{user.name}</h2>
+                                    <Button size="icon" variant="ghost" onClick={() => setEditingName(true)}>
+                                    <Edit className="h-5 w-5" />
+                                    </Button>
+                                </div>
+                                )}
+                            </div>
+                        </div>
+                    </AccordionContent>
+                </AccordionItem>
+                
+                <AccordionItem value="questions">
+                    <AccordionTrigger>
+                        <div className="flex items-center gap-3">
+                            <BookCopy className="h-5 w-5" />
+                            <span className="font-semibold">Question Bank</span>
+                        </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-4 space-y-6">
+                        <Card>
+                             <CardHeader>
+                                <CardTitle>Manage Your Questions</CardTitle>
+                                <CardDescription>View, edit, or delete your custom questions.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="space-y-2">
+                                    {questions.length > 0 ? (
+                                        questions.map(q => (
+                                            <div key={q.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
+                                                <p className="text-sm truncate pr-2">{q.question}</p>
+                                                <div className="flex items-center gap-1">
+                                                     <Button variant="ghost" size="icon" disabled>
+                                                        <Edit className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button variant="ghost" size="icon" onClick={() => setQuestionToDelete(q)}>
+                                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <p className="text-sm text-muted-foreground text-center py-4">Your question bank is empty.</p>
+                                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Add a New Question</CardTitle>
+                                <CardDescription>Expand your custom reviewer by adding new questions.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                            <Form {...form}>
+                                <form onSubmit={form.handleSubmit(onQuestionSubmit)} className="space-y-6">
+                                <FormField
+                                    control={form.control}
+                                    name="question"
+                                    render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Question</FormLabel>
+                                        <FormControl>
+                                        <Textarea placeholder="What is the capital of..." {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="image"
+                                    render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Image URL (Optional)</FormLabel>
+                                        <FormControl>
+                                        <Input placeholder="https://example.com/image.png" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                    )}
+                                />
+                                <div>
+                                    <Label>Choices</Label>
+                                    <div className="space-y-2 mt-2">
+                                    {fields.map((field, index) => (
+                                        <FormField
+                                        key={field.id}
+                                        control={form.control}
+                                        name={`choices.${index}.value`}
+                                        render={({ field }) => (
+                                            <FormItem>
+                                            <div className="flex items-center gap-2">
+                                            <FormControl>
+                                                    <Input {...field} placeholder={`Choice ${index + 1}`} />
+                                            </FormControl>
+                                            <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} disabled={fields.length <= 2}>
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                            </div>
+                                            <FormMessage />
+                                            </FormItem>
+                                        )}
+                                        />
+                                    ))}
+                                    </div>
+                                    <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => append({ value: "" })}>
+                                        <PlusCircle className="mr-2 h-4 w-4" /> Add Choice
+                                    </Button>
+                                </div>
+                                <FormField
+                                    control={form.control}
+                                    name="answer"
+                                    render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Correct Answer</FormLabel>
+                                        <FormControl>
+                                        <Input placeholder="Enter the exact text of the correct choice" {...field} />
+                                        </FormControl>
+                                        <FormDescription>
+                                        Copy and paste the correct choice text here.
+                                        </FormDescription>
+                                        <FormMessage />
+                                    </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="explanation"
+                                    render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Explanation (Optional)</FormLabel>
+                                        <FormControl>
+                                        <Textarea placeholder="Explain why this is the correct answer..." {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                    )}
+                                />
+                                <Button type="submit">Save Question</Button>
+                                </form>
+                            </Form>
+                            </CardContent>
+                        </Card>
+                    </AccordionContent>
+                </AccordionItem>
 
-      <Card className="mt-6">
-        <CardHeader>
-            <CardTitle>Themes</CardTitle>
-            <CardDescription>Customize the look and feel of your app. Your points: {user.points}</CardDescription>
-        </CardHeader>
-        <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {themes.map(theme => {
-                const isUnlocked = user.unlockedThemes.includes(theme.value);
-                const isActive = user.activeTheme === theme.value;
-                return (
-                    <div key={theme.value} className="flex flex-col items-center gap-2">
-                         <div className={cn("flex items-center justify-center h-16 w-16 rounded-full border-4", isActive ? "border-primary" : "border-transparent")}>
-                             <div 
-                                className="h-12 w-12 rounded-full flex items-center justify-center"
-                                style={{
-                                    background: `linear-gradient(45deg, ${theme.colors.primary}, ${theme.colors.accent})`
-                                }}
+                <AccordionItem value="settings">
+                    <AccordionTrigger>
+                         <div className="flex items-center gap-3">
+                            <Settings className="h-5 w-5" />
+                            <span className="font-semibold">App Settings</span>
+                        </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-4 space-y-6">
+                        <div className="space-y-2">
+                            <Label htmlFor="exam-date">Exam Date</Label>
+                            <DatePicker date={examDate} setDate={setExamDate} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="passing-score">Challenge Passing Score: <span className="font-bold text-primary">{passingScore}%</span></Label>
+                            <Slider
+                                id="passing-score"
+                                min={50}
+                                max={100}
+                                step={5}
+                                value={[passingScore]}
+                                onValueChange={(value) => setPassingScore(value[0])}
                             />
                         </div>
-                        <p className="font-semibold">{theme.name}</p>
-                        <Button 
-                            className="w-full"
-                            variant={isActive ? "secondary" : "default"}
-                            onClick={() => handleThemeAction(theme.value, theme.cost)}
-                            disabled={isActive}
-                        >
-                            {isActive ? "Active" : (isUnlocked ? "Activate" : `${theme.cost} pts`)}
+                        <Button className="w-full" onClick={handleSettingsSave}>
+                            Save Settings
                         </Button>
-                    </div>
-                )
-            })}
-        </CardContent>
-      </Card>
-      
-      <Card className="mt-6">
-        <CardHeader>
-            <CardTitle>Pet Store</CardTitle>
-            <CardDescription>Purchase rare pets with your points.</CardDescription>
-        </CardHeader>
-        <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {rarePets.map(pet => {
-                const isUnlocked = user.unlockedPets.includes(pet.name);
-                return (
-                    <div key={pet.name} className="flex flex-col items-center gap-2 text-center">
-                        <Image
-                            src={pet.image}
-                            alt={pet.name}
-                            width={80}
-                            height={80}
-                            className={cn(
-                                "rounded-full bg-muted p-2",
-                                isUnlocked && "animate-bob"
-                            )}
-                            data-ai-hint={pet.hint}
-                        />
-                        <p className="font-semibold">{pet.name}</p>
-                         <Button 
-                            className="w-full"
-                            onClick={() => handlePetPurchase(pet.name, pet.cost)}
-                            disabled={isUnlocked}
-                        >
-                             {isUnlocked ? "Unlocked" : (
-                                <>
-                                 <Gem className="mr-2 h-4 w-4" />
-                                 {pet.cost}
-                                </>
-                             )}
-                        </Button>
-                    </div>
-                );
-            })}
-        </CardContent>
-      </Card>
+                    </AccordionContent>
+                </AccordionItem>
 
+                <AccordionItem value="appearance">
+                    <AccordionTrigger>
+                        <div className="flex items-center gap-3">
+                            <Brush className="h-5 w-5" />
+                            <span className="font-semibold">Appearance</span>
+                        </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-4 space-y-6">
+                         <Card>
+                            <CardHeader>
+                                <CardTitle>Themes</CardTitle>
+                                <CardDescription>Customize the look and feel of your app. Your points: {user.points}</CardDescription>
+                            </CardHeader>
+                            <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                {themes.map(theme => {
+                                    const isUnlocked = user.unlockedThemes.includes(theme.value);
+                                    const isActive = user.activeTheme === theme.value;
+                                    return (
+                                        <div key={theme.value} className="flex flex-col items-center gap-2">
+                                            <div className={cn("flex items-center justify-center h-16 w-16 rounded-full border-4", isActive ? "border-primary" : "border-transparent")}>
+                                                <div 
+                                                    className="h-12 w-12 rounded-full flex items-center justify-center"
+                                                    style={{
+                                                        background: `linear-gradient(45deg, ${theme.colors.primary}, ${theme.colors.accent})`
+                                                    }}
+                                                />
+                                            </div>
+                                            <p className="font-semibold">{theme.name}</p>
+                                            <Button 
+                                                className="w-full"
+                                                variant={isActive ? "secondary" : "default"}
+                                                onClick={() => handleThemeAction(theme.value, theme.cost)}
+                                                disabled={isActive}
+                                            >
+                                                {isActive ? "Active" : (isUnlocked ? "Activate" : `${theme.cost} pts`)}
+                                            </Button>
+                                        </div>
+                                    )
+                                })}
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Pet Store</CardTitle>
+                                <CardDescription>Purchase rare pets with your points.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                {rarePets.map(pet => {
+                                    const isUnlocked = user.unlockedPets.includes(pet.name);
+                                    return (
+                                        <div key={pet.name} className="flex flex-col items-center gap-2 text-center">
+                                            <Image
+                                                src={pet.image}
+                                                alt={pet.name}
+                                                width={80}
+                                                height={80}
+                                                className={cn(
+                                                    "rounded-full bg-muted p-2",
+                                                    isUnlocked && "animate-bob"
+                                                )}
+                                                data-ai-hint={pet.hint}
+                                            />
+                                            <p className="font-semibold">{pet.name}</p>
+                                            <Button 
+                                                className="w-full"
+                                                onClick={() => handlePetPurchase(pet.name, pet.cost)}
+                                                disabled={isUnlocked}
+                                            >
+                                                {isUnlocked ? "Unlocked" : (
+                                                    <>
+                                                    <Gem className="mr-2 h-4 w-4" />
+                                                    {pet.cost}
+                                                    </>
+                                                )}
+                                            </Button>
+                                        </div>
+                                    );
+                                })}
+                            </CardContent>
+                        </Card>
+                    </AccordionContent>
+                </AccordionItem>
+                
+                 <AccordionItem value="danger">
+                    <AccordionTrigger>
+                        <div className="flex items-center gap-3 text-destructive">
+                            <AlertTriangle className="h-5 w-5" />
+                            <span className="font-semibold">Danger Zone</span>
+                        </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-4">
+                       <p className="text-sm text-muted-foreground mb-4">This action is irreversible. All your progress, questions, points, and pets will be permanently deleted.</p>
+                       <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive" className="w-full">
+                                    <LogOut className="mr-2 h-4 w-4" />
+                                    Reset All Data
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This action cannot be undone. This will permanently delete all your application data from this device.
+                                </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleResetData}>Yes, delete everything</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
 
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle>About MyReviewer</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            This app is a review companion designed to help you create your own personalized reviewer for any subject.
-          </p>
-          <br />
-          <p className="text-sm text-muted-foreground italic">
-            This app is lovingly dedicated to my girlfriend, Yve, who inspired this project.
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card className="mt-6">
-        <CardHeader>
-            <CardTitle className="text-destructive">Danger Zone</CardTitle>
-        </CardHeader>
-        <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">This action is irreversible. All your progress, points, and pets will be permanently deleted.</p>
-            <Button variant="destructive" className="w-full" onClick={handleResetData}>
-                <LogOut className="mr-2 h-4 w-4" />
-                Reset All Data
-            </Button>
-        </CardContent>
-      </Card>
+                    </AccordionContent>
+                </AccordionItem>
+            </Accordion>
+        </div>
     </div>
   );
 }
-
-    
