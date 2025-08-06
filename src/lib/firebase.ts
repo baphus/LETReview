@@ -3,12 +3,13 @@ import { initializeApp, getApps } from "firebase/app";
 import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "your-api-key",
-  authDomain: "your-auth-domain",
-  projectId: "your-project-id",
-  storageBucket: "your-storage-bucket",
-  messagingSenderId: "your-messaging-sender-id",
-  appId: "your-app-id",
+  "projectId": "myreviewer-dumqm",
+  "appId": "1:771340678457:web:d6bf6829866b489c7ea4e8",
+  "storageBucket": "myreviewer-dumqm.firebasestorage.app",
+  "apiKey": "AIzaSyDvSVoizJ3Oeq7u_RG4UzwORhQNa-gIwTk",
+  "authDomain": "myreviewer-dumqm.firebaseapp.com",
+  "measurementId": "",
+  "messagingSenderId": "771340678457"
 };
 
 // Initialize Firebase
