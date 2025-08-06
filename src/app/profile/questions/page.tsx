@@ -7,7 +7,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -51,6 +51,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { cn } from '@/lib/utils';
 
 const questionFormSchema = z.object({
   id: z.number().optional(),
@@ -335,52 +336,58 @@ export default function QuestionsPage() {
         </Dialog>
 
 
-      <div className="space-y-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {questions.length > 0 ? (
           questions.map(q => (
-            <Card key={q.id}>
-              <CardContent className="p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <p className="font-semibold flex-1 truncate">{q.question}</p>
-                <div className="flex gap-2 self-end md:self-center">
-                  <Button variant="outline" size="icon" onClick={() => handleEditQuestion(q)}>
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                   <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                         <Button variant="destructive" size="icon">
-                            <Trash className="h-4 w-4" />
+            <Card 
+                key={q.id}
+                className="flex flex-col cursor-pointer hover:border-primary transition-colors"
+                onClick={() => handleEditQuestion(q)}
+            >
+                <CardContent className="p-4 flex-1">
+                    <p className="font-semibold text-sm line-clamp-4">{q.question}</p>
+                </CardContent>
+                 <CardFooter className="p-2 border-t mt-auto">
+                    <div className="flex w-full justify-end gap-2">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); handleEditQuestion(q)}}>
+                            <Edit className="h-4 w-4" />
                         </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This will permanently delete this question. This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleDeleteQuestion(q.id)}>
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                </div>
-              </CardContent>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                                    <Trash className="h-4 w-4" />
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This will permanently delete this question. This action cannot be undone.
+                                </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={(e) => { e.stopPropagation(); handleDeleteQuestion(q.id); }}>
+                                    Delete
+                                </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
+              </CardFooter>
             </Card>
           ))
         ) : (
-          <Card className="text-center p-8">
-            <CardTitle>No Questions Yet</CardTitle>
-            <CardDescription className="mt-2">
-              Click the "Add New Question" button to start building your question bank.
-            </CardDescription>
-          </Card>
+          <div className="col-span-full">
+            <Card className="text-center p-8">
+                <CardTitle>No Questions Yet</CardTitle>
+                <CardDescription className="mt-2">
+                Click the "Add New Question" button to start building your question bank.
+                </CardDescription>
+            </Card>
+          </div>
         )}
       </div>
     </div>
   );
 }
-
-    
