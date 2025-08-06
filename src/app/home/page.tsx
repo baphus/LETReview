@@ -103,7 +103,7 @@ export default function HomePage() {
         toast({
           title: "New Pet Unlocked!",
           description: `You've unlocked ${pet.name} for your achievements!`,
-          className: "bg-green-100 border-green-300"
+          className: "bg-primary border-primary text-primary-foreground"
         });
       }
     });
@@ -227,7 +227,7 @@ export default function HomePage() {
         toast({
           title: "Pet renamed!",
           description: `Your pet is now named ${newPetName.trim()}.`,
-          className: "bg-green-100 border-green-300"
+          className: "bg-primary border-primary text-primary-foreground"
         });
     }
   }
@@ -336,12 +336,12 @@ export default function HomePage() {
       {user.examDate && <Countdown examDate={new Date(user.examDate)} />}
       
       {!isStreakSecuredToday && (
-         <Card className="mb-6 bg-blue-50 border-blue-200">
+         <Card className="mb-6 bg-blue-50/10 border-blue-500/20">
           <CardHeader>
-            <CardTitle className="text-center text-blue-800 font-headline flex items-center justify-center gap-2">
+            <CardTitle className="text-center text-blue-400 font-headline flex items-center justify-center gap-2">
                 <Flame className="h-6 w-6"/> Secure Your Streak!
             </CardTitle>
-            <CardDescription className="text-center text-blue-600">You haven't completed a daily challenge yet. Finish one to maintain your streak.</CardDescription>
+            <CardDescription className="text-center text-blue-300">You haven't completed a daily challenge yet. Finish one to maintain your streak.</CardDescription>
           </CardHeader>
           <CardFooter>
             <Link href="/daily" className="w-full">
@@ -499,3 +499,5 @@ export default function HomePage() {
     </div>
   );
 }
+
+    
