@@ -4,7 +4,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { User, LogOut, Settings, Edit, Check, Camera, Palette, Gem, Brush, AlertTriangle } from "lucide-react";
+import { User, LogOut, Settings, Edit, Check, Camera, Palette, Gem, Brush, AlertTriangle, Moon, Sun } from "lucide-react";
 import { useEffect, useState, useRef, ChangeEvent } from "react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -32,6 +32,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Switch } from "@/components/ui/switch";
+
 
 interface UserProfile {
     name: string;
@@ -46,6 +48,7 @@ interface UserProfile {
     unlockedThemes: string[];
     unlockedPets: string[];
     activeTheme: string;
+    themeMode: 'light' | 'dark';
 }
 
 const themes = [
@@ -65,15 +68,25 @@ export default function ProfilePage() {
   const [examDate, setExamDate] = useState<Date | undefined>(undefined);
   const [passingScore, setPassingScore] = useState(75);
 
+  const applyUserTheme = (mode: 'light' | 'dark', theme: string) => {
+    const root = document.documentElement;
+    root.classList.remove('light', 'dark', 'mint', 'sunset', 'rose');
+    root.classList.add(mode);
+    if (theme !== 'default') {
+      root.classList.add(theme);
+    }
+  };
+
   useEffect(() => {
     const savedUser = localStorage.getItem("userProfile");
     if (savedUser) {
       const parsedUser = JSON.parse(savedUser);
-       const fullUser = {
+       const fullUser: UserProfile = {
             ...parsedUser,
             unlockedThemes: parsedUser.unlockedThemes || ['default'],
             unlockedPets: parsedUser.unlockedPets || [],
             activeTheme: parsedUser.activeTheme || 'default',
+            themeMode: parsedUser.themeMode || 'dark',
             highestQuizStreak: parsedUser.highestQuizStreak || 0,
             completedSessions: parsedUser.completedSessions || 0,
         };
@@ -83,7 +96,7 @@ export default function ProfilePage() {
         setExamDate(new Date(fullUser.examDate));
       }
       setPassingScore(fullUser.passingScore || 75);
-      applyTheme(fullUser.activeTheme);
+      applyUserTheme(fullUser.themeMode, fullUser.activeTheme);
     } else {
         router.push('/login');
     }
@@ -92,6 +105,8 @@ export default function ProfilePage() {
   const saveUser = (updatedUser: UserProfile) => {
     localStorage.setItem("userProfile", JSON.stringify(updatedUser));
     setUser(updatedUser);
+    // Dispatch a storage event to notify other parts of the app (like layout) about the change
+    window.dispatchEvent(new Event('storage'));
   };
   
   const handleNameSave = () => {
@@ -125,7 +140,8 @@ export default function ProfilePage() {
 
   const handleResetData = () => {
       localStorage.clear();
-      document.documentElement.classList.remove('mint', 'sunset', 'rose');
+      document.documentElement.classList.remove('dark', 'light', 'mint', 'sunset', 'rose');
+      document.documentElement.classList.add('dark'); // Default to dark after reset
       router.push('/');
       toast({
           title: "Data Reset",
@@ -160,12 +176,13 @@ export default function ProfilePage() {
     }
   };
 
-  const applyTheme = (themeValue: string) => {
-    document.documentElement.classList.remove('mint', 'sunset', 'rose');
-    if(themeValue !== 'default') {
-        document.documentElement.classList.add(themeValue);
-    }
-  }
+  const handleThemeModeToggle = (isDark: boolean) => {
+    if (!user) return;
+    const newMode = isDark ? 'dark' : 'light';
+    const updatedUser = { ...user, themeMode: newMode };
+    saveUser(updatedUser);
+    applyUserTheme(newMode, user.activeTheme);
+  };
 
   const handleThemeAction = (themeValue: string, cost: number) => {
     if (!user) return;
@@ -173,7 +190,7 @@ export default function ProfilePage() {
     if (user.unlockedThemes.includes(themeValue)) {
         const updatedUser = { ...user, activeTheme: themeValue };
         saveUser(updatedUser);
-        applyTheme(themeValue);
+        applyUserTheme(user.themeMode, themeValue);
         toast({ title: "Theme Activated!", className: "bg-primary border-primary text-primary-foreground"});
     } else {
         if (user.points >= cost) {
@@ -184,7 +201,7 @@ export default function ProfilePage() {
                 activeTheme: themeValue
             };
             saveUser(updatedUser);
-            applyTheme(themeValue);
+            applyUserTheme(user.themeMode, themeValue);
             toast({ title: "Theme Unlocked!", description: `You spent ${cost} points.`, className: "bg-primary border-primary text-primary-foreground"});
         } else {
             toast({ variant: "destructive", title: "Not enough points!"});
@@ -310,8 +327,33 @@ export default function ProfilePage() {
                     <AccordionContent className="pt-4 space-y-6">
                          <Card>
                             <CardHeader>
-                                <CardTitle>Themes</CardTitle>
-                                <CardDescription>Customize the look and feel of your app. Your points: {user.points}</CardDescription>
+                                <CardTitle>Appearance</CardTitle>
+                                <CardDescription>Customize the look and feel of your app.</CardDescription>
+                            </CardHeader>
+                             <CardContent className="space-y-6">
+                                <div className="flex items-center justify-between rounded-lg border p-4">
+                                  <div className="space-y-0.5">
+                                    <Label htmlFor="dark-mode" className="text-base">Dark Mode</Label>
+                                    <p className="text-sm text-muted-foreground">
+                                      Toggle between light and dark themes.
+                                    </p>
+                                  </div>
+                                   <div className="flex items-center gap-2">
+                                        <Sun className="h-5 w-5"/>
+                                        <Switch
+                                            id="dark-mode"
+                                            checked={user.themeMode === 'dark'}
+                                            onCheckedChange={handleThemeModeToggle}
+                                        />
+                                        <Moon className="h-5 w-5"/>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                         <Card>
+                            <CardHeader>
+                                <CardTitle>Color Themes</CardTitle>
+                                <CardDescription>Customize the accent colors of the app. Your points: {user.points}</CardDescription>
                             </CardHeader>
                             <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                 {themes.map(theme => {
@@ -391,7 +433,7 @@ export default function ProfilePage() {
                         </div>
                     </AccordionTrigger>
                     <AccordionContent className="pt-4">
-                       <p className="text-sm text-muted-foreground mb-4">This action is irreversible. All your progress, questions, points, and pets will be permanently deleted.</p>
+                       <p className="text-sm text-muted-foreground mb-4">This action is irreversible. All your progress, points, and pets will be permanently deleted.</p>
                        <AlertDialog>
                             <AlertDialogTrigger asChild>
                                 <Button variant="destructive" className="w-full">
@@ -420,5 +462,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-
-    

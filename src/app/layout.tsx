@@ -31,26 +31,31 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
-  useEffect(() => {
-    // Force dark mode
-    document.documentElement.classList.add('dark');
-  }, []);
+  const applyUserTheme = () => {
+    const savedUser = localStorage.getItem("userProfile");
+    if (savedUser) {
+        const user = JSON.parse(savedUser);
 
-   const applyActiveTheme = () => {
-        const savedUser = localStorage.getItem("userProfile");
-        if (savedUser) {
-            const user = JSON.parse(savedUser);
-            if (user.activeTheme && user.activeTheme !== 'default') {
-                document.documentElement.classList.remove('mint', 'sunset', 'rose');
-                document.documentElement.classList.add(user.activeTheme);
-            } else {
-                 document.documentElement.classList.remove('mint', 'sunset', 'rose');
-            }
+        // Handle light/dark mode
+        document.documentElement.classList.remove('dark', 'light');
+        document.documentElement.classList.add(user.themeMode || 'dark');
+        
+        // Handle custom accent themes
+        document.documentElement.classList.remove('mint', 'sunset', 'rose');
+        if (user.activeTheme && user.activeTheme !== 'default') {
+            document.documentElement.classList.add(user.activeTheme);
         }
-    };
+    } else {
+        // Default to dark if no profile
+        document.documentElement.classList.add('dark');
+    }
+  };
 
   useEffect(() => {
-    applyActiveTheme();
+    applyUserTheme();
+    // Listen for storage changes to re-apply theme
+    window.addEventListener('storage', applyUserTheme);
+
     const userProfile = localStorage.getItem("userProfile");
     const isAuthPage = pathname === "/login";
     
@@ -61,6 +66,9 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
     } else {
       setIsCheckingAuth(false);
     }
+     return () => {
+      window.removeEventListener('storage', applyUserTheme);
+    };
   }, [pathname, router]);
 
   const isAppPage = pathname !== '/login';
@@ -118,7 +126,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className="dark">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <title>MyReviewer</title>
         <meta

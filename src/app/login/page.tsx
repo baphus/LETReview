@@ -48,6 +48,7 @@ export default function LoginPage() {
       passingScore: 75,
       unlockedThemes: ['default'],
       activeTheme: 'default',
+      themeMode: 'dark', // Default to dark mode for new users
       unlockedPets: [],
       dailyProgress: {},
       lastLogin: getTodayKey(),
