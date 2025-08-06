@@ -363,10 +363,11 @@ export default function QuestionsPage() {
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {questions.length > 0 ? (
-          questions.map(q => (
+          questions.map((q, index) => (
             <Card 
                 key={q.id}
-                className="flex flex-col cursor-pointer hover:border-primary transition-colors"
+                className="flex flex-col cursor-pointer hover:border-primary transition-colors animate-fade-in-up"
+                style={{ animationDelay: `${index * 100}ms` }}
                 onClick={() => handleEditQuestion(q)}
             >
                 {q.image && (

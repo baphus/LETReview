@@ -186,12 +186,8 @@ export default function HomePage() {
     if (!user?.dailyProgress) return [];
     return Object.entries(user.dailyProgress).reduce((acc, [dateStr, progress]) => {
       if (progress.qotdCompleted) {
-        // When parsing yyyy-mm-dd, it's treated as UTC. This can cause off-by-one day errors.
-        // new Date(string) can be unreliable. Explicitly parse and construct in local time.
         const [year, month, day] = dateStr.split('-').map(s => parseInt(s, 10));
-        const date = new Date();
-        date.setFullYear(year, month - 1, day);
-        date.setHours(0, 0, 0, 0);
+        const date = new Date(year, month - 1, day);
         acc.push(date);
       }
       return acc;
@@ -485,7 +481,7 @@ export default function HomePage() {
                <Calendar
                     mode="multiple"
                     onDayClick={handleDayClick}
-                    disabled={{ before: new Date(new Date().setDate(new Date().getDate() - 365)), after: new Date() }}
+                    disabled={{ after: new Date() }}
                     className="rounded-md border"
                     modifiers={{
                        streak: streakDays,
@@ -506,8 +502,14 @@ export default function HomePage() {
           <CardContent className="p-4">
             <TooltipProvider>
             <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
-              {allPets.map((pet) => (
-                <PetDisplay key={pet.name} pet={pet} />
+              {allPets.map((pet, index) => (
+                 <div
+                    key={pet.name}
+                    className="animate-fade-in-up"
+                    style={{ animationDelay: `${index * 100}ms` }}
+                >
+                    <PetDisplay pet={pet} />
+                </div>
               ))}
             </div>
             </TooltipProvider>
