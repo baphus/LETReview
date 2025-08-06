@@ -29,10 +29,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 const QuizCard: FC<{ 
   question: QuizQuestion;
   onAnswer: (correct: boolean, answer: string) => void;
-  isChallenge: boolean;
   userAnswer?: string | null;
   hasAnswered?: boolean;
-}> = ({ question, onAnswer, isChallenge, userAnswer, hasAnswered }) => {
+}> = ({ question, onAnswer, userAnswer, hasAnswered }) => {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(userAnswer || null);
 
   const handleAnswerClick = (answer: string) => {
@@ -68,17 +67,9 @@ const QuizCard: FC<{
                 const isSelected = selectedAnswer === choice;
                 const isTheCorrectAnswer = choice === question.answer;
                 
-                let isDisabled = false;
-                if (!isChallenge && hasAnswered) {
-                    isDisabled = true;
-                }
+                let isDisabled = hasAnswered;
 
-                const getChallengeClass = () => {
-                    if (isSelected) return "bg-muted border-primary";
-                    return "hover:bg-muted cursor-pointer";
-                };
-
-                const getNonChallengeClass = () => {
+                const getQuizClass = () => {
                     if (!hasAnswered) return "hover:bg-muted cursor-pointer";
                     if (isTheCorrectAnswer) return "border-green-500 bg-green-50/10";
                     if (isSelected && !isTheCorrectAnswer) return "border-red-500 bg-red-50/10";
@@ -91,20 +82,20 @@ const QuizCard: FC<{
                         onClick={() => !isDisabled && handleAnswerClick(choice)}
                         className={cn(
                             "p-4 transition-all h-auto",
-                            isChallenge ? getChallengeClass() : getNonChallengeClass(),
+                            getQuizClass(),
                             isDisabled ? "cursor-not-allowed" : "cursor-pointer"
                         )}
                     >
                         <div className="flex items-center justify-between">
                             <p>{choice}</p>
-                            {!isChallenge && hasAnswered && isTheCorrectAnswer && <CheckCircle className="h-5 w-5 text-green-500" />}
-                            {!isChallenge && hasAnswered && isSelected && !isTheCorrectAnswer && <XCircle className="h-5 w-5 text-red-500" />}
+                            {hasAnswered && isTheCorrectAnswer && <CheckCircle className="h-5 w-5 text-green-500" />}
+                            {hasAnswered && isSelected && !isTheCorrectAnswer && <XCircle className="h-5 w-5 text-red-500" />}
                         </div>
                     </Card>
                 )
             })}
         </div>
-        {!isChallenge && hasAnswered && selectedAnswer !== question.answer && question.explanation && (
+        {hasAnswered && selectedAnswer !== question.answer && question.explanation && (
            <div className="mt-4 p-4 bg-muted/50 rounded-md border">
               <h4 className="font-semibold mb-1">Explanation</h4>
               <p className="text-sm text-muted-foreground">{question.explanation}</p>
@@ -128,7 +119,6 @@ export default function QuizPage() {
   const router = useRouter();
 
   const [allQuestions, setAllQuestions] = useState<QuizQuestion[]>([]);
-  const [category, setCategory] = useState<"gen_education" | "professional" | "custom">("custom");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [quizScore, setQuizScore] = useState(0);
   const [showResults, setShowResults] = useState(false);
@@ -160,21 +150,23 @@ export default function QuizPage() {
     setQuizScore(0);
     setShowResults(false);
     setChallengeAnswers([]);
-    setAnsweredCurrent(false);
   }, []);
 
 
   const currentQuestion = questions[currentIndex];
+  
+  const hasAnsweredCurrent = useMemo(() => {
+    if (!currentQuestion) return false;
+    return challengeAnswers.some(a => a.questionId === currentQuestion.id);
+  }, [currentQuestion, challengeAnswers]);
 
   const handleNext = () => {
     if (currentIndex < questions.length - 1) {
         setCurrentIndex((prev) => prev + 1);
-        setAnsweredCurrent(false);
     } else {
         setQuizScore(challengeAnswers.reduce((acc, ans) => acc + (ans.isCorrect ? 1 : 0), 0));
         setShowResults(true);
     }
-    setAnsweredCurrent(false);
   };
 
   const handlePrev = () => {
@@ -220,7 +212,6 @@ export default function QuizPage() {
             description: "Better luck next time!",
         });
     }
-    setAnsweredCurrent(true);
   };
 
   const handleDialogClose = () => {
@@ -242,14 +233,6 @@ export default function QuizPage() {
     resetQuizState();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isShuffled]);
-  
-  useEffect(() => {
-    if (currentQuestion) {
-        setAnsweredCurrent(
-            challengeAnswers.some(a => a.questionId === currentQuestion.id)
-        );
-    }
-  }, [currentIndex, challengeAnswers, currentQuestion]);
 
   const progressValue = questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
   
@@ -335,9 +318,8 @@ export default function QuizPage() {
             <QuizCard 
                 question={currentQuestion} 
                 onAnswer={handleAnswer} 
-                isChallenge={false} 
                 userAnswer={userAnswerForCurrentQuestion}
-                hasAnswered={answeredCurrent}
+                hasAnswered={hasAnsweredCurrent}
             />
           </>
         ) : (
@@ -362,7 +344,7 @@ export default function QuizPage() {
             <ArrowLeft className="h-4 w-4 mr-2" />
             Previous
           </Button>
-          <Button onClick={handleNext} disabled={!currentQuestion || !answeredCurrent}>
+          <Button onClick={handleNext} disabled={!currentQuestion || !hasAnsweredCurrent}>
             {currentIndex === questions.length - 1 ? 'Finish' : 'Next'}
             {currentIndex < questions.length - 1 && <ArrowRight className="h-4 w-4 ml-2" />}
           </Button>
@@ -371,5 +353,3 @@ export default function QuizPage() {
     </div>
   );
 }
-
-    
