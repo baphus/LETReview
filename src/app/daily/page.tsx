@@ -106,7 +106,7 @@ const QuestionOfTheDay = ({ onCorrectAnswer, userUid }: { onCorrectAnswer: () =>
     if (!question) return null;
 
     return (
-        <Card className="mb-6 animate-fade-in-up">
+        <Card className="mb-6">
              {question.image && (
                 <div className="relative w-full h-48 mb-4">
                     <Image 
@@ -296,7 +296,7 @@ export default function DailyPage() {
       </header>
 
       <div className="grid grid-cols-2 gap-4 mb-6 text-center">
-        <Card className="animate-fade-in-up">
+        <Card>
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center justify-center gap-2 text-lg text-destructive">
               <Flame className="text-destructive" />
@@ -307,7 +307,7 @@ export default function DailyPage() {
             <p className="text-3xl font-bold">{userStats.streak} Days</p>
           </CardContent>
         </Card>
-        <Card className="animate-fade-in-up" style={{ animationDelay: '100ms' }}>
+        <Card>
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center justify-center gap-2 text-lg">
               <Gem className="text-accent" />
@@ -323,7 +323,7 @@ export default function DailyPage() {
       <QuestionOfTheDay onCorrectAnswer={handleQotdCorrect} userUid={userStats.uid} />
 
       {challengeCompletedToday && (
-         <Card className="mb-6 bg-green-500/10 border-green-500/20 animate-fade-in-up">
+         <Card className="mb-6 bg-green-500/10 border-green-500/20">
           <CardHeader>
             <CardTitle className="text-center text-green-400 font-headline">
               Streak secured for today!
@@ -334,7 +334,7 @@ export default function DailyPage() {
       )}
 
       {streakBroken && !challengeCompletedToday && (
-        <Card className="mb-6 bg-amber-500/10 border-amber-500/20 animate-fade-in-up">
+        <Card className="mb-6 bg-amber-500/10 border-amber-500/20">
           <CardHeader>
             <CardTitle className="text-center text-amber-400 font-headline">
               Oh no! You lost your streak.
@@ -383,11 +383,9 @@ export default function DailyPage() {
                 <Card 
                     key={challenge.difficulty} 
                     className={cn(
-                        "animate-fade-in-up",
                         (isCompleted || !hasEnoughQuestions) && "bg-muted/50", 
                         `border-${challenge.color}-500/20`
                     )}
-                    style={{ animationDelay: `${200 + index * 100}ms` }}
                 >
                   <CardHeader>
                     <div className="flex justify-between items-start">

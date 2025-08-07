@@ -59,7 +59,7 @@ const MiniQuiz = ({ onCorrectAnswer, onIncorrectAnswer, onStreak }: { onCorrectA
     if (!question) return null;
 
     return (
-        <Card className="w-full max-w-sm animate-fade-in-up">
+        <Card className="w-full max-w-sm">
             <CardHeader>
                 <CardTitle className="text-center font-headline text-lg">Quick Question</CardTitle>
             </CardHeader>
@@ -245,7 +245,7 @@ export default function TimerPage() {
         </div>
 
         {timerEnded && mode === 'focus' && (
-             <Card className="w-full max-w-sm animate-fade-in-up">
+             <Card className="w-full max-w-sm">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <Bell className="h-5 w-5 text-accent" />
@@ -270,12 +270,12 @@ export default function TimerPage() {
                     onStreak={handleStreak}
                 />
                  {showCombo && useTimer.getState().quizStreak > 1 && (
-                    <div className="absolute -top-4 -right-4 bg-destructive text-destructive-foreground px-3 py-1 rounded-full text-lg font-bold animate-combo-pop">
+                    <div className="absolute -top-4 -right-4 bg-destructive text-destructive-foreground px-3 py-1 rounded-full text-lg font-bold">
                         🔥 Streak x{useTimer.getState().quizStreak}!
                     </div>
                 )}
                  {showPoints.show && (
-                    <div className="absolute -top-4 left-0 bg-primary text-primary-foreground px-3 py-1 rounded-full text-lg font-bold animate-combo-pop flex items-center gap-1">
+                    <div className="absolute -top-4 left-0 bg-primary text-primary-foreground px-3 py-1 rounded-full text-lg font-bold flex items-center gap-1">
                         <Gem className="h-4 w-4" /> +{showPoints.points}
                     </div>
                 )}

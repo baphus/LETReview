@@ -251,7 +251,7 @@ export default function ProfilePage() {
                         </div>
                     </AccordionTrigger>
                     <AccordionContent className="pt-4">
-                        <div className="flex flex-col items-center gap-4 animate-fade-in-up">
+                        <div className="flex flex-col items-center gap-4">
                             <div className="relative">
                                 <Avatar className="h-24 w-24 border-4 border-primary">
                                 <AvatarImage src={user.avatarUrl} alt={user.name} data-ai-hint="profile picture" />
@@ -302,7 +302,7 @@ export default function ProfilePage() {
                             <span className="font-semibold">Question Bank</span>
                         </div>
                     </AccordionTrigger>
-                    <AccordionContent className="pt-4 space-y-4 animate-fade-in-up">
+                    <AccordionContent className="pt-4 space-y-4">
                        <p className="text-sm text-muted-foreground">Manage your custom questions here. You can add, edit, and delete questions.</p>
                         <Link href="/profile/questions" className="w-full">
                             <Button className="w-full">
@@ -319,7 +319,7 @@ export default function ProfilePage() {
                             <span className="font-semibold">App Settings</span>
                         </div>
                     </AccordionTrigger>
-                    <AccordionContent className="pt-4 space-y-6 animate-fade-in-up">
+                    <AccordionContent className="pt-4 space-y-6">
                         <div className="space-y-2">
                             <Label htmlFor="exam-date">Exam Date</Label>
                             <DatePicker date={examDate} setDate={setExamDate} />
@@ -348,7 +348,7 @@ export default function ProfilePage() {
                             <span className="font-semibold">Appearance</span>
                         </div>
                     </AccordionTrigger>
-                    <AccordionContent className="pt-4 space-y-6 animate-fade-in-up">
+                    <AccordionContent className="pt-4 space-y-6">
                          <Card>
                             <CardHeader>
                                 <CardTitle>Appearance</CardTitle>
@@ -456,7 +456,7 @@ export default function ProfilePage() {
                             <span className="font-semibold">Danger Zone</span>
                         </div>
                     </AccordionTrigger>
-                    <AccordionContent className="pt-4 animate-fade-in-up">
+                    <AccordionContent className="pt-4">
                        <p className="text-sm text-muted-foreground mb-4">This action will sign you out of your account on this device.</p>
                        <AlertDialog>
                             <AlertDialogTrigger asChild>

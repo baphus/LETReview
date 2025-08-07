@@ -565,7 +565,7 @@ function ReviewerPageContent() {
       
       <div className="my-6">
         {questions.length > 0 && currentQuestion ? (
-          <div className="animate-fade-in-up">
+          <div>
             {isChallenge ? (
               <QuizCard 
                 question={currentQuestion} 
@@ -579,7 +579,7 @@ function ReviewerPageContent() {
             )}
           </div>
         ) : (
-          <Card className="h-80 flex justify-center items-center animate-fade-in-up">
+          <Card className="h-80 flex justify-center items-center">
              <div className="text-center text-muted-foreground">
               <p>No questions found.</p>
               {isChallenge ? <p>Check back tomorrow for new questions.</p> : <p>Add some questions on the Profile page to get started!</p>}
