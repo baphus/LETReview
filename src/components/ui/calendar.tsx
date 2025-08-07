@@ -63,56 +63,6 @@ function Calendar({
         IconRight: ({ className, ...props }) => (
           <ChevronRight className={cn("h-4 w-4", className)} {...props} />
         ),
-        Day: ({ date, displayMonth }) => {
-            const isQotdCompleted = props.modifiers?.qotd_completed?.some(d => 
-                d.getFullYear() === date.getFullYear() &&
-                d.getMonth() === date.getMonth() &&
-                d.getDate() === date.getDate()
-            );
-
-            // Default Day component rendering logic from react-day-picker
-            const { day,
-                selected,
-                range_start,
-                range_end,
-                range_middle,
-                hidden,
-                outside,
-                disabled,
-                today
-            } = DayPicker.useDayRender(date, displayMonth, props.numberOfMonths || 1);
-
-            const buttonRef = React.useRef<HTMLButtonElement>(null);
-            React.useEffect(() => {
-                if (day.active) {
-                    buttonRef.current?.focus();
-                }
-            }, [day.active]);
-
-            if (hidden) return <></>;
-
-            const classNames = [
-                cn(buttonVariants({ variant: "ghost" }), "h-9 w-9 p-0 font-normal"),
-                disabled && "opacity-50 text-muted-foreground",
-                today && !selected && "bg-accent text-accent-foreground",
-                selected && "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
-                props.modifiersClassNames?.streak && props.modifiers?.streak?.some(d => d.getTime() === date.getTime()) && props.modifiersClassNames.streak,
-            ];
-
-            return (
-                <div className="relative h-9 w-9">
-                     <button
-                        {...day.buttonProps}
-                        ref={buttonRef}
-                        type="button"
-                        className={cn(classNames)}
-                    >
-                        {date.getDate()}
-                    </button>
-                    {isQotdCompleted && <span className="absolute top-0 right-0 text-xs select-none pointer-events-none">✅</span>}
-                </div>
-            );
-        },
       }}
       {...props}
     />
@@ -121,5 +71,3 @@ function Calendar({
 Calendar.displayName = "Calendar"
 
 export { Calendar }
-
-    
