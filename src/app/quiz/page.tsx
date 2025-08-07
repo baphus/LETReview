@@ -70,7 +70,7 @@ const QuizCard: FC<{
                 let isDisabled = hasAnswered;
 
                 const getQuizClass = () => {
-                    if (!hasAnswered) return "hover:bg-muted cursor-pointer";
+                    if (!hasAnswered) return "hover:bg-muted cursor-pointer hover:scale-105 transition-transform";
                     if (isTheCorrectAnswer) return "border-green-500 bg-green-50/10";
                     if (isSelected && !isTheCorrectAnswer) return "border-red-500 bg-red-50/10";
                     return "opacity-50";

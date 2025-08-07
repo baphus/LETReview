@@ -366,7 +366,7 @@ export default function QuestionsPage() {
           questions.map((q) => (
             <Card 
                 key={q.id}
-                className="flex flex-col cursor-pointer hover:border-primary transition-colors"
+                className="flex flex-col cursor-pointer hover:border-primary transition-all duration-200 hover:scale-105"
                 onClick={() => handleEditQuestion(q)}
             >
                 {q.image && (

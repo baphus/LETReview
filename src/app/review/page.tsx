@@ -39,7 +39,7 @@ const Flashcard: FC<{ question: QuizQuestion }> = ({ question }) => {
       <div className={cn("flashcard w-full h-80 relative", { "is-flipped": isFlipped })}>
         {/* Front of Card */}
         <div className="flashcard-front absolute w-full h-full">
-          <Card className="h-full flex flex-col justify-center items-center text-center p-6 shadow-lg">
+          <Card className="h-full flex flex-col justify-center items-center text-center p-6 shadow-lg transition-transform duration-200 hover:scale-[1.02]">
             {question.image && (
                 <div className="relative w-full h-32 mb-4">
                     <Image src={question.image} alt={question.question} layout="fill" objectFit="contain" className="rounded-md"/>
@@ -72,7 +72,7 @@ const Flashcard: FC<{ question: QuizQuestion }> = ({ question }) => {
 
 const StudyCard: FC<{ question: QuizQuestion }> = ({ question }) => {
   return (
-    <Card className="w-full min-h-80 shadow-lg relative p-6">
+    <Card className="w-full min-h-80 shadow-lg relative p-6 transition-transform duration-200 hover:scale-[1.02]">
       {question.image && (
         <div className="relative w-full h-48 mb-4">
             <Image 
@@ -159,7 +159,7 @@ const QuizCard: FC<{
 
                 const getChallengeClass = () => {
                     if (isSelected) return "bg-muted border-primary";
-                    return "hover:bg-muted cursor-pointer";
+                    return "hover:bg-muted cursor-pointer transition-transform hover:scale-105";
                 };
 
                 return (
