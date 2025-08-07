@@ -1,11 +1,14 @@
+
 "use client"
 
 import * as React from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
-import { DayPicker } from "react-day-picker"
+import { DayPicker, DropdownProps } from "react-day-picker"
 
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./select"
+import { ScrollArea } from "./scroll-area"
 
 export type CalendarProps = React.ComponentProps<typeof DayPicker>
 
@@ -46,7 +49,7 @@ function Calendar({
           "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
         day_today: "bg-accent text-accent-foreground",
         day_outside:
-          "day-outside text-muted-foreground aria-selected:bg-accent/50 aria-selected:text-muted-foreground",
+          "day-outside text-muted-foreground opacity-50 aria-selected:bg-accent/50 aria-selected:text-muted-foreground aria-selected:opacity-30",
         day_disabled: "text-muted-foreground opacity-50",
         day_range_middle:
           "aria-selected:bg-accent aria-selected:text-accent-foreground",
@@ -60,6 +63,56 @@ function Calendar({
         IconRight: ({ className, ...props }) => (
           <ChevronRight className={cn("h-4 w-4", className)} {...props} />
         ),
+        Day: ({ date, displayMonth }) => {
+            const isQotdCompleted = props.modifiers?.qotd_completed?.some(d => 
+                d.getFullYear() === date.getFullYear() &&
+                d.getMonth() === date.getMonth() &&
+                d.getDate() === date.getDate()
+            );
+
+            // Default Day component rendering logic from react-day-picker
+            const { day,
+                selected,
+                range_start,
+                range_end,
+                range_middle,
+                hidden,
+                outside,
+                disabled,
+                today
+            } = DayPicker.useDayRender(date, displayMonth, props.numberOfMonths || 1);
+
+            const buttonRef = React.useRef<HTMLButtonElement>(null);
+            React.useEffect(() => {
+                if (day.active) {
+                    buttonRef.current?.focus();
+                }
+            }, [day.active]);
+
+            if (hidden) return <></>;
+
+            const classNames = [
+                cn(buttonVariants({ variant: "ghost" }), "h-9 w-9 p-0 font-normal"),
+                disabled && "opacity-50 text-muted-foreground",
+                today && !selected && "bg-accent text-accent-foreground",
+                selected && "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
+                props.modifiersClassNames?.streak && props.modifiers?.streak?.some(d => d.getTime() === date.getTime()) && props.modifiersClassNames.streak,
+            ];
+
+            return (
+                <div className="relative h-9 w-9">
+                     <button
+                        {...day.buttonProps}
+                        ref={buttonRef}
+                        type="button"
+                        className={cn(classNames)}
+                    >
+                        {date.getDate()}
+                    </button>
+                    {isQotdCompleted && <span className="absolute top-0 right-0 text-xs select-none pointer-events-none">✅</span>}
+                </div>
+            );
+        },
       }}
       {...props}
     />
@@ -68,3 +121,5 @@ function Calendar({
 Calendar.displayName = "Calendar"
 
 export { Calendar }
+
+    

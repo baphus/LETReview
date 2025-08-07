@@ -36,8 +36,9 @@ export default function LoginPage() {
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
 
   const setupRecaptcha = () => {
-    if (!window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+    // Using window to avoid issues with SSR and RecaptchaVerifier
+    if (!(window as any).recaptchaVerifier) {
+      (window as any).recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
         'size': 'invisible',
         'callback': (response: any) => {
           // reCAPTCHA solved, allow signInWithPhoneNumber.
@@ -50,7 +51,7 @@ export default function LoginPage() {
     e.preventDefault();
     setupRecaptcha();
     const phoneNumber = `+${phone}`;
-    const appVerifier = window.recaptchaVerifier;
+    const appVerifier = (window as any).recaptchaVerifier;
 
     signInWithPhoneNumber(auth, phoneNumber, appVerifier)
       .then((result) => {
@@ -108,7 +109,6 @@ export default function LoginPage() {
             lastLogin: getTodayKey(),
           };
         localStorage.setItem(userProfileKey, JSON.stringify(userProfile));
-        localStorage.setItem('currentUser', uid);
          // Clear any existing custom questions for a new user
         localStorage.removeItem(`customQuestions_${uid}`);
       }

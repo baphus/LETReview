@@ -366,7 +366,7 @@ export default function QuestionsPage() {
           questions.map((q, index) => (
             <Card 
                 key={q.id}
-                className="flex flex-col cursor-pointer hover:border-primary transition-colors animate-fade-in-up"
+                className="flex flex-col cursor-pointer hover:border-primary transition-colors animate-bounce-in"
                 style={{ animationDelay: `${index * 100}ms` }}
                 onClick={() => handleEditQuestion(q)}
             >
@@ -410,7 +410,7 @@ export default function QuestionsPage() {
           ))
         ) : (
           <div className="col-span-full">
-            <Card className="text-center p-8">
+            <Card className="text-center p-8 animate-bounce-in">
                 <CardTitle>No Questions Yet</CardTitle>
                 <CardDescription className="mt-2">
                 Click the "Add New Question" button to start building your question bank.
@@ -422,3 +422,5 @@ export default function QuestionsPage() {
     </div>
   );
 }
+
+    

@@ -106,7 +106,7 @@ const QuestionOfTheDay = ({ onCorrectAnswer, userUid }: { onCorrectAnswer: () =>
     if (!question) return null;
 
     return (
-        <Card className="mb-6">
+        <Card className="mb-6 animate-bounce-in">
              {question.image && (
                 <div className="relative w-full h-48 mb-4">
                     <Image 
@@ -296,7 +296,7 @@ export default function DailyPage() {
       </header>
 
       <div className="grid grid-cols-2 gap-4 mb-6 text-center">
-        <Card>
+        <Card className="animate-bounce-in">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center justify-center gap-2 text-lg text-destructive">
               <Flame className="text-destructive" />
@@ -307,7 +307,7 @@ export default function DailyPage() {
             <p className="text-3xl font-bold">{userStats.streak} Days</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="animate-bounce-in" style={{ animationDelay: '100ms' }}>
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center justify-center gap-2 text-lg">
               <Gem className="text-accent" />
@@ -323,7 +323,7 @@ export default function DailyPage() {
       <QuestionOfTheDay onCorrectAnswer={handleQotdCorrect} userUid={userStats.uid} />
 
       {challengeCompletedToday && (
-         <Card className="mb-6 bg-green-500/10 border-green-500/20">
+         <Card className="mb-6 bg-green-500/10 border-green-500/20 animate-bounce-in">
           <CardHeader>
             <CardTitle className="text-center text-green-400 font-headline">
               Streak secured for today!
@@ -334,7 +334,7 @@ export default function DailyPage() {
       )}
 
       {streakBroken && !challengeCompletedToday && (
-        <Card className="mb-6 bg-amber-500/10 border-amber-500/20">
+        <Card className="mb-6 bg-amber-500/10 border-amber-500/20 animate-bounce-in">
           <CardHeader>
             <CardTitle className="text-center text-amber-400 font-headline">
               Oh no! You lost your streak.
@@ -374,13 +374,21 @@ export default function DailyPage() {
             <p className="text-muted-foreground">Select a difficulty to start a challenge with your custom questions.</p>
         </div>
         <div className="space-y-4">
-          {challenges.map(challenge => {
+          {challenges.map((challenge, index) => {
              const challengeId = `${challenge.difficulty}-custom`;
              const isCompleted = userStats.completedChallenges.includes(challengeId);
              const hasEnoughQuestions = questionCounts[challenge.difficulty as keyof typeof questionCounts] >= challenge.count;
 
             return (
-                <Card key={challenge.difficulty} className={cn((isCompleted || !hasEnoughQuestions) && "bg-muted/50", `border-${challenge.color}-500/20`)}>
+                <Card 
+                    key={challenge.difficulty} 
+                    className={cn(
+                        "animate-bounce-in",
+                        (isCompleted || !hasEnoughQuestions) && "bg-muted/50", 
+                        `border-${challenge.color}-500/20`
+                    )}
+                    style={{ animationDelay: `${200 + index * 100}ms` }}
+                >
                   <CardHeader>
                     <div className="flex justify-between items-start">
                         <div>
@@ -406,7 +414,7 @@ export default function DailyPage() {
                      <Tooltip>
                         <TooltipTrigger asChild>
                             <span tabIndex={0}>
-                                 <Button onClick={() => handleStartChallenge(challenge.difficulty, challenge.count)} disabled={isCompleted || !hasEnoughQuestions}>
+                                 <Button onClick={() => handleStartChallenge(challenge.difficulty as 'easy' | 'medium' | 'hard', challenge.count)} disabled={isCompleted || !hasEnoughQuestions}>
                                   {isCompleted ? 'Done' : 'Start'}
                                 </Button>
                             </span>

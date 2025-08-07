@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, type FC, useEffect, useCallback, Suspense } from "react";
@@ -261,10 +262,13 @@ function ReviewerPageContent() {
 
 
   const loadUserData = useCallback(() => {
-    const savedUser = localStorage.getItem("userProfile");
-    if(savedUser){
-        const user = JSON.parse(savedUser);
-        setPassingScore(user.passingScore || 75);
+    const currentUid = localStorage.getItem('currentUser');
+    if(currentUid){
+        const savedUser = localStorage.getItem(`userProfile_${currentUid}`);
+        if(savedUser){
+            const user = JSON.parse(savedUser);
+            setPassingScore(user.passingScore || 75);
+        }
     }
   }, []);
 
@@ -313,14 +317,17 @@ function ReviewerPageContent() {
 
     const scorePercentage = (finalScore / questions.length) * 100;
     const passed = scorePercentage >= passingScore;
+    
+    const currentUid = localStorage.getItem('currentUser');
+    if (!currentUid) return;
 
-    const savedUser = localStorage.getItem("userProfile");
+    const savedUser = localStorage.getItem(`userProfile_${currentUid}`);
     if (savedUser) {
-        const user = JSON.parse(savedUser);
+        let user = JSON.parse(savedUser);
         const todayKey = getTodayKey();
         
         if (!user.dailyProgress) user.dailyProgress = {};
-        if (!user.dailyProgress[todayKey]) user.dailyProgress[todayKey] = {};
+        if (!user.dailyProgress[todayKey]) user.dailyProgress[todayKey] = { pointsEarned: 0, pomodorosCompleted: 0, challengesCompleted: [], qotdCompleted: false };
 
         const challengeId = `${challengeDifficulty}-custom`; // Category is always custom now
         
@@ -331,24 +338,24 @@ function ReviewerPageContent() {
             
             const alreadyCompletedToday = user.dailyProgress[todayKey].challengesCompleted.includes(challengeId);
 
+            // Only update streak and points if this specific challenge difficulty hasn't been completed today
             if (!alreadyCompletedToday) {
                 user.dailyProgress[todayKey].challengesCompleted.push(challengeId);
-            }
 
-            const wasAnyChallengeCompletedToday = user.lastChallengeDate === todayKey;
-            
-            if (!wasAnyChallengeCompletedToday) {
-                user.streak = (user.streak || 0) + 1;
-                if (user.streak > (user.highestStreak || 0)) {
-                    user.highestStreak = user.streak;
+                const wasAnyChallengeCompletedToday = user.lastChallengeDate === todayKey;
+                
+                if (!wasAnyChallengeCompletedToday) {
+                    user.streak = (user.streak || 0) + 1;
+                    if (user.streak > (user.highestStreak || 0)) {
+                        user.highestStreak = user.streak;
+                    }
+                    user.lastChallengeDate = todayKey;
                 }
-                user.lastChallengeDate = todayKey;
 
-                const pointsMap = { easy: 25, medium: 75, hard: 150 };
-                const pointsEarned = pointsMap[challengeDifficulty as keyof typeof pointsMap] || 0;
+                const pointsMap: { [key: string]: number } = { easy: 25, medium: 75, hard: 150 };
+                const pointsEarned = pointsMap[challengeDifficulty] || 0;
                 user.points = (user.points || 0) + pointsEarned;
                 user.dailyProgress[todayKey].pointsEarned = (user.dailyProgress[todayKey].pointsEarned || 0) + pointsEarned;
-
 
                 toast({
                     title: "Challenge Passed!",
@@ -356,27 +363,15 @@ function ReviewerPageContent() {
                     className: "bg-primary border-primary text-primary-foreground"
                 });
             } else {
-                 if (!alreadyCompletedToday) {
-                    const pointsMap = { easy: 25, medium: 75, hard: 150 };
-                    const pointsEarned = pointsMap[challengeDifficulty as keyof typeof pointsMap] || 0;
-                    user.points = (user.points || 0) + pointsEarned;
-                    user.dailyProgress[todayKey].pointsEarned = (user.dailyProgress[todayKey].pointsEarned || 0) + pointsEarned;
-                    toast({
-                        title: "Challenge Passed!",
-                        description: `You passed another challenge and earned ${pointsEarned} points!`,
-                        className: "bg-primary border-primary text-primary-foreground"
-                    });
-                 } else {
-                     toast({
-                        title: "Challenge Complete!",
-                        description: `You've already earned points for this challenge today.`,
-                        className: "bg-primary border-primary text-primary-foreground"
-                    });
-                 }
+                 toast({
+                    title: "Challenge Complete!",
+                    description: `You've already earned points for this challenge today.`,
+                    className: "bg-primary border-primary text-primary-foreground"
+                });
             }
         }
         
-        localStorage.setItem('userProfile', JSON.stringify(user));
+        localStorage.setItem(`userProfile_${currentUid}`, JSON.stringify(user));
     }
   };
 
@@ -477,11 +472,11 @@ function ReviewerPageContent() {
           <div className="flex-1 min-h-0 flex flex-col">
               {isChallenge && (
                   isChallengePassed ? (
-                      <div className="text-center text-green-400 font-semibold p-4 bg-green-50/10 rounded-md mb-4">
+                      <div className="text-center text-green-400 font-semibold p-4 bg-green-500/10 rounded-md mb-4">
                           <p>Congratulations! You passed the challenge.</p>
                       </div>
                   ) : (
-                      <div className="text-center text-red-400 font-semibold p-4 bg-red-50/10 rounded-md mb-4">
+                      <div className="text-center text-red-400 font-semibold p-4 bg-red-500/10 rounded-md mb-4">
                           <p>So close! You needed {passingScore}% to pass. Don't give up!</p>
                       </div>
                   )
@@ -570,7 +565,7 @@ function ReviewerPageContent() {
       
       <div className="my-6">
         {questions.length > 0 && currentQuestion ? (
-          <>
+          <div className="animate-bounce-in">
             {isChallenge ? (
               <QuizCard 
                 question={currentQuestion} 
@@ -582,9 +577,9 @@ function ReviewerPageContent() {
                 {mode === 'flashcard' && <Flashcard question={currentQuestion} />}
               </>
             )}
-          </>
+          </div>
         ) : (
-          <Card className="h-80 flex justify-center items-center">
+          <Card className="h-80 flex justify-center items-center animate-bounce-in">
              <div className="text-center text-muted-foreground">
               <p>No questions found.</p>
               {isChallenge ? <p>Check back tomorrow for new questions.</p> : <p>Add some questions on the Profile page to get started!</p>}
@@ -633,3 +628,5 @@ export default function ReviewPage() {
         </Suspense>
     )
 }
+
+    

@@ -185,14 +185,14 @@ export default function HomePage() {
   const qotdCompletedDays = useMemo(() => {
     if (!user?.dailyProgress) return [];
     return Object.entries(user.dailyProgress).reduce((acc, [dateStr, progress]) => {
-      if (progress.qotdCompleted) {
-        const [year, month, day] = dateStr.split('-').map(s => parseInt(s, 10));
-        const date = new Date(year, month - 1, day);
-        acc.push(date);
-      }
-      return acc;
+        if (progress.qotdCompleted) {
+            // Ensure correct parsing of YYYY-MM-DD
+            const date = new Date(dateStr + 'T00:00:00');
+            acc.push(date);
+        }
+        return acc;
     }, [] as Date[]);
-  }, [user?.dailyProgress]);
+}, [user?.dailyProgress]);
 
   const streakDays = useMemo(() => {
     if (!user) return [];
@@ -350,7 +350,7 @@ export default function HomePage() {
       {user.examDate && <Countdown examDate={new Date(user.examDate)} />}
       
       {!isStreakSecuredToday && (
-         <Card className="mb-6 bg-blue-50/10 border-blue-500/20">
+         <Card className="mb-6 bg-blue-500/10 border-blue-500/20 animate-bounce-in">
           <CardHeader>
             <CardTitle className="text-center text-blue-400 font-headline flex items-center justify-center gap-2">
                 <Flame className="h-6 w-6"/> Secure Your Streak!
@@ -368,7 +368,7 @@ export default function HomePage() {
        <section className="mb-6">
         <h2 className="text-xl font-bold font-headline mb-4">Today's Progress</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-             <Card className="animate-fade-in-up">
+             <Card className="animate-bounce-in">
                 <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium">Points Earned Today</CardTitle>
                 </CardHeader>
@@ -376,7 +376,7 @@ export default function HomePage() {
                     <p className="text-2xl font-bold flex items-center gap-2"><Gem className="h-5 w-5 text-accent" />{todaysProgress.pointsEarned || 0}</p>
                 </CardContent>
              </Card>
-             <Card className="animate-fade-in-up" style={{ animationDelay: '200ms' }}>
+             <Card className="animate-bounce-in" style={{ animationDelay: '100ms' }}>
                 <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium">Pomodoros Today</CardTitle>
                 </CardHeader>
@@ -384,7 +384,7 @@ export default function HomePage() {
                     <p className="text-2xl font-bold flex items-center gap-2"><Award className="h-5 w-5 text-muted-foreground" />{todaysProgress.pomodorosCompleted || 0}</p>
                 </CardContent>
              </Card>
-             <Card className="animate-fade-in-up" style={{ animationDelay: '400ms' }}>
+             <Card className="animate-bounce-in" style={{ animationDelay: '200ms' }}>
                 <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium">QOTD</CardTitle>
                 </CardHeader>
@@ -406,7 +406,7 @@ export default function HomePage() {
         <section className="mb-6">
             <h2 className="text-xl font-bold font-headline mb-4">Question of the Day</h2>
             {questionOfTheDay && (
-                <Card>
+                <Card className="animate-bounce-in" style={{ animationDelay: '300ms' }}>
                     <CardHeader>
                         <CardTitle className="flex items-center justify-between">
                             <span className="text-lg">{questionOfTheDay.question}</span>
@@ -432,7 +432,7 @@ export default function HomePage() {
       <section>
         <h2 className="text-xl font-bold font-headline mb-4">Your Stats</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card className="col-span-2 md:col-span-2 bg-gradient-to-tr from-destructive/20 to-destructive/10 border-destructive/20">
+            <Card className="col-span-2 md:col-span-2 bg-gradient-to-tr from-destructive/20 to-destructive/10 border-destructive/20 animate-bounce-in">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-base font-bold text-destructive">Daily Streak</CardTitle>
                 <Flame className="h-5 w-5 text-destructive" />
@@ -441,7 +441,7 @@ export default function HomePage() {
                 <div className="text-3xl font-bold">{user.streak} days</div>
                 </CardContent>
             </Card>
-            <Card className="col-span-2 md:col-span-2 bg-gradient-to-tr from-primary/20 to-primary/10 border-primary/20">
+            <Card className="col-span-2 md:col-span-2 bg-gradient-to-tr from-primary/20 to-primary/10 border-primary/20 animate-bounce-in" style={{ animationDelay: '100ms' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-base font-bold text-primary">Total Points</CardTitle>
                 <Gem className="h-5 w-5 text-primary" />
@@ -450,7 +450,7 @@ export default function HomePage() {
                 <div className="text-3xl font-bold">{user.points}</div>
                 </CardContent>
             </Card>
-            <Card>
+            <Card className="animate-bounce-in" style={{ animationDelay: '200ms' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Highest Daily Streak</CardTitle>
                 <Shield className="h-4 w-4 text-muted-foreground" />
@@ -459,7 +459,7 @@ export default function HomePage() {
                 <div className="text-2xl font-bold">{user.highestStreak}</div>
                 </CardContent>
             </Card>
-            <Card>
+            <Card className="animate-bounce-in" style={{ animationDelay: '300ms' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Highest Quiz Streak</CardTitle>
                 <Award className="h-4 w-4 text-muted-foreground" />
@@ -473,9 +473,9 @@ export default function HomePage() {
 
        <section className="mt-8">
         <h2 className="text-xl font-bold font-headline mb-4">Activity Calendar</h2>
-        <Card>
+        <Card className="animate-bounce-in">
             <CardHeader>
-                <CardDescription>Your current streak is marked in blue, and completed Questions of the Day are marked in green. Click a past day to see details.</CardDescription>
+                <CardDescription>Your current streak is marked in blue, and completed Questions of the Day have a ✅. Click a past day to see details.</CardDescription>
             </CardHeader>
             <CardContent className="flex justify-center">
                <Calendar
@@ -489,7 +489,6 @@ export default function HomePage() {
                     }}
                     modifiersClassNames={{
                         streak: 'day-streak',
-                        qotd_completed: 'day-qotd_completed',
                     }}
                 />
             </CardContent>
@@ -498,15 +497,15 @@ export default function HomePage() {
 
       <section className="mt-8">
         <h2 className="text-xl font-bold font-headline mb-4">Pet Collection ({unlockedPetsCount}/{allPets.length})</h2>
-        <Card>
+        <Card className="animate-bounce-in">
           <CardContent className="p-4">
             <TooltipProvider>
             <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
               {allPets.map((pet, index) => (
                  <div
                     key={pet.name}
-                    className="animate-fade-in-up"
-                    style={{ animationDelay: `${index * 100}ms` }}
+                    className="animate-bounce-in"
+                    style={{ animationDelay: `${index * 50}ms` }}
                 >
                     <PetDisplay pet={pet} />
                 </div>
@@ -519,3 +518,5 @@ export default function HomePage() {
     </div>
   );
 }
+
+    

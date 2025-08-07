@@ -219,7 +219,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
       if(currentUid) {
           const savedUser = localStorage.getItem(`userProfile_${currentUid}`);
           if(savedUser) {
-            const user = JSON.parse(savedUser);
+            let user = JSON.parse(savedUser);
             const todayKey = getTodayKey();
             user.points = (user.points || 0) + pointsGained;
 
@@ -335,3 +335,5 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     </TimerContext.Provider>
   );
 }
+
+    
