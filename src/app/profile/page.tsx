@@ -35,7 +35,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Switch } from "@/components/ui/switch";
 import { auth } from "@/lib/firebase";
-import { Dialog, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogHeader, DialogTitle, DialogFooter, DialogContent } from "@/components/ui/dialog";
 
 
 interface UserProfile {
@@ -520,7 +520,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-
-    
-
-    

@@ -33,7 +33,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Dialog, DialogHeader, DialogFooter, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogHeader, DialogFooter, DialogTitle, DialogContent } from "@/components/ui/dialog";
 
 interface UserProfile {
     uid: string;
@@ -341,10 +341,10 @@ export default function HomePage() {
   return (
     <div className="container mx-auto p-4 max-w-4xl">
        <Dialog open={showHomeGuide} onOpenChange={setShowHomeGuide}>
-          <Card className="w-full max-w-lg mx-auto">
-              <DialogHeader className="p-6">
+          <DialogContent>
+              <DialogHeader>
                 <DialogTitle className="font-headline text-2xl">Welcome to Your Dashboard!</DialogTitle>
-                <CardDescription asChild>
+                <DialogDescription asChild>
                   <div className="text-base text-muted-foreground pt-4 space-y-4">
                     <div>This is your central hub for tracking progress and staying motivated.</div>
                     <ul className="list-disc pl-5 space-y-2">
@@ -356,12 +356,12 @@ export default function HomePage() {
                     </ul>
                     <div>Explore around and start your journey to success!</div>
                   </div>
-                </CardDescription>
+                </DialogDescription>
               </DialogHeader>
-              <DialogFooter className="p-6">
+              <DialogFooter>
                 <Button onClick={handleCloseGuide} className="w-full">Let's Get Started!</Button>
               </DialogFooter>
-          </Card>
+          </DialogContent>
       </Dialog>
       <DayDetailDialog
         date={selectedDate}
@@ -553,7 +553,3 @@ export default function HomePage() {
     </div>
   );
 }
-
-    
-
-    

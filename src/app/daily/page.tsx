@@ -466,7 +466,3 @@ export default function DailyPage() {
     </div>
   );
 }
-
-    
-
-    

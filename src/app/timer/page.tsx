@@ -346,7 +346,3 @@ export default function TimerPage() {
     </div>
   );
 }
-
-    
-
-    
