@@ -24,7 +24,7 @@ const navItems = [
   { href: "/review", label: "Review", icon: BookOpen },
   { href: "/quiz", label: "Quiz", icon: Lightbulb },
   { href: "/daily", label: "Daily", icon: CalendarDays },
-  { href: "/timer", label: "Timer", icon: Clock },
+  { href: "/timer", label: "Pomodoro", icon: Clock },
 ];
 
 interface UserProfile {
@@ -106,7 +106,7 @@ export function AppSidebar() {
                         {label}
                       </span>
                     </div>
-                     {href === '/timer' && (
+                     {label === 'Pomodoro' && (
                       <div className="relative group-data-[collapsible=icon]:-mr-1">
                         <TimerIndicator />
                       </div>
@@ -147,3 +147,5 @@ export function AppSidebar() {
     </>
   );
 }
+
+    

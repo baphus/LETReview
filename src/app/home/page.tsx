@@ -33,6 +33,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Dialog, DialogHeader, DialogFooter } from "@/components/ui/dialog";
 
 interface UserProfile {
     uid: string;
@@ -69,11 +70,13 @@ export default function HomePage() {
   const [newPetName, setNewPetName] = useState("");
   const [questionOfTheDay, setQuestionOfTheDay] = useState<QuizQuestion | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [showHomeGuide, setShowHomeGuide] = useState(false);
   
   const todayKey = useMemo(() => getTodayKey(), []);
 
   const saveUser = useCallback((userToSave: UserProfile) => {
     localStorage.setItem(`userProfile_${userToSave.uid}`, JSON.stringify(userToSave));
+    window.dispatchEvent(new Event('storage'));
   }, []);
   
   const checkAchievements = useCallback((user: UserProfile): UserProfile => {
@@ -159,6 +162,11 @@ export default function HomePage() {
         const userWithAchievements = checkAchievements(parsedUser);
         saveUser(userWithAchievements);
         setUser(userWithAchievements);
+
+        const hasSeenGuide = localStorage.getItem('hasSeenHomeGuide');
+        if (!hasSeenGuide) {
+            setShowHomeGuide(true);
+        }
       } else {
         router.push('/login');
       }
@@ -255,6 +263,11 @@ export default function HomePage() {
       setSelectedDate(day);
     }
   };
+
+  const handleCloseGuide = () => {
+    localStorage.setItem('hasSeenHomeGuide', 'true');
+    setShowHomeGuide(false);
+  }
   
   if (!user) {
     return null;
@@ -268,9 +281,9 @@ export default function HomePage() {
     } else if (pet.unlock_criteria.includes('Purchase')) {
         isUnlocked = user.unlockedPets.includes(pet.name);
     } else if (pet.unlock_criteria.includes('Pomodoro')) {
-        isUnlocked = (user.completedSessions || 0) >= (pet.unlock_value || 0);
+        isUnlocked = user.unlockedPets.includes(pet.name);
     } else if (pet.unlock_criteria.includes('quiz streak')) {
-        isUnlocked = (user.highestQuizStreak || 0) >= (pet.unlock_value || 0);
+        isUnlocked = user.unlockedPets.includes(pet.name);
     }
 
     return (
@@ -282,7 +295,7 @@ export default function HomePage() {
             width={80}
             height={80}
             className={cn(
-                "rounded-full bg-muted p-2",
+                "rounded-full bg-muted p-2 transition-all duration-300",
                 isUnlocked ? "animate-bob" : "grayscale opacity-50 blur-sm"
             )}
             data-ai-hint={pet.hint}
@@ -327,6 +340,27 @@ export default function HomePage() {
 
   return (
     <div className="container mx-auto p-4 max-w-4xl">
+       <Dialog open={showHomeGuide} onOpenChange={setShowHomeGuide}>
+          <Card className="w-full max-w-lg mx-auto">
+              <DialogHeader className="p-6">
+                <DialogTitle className="font-headline text-2xl">Welcome to Your Dashboard!</DialogTitle>
+                <CardDescription className="text-base text-muted-foreground pt-4 space-y-4">
+                  <p>This is your central hub for tracking progress and staying motivated.</p>
+                  <ul className="list-disc pl-5 space-y-2">
+                    <li><strong className="text-primary">Today's Progress:</strong> Get a quick snapshot of points earned and focus sessions completed today.</li>
+                    <li><strong className="text-primary">Question of the Day:</strong> A quick link to answer your daily question.</li>
+                    <li><strong className="text-primary">Your Stats:</strong> Monitor your streaks and total points.</li>
+                    <li><strong className="text-primary">Activity Calendar:</strong> Visualize your consistency and daily activity.</li>
+                    <li><strong className="text-primary">Pet Collection:</strong> See all the cute companions you've unlocked!</li>
+                  </ul>
+                  <p>Explore around and start your journey to success!</p>
+                </CardDescription>
+              </DialogHeader>
+              <DialogFooter className="p-6">
+                <Button onClick={handleCloseGuide} className="w-full">Let's Get Started!</Button>
+              </DialogFooter>
+          </Card>
+      </Dialog>
       <DayDetailDialog
         date={selectedDate}
         onClose={() => setSelectedDate(null)}
@@ -517,3 +551,5 @@ export default function HomePage() {
     </div>
   );
 }
+
+    

@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Switch } from "@/components/ui/switch";
 import { auth } from "@/lib/firebase";
+import { Dialog, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 
 interface UserProfile {
@@ -70,6 +71,7 @@ export default function ProfilePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [examDate, setExamDate] = useState<Date | undefined>(undefined);
   const [passingScore, setPassingScore] = useState(75);
+  const [showGuide, setShowGuide] = useState(false);
 
   const applyUserTheme = (mode: 'light' | 'dark', theme: string) => {
     const root = document.documentElement;
@@ -102,6 +104,11 @@ export default function ProfilePage() {
         }
         setPassingScore(fullUser.passingScore || 75);
         applyUserTheme(fullUser.themeMode, fullUser.activeTheme);
+        
+        const hasSeenGuide = localStorage.getItem('hasSeenProfileGuide');
+        if (!hasSeenGuide) {
+            setShowGuide(true);
+        }
       } else {
          router.push('/login');
       }
@@ -230,6 +237,11 @@ export default function ProfilePage() {
         toast({ variant: "destructive", title: "Not enough points!"});
       }
   }
+  
+  const handleCloseGuide = () => {
+    localStorage.setItem('hasSeenProfileGuide', 'true');
+    setShowGuide(false);
+  };
 
   if (!user) {
     return null; // Or a loading spinner
@@ -237,6 +249,26 @@ export default function ProfilePage() {
 
   return (
     <div className="container mx-auto p-4 max-w-2xl">
+      <Dialog open={showGuide} onOpenChange={setShowGuide}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-headline text-2xl">Profile & Settings</DialogTitle>
+            <CardDescription className="text-base text-muted-foreground pt-4 space-y-4">
+              <p>This is where you can customize your app experience and manage your account.</p>
+              <ul className="list-disc pl-5 space-y-2">
+                <li><strong className="text-primary">Edit Profile:</strong> Change your name and avatar.</li>
+                <li><strong className="text-primary">Question Bank:</strong> Add, edit, or delete your own custom review questions. This is the core of the app!</li>
+                <li><strong className="text-primary">App Settings:</strong> Set your exam date for a countdown timer and adjust the passing score for daily challenges.</li>
+                <li><strong className="text-primary">Appearance:</strong> Spend your points to unlock new color themes and purchase rare pets from the store.</li>
+              </ul>
+              <p>Make this space your own!</p>
+            </CardDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={handleCloseGuide}>Got it!</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <header className="flex items-center gap-4 mb-6">
         <h1 className="text-2xl font-bold font-headline">Profile & Settings</h1>
       </header>
@@ -486,3 +518,5 @@ export default function ProfilePage() {
     </div>
   );
 }
+
+    

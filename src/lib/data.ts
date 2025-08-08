@@ -12,6 +12,42 @@ export const sampleQuestions: QuizQuestion[] = [
     choices: ["Correct Answer", "Wrong Answer 1", "Wrong Answer 2", "Wrong Answer 3"],
     answer: "Correct Answer",
     explanation: "This is a sample explanation for the sample question."
+  },
+  {
+    id: 2,
+    category: "custom",
+    difficulty: "easy",
+    question: "What is the capital of France?",
+    choices: ["Paris", "London", "Berlin", "Madrid"],
+    answer: "Paris",
+    explanation: "Paris is the capital and most populous city of France."
+  },
+  {
+    id: 3,
+    category: "custom",
+    difficulty: "medium",
+    question: "Which planet is known as the Red Planet?",
+    choices: ["Earth", "Mars", "Jupiter", "Saturn"],
+    answer: "Mars",
+    explanation: "Mars is often called the 'Red Planet' because of its reddish appearance."
+  },
+  {
+    id: 4,
+    category: "custom",
+    difficulty: "hard",
+    question: "Who wrote 'To Kill a Mockingbird'?",
+    choices: ["Harper Lee", "J.K. Rowling", "Ernest Hemingway", "Mark Twain"],
+    answer: "Harper Lee",
+    explanation: "The novel was published in 1960 and was an immediate success."
+  },
+  {
+    id: 5,
+    category: "custom",
+    difficulty: "easy",
+    question: "What is 2 + 2?",
+    choices: ["3", "4", "5", "6"],
+    answer: "4",
+    explanation: "Basic arithmetic."
   }
 ];
 
@@ -187,3 +223,5 @@ export const achievementPets: PetProfile[] = [
 export const rarePets: PetProfile[] = [
     { name: "Draco", unlock_criteria: "Purchase in store", cost: 1000, image: "/pets/draco.png", hint: "fire breathing", streak_req: 0 },
 ];
+
+    

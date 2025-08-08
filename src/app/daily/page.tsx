@@ -26,6 +26,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { startOfDay, isBefore, startOfYesterday, format } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
+import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogContent, DialogFooter } from "@/components/ui/dialog";
 
 
 interface UserStats {
@@ -134,7 +135,7 @@ const QuestionOfTheDay = ({ onCorrectAnswer, userUid }: { onCorrectAnswer: () =>
                             onClick={() => handleAnswer(choice)}
                             disabled={isAnswered}
                             className={cn(
-                                "h-auto whitespace-normal justify-start p-4 w-full text-left",
+                                "h-auto whitespace-normal justify-start p-4 w-full text-left transition-all hover:scale-105",
                                 isAnswered && isTheCorrectAnswer && "bg-green-500/10 border-green-500/30 hover:bg-green-500/10 text-foreground",
                                 isAnswered && isSelected && !isTheCorrectAnswer && "bg-red-500/10 border-red-500/30 hover:bg-red-500/10 text-foreground",
                                 isAnswered && !isSelected && !isTheCorrectAnswer && "opacity-60"
@@ -167,6 +168,7 @@ export default function DailyPage() {
   const [streakBroken, setStreakBroken] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<"custom">("custom");
   const [questionCounts, setQuestionCounts] = useState({ easy: 0, medium: 0, hard: 0 });
+  const [showGuide, setShowGuide] = useState(false);
   const todayKey = getTodayKey();
 
   const loadUserStats = useCallback(() => {
@@ -213,6 +215,11 @@ export default function DailyPage() {
 
   useEffect(() => {
     loadUserStats();
+    
+    const hasSeenGuide = localStorage.getItem('hasSeenDailyGuide');
+    if (!hasSeenGuide) {
+        setShowGuide(true);
+    }
     
     const allQuestions = loadQuestions();
     setQuestionCounts({
@@ -277,6 +284,11 @@ export default function DailyPage() {
         setUserStats(prev => prev ? ({ ...prev, points: user.points }) : null);
     }
   };
+  
+  const handleCloseGuide = () => {
+    localStorage.setItem('hasSeenDailyGuide', 'true');
+    setShowGuide(false);
+  };
 
   if (!userStats) return null;
 
@@ -289,6 +301,25 @@ export default function DailyPage() {
 
   return (
     <div className="container mx-auto p-4 max-w-2xl">
+     <Dialog open={showGuide} onOpenChange={setShowGuide}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-headline text-2xl">Welcome to Daily Activities!</DialogTitle>
+            <DialogDescription className="text-base text-muted-foreground pt-4 space-y-4">
+              <p>This is your hub for maintaining your study habits and earning rewards.</p>
+              <ul className="list-disc pl-5 space-y-2">
+                <li><strong className="text-primary">Question of the Day:</strong> Answer a single question daily for bonus points.</li>
+                <li><strong className="text-primary">Daily Challenges:</strong> Complete a challenge to secure your streak and earn a big point reward. You must pass with the score set in your profile!</li>
+                 <li><strong className="text-primary">Streaks & Points:</strong> Track your current daily streak and total points at the top of the page.</li>
+              </ul>
+              <p>Consistency is key to success. Let's make learning a daily habit!</p>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={handleCloseGuide}>Got it!</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     <TooltipProvider>
       <header className="flex items-center gap-2 mb-6">
         <CalendarDays className="h-8 w-8 text-primary" />
@@ -433,3 +464,5 @@ export default function DailyPage() {
     </div>
   );
 }
+
+    

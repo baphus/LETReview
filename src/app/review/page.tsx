@@ -223,6 +223,7 @@ function ReviewerPageContent() {
   const [challengeAnswers, setChallengeAnswers] = useState<ChallengeAnswer[]>([]);
   const [passingScore, setPassingScore] = useState(75);
   const [isShuffled, setIsShuffled] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
   
   const { toast } = useToast();
 
@@ -245,6 +246,11 @@ function ReviewerPageContent() {
       } catch (e) {
         console.error("Failed to parse review progress", e);
       }
+    }
+    
+    const hasSeenGuide = localStorage.getItem('hasSeenReviewGuide');
+    if (!hasSeenGuide) {
+        setShowGuide(true);
     }
   }, [isChallenge]);
 
@@ -440,6 +446,11 @@ function ReviewerPageContent() {
     setShowResults(false);
     resetQuizState();
   };
+  
+  const handleCloseGuide = () => {
+    localStorage.setItem('hasSeenReviewGuide', 'true');
+    setShowGuide(false);
+  }
 
   useEffect(() => {
     if (!isChallenge) {
@@ -459,6 +470,24 @@ function ReviewerPageContent() {
 
   return (
     <div className="container mx-auto p-4 max-w-2xl">
+      <Dialog open={showGuide} onOpenChange={setShowGuide}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-headline text-2xl">Welcome to the Reviewer!</DialogTitle>
+            <DialogDescription className="text-base text-muted-foreground pt-4 space-y-4">
+              <p>This is your personal study space. Choose a mode that fits your learning style:</p>
+              <ul className="list-disc pl-5 space-y-2">
+                <li><strong className="text-primary">Study Mode:</strong> Review questions with the answers and explanations shown immediately. Perfect for learning new material.</li>
+                <li><strong className="text-primary">Flashcard Mode:</strong> See only the question first. Tap the card to flip it over and reveal the answer. Great for testing your memory.</li>
+              </ul>
+              <p>Use the shuffle button to mix up the questions for a different experience. Happy studying!</p>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={handleCloseGuide}>Let's Study!</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
        <Dialog open={showResults} onOpenChange={handleDialogClose}>
         <DialogContent className="flex flex-col h-auto max-h-[90dvh]">
           <DialogHeader className="items-center text-center">
@@ -628,3 +657,5 @@ export default function ReviewPage() {
         </Suspense>
     )
 }
+
+    

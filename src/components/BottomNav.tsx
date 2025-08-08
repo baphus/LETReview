@@ -12,7 +12,7 @@ const navItems = [
   { href: "/home", label: "Home", icon: Home },
   { href: "/review", label: "Review", icon: BookOpen },
   { href: "/daily", label: "Daily", icon: CalendarDays },
-  { href: "/timer", label: "Timer", icon: Clock },
+  { href: "/timer", label: "Pomodoro", icon: Clock },
   { href: "/profile", label: "Profile", icon: User },
 ];
 
@@ -64,7 +64,7 @@ export default function BottomNav() {
             >
               <div className="relative">
                 <Icon className="h-6 w-6 mb-1" />
-                {href === '/timer' && <TimerIndicator />}
+                {label === 'Pomodoro' && <TimerIndicator />}
               </div>
               <span className="text-xs">{label}</span>
             </Link>

@@ -11,6 +11,7 @@ import { sampleQuestions } from "@/lib/data";
 import type { QuizQuestion } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogContent, DialogFooter } from "@/components/ui/dialog";
 
 
 const MiniQuiz = ({ onCorrectAnswer, onIncorrectAnswer, onStreak }: { onCorrectAnswer: (points: number) => void, onIncorrectAnswer: () => void, onStreak: () => void }) => {
@@ -77,7 +78,7 @@ const MiniQuiz = ({ onCorrectAnswer, onIncorrectAnswer, onStreak }: { onCorrectA
                                 onClick={() => handleAnswer(choice)}
                                 disabled={isAnswered}
                                 className={cn(
-                                    "h-auto whitespace-normal",
+                                    "h-auto whitespace-normal transition-all",
                                     isAnswered && isTheCorrectAnswer && "bg-green-100 border-green-300 hover:bg-green-100 text-green-800",
                                     isAnswered && isSelected && !isTheCorrectAnswer && "bg-red-100 border-red-300 hover:bg-red-100 text-red-800",
                                     isAnswered && !isSelected && !isTheCorrectAnswer && "opacity-60"
@@ -125,6 +126,14 @@ export default function TimerPage() {
   const { toast } = useToast();
   const [showCombo, setShowCombo] = useState(false);
   const [showPoints, setShowPoints] = useState<{ show: boolean, points: number }>({ show: false, points: 0 });
+  const [showGuide, setShowGuide] = useState(false);
+
+  useEffect(() => {
+    const hasSeenGuide = localStorage.getItem('hasSeenTimerGuide');
+    if (!hasSeenGuide) {
+        setShowGuide(true);
+    }
+  }, []);
 
   const time = rawTime || 0;
   const minutes = Math.floor(time / 60);
@@ -181,10 +190,34 @@ export default function TimerPage() {
    const nextBreakMode = useMemo(() => {
     return (sessions + 1) % 4 === 0 ? 'longBreak' : 'shortBreak';
   }, [sessions]);
+  
+  const handleCloseGuide = () => {
+    localStorage.setItem('hasSeenTimerGuide', 'true');
+    setShowGuide(false);
+  };
 
 
   return (
     <div className="container mx-auto p-4 max-w-2xl flex flex-col">
+       <Dialog open={showGuide} onOpenChange={setShowGuide}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-headline text-2xl">Welcome to the Pomodoro Timer!</DialogTitle>
+            <DialogDescription className="text-base text-muted-foreground pt-4 space-y-4">
+              <p>Boost your productivity with the Pomodoro Technique, a proven time management method.</p>
+              <ul className="list-disc pl-5 space-y-2">
+                <li><strong className="text-primary">Focus:</strong> Work in uninterrupted 25-minute intervals.</li>
+                <li><strong className="text-primary">Breaks:</strong> Take short 5-minute breaks after each focus session, and a longer 15-minute break after every four sessions.</li>
+                <li><strong className="text-primary">Mini-Quizzes:</strong> During focus sessions, answer quick questions to earn bonus points and build a quiz streak!</li>
+              </ul>
+              <p>This will help you maintain focus, avoid burnout, and make your study sessions more effective.</p>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={handleCloseGuide}>Let's Focus!</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <header className="flex items-center gap-2 mb-6">
         <Clock className="h-8 w-8 text-primary" />
         <h1 className="text-3xl font-bold font-headline">Pomodoro Timer</h1>
@@ -311,3 +344,5 @@ export default function TimerPage() {
     </div>
   );
 }
+
+    

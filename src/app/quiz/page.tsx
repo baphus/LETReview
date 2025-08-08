@@ -124,11 +124,17 @@ export default function QuizPage() {
   const [showResults, setShowResults] = useState(false);
   const [challengeAnswers, setChallengeAnswers] = useState<ChallengeAnswer[]>([]);
   const [isShuffled, setIsShuffled] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
   
   const { toast } = useToast();
 
   useEffect(() => {
     setAllQuestions(loadQuestions());
+    
+    const hasSeenGuide = localStorage.getItem('hasSeenQuizGuide');
+    if (!hasSeenGuide) {
+        setShowGuide(true);
+    }
   }, []);
 
   const questions = useMemo(() => {
@@ -218,6 +224,11 @@ export default function QuizPage() {
     setShowResults(false);
     resetQuizState();
   }
+  
+  const handleCloseGuide = () => {
+    localStorage.setItem('hasSeenQuizGuide', 'true');
+    setShowGuide(false);
+  }
 
   const handleShuffleToggle = () => {
     setIsShuffled(prev => !prev);
@@ -243,6 +254,26 @@ export default function QuizPage() {
 
   return (
     <div className="container mx-auto p-4 max-w-2xl">
+      <Dialog open={showGuide} onOpenChange={setShowGuide}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-headline text-2xl">Welcome to Quiz Mode!</DialogTitle>
+            <DialogDescription className="text-base text-muted-foreground pt-4 space-y-4">
+              <p>Test your knowledge with your custom questions in a formal quiz setting.</p>
+              <ul className="list-disc pl-5 space-y-2">
+                <li><strong className="text-primary">Answer & Proceed:</strong> Select an answer for each question. You can't change your answer once submitted.</li>
+                <li><strong className="text-primary">Immediate Feedback:</strong> See if you were right or wrong right away, along with an explanation if available.</li>
+                <li><strong className="text-primary">Track Your Progress:</strong> Use the progress bar to see how far you are in the quiz.</li>
+                <li><strong className="text-primary">Final Results:</strong> At the end, you'll see a summary of your score and a review of your answers.</li>
+              </ul>
+              <p>Good luck!</p>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={handleCloseGuide}>Let's Go!</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
        <Dialog open={showResults} onOpenChange={handleDialogClose}>
         <DialogContent className="flex flex-col h-[90dvh] max-h-[600px]">
           <DialogHeader className="items-center text-center">
@@ -300,7 +331,7 @@ export default function QuizPage() {
 
                 <div className="flex gap-2 w-full sm:w-auto">
                      <Button 
-                        variant={isShuffled ? "default" : "outline"} 
+                        variant={isShuffled ? "secondary" : "outline"} 
                         size="icon" 
                         onClick={handleShuffleToggle}
                         aria-label="Shuffle questions"
@@ -353,3 +384,5 @@ export default function QuizPage() {
     </div>
   );
 }
+
+    
