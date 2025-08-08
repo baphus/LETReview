@@ -253,16 +253,18 @@ export default function ProfilePage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="font-headline text-2xl">Profile & Settings</DialogTitle>
-            <CardDescription className="text-base text-muted-foreground pt-4 space-y-4">
-              <p>This is where you can customize your app experience and manage your account.</p>
-              <ul className="list-disc pl-5 space-y-2">
-                <li><strong className="text-primary">Edit Profile:</strong> Change your name and avatar.</li>
-                <li><strong className="text-primary">Question Bank:</strong> Add, edit, or delete your own custom review questions. This is the core of the app!</li>
-                <li><strong className="text-primary">App Settings:</strong> Set your exam date for a countdown timer and adjust the passing score for daily challenges.</li>
-                <li><strong className="text-primary">Appearance:</strong> Spend your points to unlock new color themes and purchase rare pets from the store.</li>
-              </ul>
-              <p>Make this space your own!</p>
-            </CardDescription>
+            <DialogDescription asChild>
+              <div className="text-base text-muted-foreground pt-4 space-y-4">
+                <div>This is where you can customize your app experience and manage your account.</div>
+                <ul className="list-disc pl-5 space-y-2">
+                  <li><strong className="text-primary">Edit Profile:</strong> Change your name and avatar.</li>
+                  <li><strong className="text-primary">Question Bank:</strong> Add, edit, or delete your own custom review questions. This is the core of the app!</li>
+                  <li><strong className="text-primary">App Settings:</strong> Set your exam date for a countdown timer and adjust the passing score for daily challenges.</li>
+                  <li><strong className="text-primary">Appearance:</strong> Spend your points to unlock new color themes and purchase rare pets from the store.</li>
+                </ul>
+                <div>Make this space your own!</div>
+              </div>
+            </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button onClick={handleCloseGuide}>Got it!</Button>
@@ -518,5 +520,7 @@ export default function ProfilePage() {
     </div>
   );
 }
+
+    
 
     

@@ -474,13 +474,15 @@ function ReviewerPageContent() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="font-headline text-2xl">Welcome to the Reviewer!</DialogTitle>
-            <DialogDescription className="text-base text-muted-foreground pt-4 space-y-4">
-              <p>This is your personal study space. Choose a mode that fits your learning style:</p>
-              <ul className="list-disc pl-5 space-y-2">
-                <li><strong className="text-primary">Study Mode:</strong> Review questions with the answers and explanations shown immediately. Perfect for learning new material.</li>
-                <li><strong className="text-primary">Flashcard Mode:</strong> See only the question first. Tap the card to flip it over and reveal the answer. Great for testing your memory.</li>
-              </ul>
-              <p>Use the shuffle button to mix up the questions for a different experience. Happy studying!</p>
+            <DialogDescription asChild>
+              <div className="text-base text-muted-foreground pt-4 space-y-4">
+                <div>This is your personal study space. Choose a mode that fits your learning style:</div>
+                <ul className="list-disc pl-5 space-y-2">
+                  <li><strong className="text-primary">Study Mode:</strong> Review questions with the answers and explanations shown immediately. Perfect for learning new material.</li>
+                  <li><strong className="text-primary">Flashcard Mode:</strong> See only the question first. Tap the card to flip it over and reveal the answer. Great for testing your memory.</li>
+                </ul>
+                <div>Use the shuffle button to mix up the questions for a different experience. Happy studying!</div>
+              </div>
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -657,5 +659,7 @@ export default function ReviewPage() {
         </Suspense>
     )
 }
+
+    
 
     

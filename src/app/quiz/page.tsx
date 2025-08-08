@@ -258,15 +258,17 @@ export default function QuizPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="font-headline text-2xl">Welcome to Quiz Mode!</DialogTitle>
-            <DialogDescription className="text-base text-muted-foreground pt-4 space-y-4">
-              <p>Test your knowledge with your custom questions in a formal quiz setting.</p>
-              <ul className="list-disc pl-5 space-y-2">
-                <li><strong className="text-primary">Answer & Proceed:</strong> Select an answer for each question. You can't change your answer once submitted.</li>
-                <li><strong className="text-primary">Immediate Feedback:</strong> See if you were right or wrong right away, along with an explanation if available.</li>
-                <li><strong className="text-primary">Track Your Progress:</strong> Use the progress bar to see how far you are in the quiz.</li>
-                <li><strong className="text-primary">Final Results:</strong> At the end, you'll see a summary of your score and a review of your answers.</li>
-              </ul>
-              <p>Good luck!</p>
+            <DialogDescription asChild>
+              <div className="text-base text-muted-foreground pt-4 space-y-4">
+                <div>Test your knowledge with your custom questions in a formal quiz setting.</div>
+                <ul className="list-disc pl-5 space-y-2">
+                  <li><strong className="text-primary">Answer & Proceed:</strong> Select an answer for each question. You can't change your answer once submitted.</li>
+                  <li><strong className="text-primary">Immediate Feedback:</strong> See if you were right or wrong right away, along with an explanation if available.</li>
+                  <li><strong className="text-primary">Track Your Progress:</strong> Use the progress bar to see how far you are in the quiz.</li>
+                  <li><strong className="text-primary">Final Results:</strong> At the end, you'll see a summary of your score and a review of your answers.</li>
+                </ul>
+                <div>Good luck!</div>
+              </div>
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -384,5 +386,7 @@ export default function QuizPage() {
     </div>
   );
 }
+
+    
 
     

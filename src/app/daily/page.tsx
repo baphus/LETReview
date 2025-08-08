@@ -305,14 +305,16 @@ export default function DailyPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="font-headline text-2xl">Welcome to Daily Activities!</DialogTitle>
-            <DialogDescription className="text-base text-muted-foreground pt-4 space-y-4">
-              <p>This is your hub for maintaining your study habits and earning rewards.</p>
-              <ul className="list-disc pl-5 space-y-2">
-                <li><strong className="text-primary">Question of the Day:</strong> Answer a single question daily for bonus points.</li>
-                <li><strong className="text-primary">Daily Challenges:</strong> Complete a challenge to secure your streak and earn a big point reward. You must pass with the score set in your profile!</li>
-                 <li><strong className="text-primary">Streaks & Points:</strong> Track your current daily streak and total points at the top of the page.</li>
-              </ul>
-              <p>Consistency is key to success. Let's make learning a daily habit!</p>
+            <DialogDescription asChild>
+              <div className="text-base text-muted-foreground pt-4 space-y-4">
+                <div>This is your hub for maintaining your study habits and earning rewards.</div>
+                <ul className="list-disc pl-5 space-y-2">
+                  <li><strong className="text-primary">Question of the Day:</strong> Answer a single question daily for bonus points.</li>
+                  <li><strong className="text-primary">Daily Challenges:</strong> Complete a challenge to secure your streak and earn a big point reward. You must pass with the score set in your profile!</li>
+                   <li><strong className="text-primary">Streaks & Points:</strong> Track your current daily streak and total points at the top of the page.</li>
+                </ul>
+                <div>Consistency is key to success. Let's make learning a daily habit!</div>
+              </div>
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -464,5 +466,7 @@ export default function DailyPage() {
     </div>
   );
 }
+
+    
 
     

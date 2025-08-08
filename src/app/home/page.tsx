@@ -33,7 +33,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Dialog, DialogHeader, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogHeader, DialogFooter, DialogTitle } from "@/components/ui/dialog";
 
 interface UserProfile {
     uid: string;
@@ -344,16 +344,18 @@ export default function HomePage() {
           <Card className="w-full max-w-lg mx-auto">
               <DialogHeader className="p-6">
                 <DialogTitle className="font-headline text-2xl">Welcome to Your Dashboard!</DialogTitle>
-                <CardDescription className="text-base text-muted-foreground pt-4 space-y-4">
-                  <p>This is your central hub for tracking progress and staying motivated.</p>
-                  <ul className="list-disc pl-5 space-y-2">
-                    <li><strong className="text-primary">Today's Progress:</strong> Get a quick snapshot of points earned and focus sessions completed today.</li>
-                    <li><strong className="text-primary">Question of the Day:</strong> A quick link to answer your daily question.</li>
-                    <li><strong className="text-primary">Your Stats:</strong> Monitor your streaks and total points.</li>
-                    <li><strong className="text-primary">Activity Calendar:</strong> Visualize your consistency and daily activity.</li>
-                    <li><strong className="text-primary">Pet Collection:</strong> See all the cute companions you've unlocked!</li>
-                  </ul>
-                  <p>Explore around and start your journey to success!</p>
+                <CardDescription asChild>
+                  <div className="text-base text-muted-foreground pt-4 space-y-4">
+                    <div>This is your central hub for tracking progress and staying motivated.</div>
+                    <ul className="list-disc pl-5 space-y-2">
+                      <li><strong className="text-primary">Today's Progress:</strong> Get a quick snapshot of points earned and focus sessions completed today.</li>
+                      <li><strong className="text-primary">Question of the Day:</strong> A quick link to answer your daily question.</li>
+                      <li><strong className="text-primary">Your Stats:</strong> Monitor your streaks and total points.</li>
+                      <li><strong className="text-primary">Activity Calendar:</strong> Visualize your consistency and daily activity.</li>
+                      <li><strong className="text-primary">Pet Collection:</strong> See all the cute companions you've unlocked!</li>
+                    </ul>
+                    <div>Explore around and start your journey to success!</div>
+                  </div>
                 </CardDescription>
               </DialogHeader>
               <DialogFooter className="p-6">
@@ -551,5 +553,7 @@ export default function HomePage() {
     </div>
   );
 }
+
+    
 
     

@@ -203,14 +203,16 @@ export default function TimerPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="font-headline text-2xl">Welcome to the Pomodoro Timer!</DialogTitle>
-            <DialogDescription className="text-base text-muted-foreground pt-4 space-y-4">
-              <p>Boost your productivity with the Pomodoro Technique, a proven time management method.</p>
-              <ul className="list-disc pl-5 space-y-2">
-                <li><strong className="text-primary">Focus:</strong> Work in uninterrupted 25-minute intervals.</li>
-                <li><strong className="text-primary">Breaks:</strong> Take short 5-minute breaks after each focus session, and a longer 15-minute break after every four sessions.</li>
-                <li><strong className="text-primary">Mini-Quizzes:</strong> During focus sessions, answer quick questions to earn bonus points and build a quiz streak!</li>
-              </ul>
-              <p>This will help you maintain focus, avoid burnout, and make your study sessions more effective.</p>
+            <DialogDescription asChild>
+              <div className="text-base text-muted-foreground pt-4 space-y-4">
+                <div>Boost your productivity with the Pomodoro Technique, a proven time management method.</div>
+                <ul className="list-disc pl-5 space-y-2">
+                  <li><strong className="text-primary">Focus:</strong> Work in uninterrupted 25-minute intervals.</li>
+                  <li><strong className="text-primary">Breaks:</strong> Take short 5-minute breaks after each focus session, and a longer 15-minute break after every four sessions.</li>
+                  <li><strong className="text-primary">Mini-Quizzes:</strong> During focus sessions, answer quick questions to earn bonus points and build a quiz streak!</li>
+                </ul>
+                <div>This will help you maintain focus, avoid burnout, and make your study sessions more effective.</div>
+              </div>
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -344,5 +346,7 @@ export default function TimerPage() {
     </div>
   );
 }
+
+    
 
     
