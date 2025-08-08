@@ -33,7 +33,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Dialog, DialogHeader, DialogFooter, DialogTitle, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogHeader, DialogFooter, DialogTitle, DialogContent, DialogDescription } from "@/components/ui/dialog";
 
 interface UserProfile {
     uid: string;
@@ -553,3 +553,5 @@ export default function HomePage() {
     </div>
   );
 }
+
+    
