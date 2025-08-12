@@ -65,16 +65,20 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
 
     const unsubscribe = onAuthStateChanged(auth, (user) => {
         const isAuthPage = pathname === "/login";
+        const isLandingPage = pathname === "/";
+
         if (user) {
-             if (isAuthPage) {
+            // If user is logged in and on login or landing page, redirect to home
+            if (isAuthPage || isLandingPage) {
                 router.replace("/home");
             }
         } else {
-             if (!isAuthPage) {
-                router.replace("/login");
+            // If user is not logged in, and not on landing or login page, redirect to landing
+            if (!isLandingPage && !isAuthPage) {
+                router.replace("/");
             }
         }
-         setIsCheckingAuth(false);
+        setIsCheckingAuth(false);
     });
 
      return () => {
@@ -83,12 +87,11 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
     };
   }, [pathname, router]);
 
-  const isAppPage = pathname !== '/login';
+  const isAppPage = !['/', '/login'].includes(pathname);
 
   if (isCheckingAuth) {
     return (
         <div className="flex flex-col h-dvh">
-            {/* This is a simplified skeleton for the initial auth check */}
             <main className="flex-1 overflow-y-auto p-4">
                 <div className="flex items-center gap-2 mb-6">
                     <Skeleton className="h-8 w-8" />
@@ -121,7 +124,6 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
         </Sidebar>
         <SidebarInset>
           <header className="p-2 border-b md:hidden">
-            {/* The sidebar trigger is removed from here for mobile view */}
           </header>
           <main className="flex-1 overflow-y-auto pb-20 md:pb-4">
             {children}

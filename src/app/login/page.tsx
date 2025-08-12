@@ -17,6 +17,7 @@ import {
 } from "firebase/auth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
+import Logo from "@/components/Logo";
 
 // Function to get local date string in YYYY-MM-DD format
 const getTodayKey = () => format(new Date(), 'yyyy-MM-dd');
@@ -110,7 +111,8 @@ export default function LoginPage() {
   return (
     <div className="container mx-auto p-4 max-w-sm flex items-center justify-center h-full">
       <Card className="w-full">
-        <CardHeader className="text-center">
+        <CardHeader className="text-center items-center">
+          <Logo className="h-12 w-12 mb-2"/>
           <CardTitle className="font-headline text-2xl">Welcome to Qwiz</CardTitle>
           <CardDescription>Sign in to continue</CardDescription>
         </CardHeader>
