@@ -77,7 +77,7 @@ export function AppSidebar() {
         <div className="flex items-center gap-2">
           <Logo className="h-6 w-6 text-primary" />
           <span className="font-bold text-lg group-data-[collapsible=icon]:hidden">
-            MyReviewer
+            Qwiz
           </span>
         </div>
       </SidebarHeader>
@@ -147,5 +147,3 @@ export function AppSidebar() {
     </>
   );
 }
-
-    

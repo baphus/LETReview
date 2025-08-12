@@ -142,7 +142,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <title>MyReviewer</title>
+        <title>Qwiz</title>
         <meta
           name="description"
           content="A mobile-first web application for creating your own personalized reviewer."

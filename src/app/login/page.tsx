@@ -67,7 +67,7 @@ export default function LoginPage() {
       router.push("/home");
       toast({
           title: "Successfully signed in!",
-          description: "Welcome to MyReviewer!",
+          description: "Welcome to Qwiz!",
           className: "bg-primary border-primary text-primary-foreground",
       });
   }
@@ -111,7 +111,7 @@ export default function LoginPage() {
     <div className="container mx-auto p-4 max-w-sm flex items-center justify-center h-full">
       <Card className="w-full">
         <CardHeader className="text-center">
-          <CardTitle className="font-headline text-2xl">Welcome to MyReviewer</CardTitle>
+          <CardTitle className="font-headline text-2xl">Welcome to Qwiz</CardTitle>
           <CardDescription>Sign in to continue</CardDescription>
         </CardHeader>
         <CardContent>

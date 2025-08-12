@@ -1,8 +1,8 @@
-# MyReviewer: Your Personalized Review Partner
+# Qwiz: Your Personalized Review Partner
 
-![MyReviewer App Screenshot](/public/images/landing/app-preview.png)
+![Qwiz App Screenshot](/public/images/landing/app-preview.png)
 
-Create your own personalized reviewer for any subject! MyReviewer is a mobile-first web application designed to help you study for any exam through a personalized and gamified approach.
+Create your own personalized reviewer for any subject! Qwiz is a mobile-first web application designed to help you study for any exam through a personalized and gamified approach.
 
 ## ✨ Key Features
 
@@ -64,11 +64,11 @@ Make sure you have Node.js and npm (or yarn) installed on your machine.
 
 1. Clone the repository:
    ```sh
-   git clone https://github.com/your-username/myreviewer.git
+   git clone https://github.com/your-username/qwiz.git
    ```
 2. Navigate to the project directory:
    ```sh
-   cd myreviewer
+   cd qwiz
    ```
 3. Install NPM packages:
    ```sh
@@ -86,7 +86,7 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 ## 🤝 Contributing & Feedback
 
-Contributions, issues, and feature requests are welcome! If you have suggestions for improvement or want to report a bug, please feel free to check the [issues page](https://github.com/your-username/myreviewer/issues) or reach out. Your feedback is highly appreciated.
+Contributions, issues, and feature requests are welcome! If you have suggestions for improvement or want to report a bug, please feel free to check the [issues page](https://github.com/your-username/qwiz/issues) or reach out. Your feedback is highly appreciated.
 
 ## ❤️ Dedication
 

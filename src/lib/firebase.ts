@@ -3,7 +3,7 @@ import { initializeApp, getApps } from "firebase/app";
 import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
-  "projectId": "myreviewer-dumqm",
+  "projectId": "qwiz-firebase-project",
   "appId": "1:771340678457:web:d6bf6829866b489c7ea4e8",
   "storageBucket": "myreviewer-dumqm.firebasestorage.app",
   "apiKey": "AIzaSyDvSVoizJ3Oeq7u_RG4UzwORhQNa-gIwTk",

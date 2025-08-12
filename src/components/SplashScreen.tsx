@@ -15,7 +15,7 @@ export function SplashScreen({ visible }: { visible: boolean }) {
                 <Logo className="h-24 w-24 text-primary" />
             </div>
             <h1 className="text-4xl font-bold font-headline mt-4 animate-fade-in-up" style={{ animationDelay: '200ms' }}>
-                MyReviewer
+                Qwiz
             </h1>
             <p className="text-muted-foreground mt-2 animate-fade-in-up" style={{ animationDelay: '400ms' }}>
                 Let's set you up for success.
