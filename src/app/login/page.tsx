@@ -12,11 +12,8 @@ import { auth } from '@/lib/firebase';
 import { 
     GoogleAuthProvider, 
     signInWithPopup,
-    RecaptchaVerifier,
-    signInWithPhoneNumber,
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
-    ConfirmationResult,
 } from "firebase/auth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
@@ -30,54 +27,7 @@ export default function LoginPage() {
   
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [phone, setPhone] = useState("");
-  const [otp, setOtp] = useState("");
-  const [showOtpInput, setShowOtpInput] = useState(false);
-  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
 
-  const setupRecaptcha = () => {
-    // Using window to avoid issues with SSR and RecaptchaVerifier
-    if (!(window as any).recaptchaVerifier) {
-      (window as any).recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        'size': 'invisible',
-        'callback': (response: any) => {
-          // reCAPTCHA solved, allow signInWithPhoneNumber.
-        },
-      });
-    }
-  };
-
-  const onSignInSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setupRecaptcha();
-    const phoneNumber = `+${phone}`;
-    const appVerifier = (window as any).recaptchaVerifier;
-
-    signInWithPhoneNumber(auth, phoneNumber, appVerifier)
-      .then((result) => {
-        setConfirmationResult(result);
-        setShowOtpInput(true);
-        toast({ title: "OTP Sent", description: "Please check your phone for the verification code." });
-      }).catch((error) => {
-        console.error("SMS not sent error", error);
-        toast({ variant: "destructive", title: "Error", description: "Failed to send OTP. Please check the phone number and try again." });
-      });
-  };
-
-  const verifyOtp = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (confirmationResult) {
-      confirmationResult.confirm(otp)
-        .then((result) => {
-          const user = result.user;
-          handleUserLogin(user.uid, user.displayName, user.photoURL, user.phoneNumber || user.email);
-        }).catch((error) => {
-          console.error("OTP verification error", error);
-          toast({ variant: "destructive", title: "Invalid OTP", description: "The code you entered is incorrect." });
-        });
-    }
-  };
-  
   const handleUserLogin = (uid: string, displayName: string | null, photoURL: string | null, identifier: string | null) => {
       const userProfileKey = `userProfile_${uid}`;
       const existingUser = localStorage.getItem(userProfileKey);
@@ -166,10 +116,9 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="google" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="google">Google</TabsTrigger>
               <TabsTrigger value="email">Email</TabsTrigger>
-              <TabsTrigger value="phone">Phone</TabsTrigger>
             </TabsList>
             
             <TabsContent value="google" className="mt-6">
@@ -198,33 +147,9 @@ export default function LoginPage() {
               </form>
             </TabsContent>
 
-            <TabsContent value="phone" className="mt-6">
-                <div id="recaptcha-container"></div>
-                {!showOtpInput ? (
-                    <form onSubmit={onSignInSubmit} className="space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="phone">Phone Number</Label>
-                            <Input id="phone" type="tel" placeholder="1234567890" required value={phone} onChange={(e) => setPhone(e.target.value)} />
-                            <p className="text-xs text-muted-foreground">Include country code without the '+'. E.g., 1 for USA.</p>
-                        </div>
-                        <Button type="submit" className="w-full">Send OTP</Button>
-                    </form>
-                ) : (
-                    <form onSubmit={verifyOtp} className="space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="otp">Verification Code</Label>
-                            <Input id="otp" type="text" placeholder="Enter OTP" required value={otp} onChange={(e) => setOtp(e.target.value)} />
-                        </div>
-                        <Button type="submit" className="w-full">Verify OTP</Button>
-                    </form>
-                )}
-            </TabsContent>
-
           </Tabs>
         </CardContent>
       </Card>
     </div>
   );
 }
-
-    
