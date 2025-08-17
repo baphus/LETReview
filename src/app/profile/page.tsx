@@ -37,6 +37,7 @@ import { Switch } from "@/components/ui/switch";
 import { auth } from "@/lib/firebase";
 import { Dialog, DialogHeader, DialogTitle, DialogFooter, DialogContent, DialogDescription } from "@/components/ui/dialog";
 import type { UserProfile, QuestionBank } from "@/lib/types";
+import { Badge } from "@/components/ui/badge";
 
 const themes = [
     { name: 'Default', value: 'default', cost: 0, colors: { primary: 'hsl(217.2 91.2% 59.8%)', accent: 'hsl(217.2 32.6% 20%)' } },
