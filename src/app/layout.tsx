@@ -40,6 +40,7 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
     if (!profile) {
         // Default to light mode for logged-out users
         document.documentElement.classList.remove('dark');
+        document.documentElement.classList.add('light');
         return;
     }
     const activeBank = getActiveBank();
