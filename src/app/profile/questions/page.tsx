@@ -1,8 +1,8 @@
 
 "use client";
 
-import { useState, useEffect, useCallback, useRef, ChangeEvent } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useCallback, useRef, ChangeEvent, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -11,8 +11,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { loadQuestions, saveQuestions } from '@/lib/data';
-import type { QuizQuestion, QuizQuestionForm } from '@/lib/types';
+import { loadUserProfile, saveUserProfile } from '@/lib/data';
+import type { QuizQuestion, QuizQuestionForm, UserProfile, QuestionBank } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Trash, Edit, PlusCircle, ArrowLeft, Image as ImageIcon } from 'lucide-react';
 import Image from 'next/image';
@@ -53,6 +53,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { cn } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const questionFormSchema = z.object({
   id: z.number().optional(),
@@ -257,30 +258,38 @@ const QuestionForm = ({
 };
 
 
-export default function QuestionsPage() {
+function QuestionsPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const bankId = searchParams.get('bankId');
   const { toast } = useToast();
+
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [bank, setBank] = useState<QuestionBank | null>(null);
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<QuizQuestionForm | null>(null);
   
-  const loadAndSetQuestions = useCallback(() => {
-    const loadedQuestions = loadQuestions();
-    setQuestions(loadedQuestions);
-  }, []);
+  const loadBankData = useCallback(() => {
+    const userProfile = loadUserProfile();
+    if (userProfile && bankId) {
+        setProfile(userProfile);
+        const currentBank = userProfile.banks.find(b => b.id === bankId);
+        if (currentBank) {
+            setBank(currentBank);
+            setQuestions(currentBank.questions || []);
+        } else {
+            toast({ variant: "destructive", title: "Bank not found" });
+            router.push('/profile');
+        }
+    } else {
+        router.push('/login');
+    }
+  }, [bankId, router, toast]);
 
   useEffect(() => {
-    loadAndSetQuestions();
-    
-    const handleStorageChange = () => {
-        loadAndSetQuestions();
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => {
-        window.removeEventListener('storage', handleStorageChange);
-    };
-  }, [loadAndSetQuestions]);
+    loadBankData();
+  }, [loadBankData]);
 
   const handleAddQuestion = () => {
     setEditingQuestion(null);
@@ -292,13 +301,25 @@ export default function QuestionsPage() {
     setIsFormOpen(true);
   };
 
+  const updateBankQuestions = (updatedQuestions: QuizQuestion[]) => {
+    if (profile && bank) {
+        const updatedBank = { ...bank, questions: updatedQuestions };
+        const bankIndex = profile.banks.findIndex(b => b.id === bank.id);
+        if (bankIndex !== -1) {
+            profile.banks[bankIndex] = updatedBank;
+            saveUserProfile(profile);
+            setBank(updatedBank);
+            setQuestions(updatedQuestions);
+        }
+    }
+  }
+
   const handleDeleteQuestion = (id: number) => {
     const updatedQuestions = questions.filter(q => q.id !== id);
-    saveQuestions(updatedQuestions);
-    setQuestions(updatedQuestions); //
+    updateBankQuestions(updatedQuestions);
     toast({
       title: 'Question Deleted',
-      description: 'The question has been removed from your bank.',
+      description: 'The question has been removed from this bank.',
       className: "bg-primary border-primary text-primary-foreground",
     });
   };
@@ -330,10 +351,24 @@ export default function QuestionsPage() {
       });
     }
     
-    saveQuestions(updatedQuestions);
-    setQuestions(updatedQuestions);
+    updateBankQuestions(updatedQuestions);
     setIsFormOpen(false);
   };
+
+  if (!bank) {
+    return (
+        <div className="container mx-auto p-4 max-w-4xl">
+            <header className="flex items-center gap-4 mb-6">
+                <Skeleton className="h-10 w-10" />
+                <Skeleton className="h-8 w-48" />
+            </header>
+            <Skeleton className="h-10 w-40 mb-6" />
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {[...Array(8)].map((_, i) => <Skeleton key={i} className="h-40 w-full" />)}
+            </div>
+        </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-4 max-w-4xl">
@@ -341,12 +376,15 @@ export default function QuestionsPage() {
         <Button variant="ghost" size="icon" onClick={() => router.back()}>
             <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-2xl font-bold font-headline">Question Bank</h1>
+        <div>
+            <h1 className="text-2xl font-bold font-headline">Manage Questions</h1>
+            <p className="text-muted-foreground">For bank: "{bank.name}"</p>
+        </div>
       </header>
 
         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
             <DialogTrigger asChild>
-                <Button className="w-full md:w-auto mb-6">
+                <Button className="w-full md:w-auto mb-6" onClick={handleAddQuestion}>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Add New Question
                 </Button>
@@ -420,4 +458,12 @@ export default function QuestionsPage() {
       </div>
     </div>
   );
+}
+
+export default function QuestionsPage() {
+    return (
+        <Suspense fallback={<div className="container mx-auto p-4 max-w-4xl"><p>Loading...</p></div>}>
+            <QuestionsPageContent />
+        </Suspense>
+    )
 }

@@ -6,8 +6,8 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { CalendarDays, Flame, Gem, Shield, Star, Lock, RefreshCcw, HelpCircle, CheckCircle, XCircle } from "lucide-react";
-import { pets, getQuestionOfTheDay, loadQuestions } from "@/lib/data";
-import type { QuizQuestion, DailyProgress } from "@/lib/types";
+import { getQuestionOfTheDay, loadQuestions, getActiveBank, saveActiveBank, loadUserProfile, saveUserProfile } from "@/lib/data";
+import type { QuizQuestion, DailyProgress, QuestionBank, UserProfile } from "@/lib/types";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -29,17 +29,6 @@ import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/comp
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogContent, DialogFooter } from "@/components/ui/dialog";
 
 
-interface UserStats {
-  uid: string;
-  streak: number;
-  highestStreak: number;
-  points: number;
-  lastChallengeDate?: string;
-  petsUnlocked: number;
-  completedChallenges: string[];
-  dailyProgress: Record<string, DailyProgress>;
-}
-
 // Function to get local date string in YYYY-MM-DD format
 const getTodayKey = () => format(new Date(), 'yyyy-MM-dd');
 
@@ -54,11 +43,10 @@ const QuestionOfTheDay = ({ onCorrectAnswer, userUid }: { onCorrectAnswer: () =>
         if (!userUid) return;
         const qotd = getQuestionOfTheDay();
         setQuestion(qotd);
-        const savedUser = localStorage.getItem(`userProfile_${userUid}`);
-        if(savedUser){
-            const user = JSON.parse(savedUser);
+        const bank = getActiveBank();
+        if(bank){
             const todayKey = getTodayKey();
-            const todaysProgress = user.dailyProgress?.[todayKey];
+            const todaysProgress = bank.dailyProgress?.[todayKey];
 
             if(todaysProgress?.qotdCompleted){
                 setIsAnswered(true);
@@ -83,16 +71,15 @@ const QuestionOfTheDay = ({ onCorrectAnswer, userUid }: { onCorrectAnswer: () =>
         setIsCorrect(correct);
         setIsAnswered(true);
 
-        const savedUser = localStorage.getItem(`userProfile_${userUid}`);
-        if (savedUser) {
-            let user = JSON.parse(savedUser);
+        const bank = getActiveBank();
+        if (bank) {
             const todayKey = getTodayKey();
 
-            if (!user.dailyProgress) user.dailyProgress = {};
-            if (!user.dailyProgress[todayKey]) user.dailyProgress[todayKey] = { pointsEarned: 0, pomodorosCompleted: 0, challengesCompleted: [], qotdCompleted: false };
+            if (!bank.dailyProgress) bank.dailyProgress = {};
+            if (!bank.dailyProgress[todayKey]) bank.dailyProgress[todayKey] = { pointsEarned: 0, pomodorosCompleted: 0, challengesCompleted: [], qotdCompleted: false };
             
-            user.dailyProgress[todayKey].qotdCompleted = true;
-            user.dailyProgress[todayKey].qotdAnswer = answer;
+            bank.dailyProgress[todayKey].qotdCompleted = true;
+            bank.dailyProgress[todayKey].qotdAnswer = answer;
 
             if (correct) {
                 onCorrectAnswer(); // This updates the state in the parent component
@@ -100,7 +87,7 @@ const QuestionOfTheDay = ({ onCorrectAnswer, userUid }: { onCorrectAnswer: () =>
             } else {
                  toast({ variant: "destructive", title: "Incorrect", description: "Better luck tomorrow!" });
             }
-            localStorage.setItem(`userProfile_${userUid}`, JSON.stringify(user));
+            saveActiveBank(bank);
         }
     };
 
@@ -163,7 +150,8 @@ const QuestionOfTheDay = ({ onCorrectAnswer, userUid }: { onCorrectAnswer: () =>
 export default function DailyPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [userStats, setUserStats] = useState<UserStats | null>(null);
+  const [userUid, setUserUid] = useState<string | null>(null);
+  const [activeBank, setActiveBank] = useState<QuestionBank | null>(null);
   const [challengeCompletedToday, setChallengeCompletedToday] = useState(false);
   const [streakBroken, setStreakBroken] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<"custom">("custom");
@@ -174,39 +162,29 @@ export default function DailyPage() {
   const loadUserStats = useCallback(() => {
     const currentUid = localStorage.getItem('currentUser');
     if (currentUid) {
-      const savedUser = localStorage.getItem(`userProfile_${currentUid}`);
-      if (savedUser) {
-        const parsedUser = JSON.parse(savedUser);
+      setUserUid(currentUid);
+      const profile = loadUserProfile();
+      const bank = getActiveBank();
 
-        const isCompletedToday = (parsedUser.dailyProgress?.[todayKey]?.challengesCompleted?.length || 0) > 0;
+      if (profile && bank) {
+        const isCompletedToday = (bank.dailyProgress?.[todayKey]?.challengesCompleted?.length || 0) > 0;
         setChallengeCompletedToday(isCompletedToday);
         
-        const lastChallengeDateString = parsedUser.lastChallengeDate;
+        const lastChallengeDateString = bank.lastChallengeDate;
         if (lastChallengeDateString) {
             const lastChallengeDate = startOfDay(new Date(lastChallengeDateString));
             const yesterday = startOfYesterday();
 
-            if (parsedUser.streak > 0 && isBefore(lastChallengeDate, yesterday)) {
+            if (bank.streak > 0 && isBefore(lastChallengeDate, yesterday)) {
               setStreakBroken(true);
-              parsedUser.streak = 0;
-              localStorage.setItem(`userProfile_${currentUid}`, JSON.stringify(parsedUser));
+              bank.streak = 0;
+              saveActiveBank(bank);
             } else {
               setStreakBroken(false);
             }
         }
         
-        const todaysChallenges = parsedUser.dailyProgress?.[todayKey]?.challengesCompleted || [];
-
-        setUserStats({
-          uid: currentUid,
-          streak: parsedUser.streak || 0,
-          highestStreak: parsedUser.highestStreak || 0,
-          points: parsedUser.points || 0,
-          lastChallengeDate: parsedUser.lastChallengeDate,
-          petsUnlocked: parsedUser.petsUnlocked || 0,
-          completedChallenges: todaysChallenges,
-          dailyProgress: parsedUser.dailyProgress || {},
-        });
+        setActiveBank(bank);
       }
     } else {
         router.push('/login');
@@ -244,44 +222,38 @@ export default function DailyPage() {
     router.push(`/review?challenge=true&difficulty=${difficulty}&count=${count}&category=${selectedCategory}`);
   };
   
-  const restoreStreakCost = Math.min(250, (userStats?.highestStreak || 0) * 10);
+  const restoreStreakCost = Math.min(250, (activeBank?.highestStreak || 0) * 10);
 
   const handleRestoreStreak = () => {
-     if (!userStats || userStats.points < restoreStreakCost) {
+     if (!activeBank || activeBank.points < restoreStreakCost) {
         toast({ variant: "destructive", title: "Not enough points!", description: `You need ${restoreStreakCost} points to restore your streak.`});
         return;
      }
 
-      const savedUser = localStorage.getItem(`userProfile_${userStats.uid}`);
-      if (savedUser) {
-        const user = JSON.parse(savedUser);
-        user.points -= restoreStreakCost;
-        user.streak = user.highestStreak;
-        localStorage.setItem(`userProfile_${userStats.uid}`, JSON.stringify(user));
-        setStreakBroken(false);
-        setUserStats(prev => prev ? ({ ...prev, points: user.points, streak: user.streak }) : null);
-        toast({
-          title: "Streak Restored!",
-          description: `You spent ${restoreStreakCost} points.`,
-          className: "bg-primary border-primary text-primary-foreground"
-        });
-      }
+      activeBank.points -= restoreStreakCost;
+      activeBank.streak = activeBank.highestStreak;
+      saveActiveBank(activeBank);
+      setStreakBroken(false);
+      setActiveBank({...activeBank});
+      toast({
+        title: "Streak Restored!",
+        description: `You spent ${restoreStreakCost} points.`,
+        className: "bg-primary border-primary text-primary-foreground"
+      });
   };
 
   const handleQotdCorrect = () => {
-    if (!userStats) return;
-    const savedUser = localStorage.getItem(`userProfile_${userStats.uid}`);
-    if (savedUser) {
-        const user = JSON.parse(savedUser);
-        user.points = (user.points || 0) + 5;
+    const bank = getActiveBank();
+    if (bank) {
+        bank.points = (bank.points || 0) + 5;
         
         const todayKey = getTodayKey();
-        if (!user.dailyProgress) user.dailyProgress = {};
-        if (!user.dailyProgress[todayKey]) user.dailyProgress[todayKey] = { pointsEarned: 0, pomodorosCompleted: 0, challengesCompleted: [], qotdCompleted: false };
-        user.dailyProgress[todayKey].pointsEarned = (user.dailyProgress[todayKey].pointsEarned || 0) + 5;
+        if (!bank.dailyProgress) bank.dailyProgress = {};
+        if (!bank.dailyProgress[todayKey]) bank.dailyProgress[todayKey] = { pointsEarned: 0, pomodorosCompleted: 0, challengesCompleted: [], qotdCompleted: false };
+        bank.dailyProgress[todayKey].pointsEarned = (bank.dailyProgress[todayKey].pointsEarned || 0) + 5;
 
-        localStorage.setItem(`userProfile_${userStats.uid}`, JSON.stringify(user));
-        setUserStats(prev => prev ? ({ ...prev, points: user.points }) : null);
+        saveActiveBank(bank);
+        setActiveBank({...bank});
     }
   };
   
@@ -290,7 +262,7 @@ export default function DailyPage() {
     setShowGuide(false);
   };
 
-  if (!userStats) return null;
+  if (!activeBank) return null;
 
 
   const challenges = [
@@ -337,7 +309,7 @@ export default function DailyPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">{userStats.streak} Days</p>
+            <p className="text-3xl font-bold">{activeBank.streak} Days</p>
           </CardContent>
         </Card>
         <Card>
@@ -348,12 +320,12 @@ export default function DailyPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">{userStats.points}</p>
+            <p className="text-3xl font-bold">{activeBank.points}</p>
           </CardContent>
         </Card>
       </div>
 
-      <QuestionOfTheDay onCorrectAnswer={handleQotdCorrect} userUid={userStats.uid} />
+      <QuestionOfTheDay onCorrectAnswer={handleQotdCorrect} userUid={userUid} />
 
       {challengeCompletedToday && (
          <Card className="mb-6 bg-green-500/10 border-green-500/20">
@@ -373,13 +345,13 @@ export default function DailyPage() {
               Oh no! You lost your streak.
             </CardTitle>
             <CardDescription className="text-center text-amber-500">
-              Restore your {userStats.highestStreak}-day streak for {restoreStreakCost} points or start a new challenge.
+              Restore your {activeBank.highestStreak}-day streak for {restoreStreakCost} points or start a new challenge.
             </CardDescription>
           </CardHeader>
           <CardFooter>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button className="w-full" disabled={userStats.points < restoreStreakCost}>
+                <Button className="w-full" disabled={activeBank.points < restoreStreakCost}>
                     <RefreshCcw className="mr-2 h-4 w-4" />
                     Restore Streak ({restoreStreakCost} points)
                 </Button>
@@ -388,7 +360,7 @@ export default function DailyPage() {
                   <AlertDialogHeader>
                     <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                     <AlertDialogDescription>
-                        This will cost {restoreStreakCost} points and restore your streak to {userStats.highestStreak} days.
+                        This will cost {restoreStreakCost} points and restore your streak to {activeBank.highestStreak} days.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
@@ -409,7 +381,8 @@ export default function DailyPage() {
         <div className="space-y-4">
           {challenges.map((challenge, index) => {
              const challengeId = `${challenge.difficulty}-custom`;
-             const isCompleted = userStats.completedChallenges.includes(challengeId);
+             const todaysProgress = activeBank.dailyProgress?.[todayKey];
+             const isCompleted = todaysProgress?.challengesCompleted?.includes(challengeId);
              const hasEnoughQuestions = questionCounts[challenge.difficulty as keyof typeof questionCounts] >= challenge.count;
 
             return (

@@ -21,6 +21,8 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { SplashScreenHandler } from "@/components/SplashScreen";
 import { auth } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
+import { loadUserProfile, getActiveBank } from "@/lib/data";
+
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const spaceGrotesk = Space_Grotesk({
@@ -34,27 +36,21 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   const applyUserTheme = () => {
-    const currentUid = localStorage.getItem('currentUser');
-    if (!currentUid) {
+    const profile = loadUserProfile();
+    if (!profile) {
         document.documentElement.classList.add('dark');
         return;
-    };
-    const savedUser = localStorage.getItem(`userProfile_${currentUid}`);
-    if (savedUser) {
-        const user = JSON.parse(savedUser);
+    }
+    const activeBank = getActiveBank();
 
-        // Handle light/dark mode
-        document.documentElement.classList.remove('dark', 'light');
-        document.documentElement.classList.add(user.themeMode || 'dark');
-        
-        // Handle custom accent themes
-        document.documentElement.classList.remove('mint', 'sunset', 'rose');
-        if (user.activeTheme && user.activeTheme !== 'default') {
-            document.documentElement.classList.add(user.activeTheme);
-        }
-    } else {
-        // Default to dark if no profile
-        document.documentElement.classList.add('dark');
+    // Handle light/dark mode from overall profile
+    document.documentElement.classList.remove('dark', 'light');
+    document.documentElement.classList.add(profile.themeMode || 'dark');
+    
+    // Handle custom accent themes from active bank
+    document.documentElement.classList.remove('mint', 'sunset', 'rose');
+    if (activeBank && activeBank.activeTheme && activeBank.activeTheme !== 'default') {
+        document.documentElement.classList.add(activeBank.activeTheme);
     }
   };
 

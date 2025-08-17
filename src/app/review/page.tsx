@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { loadQuestions } from "@/lib/data";
+import { loadQuestions, getActiveBank, saveActiveBank } from "@/lib/data";
 import type { QuizQuestion } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -268,18 +268,18 @@ function ReviewerPageContent() {
 
 
   const loadUserData = useCallback(() => {
-    const currentUid = localStorage.getItem('currentUser');
-    if(currentUid){
-        const savedUser = localStorage.getItem(`userProfile_${currentUid}`);
-        if(savedUser){
-            const user = JSON.parse(savedUser);
-            setPassingScore(user.passingScore || 75);
-        }
+    const bank = getActiveBank();
+    if(bank){
+        setPassingScore(bank.passingScore || 75);
     }
   }, []);
 
   useEffect(() => {
     loadUserData();
+    window.addEventListener('storage', loadUserData);
+    return () => {
+        window.removeEventListener('storage', loadUserData);
+    }
   }, [loadUserData])
 
 
@@ -321,64 +321,59 @@ function ReviewerPageContent() {
     setQuizScore(finalScore);
     setShowResults(true);
 
-    const scorePercentage = (finalScore / questions.length) * 100;
+    const scorePercentage = (questions.length > 0 ? finalScore / questions.length : 0) * 100;
     const passed = scorePercentage >= passingScore;
     
-    const currentUid = localStorage.getItem('currentUser');
-    if (!currentUid) return;
+    const bank = getActiveBank();
+    if (!bank) return;
 
-    const savedUser = localStorage.getItem(`userProfile_${currentUid}`);
-    if (savedUser) {
-        let user = JSON.parse(savedUser);
-        const todayKey = getTodayKey();
-        
-        if (!user.dailyProgress) user.dailyProgress = {};
-        if (!user.dailyProgress[todayKey]) user.dailyProgress[todayKey] = { pointsEarned: 0, pomodorosCompleted: 0, challengesCompleted: [], qotdCompleted: false };
+    const todayKey = getTodayKey();
+    if (!bank.dailyProgress) bank.dailyProgress = {};
+    if (!bank.dailyProgress[todayKey]) bank.dailyProgress[todayKey] = { pointsEarned: 0, pomodorosCompleted: 0, challengesCompleted: [], qotdCompleted: false };
 
-        const challengeId = `${challengeDifficulty}-custom`; // Category is always custom now
-        
-        if (passed) {
-            if (!user.dailyProgress[todayKey].challengesCompleted) {
-                user.dailyProgress[todayKey].challengesCompleted = [];
-            }
-            
-            const alreadyCompletedToday = user.dailyProgress[todayKey].challengesCompleted.includes(challengeId);
-
-            // Only update streak and points if this specific challenge difficulty hasn't been completed today
-            if (!alreadyCompletedToday) {
-                user.dailyProgress[todayKey].challengesCompleted.push(challengeId);
-
-                const wasAnyChallengeCompletedToday = user.lastChallengeDate === todayKey;
-                
-                if (!wasAnyChallengeCompletedToday) {
-                    user.streak = (user.streak || 0) + 1;
-                    if (user.streak > (user.highestStreak || 0)) {
-                        user.highestStreak = user.streak;
-                    }
-                    user.lastChallengeDate = todayKey;
-                }
-
-                const pointsMap: { [key: string]: number } = { easy: 25, medium: 75, hard: 150 };
-                const pointsEarned = pointsMap[challengeDifficulty] || 0;
-                user.points = (user.points || 0) + pointsEarned;
-                user.dailyProgress[todayKey].pointsEarned = (user.dailyProgress[todayKey].pointsEarned || 0) + pointsEarned;
-
-                toast({
-                    title: "Challenge Passed!",
-                    description: `You earned ${pointsEarned} points and secured your streak!`,
-                    className: "bg-primary border-primary text-primary-foreground"
-                });
-            } else {
-                 toast({
-                    title: "Challenge Complete!",
-                    description: `You've already earned points for this challenge today.`,
-                    className: "bg-primary border-primary text-primary-foreground"
-                });
-            }
+    const challengeId = `${challengeDifficulty}-custom`; // Category is always custom now
+    
+    if (passed) {
+        if (!bank.dailyProgress[todayKey].challengesCompleted) {
+            bank.dailyProgress[todayKey].challengesCompleted = [];
         }
         
-        localStorage.setItem(`userProfile_${currentUid}`, JSON.stringify(user));
+        const alreadyCompletedToday = bank.dailyProgress[todayKey].challengesCompleted.includes(challengeId);
+
+        // Only update streak and points if this specific challenge difficulty hasn't been completed today
+        if (!alreadyCompletedToday) {
+            bank.dailyProgress[todayKey].challengesCompleted.push(challengeId);
+
+            const wasAnyChallengeCompletedToday = bank.lastChallengeDate === todayKey;
+            
+            if (!wasAnyChallengeCompletedToday) {
+                bank.streak = (bank.streak || 0) + 1;
+                if (bank.streak > (bank.highestStreak || 0)) {
+                    bank.highestStreak = bank.streak;
+                }
+                bank.lastChallengeDate = todayKey;
+            }
+
+            const pointsMap: { [key: string]: number } = { easy: 25, medium: 75, hard: 150 };
+            const pointsEarned = pointsMap[challengeDifficulty] || 0;
+            bank.points = (bank.points || 0) + pointsEarned;
+            bank.dailyProgress[todayKey].pointsEarned = (bank.dailyProgress[todayKey].pointsEarned || 0) + pointsEarned;
+
+            toast({
+                title: "Challenge Passed!",
+                description: `You earned ${pointsEarned} points and secured your streak!`,
+                className: "bg-primary border-primary text-primary-foreground"
+            });
+        } else {
+             toast({
+                title: "Challenge Complete!",
+                description: `You've already earned points for this challenge today.`,
+                className: "bg-primary border-primary text-primary-foreground"
+            });
+        }
     }
+    
+    saveActiveBank(bank);
   };
 
 
@@ -461,7 +456,7 @@ function ReviewerPageContent() {
   
   const progressValue = questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
   
-  const isChallengePassed = showResults && isChallenge && (quizScore / questions.length * 100) >= passingScore;
+  const isChallengePassed = showResults && isChallenge && (questions.length > 0 ? (quizScore / questions.length * 100) : 0) >= passingScore;
 
   if (isChallenge && !currentQuestion && challengeAnswers.length === questions.length && !showResults) {
     handleFinishChallenge(challengeAnswers);
@@ -659,5 +654,3 @@ export default function ReviewPage() {
         </Suspense>
     )
 }
-
-    

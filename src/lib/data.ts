@@ -1,5 +1,6 @@
 
-import type { QuizQuestion, PetProfile } from "./types";
+import type { QuizQuestion, PetProfile, QuestionBank, UserProfile } from "./types";
+import { format } from 'date-fns';
 
 // This file now contains only placeholder data.
 // The main source of questions will be from local storage.
@@ -51,37 +52,77 @@ export const sampleQuestions: QuizQuestion[] = [
   }
 ];
 
-// Function to load questions from local storage or use sample if none exist
-export const loadQuestions = (): QuizQuestion[] => {
-  if (typeof window !== 'undefined') {
-    const currentUid = localStorage.getItem('currentUser');
-    if (!currentUid) return sampleQuestions;
-    
-    const savedQuestions = localStorage.getItem(`customQuestions_${currentUid}`);
-    if (savedQuestions) {
-      try {
-        const parsedQuestions = JSON.parse(savedQuestions);
-        if (Array.isArray(parsedQuestions) && parsedQuestions.length > 0) {
-          return parsedQuestions;
-        }
-      } catch (e) {
-        console.error("Failed to parse questions from localStorage", e);
-        return sampleQuestions;
-      }
+
+// ---- NEW BANK-AWARE DATA FUNCTIONS ----
+
+const getTodayKey = () => format(new Date(), 'yyyy-MM-dd');
+
+export const createNewBank = (name: string): QuestionBank => ({
+    id: `bank_${Date.now()}`,
+    name,
+    questions: [...sampleQuestions.map((q, i) => ({ ...q, id: Date.now() + i }))],
+    points: 0,
+    streak: 0,
+    highestStreak: 0,
+    highestQuizStreak: 0,
+    completedSessions: 0,
+    unlockedThemes: ['default'],
+    activeTheme: 'default',
+    unlockedPets: [],
+    petNames: {},
+    passingScore: 75,
+    dailyProgress: {},
+});
+
+export const loadUserProfile = (): UserProfile | null => {
+    if (typeof window === 'undefined') return null;
+    const uid = localStorage.getItem('currentUser');
+    if (!uid) return null;
+
+    const savedProfile = localStorage.getItem(`userProfile_${uid}`);
+    if (savedProfile) {
+        return JSON.parse(savedProfile);
     }
-  }
-  return sampleQuestions;
+    return null;
+}
+
+export const saveUserProfile = (profile: UserProfile) => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(`userProfile_${profile.uid}`, JSON.stringify(profile));
+    window.dispatchEvent(new Event('storage'));
 };
 
-// Function to save questions to local storage
-export const saveQuestions = (questions: QuizQuestion[]) => {
-  if (typeof window !== 'undefined') {
-    const currentUid = localStorage.getItem('currentUser');
-    if (!currentUid) return;
 
-    localStorage.setItem(`customQuestions_${currentUid}`, JSON.stringify(questions));
-     // Dispatch a storage event to notify other components like the quiz pages
-    window.dispatchEvent(new Event('storage'));
+export const getActiveBank = (): QuestionBank | null => {
+    const profile = loadUserProfile();
+    if (!profile) return null;
+    return profile.banks.find(b => b.id === profile.activeBankId) || null;
+}
+
+export const saveActiveBank = (bank: QuestionBank) => {
+    const profile = loadUserProfile();
+    if (!profile) return;
+    
+    const bankIndex = profile.banks.findIndex(b => b.id === bank.id);
+    if (bankIndex !== -1) {
+        profile.banks[bankIndex] = bank;
+        saveUserProfile(profile);
+    }
+}
+
+
+// Function to load questions from the active bank
+export const loadQuestions = (): QuizQuestion[] => {
+  const activeBank = getActiveBank();
+  return activeBank?.questions || [];
+};
+
+// Function to save questions to the active bank
+export const saveQuestions = (questions: QuizQuestion[]) => {
+  const activeBank = getActiveBank();
+  if (activeBank) {
+    activeBank.questions = questions;
+    saveActiveBank(activeBank);
   }
 };
 
@@ -223,5 +264,3 @@ export const achievementPets: PetProfile[] = [
 export const rarePets: PetProfile[] = [
     { name: "Draco", unlock_criteria: "Purchase in store", cost: 1000, image: "/pets/draco.png", hint: "fire breathing", streak_req: 0 },
 ];
-
-    

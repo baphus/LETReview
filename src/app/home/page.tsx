@@ -7,8 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Separator } from "@/components/ui/separator";
 import { User, Flame, Gem, Star, Award, Shield, Edit, Check, HelpCircle, Lock, CalendarCheck2, CheckCircle, Lightbulb, TrendingUp } from "lucide-react";
 import Image from "next/image";
-import { pets as streakPets, getQuestionOfTheDay, achievementPets, rarePets } from "@/lib/data";
-import type { QuizQuestion, DailyProgress, PetProfile } from "@/lib/types";
+import { pets as streakPets, getQuestionOfTheDay, achievementPets, rarePets, loadUserProfile, getActiveBank, saveUserProfile } from "@/lib/data";
+import type { QuizQuestion, DailyProgress, PetProfile, UserProfile, QuestionBank } from "@/lib/types";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -35,23 +35,6 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Dialog, DialogHeader, DialogFooter, DialogTitle, DialogContent, DialogDescription } from "@/components/ui/dialog";
 
-interface UserProfile {
-    uid: string;
-    name: string;
-    avatarUrl: string;
-    examDate?: string;
-    points: number;
-    streak: number;
-    highestStreak: number;
-    highestQuizStreak: number;
-    completedSessions: number;
-    petNames: Record<string, string>;
-    unlockedPets: string[];
-    dailyProgress: Record<string, DailyProgress>;
-    lastLogin: string;
-    lastChallengeDate?: string;
-}
-
 const allPets: PetProfile[] = [
     ...streakPets,
     ...achievementPets,
@@ -66,6 +49,7 @@ export default function HomePage() {
   const isMobile = useIsMobile();
   
   const [user, setUser] = useState<UserProfile | null>(null);
+  const [activeBank, setActiveBank] = useState<QuestionBank | null>(null);
   const [editingPet, setEditingPet] = useState<string | null>(null);
   const [newPetName, setNewPetName] = useState("");
   const [questionOfTheDay, setQuestionOfTheDay] = useState<QuizQuestion | null>(null);
@@ -74,44 +58,49 @@ export default function HomePage() {
   
   const todayKey = useMemo(() => getTodayKey(), []);
 
-  const saveUser = useCallback((userToSave: UserProfile) => {
-    localStorage.setItem(`userProfile_${userToSave.uid}`, JSON.stringify(userToSave));
-    window.dispatchEvent(new Event('storage'));
+  const saveUserAndBank = useCallback((updatedProfile: UserProfile, updatedBank: QuestionBank) => {
+    const bankIndex = updatedProfile.banks.findIndex(b => b.id === updatedBank.id);
+    if (bankIndex !== -1) {
+      updatedProfile.banks[bankIndex] = updatedBank;
+      saveUserProfile(updatedProfile);
+      setUser(updatedProfile);
+      setActiveBank(updatedBank);
+    }
   }, []);
   
-  const checkAchievements = useCallback((user: UserProfile): UserProfile => {
-    let updatedUser = { ...user };
+  const checkAchievements = useCallback((userProfile: UserProfile, bank: QuestionBank): { updatedProfile: UserProfile, updatedBank: QuestionBank } => {
+    let updatedBank = { ...bank };
     let statsUpdated = false;
 
-    if (user.streak > (user.highestStreak || 0)) {
-        updatedUser.highestStreak = user.streak;
+    if (bank.streak > (bank.highestStreak || 0)) {
+        updatedBank.highestStreak = bank.streak;
         statsUpdated = true;
     }
     
     const pomodoroState = JSON.parse(localStorage.getItem("pomodoroState") || "{}");
-    if (pomodoroState.highestQuizStreak > (user.highestQuizStreak || 0)) {
-        updatedUser.highestQuizStreak = pomodoroState.highestQuizStreak;
+    if (pomodoroState.highestQuizStreak > (bank.highestQuizStreak || 0)) {
+        updatedBank.highestQuizStreak = pomodoroState.highestQuizStreak;
         statsUpdated = true;
     }
     // Also update completed sessions from the timer state if it's not reflected yet.
-    if (pomodoroState.sessions > (user.completedSessions || 0)) {
-        updatedUser.completedSessions = pomodoroState.sessions;
+    if (pomodoroState.sessions > (bank.completedSessions || 0)) {
+        updatedBank.completedSessions = pomodoroState.sessions;
         statsUpdated = true;
     }
 
     achievementPets.forEach(pet => {
-      let isAlreadyUnlocked = updatedUser.unlockedPets.includes(pet.name);
+      let isAlreadyUnlocked = updatedBank.unlockedPets.includes(pet.name);
       if (isAlreadyUnlocked) return;
 
       let isUnlockedNow = false;
       if (pet.unlock_criteria.includes('Pomodoro')) {
-        isUnlockedNow = (updatedUser.completedSessions || 0) >= (pet.unlock_value || 0);
+        isUnlockedNow = (updatedBank.completedSessions || 0) >= (pet.unlock_value || 0);
       } else if (pet.unlock_criteria.includes('quiz streak')) {
-        isUnlockedNow = (updatedUser.highestQuizStreak || 0) >= (pet.unlock_value || 0);
+        isUnlockedNow = (updatedBank.highestQuizStreak || 0) >= (pet.unlock_value || 0);
       }
 
       if (isUnlockedNow) {
-        updatedUser.unlockedPets = [...new Set([...updatedUser.unlockedPets, pet.name])];
+        updatedBank.unlockedPets = [...new Set([...updatedBank.unlockedPets, pet.name])];
         statsUpdated = true;
         toast({
           title: "New Pet Unlocked!",
@@ -122,58 +111,57 @@ export default function HomePage() {
     });
 
     if (statsUpdated) {
-      saveUser(updatedUser);
+        const bankIndex = userProfile.banks.findIndex(b => b.id === bank.id);
+        if (bankIndex !== -1) {
+            userProfile.banks[bankIndex] = updatedBank;
+        }
     }
-    return updatedUser;
-  }, [toast, saveUser]);
+    return { updatedProfile: userProfile, updatedBank };
+  }, [toast]);
 
 
   const loadUser = useCallback(() => {
-    const currentUid = localStorage.getItem('currentUser');
-    if (currentUid) {
-      const savedUser = localStorage.getItem(`userProfile_${currentUid}`);
-      if (savedUser) {
-        let parsedUser: UserProfile = JSON.parse(savedUser);
+    const profile = loadUserProfile();
+    if (profile) {
+      let bank = profile.banks.find(b => b.id === profile.activeBankId) || profile.banks[0];
 
-        if (!parsedUser.petNames) parsedUser.petNames = {};
-        if (!parsedUser.unlockedPets) parsedUser.unlockedPets = [];
-        if (!parsedUser.dailyProgress) parsedUser.dailyProgress = {};
-        if (!parsedUser.highestQuizStreak) parsedUser.highestQuizStreak = 0;
-        
-        const lastLoginDate = parsedUser.lastLogin ? startOfDay(new Date(parsedUser.lastLogin)) : startOfDay(new Date());
-        const today = startOfDay(new Date());
+      if (!bank.petNames) bank.petNames = {};
+      if (!bank.unlockedPets) bank.unlockedPets = [];
+      if (!bank.dailyProgress) bank.dailyProgress = {};
+      if (!bank.highestQuizStreak) bank.highestQuizStreak = 0;
+      
+      const lastLoginDate = profile.lastLogin ? startOfDay(new Date(profile.lastLogin)) : startOfDay(new Date());
+      const today = startOfDay(new Date());
 
-        if (isBefore(lastLoginDate, today)) {
-            const yesterday = startOfYesterday();
-            const lastChallengeDate = parsedUser.lastChallengeDate ? startOfDay(new Date(parsedUser.lastChallengeDate)) : null;
+      if (isBefore(lastLoginDate, today)) {
+          const yesterday = startOfYesterday();
+          const lastChallengeDate = bank.lastChallengeDate ? startOfDay(new Date(bank.lastChallengeDate)) : null;
 
-            if (parsedUser.streak > 0 && lastChallengeDate && isBefore(lastChallengeDate, yesterday)) {
-                 toast({
-                    variant: 'destructive',
-                    title: 'Streak Lost!',
-                    description: `You missed a day and lost your ${parsedUser.streak}-day streak.`,
-                });
-                parsedUser.streak = 0;
-            }
-        }
-        
-        parsedUser.lastLogin = todayKey;
+          if (bank.streak > 0 && lastChallengeDate && isBefore(lastChallengeDate, yesterday)) {
+               toast({
+                  variant: 'destructive',
+                  title: 'Streak Lost!',
+                  description: `You missed a day and lost your ${bank.streak}-day streak.`,
+              });
+              bank.streak = 0;
+          }
+      }
+      
+      profile.lastLogin = todayKey;
 
-        const userWithAchievements = checkAchievements(parsedUser);
-        saveUser(userWithAchievements);
-        setUser(userWithAchievements);
+      const { updatedProfile, updatedBank } = checkAchievements(profile, bank);
+      saveUserProfile(updatedProfile);
+      setUser(updatedProfile);
+      setActiveBank(updatedBank);
 
-        const hasSeenGuide = localStorage.getItem('hasSeenHomeGuide');
-        if (!hasSeenGuide) {
-            setShowHomeGuide(true);
-        }
-      } else {
-        router.push('/login');
+      const hasSeenGuide = localStorage.getItem('hasSeenHomeGuide');
+      if (!hasSeenGuide) {
+          setShowHomeGuide(true);
       }
     } else {
-        router.push('/login');
+      router.push('/login');
     }
-  }, [router, todayKey, toast, checkAchievements, saveUser]);
+  }, [router, todayKey, toast, checkAchievements]);
 
 
   useEffect(() => {
@@ -191,8 +179,8 @@ export default function HomePage() {
   }, [loadUser]);
   
   const qotdCompletedDays = useMemo(() => {
-    if (!user?.dailyProgress) return [];
-    return Object.entries(user.dailyProgress).reduce((acc, [dateStr, progress]) => {
+    if (!activeBank?.dailyProgress) return [];
+    return Object.entries(activeBank.dailyProgress).reduce((acc, [dateStr, progress]) => {
         if (progress.qotdCompleted) {
             // Ensure correct parsing of YYYY-MM-DD
             const date = new Date(dateStr + 'T00:00:00');
@@ -200,51 +188,50 @@ export default function HomePage() {
         }
         return acc;
     }, [] as Date[]);
-}, [user?.dailyProgress]);
+}, [activeBank?.dailyProgress]);
 
   const streakDays = useMemo(() => {
-    if (!user) return [];
+    if (!activeBank) return [];
     // Start from today if streak is secured, otherwise yesterday
-    const startDate = user.lastChallengeDate === todayKey ? startOfDay(new Date()) : startOfYesterday();
-    return Array.from({ length: user.streak || 0 }, (_, i) => addDays(startDate, -i));
-}, [user, todayKey]);
+    const startDate = activeBank.lastChallengeDate === todayKey ? startOfDay(new Date()) : startOfYesterday();
+    return Array.from({ length: activeBank.streak || 0 }, (_, i) => addDays(startDate, -i));
+}, [activeBank, todayKey]);
   
   const isStreakSecuredToday = useMemo(() => {
-    if (!user) return false;
-    return (user.dailyProgress?.[todayKey]?.challengesCompleted?.length || 0) > 0;
-  }, [user, todayKey]);
+    if (!activeBank) return false;
+    return (activeBank.dailyProgress?.[todayKey]?.challengesCompleted?.length || 0) > 0;
+  }, [activeBank, todayKey]);
   
   const unlockedPetsCount = useMemo(() => {
-    if (!user) return 0;
+    if (!activeBank) return 0;
     return allPets.filter(pet => {
       if (!pet.unlock_criteria) return false;
       if (pet.unlock_criteria.includes('streak') && !pet.unlock_criteria.includes('quiz')) {
-        return (user.highestStreak || 0) >= pet.streak_req;
+        return (activeBank.highestStreak || 0) >= pet.streak_req;
       } else if (pet.unlock_criteria.includes('Purchase')) {
-        return user.unlockedPets.includes(pet.name);
+        return activeBank.unlockedPets.includes(pet.name);
       } else if (pet.unlock_criteria.includes('Pomodoro')) {
-        return user.unlockedPets.includes(pet.name);
+        return activeBank.unlockedPets.includes(pet.name);
       } else if (pet.unlock_criteria.includes('quiz streak')) {
-        return user.unlockedPets.includes(pet.name);
+        return activeBank.unlockedPets.includes(pet.name);
       }
       return false;
     }).length;
-  }, [user]);
+  }, [activeBank]);
 
-  const todaysProgress = user?.dailyProgress?.[todayKey] || { pointsEarned: 0, pomodorosCompleted: 0, qotdCompleted: false };
+  const todaysProgress = activeBank?.dailyProgress?.[todayKey] || { pointsEarned: 0, pomodorosCompleted: 0, qotdCompleted: false };
 
   const handlePetNameEdit = (originalName: string) => {
-    if (!user) return;
+    if (!activeBank) return;
     setEditingPet(originalName);
-    setNewPetName(user.petNames[originalName] || originalName);
+    setNewPetName(activeBank.petNames[originalName] || originalName);
   };
   
   const handlePetNameSave = (originalName: string) => {
-    if (user && newPetName.trim()) {
-        const updatedPetNames = { ...user.petNames, [originalName]: newPetName.trim() };
-        const updatedUser = { ...user, petNames: updatedPetNames };
-        saveUser(updatedUser);
-        setUser(updatedUser);
+    if (user && activeBank && newPetName.trim()) {
+        const updatedPetNames = { ...activeBank.petNames, [originalName]: newPetName.trim() };
+        const updatedBank = { ...activeBank, petNames: updatedPetNames };
+        saveUserAndBank(user, updatedBank);
         setEditingPet(null);
         toast({
           title: "Pet renamed!",
@@ -269,7 +256,7 @@ export default function HomePage() {
     setShowHomeGuide(false);
   }
   
-  if (!user) {
+  if (!user || !activeBank) {
     return null;
   }
   
@@ -277,13 +264,13 @@ export default function HomePage() {
     let isUnlocked = false;
 
     if (pet.unlock_criteria.includes('streak') && !pet.unlock_criteria.includes('quiz')) {
-        isUnlocked = (user.highestStreak || 0) >= pet.streak_req;
+        isUnlocked = (activeBank.highestStreak || 0) >= pet.streak_req;
     } else if (pet.unlock_criteria.includes('Purchase')) {
-        isUnlocked = user.unlockedPets.includes(pet.name);
+        isUnlocked = activeBank.unlockedPets.includes(pet.name);
     } else if (pet.unlock_criteria.includes('Pomodoro')) {
-        isUnlocked = user.unlockedPets.includes(pet.name);
+        isUnlocked = activeBank.unlockedPets.includes(pet.name);
     } else if (pet.unlock_criteria.includes('quiz streak')) {
-        isUnlocked = user.unlockedPets.includes(pet.name);
+        isUnlocked = activeBank.unlockedPets.includes(pet.name);
     }
 
     return (
@@ -322,7 +309,7 @@ export default function HomePage() {
                 </div>
               ) : (
                 <div className="flex items-center justify-center gap-1 mt-1">
-                  <p className="text-sm font-medium">{user.petNames[pet.name] || pet.name}</p>
+                  <p className="text-sm font-medium">{activeBank.petNames[pet.name] || pet.name}</p>
                   <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handlePetNameEdit(pet.name)}>
                     <Edit className="h-3 w-3" />
                   </Button>
@@ -348,11 +335,10 @@ export default function HomePage() {
                   <div className="text-base text-muted-foreground pt-4 space-y-4">
                     <div>This is your central hub for tracking progress and staying motivated.</div>
                     <ul className="list-disc pl-5 space-y-2">
-                      <li><strong className="text-primary">Today's Progress:</strong> Get a quick snapshot of points earned and focus sessions completed today.</li>
-                      <li><strong className="text-primary">Question of the Day:</strong> A quick link to answer your daily question.</li>
-                      <li><strong className="text-primary">Your Stats:</strong> Monitor your streaks and total points.</li>
+                      <li><strong className="text-primary">Your Stats:</strong> Monitor your streaks and total points for the current question bank.</li>
                       <li><strong className="text-primary">Activity Calendar:</strong> Visualize your consistency and daily activity.</li>
                       <li><strong className="text-primary">Pet Collection:</strong> See all the cute companions you've unlocked!</li>
+                       <li><strong className="text-primary">Question Banks:</strong> Head to the Profile page to switch between different question banks or create new ones!</li>
                     </ul>
                     <div>Explore around and start your journey to success!</div>
                   </div>
@@ -366,11 +352,11 @@ export default function HomePage() {
       <DayDetailDialog
         date={selectedDate}
         onClose={() => setSelectedDate(null)}
-        userProgress={selectedDate ? user.dailyProgress[format(selectedDate, 'yyyy-MM-dd')] : undefined}
+        userProgress={selectedDate ? activeBank.dailyProgress[format(selectedDate, 'yyyy-MM-dd')] : undefined}
       />
       <header className="flex justify-between items-center mb-6">
         <div>
-            <h1 className="text-3xl font-bold font-headline">Home</h1>
+            <h1 className="text-3xl font-bold font-headline">{activeBank.name}</h1>
             <p className="text-muted-foreground">Welcome back, {user.name}!</p>
         </div>
          <Link href="/profile">
@@ -383,7 +369,7 @@ export default function HomePage() {
         </Link>
       </header>
 
-      {user.examDate && <Countdown examDate={new Date(user.examDate)} />}
+      {activeBank.examDate && <Countdown examDate={new Date(activeBank.examDate)} />}
       
       {!isStreakSecuredToday && (
          <Card className="mb-6 bg-blue-500/10 border-blue-500/20">
@@ -400,44 +386,6 @@ export default function HomePage() {
           </CardFooter>
         </Card>
       )}
-
-       <section className="mb-6">
-        <h2 className="text-xl font-bold font-headline mb-4">Today's Progress</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-             <Card>
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">Points Earned Today</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-2xl font-bold flex items-center gap-2"><Gem className="h-5 w-5 text-accent" />{todaysProgress.pointsEarned || 0}</p>
-                </CardContent>
-             </Card>
-             <Card>
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">Pomodoros Today</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-2xl font-bold flex items-center gap-2"><Award className="h-5 w-5 text-muted-foreground" />{todaysProgress.pomodorosCompleted || 0}</p>
-                </CardContent>
-             </Card>
-             <Card>
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">QOTD</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    {todaysProgress.qotdCompleted ? (
-                        <Badge variant="secondary" className="text-green-600 border-green-300">
-                            <CheckCircle className="h-4 w-4 mr-1"/> Answered
-                        </Badge>
-                    ) : (
-                        <Badge variant="outline">
-                            <HelpCircle className="h-4 w-4 mr-1"/> Pending
-                        </Badge>
-                    )}
-                </CardContent>
-             </Card>
-        </div>
-       </section>
 
         <section className="mb-6">
             <h2 className="text-xl font-bold font-headline mb-4">Question of the Day</h2>
@@ -459,6 +407,13 @@ export default function HomePage() {
                             </Link>
                         </CardFooter>
                     )}
+                     {todaysProgress.qotdCompleted && (
+                        <CardFooter>
+                            <Badge variant="secondary" className="text-green-600 border-green-300">
+                                <CheckCircle className="h-4 w-4 mr-1"/> Answered
+                            </Badge>
+                        </CardFooter>
+                    )}
                 </Card>
             )}
         </section>
@@ -474,7 +429,7 @@ export default function HomePage() {
                 <Flame className="h-5 w-5 text-destructive" />
                 </CardHeader>
                 <CardContent>
-                <div className="text-3xl font-bold">{user.streak} days</div>
+                <div className="text-3xl font-bold">{activeBank.streak} days</div>
                 </CardContent>
             </Card>
             <Card className="col-span-2 md:col-span-2 bg-gradient-to-tr from-primary/20 to-primary/10 border-primary/20">
@@ -483,7 +438,7 @@ export default function HomePage() {
                 <Gem className="h-5 w-5 text-primary" />
                 </CardHeader>
                 <CardContent>
-                <div className="text-3xl font-bold">{user.points}</div>
+                <div className="text-3xl font-bold">{activeBank.points}</div>
                 </CardContent>
             </Card>
             <Card>
@@ -492,7 +447,7 @@ export default function HomePage() {
                 <Shield className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                <div className="text-2xl font-bold">{user.highestStreak}</div>
+                <div className="text-2xl font-bold">{activeBank.highestStreak}</div>
                 </CardContent>
             </Card>
             <Card>
@@ -501,7 +456,7 @@ export default function HomePage() {
                 <Award className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                <div className="text-2xl font-bold">{user.highestQuizStreak}</div>
+                <div className="text-2xl font-bold">{activeBank.highestQuizStreak}</div>
                 </CardContent>
             </Card>
         </div>
@@ -553,5 +508,3 @@ export default function HomePage() {
     </div>
   );
 }
-
-    

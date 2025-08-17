@@ -4,6 +4,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { getActiveBank, saveActiveBank, loadUserProfile } from "@/lib/data";
 
 const FOCUS_TIME = 25 * 60; // 25 minutes
 const SHORT_BREAK_TIME = 5 * 60; // 5 minutes
@@ -14,9 +15,9 @@ interface TimerState {
   time: number;
   isActive: boolean;
   mode: "focus" | "shortBreak" | "longBreak";
-  sessions: number; // total sessions
-  todaysSessions: number;
-  focusSessionsCompleted: number;
+  sessions: number; // total sessions for active bank
+  todaysSessions: number; // today's sessions for active bank
+  focusSessionsCompleted: number; // total focus sessions for active bank
   endTime: number | null;
   quizStreak: number;
   highestQuizStreak: number;
@@ -99,48 +100,42 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   const handleTimerEnd = useCallback(() => {
     const currentState = JSON.parse(localStorage.getItem("pomodoroState") || "{}");
     const currentMode = currentState.mode || 'focus';
-    const currentUid = localStorage.getItem('currentUser');
+    const activeBank = getActiveBank();
 
-    if (currentMode === "focus" && currentUid) {
-       const savedUser = localStorage.getItem(`userProfile_${currentUid}`);
-       if(savedUser){
-           let user = JSON.parse(savedUser);
-           const todayKey = getTodayKey();
+    if (currentMode === "focus" && activeBank) {
+       const todayKey = getTodayKey();
 
-           user.completedSessions = (user.completedSessions || 0) + 1;
-           
-           if (!user.dailyProgress) user.dailyProgress = {};
-           if (!user.dailyProgress[todayKey]) user.dailyProgress[todayKey] = { pointsEarned: 0, pomodorosCompleted: 0, challengesCompleted: [], qotdCompleted: false };
-           user.dailyProgress[todayKey].pomodorosCompleted = (user.dailyProgress[todayKey].pomodorosCompleted || 0) + 1;
-           
-           // Update highest quiz streak from the session into the main profile
-           if (stateStore.highestQuizStreak > (user.highestQuizStreak || 0)) {
-               user.highestQuizStreak = stateStore.highestQuizStreak;
-           }
-
-           localStorage.setItem(`userProfile_${currentUid}`, JSON.stringify(user));
-            // Manually trigger a storage event to notify other components like the home page
-           window.dispatchEvent(new Event('storage'));
-
-           const updatedFocusSessions = (currentState.focusSessionsCompleted || 0) + 1;
-           const newTodaysSessions = user.dailyProgress[todayKey].pomodorosCompleted;
-
-
-           const notificationBody = (updatedFocusSessions % SESSIONS_UNTIL_LONG_BREAK === 0) 
-               ? `Time for a long break.` 
-               : `Time for a short break.`;
-           
-           showNotification("Focus session complete!", { body: notificationBody });
-
-           dispatch({
-               isActive: false,
-               timerEnded: true,
-               endTime: null,
-               sessions: user.completedSessions,
-               todaysSessions: newTodaysSessions,
-               focusSessionsCompleted: updatedFocusSessions,
-           });
+       activeBank.completedSessions = (activeBank.completedSessions || 0) + 1;
+       
+       if (!activeBank.dailyProgress) activeBank.dailyProgress = {};
+       if (!activeBank.dailyProgress[todayKey]) activeBank.dailyProgress[todayKey] = { pointsEarned: 0, pomodorosCompleted: 0, challengesCompleted: [], qotdCompleted: false };
+       activeBank.dailyProgress[todayKey].pomodorosCompleted = (activeBank.dailyProgress[todayKey].pomodorosCompleted || 0) + 1;
+       
+       // Update highest quiz streak from the session into the main profile
+       if (stateStore.highestQuizStreak > (activeBank.highestQuizStreak || 0)) {
+           activeBank.highestQuizStreak = stateStore.highestQuizStreak;
        }
+
+       saveActiveBank(activeBank);
+
+       const updatedFocusSessions = (currentState.focusSessionsCompleted || 0) + 1;
+       const newTodaysSessions = activeBank.dailyProgress[todayKey].pomodorosCompleted;
+
+
+       const notificationBody = (updatedFocusSessions % SESSIONS_UNTIL_LONG_BREAK === 0) 
+           ? `Time for a long break.` 
+           : `Time for a short break.`;
+       
+       showNotification("Focus session complete!", { body: notificationBody });
+
+       dispatch({
+           isActive: false,
+           timerEnded: true,
+           endTime: null,
+           sessions: activeBank.completedSessions,
+           todaysSessions: newTodaysSessions || 0,
+           focusSessionsCompleted: updatedFocusSessions,
+       });
     } else { // break is over
        showNotification("Break's over!", { body: "Time to start another focus session."});
        dispatch({
@@ -156,7 +151,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   // Load state from localStorage on initial render
   useEffect(() => {
     const savedState = localStorage.getItem("pomodoroState");
-    const currentUid = localStorage.getItem('currentUser');
+    const activeBank = getActiveBank();
 
     if (savedState) {
         try {
@@ -170,35 +165,46 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
                     return;
                 }
             }
-            if (currentUid) {
-                 const savedUser = localStorage.getItem(`userProfile_${currentUid}`);
-                 if (savedUser) {
-                    const user = JSON.parse(savedUser);
-                    const todayKey = getTodayKey();
-                    parsedState.sessions = user.completedSessions || 0;
-                    parsedState.todaysSessions = user.dailyProgress?.[todayKey]?.pomodorosCompleted || 0;
-                    parsedState.highestQuizStreak = user.highestQuizStreak || 0;
-                 }
+            if (activeBank) {
+                 const todayKey = getTodayKey();
+                 parsedState.sessions = activeBank.completedSessions || 0;
+                 parsedState.todaysSessions = activeBank.dailyProgress?.[todayKey]?.pomodorosCompleted || 0;
+                 parsedState.highestQuizStreak = activeBank.highestQuizStreak || 0;
             }
             dispatch(parsedState);
         } catch (error) {
             console.error("Failed to parse pomodoro state from localStorage", error);
             localStorage.removeItem("pomodoroState");
         }
-    } else if (currentUid) {
-        const savedUser = localStorage.getItem(`userProfile_${currentUid}`);
-        if (savedUser) {
-            const user = JSON.parse(savedUser);
-            const todayKey = getTodayKey();
-            dispatch({ 
-                sessions: user.completedSessions || 0,
-                todaysSessions: user.dailyProgress?.[todayKey]?.pomodorosCompleted || 0,
-                highestQuizStreak: user.highestQuizStreak || 0,
-            });
-        }
+    } else if (activeBank) {
+        const todayKey = getTodayKey();
+        dispatch({ 
+            sessions: activeBank.completedSessions || 0,
+            todaysSessions: activeBank.dailyProgress?.[todayKey]?.pomodorosCompleted || 0,
+            highestQuizStreak: activeBank.highestQuizStreak || 0,
+        });
     }
     requestNotificationPermission();
   }, [requestNotificationPermission, handleTimerEnd]);
+  
+  const reloadBankStats = useCallback(() => {
+      const activeBank = getActiveBank();
+      if(activeBank) {
+          const todayKey = getTodayKey();
+          dispatch({
+            sessions: activeBank.completedSessions || 0,
+            todaysSessions: activeBank.dailyProgress?.[todayKey]?.pomodorosCompleted || 0,
+            highestQuizStreak: activeBank.highestQuizStreak || 0,
+          })
+      }
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('storage', reloadBankStats);
+    return () => {
+        window.removeEventListener('storage', reloadBankStats);
+    }
+  }, [reloadBankStats]);
 
   const resetTimer = useCallback(() => {
     dispatch({
@@ -214,23 +220,17 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   const handleCorrectQuizAnswer = useCallback((pointsGained: number) => {
       const newStreak = stateStore.quizStreak + 1;
       const newHighestStreak = Math.max(stateStore.highestQuizStreak, newStreak);
-      const currentUid = localStorage.getItem('currentUser');
+      const activeBank = getActiveBank();
       
-      if(currentUid) {
-          const savedUser = localStorage.getItem(`userProfile_${currentUid}`);
-          if(savedUser) {
-            let user = JSON.parse(savedUser);
-            const todayKey = getTodayKey();
-            user.points = (user.points || 0) + pointsGained;
+      if(activeBank) {
+        const todayKey = getTodayKey();
+        activeBank.points = (activeBank.points || 0) + pointsGained;
 
-            if (!user.dailyProgress) user.dailyProgress = {};
-            if (!user.dailyProgress[todayKey]) user.dailyProgress[todayKey] = { pointsEarned: 0, pomodorosCompleted: 0, challengesCompleted: [], qotdCompleted: false };
-            user.dailyProgress[todayKey].pointsEarned = (user.dailyProgress[todayKey].pointsEarned || 0) + pointsGained;
+        if (!activeBank.dailyProgress) activeBank.dailyProgress = {};
+        if (!activeBank.dailyProgress[todayKey]) activeBank.dailyProgress[todayKey] = { pointsEarned: 0, pomodorosCompleted: 0, challengesCompleted: [], qotdCompleted: false };
+        activeBank.dailyProgress[todayKey].pointsEarned = (activeBank.dailyProgress[todayKey].pointsEarned || 0) + pointsGained;
 
-            localStorage.setItem(`userProfile_${currentUid}`, JSON.stringify(user));
-            // Manually trigger a storage event to notify other components
-            window.dispatchEvent(new Event('storage'));
-          }
+        saveActiveBank(activeBank);
       }
       
       dispatch({
@@ -335,5 +335,3 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     </TimerContext.Provider>
   );
 }
-
-    

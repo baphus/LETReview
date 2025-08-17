@@ -18,6 +18,8 @@ import { useTimer } from "@/hooks/use-timer";
 import { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
 import { useEffect, useState } from "react";
 import Logo from "./Logo";
+import type { UserProfile } from "@/lib/types";
+import { loadUserProfile } from "@/lib/data";
 
 const navItems = [
   { href: "/home", label: "Home", icon: Home },
@@ -27,30 +29,27 @@ const navItems = [
   { href: "/timer", label: "Pomodoro", icon: Clock },
 ];
 
-interface UserProfile {
-    name: string;
-    avatarUrl: string;
-    uid: string;
-}
-
 export function AppSidebar() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { time, isActive } = useTimer();
   const { state: sidebarState } = useSidebar();
   const [user, setUser] = useState<UserProfile | null>(null);
+  
+  const loadUser = () => {
+     if (typeof window !== 'undefined') {
+        const loadedUser = loadUserProfile();
+        setUser(loadedUser);
+    }
+  }
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-        const currentUid = localStorage.getItem('currentUser');
-        if (currentUid) {
-            const savedUser = localStorage.getItem(`userProfile_${currentUid}`);
-            if (savedUser) {
-                setUser(JSON.parse(savedUser));
-            }
-        }
+    loadUser();
+    window.addEventListener('storage', loadUser);
+    return () => {
+        window.removeEventListener('storage', loadUser);
     }
-  }, [pathname]); // Rerun on navigation
+  }, []);
 
   const TimerIndicator = () => {
     if (!isActive) return null;

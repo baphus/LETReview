@@ -32,3 +32,32 @@ export interface DailyProgress {
     pomodorosCompleted?: number;
     pointsEarned?: number;
 }
+
+export interface QuestionBank {
+    id: string;
+    name: string;
+    questions: QuizQuestion[];
+    examDate?: string;
+    passingScore?: number;
+    points: number;
+    streak: number;
+    highestStreak: number;
+    highestQuizStreak: number;
+    completedSessions: number;
+    unlockedThemes: string[];
+    unlockedPets: string[];
+    activeTheme: string;
+    petNames: Record<string, string>;
+    dailyProgress: Record<string, DailyProgress>;
+    lastChallengeDate?: string;
+}
+
+export interface UserProfile {
+     uid: string;
+     name: string;
+     avatarUrl: string;
+     themeMode: 'light' | 'dark';
+     activeBankId: string;
+     banks: QuestionBank[];
+     lastLogin: string;
+}

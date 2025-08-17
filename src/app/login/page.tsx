@@ -18,6 +18,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import Logo from "@/components/Logo";
+import type { UserProfile } from "@/lib/types";
+import { createNewBank } from "@/lib/data";
 
 // Function to get local date string in YYYY-MM-DD format
 const getTodayKey = () => format(new Date(), 'yyyy-MM-dd');
@@ -39,29 +41,18 @@ export default function LoginPage() {
          user.lastLogin = getTodayKey();
          localStorage.setItem(userProfileKey, JSON.stringify(user));
       } else {
-        // New user, create profile
-         const userProfile = {
+        // New user, create profile with a default bank
+         const defaultBank = createNewBank("My First Bank");
+         const userProfile: UserProfile = {
             uid: uid,
             name: displayName || identifier || 'Anonymous',
             avatarUrl: photoURL || `https://placehold.co/100x100.png`,
-            examDate: undefined,
-            points: 0,
-            streak: 0,
-            highestStreak: 0,
-            highestQuizStreak: 0,
-            completedSessions: 0,
-            petNames: {},
-            passingScore: 75,
-            unlockedThemes: ['default'],
-            activeTheme: 'default',
             themeMode: 'dark', // Default to dark mode for new users
-            unlockedPets: [],
-            dailyProgress: {},
+            activeBankId: defaultBank.id,
+            banks: [defaultBank],
             lastLogin: getTodayKey(),
           };
         localStorage.setItem(userProfileKey, JSON.stringify(userProfile));
-         // Clear any existing custom questions for a new user
-        localStorage.removeItem(`customQuestions_${uid}`);
       }
 
        localStorage.setItem('currentUser', uid);
@@ -79,12 +70,14 @@ export default function LoginPage() {
       const result = await signInWithPopup(auth, provider);
       handleUserLogin(result.user.uid, result.user.displayName, result.user.photoURL, result.user.email);
     } catch (error: any) {
-      console.error("Google Sign-In Error: ", error);
-      toast({
-        variant: "destructive",
-        title: "Sign-in Failed",
-        description: error.message,
-      });
+      if (error.code !== 'auth/popup-closed-by-user') {
+        console.error("Google Sign-In Error: ", error);
+        toast({
+            variant: "destructive",
+            title: "Sign-in Failed",
+            description: error.message,
+        });
+      }
     }
   };
 

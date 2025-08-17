@@ -242,8 +242,21 @@ export default function QuizPage() {
 
   useEffect(() => {
     resetQuizState();
+    // This will also be triggered when bank changes, as allQuestions will update
+    setAllQuestions(loadQuestions());
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isShuffled]);
+  }, [isShuffled, allQuestions]);
+  
+  // Reload questions when storage changes (e.g., bank switch)
+  useEffect(() => {
+      const handleStorageChange = () => {
+          setAllQuestions(loadQuestions());
+      };
+      window.addEventListener('storage', handleStorageChange);
+      return () => {
+          window.removeEventListener('storage', handleStorageChange);
+      };
+  }, []);
 
   const progressValue = questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
   
@@ -329,7 +342,7 @@ export default function QuizPage() {
             </header>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
-                <p className="text-muted-foreground text-sm">Reviewing your custom questions.</p>
+                <p className="text-muted-foreground text-sm">Reviewing questions from your active bank.</p>
 
                 <div className="flex gap-2 w-full sm:w-auto">
                      <Button 
@@ -386,5 +399,3 @@ export default function QuizPage() {
     </div>
   );
 }
-
-    
