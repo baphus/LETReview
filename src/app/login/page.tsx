@@ -47,7 +47,7 @@ export default function LoginPage() {
             uid: uid,
             name: displayName || identifier || 'Anonymous',
             avatarUrl: photoURL || `https://placehold.co/100x100.png`,
-            themeMode: 'dark', // Default to dark mode for new users
+            themeMode: 'light', // Default to light mode for new users
             activeBankId: defaultBank.id,
             banks: [defaultBank],
             lastLogin: getTodayKey(),

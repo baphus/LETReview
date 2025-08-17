@@ -38,14 +38,15 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
   const applyUserTheme = () => {
     const profile = loadUserProfile();
     if (!profile) {
-        document.documentElement.classList.add('dark');
+        // Default to light mode for logged-out users
+        document.documentElement.classList.remove('dark');
         return;
     }
     const activeBank = getActiveBank();
 
     // Handle light/dark mode from overall profile
     document.documentElement.classList.remove('dark', 'light');
-    document.documentElement.classList.add(profile.themeMode || 'dark');
+    document.documentElement.classList.add(profile.themeMode || 'light');
     
     // Handle custom accent themes from active bank
     document.documentElement.classList.remove('mint', 'sunset', 'rose');
