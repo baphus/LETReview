@@ -236,16 +236,22 @@ export default function QuizPage() {
   }
 
   const handleShuffleToggle = () => {
-    setIsShuffled(prev => {
-        const newState = !prev;
-        toast({
-            title: newState ? "Shuffle On" : "Shuffle Off",
-            description: newState ? "Questions have been shuffled." : "Questions are now in order.",
-        });
-        return newState;
+    setIsShuffled(prev => !prev);
+  }
+
+  // Effect to show toast after shuffle state changes
+  useEffect(() => {
+    const hasSeenGuide = localStorage.getItem('hasSeenQuizGuide');
+    if (!hasSeenGuide) return; // Don't show toast on initial load before guide is seen
+
+    toast({
+        title: isShuffled ? "Shuffle On" : "Shuffle Off",
+        description: isShuffled ? "Questions have been shuffled." : "Questions are now in order.",
     });
     resetQuizState();
-  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isShuffled]);
+
 
   // Reload questions when storage changes (e.g., bank switch)
   useEffect(() => {

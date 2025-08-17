@@ -433,16 +433,21 @@ function ReviewerPageContent() {
   }
 
   const handleShuffleToggle = () => {
-    setIsShuffled(prev => {
-      const newState = !prev;
-      toast({
-        title: newState ? "Shuffle On" : "Shuffle Off",
-        description: newState ? "Questions have been shuffled." : "Questions are now in order.",
-      });
-      return newState;
-    });
-    // The useEffect will handle the reshuffling
+    setIsShuffled(prev => !prev);
   }
+
+  // Effect to show toast after shuffle state changes
+  useEffect(() => {
+    const hasSeenGuide = localStorage.getItem('hasSeenReviewGuide');
+    if (isChallenge || !hasSeenGuide) return; // Don't show toast for challenges or on first load
+
+    toast({
+      title: isShuffled ? "Shuffle On" : "Shuffle Off",
+      description: isShuffled ? "Questions have been shuffled." : "Questions are now in order.",
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isShuffled, isChallenge]);
+
   
   const handleTryAgain = () => {
     setShowResults(false);
