@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { CalendarDays, Flame, Gem, Shield, Star, Lock, RefreshCcw, HelpCircle, CheckCircle, XCircle } from "lucide-react";
-import { getQuestionOfTheDay, loadQuestions, getActiveBank, saveActiveBank, loadUserProfile, saveUserProfile } from "@/lib/data";
+import { getQuestionOfTheDay, saveActiveBank } from "@/lib/data";
 import type { QuizQuestion, DailyProgress, QuestionBank, UserProfile } from "@/lib/types";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
@@ -27,26 +27,26 @@ import { cn } from "@/lib/utils";
 import { startOfDay, isBefore, startOfYesterday, format } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogContent, DialogFooter } from "@/components/ui/dialog";
+import { useUser } from "@/hooks/use-user";
 
 
 // Function to get local date string in YYYY-MM-DD format
 const getTodayKey = () => format(new Date(), 'yyyy-MM-dd');
 
-const QuestionOfTheDay = ({ onCorrectAnswer, userUid }: { onCorrectAnswer: () => void, userUid: string | null }) => {
+const QuestionOfTheDay = ({ onCorrectAnswer }: { onCorrectAnswer: () => void }) => {
     const { toast } = useToast();
+    const { activeBank, setActiveBank } = useUser();
     const [question, setQuestion] = useState<QuizQuestion | null>(null);
     const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
     const [isAnswered, setIsAnswered] = useState(false);
     const [isCorrect, setIsCorrect] = useState(false);
     
     useEffect(() => {
-        if (!userUid) return;
         const qotd = getQuestionOfTheDay();
         setQuestion(qotd);
-        const bank = getActiveBank();
-        if(bank){
+        if(activeBank){
             const todayKey = getTodayKey();
-            const todaysProgress = bank.dailyProgress?.[todayKey];
+            const todaysProgress = activeBank.dailyProgress?.[todayKey];
 
             if(todaysProgress?.qotdCompleted){
                 setIsAnswered(true);
@@ -61,34 +61,33 @@ const QuestionOfTheDay = ({ onCorrectAnswer, userUid }: { onCorrectAnswer: () =>
                 }
             }
         }
-    }, [userUid]);
+    }, [activeBank]);
 
     const handleAnswer = (answer: string) => {
-        if (isAnswered || !userUid) return;
+        if (isAnswered || !activeBank) return;
 
         const correct = answer === question?.answer;
         setSelectedAnswer(answer);
         setIsCorrect(correct);
         setIsAnswered(true);
 
-        const bank = getActiveBank();
-        if (bank) {
-            const todayKey = getTodayKey();
+        const bank = { ...activeBank };
+        const todayKey = getTodayKey();
 
-            if (!bank.dailyProgress) bank.dailyProgress = {};
-            if (!bank.dailyProgress[todayKey]) bank.dailyProgress[todayKey] = { pointsEarned: 0, pomodorosCompleted: 0, challengesCompleted: [], qotdCompleted: false };
-            
-            bank.dailyProgress[todayKey].qotdCompleted = true;
-            bank.dailyProgress[todayKey].qotdAnswer = answer;
+        if (!bank.dailyProgress) bank.dailyProgress = {};
+        if (!bank.dailyProgress[todayKey]) bank.dailyProgress[todayKey] = { pointsEarned: 0, pomodorosCompleted: 0, challengesCompleted: [], qotdCompleted: false };
+        
+        bank.dailyProgress[todayKey].qotdCompleted = true;
+        bank.dailyProgress[todayKey].qotdAnswer = answer;
 
-            if (correct) {
-                onCorrectAnswer(); // This updates the state in the parent component
-                toast({ title: "Correct!", description: "You earned 5 points!", className: "bg-primary border-primary text-primary-foreground" });
-            } else {
-                 toast({ variant: "destructive", title: "Incorrect", description: "Better luck tomorrow!" });
-            }
-            saveActiveBank(bank);
+        if (correct) {
+            onCorrectAnswer(); // This updates the state in the parent component
+            toast({ title: "Correct!", description: "You earned 5 points!", className: "bg-primary border-primary text-primary-foreground" });
+        } else {
+             toast({ variant: "destructive", title: "Incorrect", description: "Better luck tomorrow!" });
         }
+        saveActiveBank(bank);
+        setActiveBank(bank);
     };
 
     if (!question) return null;
@@ -150,8 +149,8 @@ const QuestionOfTheDay = ({ onCorrectAnswer, userUid }: { onCorrectAnswer: () =>
 export default function DailyPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [userUid, setUserUid] = useState<string | null>(null);
-  const [activeBank, setActiveBank] = useState<QuestionBank | null>(null);
+  const { user, activeBank, setActiveBank } = useUser();
+
   const [challengeCompletedToday, setChallengeCompletedToday] = useState(false);
   const [streakBroken, setStreakBroken] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<"custom">("custom");
@@ -159,64 +158,40 @@ export default function DailyPage() {
   const [showGuide, setShowGuide] = useState(false);
   const todayKey = getTodayKey();
 
-  const loadUserStats = useCallback(() => {
-    const currentUid = localStorage.getItem('currentUser');
-    if (currentUid) {
-      setUserUid(currentUid);
-      const profile = loadUserProfile();
-      const bank = getActiveBank();
+  useEffect(() => {
+    if (activeBank) {
+      const isCompletedToday = (activeBank.dailyProgress?.[todayKey]?.challengesCompleted?.length || 0) > 0;
+      setChallengeCompletedToday(isCompletedToday);
 
-      if (profile && bank) {
-        const isCompletedToday = (bank.dailyProgress?.[todayKey]?.challengesCompleted?.length || 0) > 0;
-        setChallengeCompletedToday(isCompletedToday);
-        
-        const lastChallengeDateString = bank.lastChallengeDate;
-        if (lastChallengeDateString) {
-            const lastChallengeDate = startOfDay(new Date(lastChallengeDateString));
-            const yesterday = startOfYesterday();
+      const lastChallengeDateString = activeBank.lastChallengeDate;
+      if (lastChallengeDateString) {
+          const lastChallengeDate = startOfDay(new Date(lastChallengeDateString));
+          const yesterday = startOfYesterday();
 
-            if (bank.streak > 0 && isBefore(lastChallengeDate, yesterday)) {
-              setStreakBroken(true);
-              bank.streak = 0;
-              saveActiveBank(bank);
-            } else {
-              setStreakBroken(false);
-            }
-        }
-        
-        setActiveBank(bank);
+          if (activeBank.streak > 0 && isBefore(lastChallengeDate, yesterday)) {
+            setStreakBroken(true);
+            const updatedBank = { ...activeBank, streak: 0 };
+            saveActiveBank(updatedBank);
+            setActiveBank(updatedBank);
+          } else {
+            setStreakBroken(false);
+          }
       }
-    } else {
-        router.push('/login');
+      
+      setQuestionCounts({
+          easy: activeBank.questions.filter(q => q.difficulty === 'easy' && q.category === 'custom').length,
+          medium: activeBank.questions.filter(q => q.difficulty === 'medium' && q.category === 'custom').length,
+          hard: activeBank.questions.filter(q => q.difficulty === 'hard' && q.category === 'custom').length,
+      });
     }
-  }, [todayKey, router]);
+  }, [activeBank, todayKey, setActiveBank]);
 
   useEffect(() => {
-    loadUserStats();
-    
     const hasSeenGuide = localStorage.getItem('hasSeenDailyGuide');
     if (!hasSeenGuide) {
         setShowGuide(true);
     }
-    
-    const allQuestions = loadQuestions();
-    setQuestionCounts({
-        easy: allQuestions.filter(q => q.difficulty === 'easy' && q.category === 'custom').length,
-        medium: allQuestions.filter(q => q.difficulty === 'medium' && q.category === 'custom').length,
-        hard: allQuestions.filter(q => q.difficulty === 'hard' && q.category === 'custom').length,
-    });
-    
-    // This will run when the component mounts and also when the user navigates back to this page.
-    const handleFocus = () => {
-      loadUserStats();
-    };
-    window.addEventListener('focus', handleFocus);
-    window.addEventListener('storage', handleFocus);
-    return () => {
-      window.removeEventListener('focus', handleFocus);
-       window.removeEventListener('storage', handleFocus);
-    };
-  }, [loadUserStats]);
+  }, []);
 
   const handleStartChallenge = (difficulty: 'easy' | 'medium' | 'hard', count: number) => {
     router.push(`/review?challenge=true&difficulty=${difficulty}&count=${count}&category=${selectedCategory}`);
@@ -230,11 +205,12 @@ export default function DailyPage() {
         return;
      }
 
-      activeBank.points -= restoreStreakCost;
-      activeBank.streak = activeBank.highestStreak;
-      saveActiveBank(activeBank);
+      const updatedBank = { ...activeBank };
+      updatedBank.points -= restoreStreakCost;
+      updatedBank.streak = updatedBank.highestStreak;
+      saveActiveBank(updatedBank);
       setStreakBroken(false);
-      setActiveBank({...activeBank});
+      setActiveBank(updatedBank);
       toast({
         title: "Streak Restored!",
         description: `You spent ${restoreStreakCost} points.`,
@@ -243,18 +219,18 @@ export default function DailyPage() {
   };
 
   const handleQotdCorrect = () => {
-    const bank = getActiveBank();
-    if (bank) {
-        bank.points = (bank.points || 0) + 5;
-        
-        const todayKey = getTodayKey();
-        if (!bank.dailyProgress) bank.dailyProgress = {};
-        if (!bank.dailyProgress[todayKey]) bank.dailyProgress[todayKey] = { pointsEarned: 0, pomodorosCompleted: 0, challengesCompleted: [], qotdCompleted: false };
-        bank.dailyProgress[todayKey].pointsEarned = (bank.dailyProgress[todayKey].pointsEarned || 0) + 5;
+    if (!activeBank) return;
 
-        saveActiveBank(bank);
-        setActiveBank({...bank});
-    }
+    const bank = { ...activeBank };
+    bank.points = (bank.points || 0) + 5;
+    
+    const todayKey = getTodayKey();
+    if (!bank.dailyProgress) bank.dailyProgress = {};
+    if (!bank.dailyProgress[todayKey]) bank.dailyProgress[todayKey] = { pointsEarned: 0, pomodorosCompleted: 0, challengesCompleted: [], qotdCompleted: false };
+    bank.dailyProgress[todayKey].pointsEarned = (bank.dailyProgress[todayKey].pointsEarned || 0) + 5;
+
+    saveActiveBank(bank);
+    setActiveBank(bank);
   };
   
   const handleCloseGuide = () => {
@@ -325,7 +301,7 @@ export default function DailyPage() {
         </Card>
       </div>
 
-      <QuestionOfTheDay onCorrectAnswer={handleQotdCorrect} userUid={userUid} />
+      <QuestionOfTheDay onCorrectAnswer={handleQotdCorrect} />
 
       {challengeCompletedToday && (
          <Card className="mb-6 bg-green-500/10 border-green-500/20">

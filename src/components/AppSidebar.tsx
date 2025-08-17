@@ -16,10 +16,8 @@ import {
 import { Badge } from "./ui/badge";
 import { useTimer } from "@/hooks/use-timer";
 import { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
-import { useEffect, useState, useCallback } from "react";
 import Logo from "./Logo";
-import type { UserProfile } from "@/lib/types";
-import { loadUserProfile } from "@/lib/data";
+import { useUser } from "@/hooks/use-user";
 
 const navItems = [
   { href: "/home", label: "Home", icon: Home },
@@ -34,22 +32,7 @@ export function AppSidebar() {
   const searchParams = useSearchParams();
   const { time, isActive } = useTimer();
   const { state: sidebarState } = useSidebar();
-  const [user, setUser] = useState<UserProfile | null>(null);
-  
-  const loadUser = useCallback(() => {
-     if (typeof window !== 'undefined') {
-        const loadedUser = loadUserProfile();
-        setUser(loadedUser);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadUser();
-    window.addEventListener('storage', loadUser);
-    return () => {
-        window.removeEventListener('storage', loadUser);
-    }
-  }, [loadUser]);
+  const { user } = useUser();
 
   const TimerIndicator = () => {
     if (!isActive) return null;

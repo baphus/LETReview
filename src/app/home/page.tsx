@@ -7,10 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Separator } from "@/components/ui/separator";
 import { User, Flame, Gem, Star, Award, Shield, Edit, Check, HelpCircle, Lock, CalendarCheck2, CheckCircle, Lightbulb, TrendingUp } from "lucide-react";
 import Image from "next/image";
-import { pets as streakPets, getQuestionOfTheDay, achievementPets, rarePets, loadUserProfile, getActiveBank, saveUserProfile } from "@/lib/data";
+import { pets as streakPets, getQuestionOfTheDay, achievementPets, rarePets, saveUserProfile } from "@/lib/data";
 import type { QuizQuestion, DailyProgress, PetProfile, UserProfile, QuestionBank } from "@/lib/types";
 import { useEffect, useState, useMemo, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -34,6 +33,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Dialog, DialogHeader, DialogFooter, DialogTitle, DialogContent, DialogDescription } from "@/components/ui/dialog";
+import { useUser } from "@/hooks/use-user";
 
 const allPets: PetProfile[] = [
     ...streakPets,
@@ -44,12 +44,10 @@ const allPets: PetProfile[] = [
 const getTodayKey = () => format(new Date(), 'yyyy-MM-dd');
 
 export default function HomePage() {
-  const router = useRouter();
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const { user, activeBank, setUser, setActiveBank } = useUser();
   
-  const [user, setUser] = useState<UserProfile | null>(null);
-  const [activeBank, setActiveBank] = useState<QuestionBank | null>(null);
   const [editingPet, setEditingPet] = useState<string | null>(null);
   const [newPetName, setNewPetName] = useState("");
   const [questionOfTheDay, setQuestionOfTheDay] = useState<QuizQuestion | null>(null);
@@ -66,7 +64,7 @@ export default function HomePage() {
       setUser(updatedProfile);
       setActiveBank(updatedBank);
     }
-  }, []);
+  }, [setUser, setActiveBank]);
   
   const checkAchievements = useCallback((userProfile: UserProfile, bank: QuestionBank): { updatedProfile: UserProfile, updatedBank: QuestionBank } => {
     let updatedBank = { ...bank };
@@ -119,19 +117,13 @@ export default function HomePage() {
     return { updatedProfile: userProfile, updatedBank };
   }, [toast]);
 
-
-  const loadUser = useCallback(() => {
-    const profile = loadUserProfile();
-    if (profile) {
-      let bank = profile.banks.find(b => b.id === profile.activeBankId) || profile.banks[0];
-
-      if (!bank.petNames) bank.petNames = {};
-      if (!bank.unlockedPets) bank.unlockedPets = [];
-      if (!bank.dailyProgress) bank.dailyProgress = {};
-      if (!bank.highestQuizStreak) bank.highestQuizStreak = 0;
-      
-      const lastLoginDate = profile.lastLogin ? startOfDay(new Date(profile.lastLogin)) : startOfDay(new Date());
+  useEffect(() => {
+    if (user && activeBank) {
+      const lastLoginDate = user.lastLogin ? startOfDay(new Date(user.lastLogin)) : startOfDay(new Date());
       const today = startOfDay(new Date());
+      let bank = { ...activeBank };
+      let profile = { ...user };
+      let changed = false;
 
       if (isBefore(lastLoginDate, today)) {
           const yesterday = startOfYesterday();
@@ -144,39 +136,32 @@ export default function HomePage() {
                   description: `You missed a day and lost your ${bank.streak}-day streak.`,
               });
               bank.streak = 0;
+              changed = true;
           }
       }
       
       profile.lastLogin = todayKey;
 
       const { updatedProfile, updatedBank } = checkAchievements(profile, bank);
-      saveUserProfile(updatedProfile);
-      setUser(updatedProfile);
-      setActiveBank(updatedBank);
-
-      const hasSeenGuide = localStorage.getItem('hasSeenHomeGuide');
-      if (!hasSeenGuide) {
-          setShowHomeGuide(true);
+      if (JSON.stringify(updatedProfile) !== JSON.stringify(profile) || JSON.stringify(updatedBank) !== JSON.stringify(bank)) {
+        saveUserProfile(updatedProfile);
+        setUser(updatedProfile);
+        setActiveBank(updatedBank);
+      } else if (changed) {
+        saveUserAndBank(profile, bank);
       }
-    } else {
-      router.push('/login');
     }
-  }, [router, todayKey, toast, checkAchievements]);
+
+    const hasSeenGuide = localStorage.getItem('hasSeenHomeGuide');
+    if (!hasSeenGuide) {
+        setShowHomeGuide(true);
+    }
+  }, [user, activeBank, todayKey, toast, checkAchievements, saveUserAndBank, setUser, setActiveBank]);
 
 
   useEffect(() => {
-    loadUser();
     setQuestionOfTheDay(getQuestionOfTheDay());
-    
-    const handleFocus = () => loadUser();
-    window.addEventListener('focus', handleFocus);
-    window.addEventListener('storage', handleFocus);
-
-    return () => {
-      window.removeEventListener('focus', handleFocus);
-      window.removeEventListener('storage', handleFocus);
-    };
-  }, [loadUser]);
+  }, []);
   
   const qotdCompletedDays = useMemo(() => {
     if (!activeBank?.dailyProgress) return [];

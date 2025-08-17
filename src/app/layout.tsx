@@ -22,6 +22,7 @@ import { SplashScreenHandler } from "@/components/SplashScreen";
 import { auth } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { loadUserProfile, getActiveBank } from "@/lib/data";
+import { UserProvider } from "@/hooks/use-user";
 
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -114,22 +115,24 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
 
   return (
     <TimerProvider>
-      <SidebarProvider>
-        <Sidebar>
-          <SidebarContent>
-            <AppSidebar />
-          </SidebarContent>
-        </Sidebar>
-        <SidebarInset>
-          <header className="p-2 border-b md:hidden">
-          </header>
-          <main className="flex-1 overflow-y-auto pb-20 md:pb-4">
-            {children}
-          </main>
-          <BottomNav />
-          <Toaster />
-        </SidebarInset>
-      </SidebarProvider>
+      <UserProvider>
+        <SidebarProvider>
+          <Sidebar>
+            <SidebarContent>
+              <AppSidebar />
+            </SidebarContent>
+          </Sidebar>
+          <SidebarInset>
+            <header className="p-2 border-b md:hidden">
+            </header>
+            <main className="flex-1 overflow-y-auto pb-20 md:pb-4">
+              {children}
+            </main>
+            <BottomNav />
+            <Toaster />
+          </SidebarInset>
+        </SidebarProvider>
+      </UserProvider>
     </TimerProvider>
   );
 }

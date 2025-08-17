@@ -15,7 +15,7 @@ import { DatePicker } from "@/components/ui/datepicker";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
-import { rarePets, createNewBank, saveUserProfile, loadUserProfile, getActiveBank } from "@/lib/data";
+import { rarePets, createNewBank, saveUserProfile } from "@/lib/data";
 import {
   Accordion,
   AccordionContent,
@@ -36,8 +36,9 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { auth } from "@/lib/firebase";
 import { Dialog, DialogHeader, DialogTitle, DialogFooter, DialogContent, DialogDescription } from "@/components/ui/dialog";
-import type { UserProfile, QuestionBank } from "@/lib/types";
+import type { QuestionBank } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
+import { useUser } from "@/hooks/use-user";
 
 const themes = [
     { name: 'Default', value: 'default', cost: 0, colors: { primary: 'hsl(217.2 91.2% 59.8%)', accent: 'hsl(217.2 32.6% 20%)' } },
@@ -49,8 +50,7 @@ const themes = [
 export default function ProfilePage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [activeBank, setActiveBank] = useState<QuestionBank | null>(null);
+  const { user, activeBank, setUser, setActiveBank, loadData } = useUser();
   
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState("");
@@ -71,55 +71,25 @@ export default function ProfilePage() {
     }
   };
   
-  const loadData = useCallback(() => {
-    const userProfile = loadUserProfile();
-    if (userProfile) {
-        setProfile(userProfile);
-        setNewName(userProfile.name);
-        
-        const currentBank = userProfile.banks.find(b => b.id === userProfile.activeBankId);
-        if (currentBank) {
-            setActiveBank(currentBank);
-            setExamDate(currentBank.examDate ? new Date(currentBank.examDate) : undefined);
-            setPassingScore(currentBank.passingScore || 75);
-            applyUserTheme(userProfile.themeMode, currentBank.activeTheme);
-        }
-
-        const hasSeenGuide = localStorage.getItem('hasSeenProfileGuide');
-        if (!hasSeenGuide) {
-            setShowGuide(true);
-        }
-    } else {
-        router.push('/login');
-    }
-  }, [router]);
-
   useEffect(() => {
-    loadData();
-    window.addEventListener('storage', loadData);
-    return () => {
-        window.removeEventListener('storage', loadData);
+    if (user) {
+        setNewName(user.name);
     }
-  }, [loadData]);
-
-
-  const saveProfileAndBank = (updatedProfile: UserProfile, updatedBank: QuestionBank | null) => {
-    if (updatedBank) {
-      const bankIndex = updatedProfile.banks.findIndex(b => b.id === updatedBank.id);
-      if (bankIndex !== -1) {
-          updatedProfile.banks[bankIndex] = updatedBank;
-      }
+    if (activeBank) {
+        setExamDate(activeBank.examDate ? new Date(activeBank.examDate) : undefined);
+        setPassingScore(activeBank.passingScore || 75);
     }
-    saveUserProfile(updatedProfile);
-    setProfile({...updatedProfile});
-    setActiveBank(updatedBank ? {...updatedBank} : null);
-  };
-  
+     const hasSeenGuide = localStorage.getItem('hasSeenProfileGuide');
+    if (!hasSeenGuide && user) {
+        setShowGuide(true);
+    }
+  }, [user, activeBank]);
+
   const handleNameSave = () => {
-    if (profile && newName.trim()) {
-        const updatedProfile = { ...profile, name: newName.trim() };
+    if (user && newName.trim()) {
+        const updatedProfile = { ...user, name: newName.trim() };
         saveUserProfile(updatedProfile);
-        setProfile(updatedProfile);
+        setUser(updatedProfile);
         setEditingName(false);
         toast({
           title: "Success",
@@ -130,13 +100,20 @@ export default function ProfilePage() {
   };
 
   const handleSettingsSave = () => {
-     if (profile && activeBank) {
+     if (user && activeBank) {
         const updatedBank = { 
             ...activeBank, 
             examDate: examDate ? examDate.toISOString() : undefined,
             passingScore: passingScore,
         };
-        saveProfileAndBank(profile, updatedBank);
+        const bankIndex = user.banks.findIndex(b => b.id === updatedBank.id);
+        if (bankIndex !== -1) {
+            const updatedUser = { ...user };
+            updatedUser.banks[bankIndex] = updatedBank;
+            saveUserProfile(updatedUser);
+            setUser(updatedUser);
+            setActiveBank(updatedBank);
+        }
         toast({
           title: "Success",
           description: "Your settings have been saved.",
@@ -162,7 +139,7 @@ export default function ProfilePage() {
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file && profile) {
+    if (file && user) {
       if (file.size > 2 * 1024 * 1024) { // 2MB limit
         toast({
           variant: "destructive",
@@ -175,32 +152,39 @@ export default function ProfilePage() {
       const reader = new FileReader();
       reader.onload = (event) => {
         const avatarUrl = event.target?.result as string;
-        const updatedProfile = { ...profile, avatarUrl };
+        const updatedProfile = { ...user, avatarUrl };
         saveUserProfile(updatedProfile);
-        setProfile(updatedProfile);
+        setUser(updatedProfile);
       };
       reader.readAsDataURL(file);
     }
   };
 
   const handleThemeModeToggle = (isDark: boolean) => {
-    if (!profile) return;
+    if (!user) return;
     const newMode = isDark ? 'dark' : 'light';
-    const updatedProfile = { ...profile, themeMode: newMode };
+    const updatedProfile = { ...user, themeMode: newMode };
     saveUserProfile(updatedProfile);
-    setProfile(updatedProfile);
+    setUser(updatedProfile);
     if(activeBank) {
         applyUserTheme(newMode, activeBank.activeTheme);
     }
   };
 
   const handleThemeAction = (themeValue: string, cost: number) => {
-    if (!profile || !activeBank) return;
+    if (!user || !activeBank) return;
     
     if (activeBank.unlockedThemes.includes(themeValue)) {
         const updatedBank = { ...activeBank, activeTheme: themeValue };
-        saveProfileAndBank(profile, updatedBank);
-        applyUserTheme(profile.themeMode, themeValue);
+        setActiveBank(updatedBank);
+        const bankIndex = user.banks.findIndex(b => b.id === updatedBank.id);
+        if(bankIndex !== -1) {
+            const updatedUser = { ...user };
+            updatedUser.banks[bankIndex] = updatedBank;
+            saveUserProfile(updatedUser);
+            setUser(updatedUser);
+        }
+        applyUserTheme(user.themeMode, themeValue);
         toast({ title: "Theme Activated!", className: "bg-primary border-primary text-primary-foreground"});
     } else {
         if (activeBank.points >= cost) {
@@ -210,8 +194,15 @@ export default function ProfilePage() {
                 unlockedThemes: [...activeBank.unlockedThemes, themeValue],
                 activeTheme: themeValue
             };
-            saveProfileAndBank(profile, updatedBank);
-            applyUserTheme(profile.themeMode, themeValue);
+            const bankIndex = user.banks.findIndex(b => b.id === updatedBank.id);
+            if(bankIndex !== -1) {
+                const updatedUser = { ...user };
+                updatedUser.banks[bankIndex] = updatedBank;
+                saveUserProfile(updatedUser);
+                setUser(updatedUser);
+                setActiveBank(updatedBank);
+            }
+            applyUserTheme(user.themeMode, themeValue);
             toast({ title: "Theme Unlocked!", description: `You spent ${cost} points.`, className: "bg-primary border-primary text-primary-foreground"});
         } else {
             toast({ variant: "destructive", title: "Not enough points!"});
@@ -220,14 +211,21 @@ export default function ProfilePage() {
   }
 
   const handlePetPurchase = (petName: string, cost: number) => {
-     if (!profile || !activeBank) return;
+     if (!user || !activeBank) return;
       if (activeBank.points >= cost) {
         const updatedBank = {
             ...activeBank,
             points: activeBank.points - cost,
             unlockedPets: [...new Set([...activeBank.unlockedPets, petName])],
         };
-        saveProfileAndBank(profile, updatedBank);
+        const bankIndex = user.banks.findIndex(b => b.id === updatedBank.id);
+        if(bankIndex !== -1) {
+            const updatedUser = { ...user };
+            updatedUser.banks[bankIndex] = updatedBank;
+            saveUserProfile(updatedUser);
+            setUser(updatedUser);
+            setActiveBank(updatedBank);
+        }
         toast({ title: "Pet Unlocked!", description: `You spent ${cost} points to get ${petName}!`, className: "bg-primary border-primary text-primary-foreground"});
       } else {
         toast({ variant: "destructive", title: "Not enough points!"});
@@ -240,68 +238,72 @@ export default function ProfilePage() {
   };
   
   const handleBankFormSubmit = () => {
-    if (!profile || !newBankName.trim()) return;
+    if (!user || !newBankName.trim()) return;
 
+    let updatedUser = { ...user };
     if (editingBankId) { // Editing
-        const bankIndex = profile.banks.findIndex(b => b.id === editingBankId);
+        const bankIndex = updatedUser.banks.findIndex(b => b.id === editingBankId);
         if (bankIndex !== -1) {
-            profile.banks[bankIndex].name = newBankName;
+            updatedUser.banks[bankIndex].name = newBankName;
             toast({ title: "Bank Renamed", description: `Bank has been renamed to "${newBankName}".` });
         }
     } else { // Adding new
         const newBank = createNewBank(newBankName);
-        profile.banks.push(newBank);
+        updatedUser.banks.push(newBank);
         toast({ title: "Bank Created", description: `New bank "${newBankName}" has been created.` });
     }
     
-    saveUserProfile(profile);
-    setProfile({...profile});
+    saveUserProfile(updatedUser);
+    setUser(updatedUser);
     setShowBankDialog(false);
     setNewBankName("");
     setEditingBankId(null);
   };
 
   const handleDeleteBank = (bankId: string) => {
-    if (!profile || profile.banks.length <= 1) {
+    if (!user || user.banks.length <= 1) {
         toast({ variant: "destructive", title: "Cannot delete", description: "You must have at least one question bank." });
         return;
     }
     
-    const updatedProfile = { ...profile, banks: profile.banks.filter(b => b.id !== bankId) };
+    const updatedProfile = { ...user, banks: user.banks.filter(b => b.id !== bankId) };
     if (updatedProfile.activeBankId === bankId) {
         updatedProfile.activeBankId = updatedProfile.banks[0].id;
     }
     
     saveUserProfile(updatedProfile);
-    setProfile(updatedProfile);
-    setActiveBank(updatedProfile.banks.find(b => b.id === updatedProfile.activeBankId) || null);
+    setUser(updatedProfile);
+    const newActiveBank = updatedProfile.banks.find(b => b.id === updatedProfile.activeBankId) || null;
+    setActiveBank(newActiveBank);
     toast({ title: "Bank Deleted" });
   };
   
   const handleSwitchBank = (bankId: string) => {
-      if (!profile) return;
-      const updatedProfile = { ...profile, activeBankId: bankId };
+      if (!user) return;
+      const updatedProfile = { ...user, activeBankId: bankId };
       saveUserProfile(updatedProfile);
       loadData(); // Reload all data for the new active bank
-      toast({ title: "Switched Bank", description: `Now using "${profile.banks.find(b => b.id === bankId)?.name}" bank.`});
+      toast({ title: "Switched Bank", description: `Now using "${user.banks.find(b => b.id === bankId)?.name}" bank.`});
   }
 
   const handleResetBank = () => {
-      if (!profile || !activeBank) return;
+      if (!user || !activeBank) return;
       const originalName = activeBank.name;
       const newBank = createNewBank(originalName);
       newBank.id = activeBank.id; // Keep the same ID
 
-      const bankIndex = profile.banks.findIndex(b => b.id === activeBank.id);
+      const bankIndex = user.banks.findIndex(b => b.id === activeBank.id);
       if (bankIndex !== -1) {
-          profile.banks[bankIndex] = newBank;
-          saveProfileAndBank(profile, newBank);
+          const updatedUser = { ...user };
+          updatedUser.banks[bankIndex] = newBank;
+          saveUserProfile(updatedUser);
+          setUser(updatedUser);
+          setActiveBank(newBank);
           toast({ title: "Bank Reset", description: `All stats for "${originalName}" have been reset.` });
       }
   }
 
-
-  if (!profile || !activeBank) {
+  if (!user || !activeBank) {
     return null; // Or a loading spinner
   }
 
@@ -369,7 +371,7 @@ export default function ProfilePage() {
                         <div className="flex flex-col items-center gap-4">
                             <div className="relative">
                                 <Avatar className="h-24 w-24 border-4 border-primary">
-                                <AvatarImage src={profile.avatarUrl} alt={profile.name} data-ai-hint="profile picture" />
+                                <AvatarImage src={user.avatarUrl} alt={user.name} data-ai-hint="profile picture" />
                                 <AvatarFallback>
                                     <User className="h-12 w-12" />
                                 </AvatarFallback>
@@ -399,7 +401,7 @@ export default function ProfilePage() {
                                 </div>
                                 ) : (
                                 <div className="flex items-center justify-center gap-2">
-                                    <h2 className="text-xl font-bold font-headline">{profile.name}</h2>
+                                    <h2 className="text-xl font-bold font-headline">{user.name}</h2>
                                     <Button size="icon" variant="ghost" onClick={() => setEditingName(true)}>
                                     <Edit className="h-5 w-5" />
                                     </Button>
@@ -430,13 +432,13 @@ export default function ProfilePage() {
                             </div>
                          </CardHeader>
                          <CardContent className="space-y-2">
-                            {profile.banks.map(bank => (
-                                <div key={bank.id} className={cn("flex items-center gap-2 p-3 rounded-md", profile.activeBankId === bank.id ? "bg-primary/10 border border-primary" : "bg-muted/50")}>
+                            {user.banks.map(bank => (
+                                <div key={bank.id} className={cn("flex items-center gap-2 p-3 rounded-md", user.activeBankId === bank.id ? "bg-primary/10 border border-primary" : "bg-muted/50")}>
                                     <div className="flex-1">
                                         <p className="font-semibold">{bank.name}</p>
                                         <p className="text-xs text-muted-foreground">{bank.questions.length} questions</p>
                                     </div>
-                                    {profile.activeBankId === bank.id ? (
+                                    {user.activeBankId === bank.id ? (
                                         <Badge>Active</Badge>
                                     ) : (
                                         <Button variant="secondary" size="sm" onClick={() => handleSwitchBank(bank.id)}>
@@ -451,7 +453,7 @@ export default function ProfilePage() {
                                     </Button>
                                      <AlertDialog>
                                         <AlertDialogTrigger asChild>
-                                            <Button size="icon" variant="destructive" className="h-8 w-8" disabled={profile.banks.length <= 1}>
+                                            <Button size="icon" variant="destructive" className="h-8 w-8" disabled={user.banks.length <= 1}>
                                                 <Trash className="h-4 w-4"/>
                                             </Button>
                                         </AlertDialogTrigger>
@@ -531,7 +533,7 @@ export default function ProfilePage() {
                                         <Sun className="h-5 w-5"/>
                                         <Switch
                                             id="dark-mode"
-                                            checked={profile.themeMode === 'dark'}
+                                            checked={user.themeMode === 'dark'}
                                             onCheckedChange={handleThemeModeToggle}
                                         />
                                         <Moon className="h-5 w-5"/>
