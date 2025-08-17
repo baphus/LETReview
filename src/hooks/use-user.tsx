@@ -1,7 +1,7 @@
 
 "use client";
 
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode, useMemo } from 'react';
 import { loadUserProfile, getActiveBank, saveUserProfile } from '@/lib/data';
 import type { UserProfile, QuestionBank } from '@/lib/types';
 import { useRouter } from 'next/navigation';
@@ -50,13 +50,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
     };
   }, [loadData]);
 
-  const contextValue = {
+  const contextValue = useMemo(() => ({
     user,
     activeBank,
     setUser,
     setActiveBank,
     loadData,
-  };
+  }), [user, activeBank, loadData]);
 
   return (
     <UserContext.Provider value={contextValue}>
