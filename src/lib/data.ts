@@ -81,7 +81,26 @@ export const loadUserProfile = (): UserProfile | null => {
 
     const savedProfile = localStorage.getItem(`userProfile_${uid}`);
     if (savedProfile) {
-        return JSON.parse(savedProfile);
+        const profile: UserProfile = JSON.parse(savedProfile);
+        
+        // **MIGRATION FIX:** If an old profile without banks is found, create one.
+        if (!profile.banks || profile.banks.length === 0) {
+            console.log("Migrating old user profile to new Question Bank format.");
+            // @ts-ignore - a little type-magic to access old questions property
+            const oldQuestions = profile.questions || sampleQuestions;
+            const defaultBank = createNewBank("My First Bank");
+            defaultBank.questions = oldQuestions;
+
+            profile.banks = [defaultBank];
+            profile.activeBankId = defaultBank.id;
+
+            // @ts-ignore
+            delete profile.questions; // remove old top-level questions
+            
+            saveUserProfile(profile); // Save the migrated profile
+        }
+        
+        return profile;
     }
     return null;
 }
