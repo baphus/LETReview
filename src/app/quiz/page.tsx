@@ -119,6 +119,7 @@ export default function QuizPage() {
   const router = useRouter();
 
   const [allQuestions, setAllQuestions] = useState<QuizQuestion[]>([]);
+  const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [quizScore, setQuizScore] = useState(0);
   const [showResults, setShowResults] = useState(false);
@@ -137,26 +138,30 @@ export default function QuizPage() {
     }
   }, []);
 
-  const questions = useMemo(() => {
-    // For now, we only have one category 'custom'. This can be expanded later.
-    let baseQuestions = allQuestions;
-
-    if(isShuffled) {
-        return [...baseQuestions].sort(() => Math.random() - 0.5)
-            .map(q => ({ ...q, choices: [...q.choices].sort(() => Math.random() - 0.5) }));
+  const shuffleQuestions = useCallback((questionsToShuffle: QuizQuestion[], shuffleEnabled: boolean) => {
+    let newQuestions = [...questionsToShuffle];
+    if (shuffleEnabled) {
+      newQuestions.sort(() => Math.random() - 0.5);
     }
-    
-    return baseQuestions
-      .map(q => ({ ...q, choices: [...q.choices].sort(() => Math.random() - 0.5) }));
+    // Always shuffle choices for variety
+    return newQuestions.map(q => ({ ...q, choices: [...q.choices].sort(() => Math.random() - 0.5) }));
+  }, []);
+  
+  useEffect(() => {
+    const questionsToDisplay = shuffleQuestions(allQuestions, isShuffled);
+    setQuestions(questionsToDisplay);
+  }, [allQuestions, isShuffled, shuffleQuestions]);
 
-  }, [allQuestions, isShuffled]);
 
   const resetQuizState = useCallback(() => {
     setCurrentIndex(0);
     setQuizScore(0);
     setShowResults(false);
     setChallengeAnswers([]);
-  }, []);
+    // Reshuffle questions on reset
+    const questionsToDisplay = shuffleQuestions(allQuestions, isShuffled);
+    setQuestions(questionsToDisplay);
+  }, [allQuestions, isShuffled, shuffleQuestions]);
 
 
   const currentQuestion = questions[currentIndex];
@@ -231,22 +236,17 @@ export default function QuizPage() {
   }
 
   const handleShuffleToggle = () => {
-    setIsShuffled(prev => !prev);
-    setCurrentIndex(0);
-    resetQuizState();
-    toast({
-        title: isShuffled ? "Shuffle Off" : "Shuffle On",
-        description: isShuffled ? "Questions are now in order." : "Questions have been shuffled.",
+    setIsShuffled(prev => {
+        const newState = !prev;
+        toast({
+            title: newState ? "Shuffle On" : "Shuffle Off",
+            description: newState ? "Questions have been shuffled." : "Questions are now in order.",
+        });
+        return newState;
     });
+    resetQuizState();
   }
 
-  useEffect(() => {
-    resetQuizState();
-    // This will also be triggered when bank changes, as allQuestions will update
-    setAllQuestions(loadQuestions());
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isShuffled, allQuestions]);
-  
   // Reload questions when storage changes (e.g., bank switch)
   useEffect(() => {
       const handleStorageChange = () => {

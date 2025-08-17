@@ -216,6 +216,7 @@ function ReviewerPageContent() {
   const challengeCategory = searchParams.get('category') as "gen_education" | "professional" | "custom" || "custom";
 
   const [allQuestions, setAllQuestions] = useState<QuizQuestion[]>([]);
+  const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [mode, setMode] = useState<'study' | 'flashcard'>(isChallenge ? 'study' : 'study');
   const [currentIndex, setCurrentIndex] = useState(0);
   const [quizScore, setQuizScore] = useState(0);
@@ -283,29 +284,31 @@ function ReviewerPageContent() {
   }, [loadUserData])
 
 
-  const questions = useMemo(() => {
-    // In this new version, we only have one category "custom"
-    // The filter is kept for potential future expansion.
-    let baseQuestions = allQuestions.filter((q) => q.category === 'custom');
+  const shuffleQuestions = useCallback((questionsToShuffle: QuizQuestion[], shuffleConfig: { isChallenge: boolean, isShuffled: boolean }) => {
+    let baseQuestions = questionsToShuffle.filter((q) => q.category === 'custom');
+    let newQuestions = [...baseQuestions];
 
-    if (isChallenge) {
-       const today = new Date().toDateString();
-       const rng = getSeed(today + challengeDifficulty + challengeCategory);
-       const shuffled = baseQuestions
+    if (shuffleConfig.isChallenge) {
+      const today = new Date().toDateString();
+      const rng = getSeed(today + challengeDifficulty + challengeCategory);
+      const shuffled = baseQuestions
          .filter(q => q.difficulty === challengeDifficulty)
          .sort(() => rng() - rng());
-       return shuffled.slice(0, challengeCount);
+      return shuffled.slice(0, challengeCount);
     }
 
-    if(isShuffled) {
-        return [...baseQuestions].sort(() => Math.random() - 0.5)
-            .map(q => ({ ...q, choices: [...q.choices].sort(() => Math.random() - 0.5) }));
+    if (shuffleConfig.isShuffled) {
+      newQuestions.sort(() => Math.random() - 0.5);
     }
     
-    return baseQuestions
-      .map(q => ({ ...q, choices: [...q.choices].sort(() => Math.random() - 0.5) }));
-
-  }, [allQuestions, isChallenge, challengeCount, challengeDifficulty, challengeCategory, isShuffled]);
+    // Always shuffle choices for variety
+    return newQuestions.map(q => ({ ...q, choices: [...q.choices].sort(() => Math.random() - 0.5) }));
+  }, [challengeCategory, challengeCount, challengeDifficulty]);
+  
+  useEffect(() => {
+    const questionsToDisplay = shuffleQuestions(allQuestions, { isChallenge, isShuffled });
+    setQuestions(questionsToDisplay);
+  }, [allQuestions, isChallenge, isShuffled, shuffleQuestions]);
   
   const currentQuestion = questions[currentIndex];
 
@@ -314,7 +317,9 @@ function ReviewerPageContent() {
     setQuizScore(0);
     setShowResults(false);
     setChallengeAnswers([]);
-  }, []);
+    const questionsToDisplay = shuffleQuestions(allQuestions, { isChallenge, isShuffled });
+    setQuestions(questionsToDisplay);
+  }, [allQuestions, isChallenge, isShuffled, shuffleQuestions]);
 
   const handleFinishChallenge = (finalAnswers: ChallengeAnswer[]) => {
     const finalScore = finalAnswers.reduce((acc, ans) => acc + (ans.isCorrect ? 1 : 0), 0);
@@ -428,13 +433,15 @@ function ReviewerPageContent() {
   }
 
   const handleShuffleToggle = () => {
-    setIsShuffled(prev => !prev);
-    setCurrentIndex(0);
-    resetQuizState();
-    toast({
-        title: isShuffled ? "Shuffle Off" : "Shuffle On",
-        description: isShuffled ? "Questions are now in order." : "Questions have been shuffled.",
+    setIsShuffled(prev => {
+      const newState = !prev;
+      toast({
+        title: newState ? "Shuffle On" : "Shuffle Off",
+        description: newState ? "Questions have been shuffled." : "Questions are now in order.",
+      });
+      return newState;
     });
+    // The useEffect will handle the reshuffling
   }
   
   const handleTryAgain = () => {
@@ -449,10 +456,10 @@ function ReviewerPageContent() {
 
   useEffect(() => {
     if (!isChallenge) {
-        resetQuizState();
+      resetQuizState();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, isShuffled]);
+  }, [mode]);
   
   const progressValue = questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
   
