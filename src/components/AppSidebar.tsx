@@ -16,7 +16,7 @@ import {
 import { Badge } from "./ui/badge";
 import { useTimer } from "@/hooks/use-timer";
 import { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Logo from "./Logo";
 import type { UserProfile } from "@/lib/types";
 import { loadUserProfile } from "@/lib/data";
@@ -36,12 +36,12 @@ export function AppSidebar() {
   const { state: sidebarState } = useSidebar();
   const [user, setUser] = useState<UserProfile | null>(null);
   
-  const loadUser = () => {
+  const loadUser = useCallback(() => {
      if (typeof window !== 'undefined') {
         const loadedUser = loadUserProfile();
         setUser(loadedUser);
     }
-  }
+  }, []);
 
   useEffect(() => {
     loadUser();
@@ -49,7 +49,7 @@ export function AppSidebar() {
     return () => {
         window.removeEventListener('storage', loadUser);
     }
-  }, []);
+  }, [loadUser]);
 
   const TimerIndicator = () => {
     if (!isActive) return null;
