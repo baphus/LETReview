@@ -199,13 +199,6 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
       }
   }, []);
 
-  useEffect(() => {
-    window.addEventListener('storage', reloadBankStats);
-    return () => {
-        window.removeEventListener('storage', reloadBankStats);
-    }
-  }, [reloadBankStats]);
-
   const resetTimer = useCallback(() => {
     dispatch({
       isActive: false,
