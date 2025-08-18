@@ -65,11 +65,20 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
         const isAuthPage = pathname === "/login";
         const isLandingPage = pathname === "/";
+        const isOnboardingPage = pathname === "/onboarding";
 
         if (user) {
-            // If user is logged in and on login or landing page, redirect to home
-            if (isAuthPage || isLandingPage) {
-                router.replace("/home");
+            const userProfile = loadUserProfile();
+            if (!userProfile) {
+                // If user is logged in but has no profile, it means they need to onboard
+                if (!isOnboardingPage) {
+                    router.replace("/onboarding");
+                }
+            } else {
+                // If user has a profile, send them to home
+                if (isAuthPage || isLandingPage || isOnboardingPage) {
+                    router.replace("/home");
+                }
             }
         } else {
             // If user is not logged in, and not on landing or login page, redirect to landing
@@ -86,7 +95,7 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
     };
   }, [pathname, router]);
 
-  const isAppPage = !['/', '/login'].includes(pathname);
+  const isAppPage = !['/', '/login', '/onboarding'].includes(pathname);
 
   if (isCheckingAuth) {
     return (
@@ -150,7 +159,6 @@ export default function RootLayout({
           name="description"
           content="A mobile-first web application for creating your own personalized reviewer."
         />
-        <link rel="manifest" href="/manifest.json" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
           rel="preconnect"
@@ -171,3 +179,5 @@ export default function RootLayout({
     </html>
   );
 }
+
+    

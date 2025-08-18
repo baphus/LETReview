@@ -283,3 +283,5 @@ export const achievementPets: PetProfile[] = [
 export const rarePets: PetProfile[] = [
     { name: "Draco", unlock_criteria: "Purchase in store", cost: 1000, image: "/pets/draco.png", hint: "fire breathing", streak_req: 0 },
 ];
+
+    

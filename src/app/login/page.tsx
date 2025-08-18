@@ -1,13 +1,12 @@
 
 "use client";
 
-import { useState, useRef, ChangeEvent } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
 import { auth } from '@/lib/firebase';
 import { 
     GoogleAuthProvider, 
@@ -18,11 +17,6 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import Logo from "@/components/Logo";
-import type { UserProfile } from "@/lib/types";
-import { createNewBank } from "@/lib/data";
-
-// Function to get local date string in YYYY-MM-DD format
-const getTodayKey = () => format(new Date(), 'yyyy-MM-dd');
 
 export default function LoginPage() {
   const router = useRouter();
@@ -31,32 +25,22 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleUserLogin = (uid: string, displayName: string | null, photoURL: string | null, identifier: string | null) => {
+  const handleUserLogin = (uid: string, displayName: string | null, email: string | null) => {
       const userProfileKey = `userProfile_${uid}`;
       const existingUser = localStorage.getItem(userProfileKey);
 
       if (existingUser) {
-        // User exists, just log them in
-         const user = JSON.parse(existingUser);
-         user.lastLogin = getTodayKey();
-         localStorage.setItem(userProfileKey, JSON.stringify(user));
+        // User exists, log them in and redirect to home
+        localStorage.setItem('currentUser', uid);
+        router.refresh();
+        router.push("/home");
       } else {
-        // New user, create profile with a default bank
-         const defaultBank = createNewBank("My First Bank");
-         const userProfile: UserProfile = {
-            uid: uid,
-            name: displayName || identifier || 'Anonymous',
-            avatarUrl: photoURL || `https://placehold.co/100x100.png`,
-            themeMode: 'light', // Default to light mode for new users
-            activeBankId: defaultBank.id,
-            banks: [defaultBank],
-            lastLogin: getTodayKey(),
-          };
-        localStorage.setItem(userProfileKey, JSON.stringify(userProfile));
+        // New user, store temp info and redirect to onboarding
+        const tempInfo = { uid, displayName, email };
+        localStorage.setItem('tempNewUserInfo', JSON.stringify(tempInfo));
+        router.push("/onboarding");
       }
-
-       localStorage.setItem('currentUser', uid);
-      router.push("/home");
+      
       toast({
           title: "Successfully signed in!",
           description: "Welcome to Qwiz!",
@@ -68,7 +52,7 @@ export default function LoginPage() {
     const provider = new GoogleAuthProvider();
     try {
       const result = await signInWithPopup(auth, provider);
-      handleUserLogin(result.user.uid, result.user.displayName, result.user.photoURL, result.user.email);
+      handleUserLogin(result.user.uid, result.user.displayName, result.user.email);
     } catch (error: any) {
       if (error.code !== 'auth/popup-closed-by-user') {
         console.error("Google Sign-In Error: ", error);
@@ -85,7 +69,7 @@ export default function LoginPage() {
       e.preventDefault();
       try {
           const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-          handleUserLogin(userCredential.user.uid, userCredential.user.displayName, userCredential.user.photoURL, userCredential.user.email);
+          handleUserLogin(userCredential.user.uid, userCredential.user.displayName, userCredential.user.email);
       } catch (error: any) {
           toast({ variant: "destructive", title: "Sign-up failed", description: error.message });
       }
@@ -95,7 +79,7 @@ export default function LoginPage() {
       e.preventDefault();
       try {
           const userCredential = await signInWithEmailAndPassword(auth, email, password);
-          handleUserLogin(userCredential.user.uid, userCredential.user.displayName, userCredential.user.photoURL, userCredential.user.email);
+          handleUserLogin(userCredential.user.uid, userCredential.user.displayName, userCredential.user.email);
       } catch (error: any) {
           toast({ variant: "destructive", title: "Sign-in failed", description: error.message });
       }
@@ -148,3 +132,5 @@ export default function LoginPage() {
     </div>
   );
 }
+
+    
