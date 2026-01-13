@@ -102,6 +102,22 @@
         "choices"
       ]
     },
+    "QuestionCategory": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "QuestionCategory",
+      "type": "object",
+      "description": "A document containing all questions for a specific category.",
+      "properties": {
+        "questions": {
+          "type": "array",
+          "description": "An array of Question objects.",
+          "items": {
+            "$ref": "#/entities/Question"
+          }
+        }
+      },
+      "required": ["questions"]
+    },
     "DailyProgress": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "DailyProgress",
@@ -212,17 +228,17 @@
         }
       },
       {
-        "path": "/questions/{questionId}",
+        "path": "/questions/{categoryId}",
         "definition": {
-          "entityName": "Question",
+          "entityName": "QuestionCategory",
           "schema": {
-            "$ref": "#/backend/entities/Question"
+            "$ref": "#/entities/QuestionCategory"
           },
-          "description": "Stores all LET review questions. Public read access is allowed.",
+          "description": "Stores all LET review questions, grouped by category. The categoryId will be 'gen_education' or 'professional'. Public read access is allowed.",
           "params": [
             {
-              "name": "questionId",
-              "description": "The unique identifier of the question."
+              "name": "categoryId",
+              "description": "The category of the questions ('gen_education' or 'professional')."
             }
           ]
         }
@@ -264,6 +280,7 @@
         }
       }
     ],
-    "reasoning": "The Firestore structure is designed to optimize for security, scalability, and the specific features of the LETReviewBuddy application. It adheres to the principle of Authorization Independence by avoiding hierarchical `get()` calls in security rules, which is achieved through denormalization where necessary. It also segregates data based on access requirements, ensuring a homogeneous security posture within each collection.  The use of path-based ownership and consistent naming conventions enhance clarity and debuggability.\n\n*   **/users/{userId}**: Stores user profile data. This path ensures that only the authenticated user can access their own profile data (private data access).  \n*   **/questions/{questionId}**: Stores all LET review questions. This collection requires no user-specific security rules and can allow public read access.\n*   **/users/{userId}/dailyProgress/{date}**: Stores the daily progress of each user, using a composite key of userId and date. This structure facilitates easy querying of a user's daily progress and enforces ownership-based access control.\n*   **/pets/{petId}**: Stores the definitions of available pets.\n\nThis structure supports the required Question Answering Patterns (QAPs) as follows:\n\n*   **Secure List Operations**: Each collection (`users`, `questions`, `/users/{userId}/dailyProgress`, and `pets`) can be listed securely because the rules only depend on the authenticated user's ID (`request.auth.uid`) and/or the document data itself, and there are no dependencies on parent documents.\n*   **Authorization Independence**: The structure ensures that security rules do not rely on fetching data from other documents (no `get()` calls), maintaining atomicity for operations like creating new daily progress entries or updating user profiles."
+    "reasoning": "The Firestore structure is designed to optimize for security, scalability, and the specific features of the LETReviewBuddy application. It adheres to the principle of Authorization Independence by avoiding hierarchical `get()` calls in security rules, which is achieved through denormalization where necessary. It also segregates data based on access requirements, ensuring a homogeneous security posture within each collection.  The use of path-based ownership and consistent naming conventions enhance clarity and debuggability.\n\n*   **/users/{userId}**: Stores user profile data. This path ensures that only the authenticated user can access their own profile data (private data access).  \n*   **/questions/{categoryId}**: Stores all LET review questions, grouped into two documents: 'gen_education' and 'professional'. This allows for efficient retrieval of all questions for a category in a single read, while still allowing public read access.\n*   **/users/{userId}/dailyProgress/{date}**: Stores the daily progress of each user, using a composite key of userId and date. This structure facilitates easy querying of a user's daily progress and enforces ownership-based access control.\n*   **/pets/{petId}**: Stores the definitions of available pets.\n\nThis structure supports the required Question Answering Patterns (QAPs) as follows:\n\n*   **Secure List Operations**: Each collection (`users`, `questions`, `/users/{userId}/dailyProgress`, and `pets`) can be listed securely because the rules only depend on the authenticated user's ID (`request.auth.uid`) and/or the document data itself, and there are no dependencies on parent documents.\n*   **Authorization Independence**: The structure ensures that security rules do not rely on fetching data from other documents (no `get()` calls), maintaining atomicity for operations like creating new daily progress entries or updating user profiles."
   }
 }
+    

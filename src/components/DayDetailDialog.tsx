@@ -18,10 +18,15 @@ interface DayDetailDialogProps {
 
 export function DayDetailDialog({ date, onClose, userProgress }: DayDetailDialogProps) {
   const [question, setQuestion] = useState<QuizQuestion | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (date) {
-      getQuestionForDate(date).then(setQuestion);
+      setIsLoading(true);
+      getQuestionForDate(date).then(q => {
+          setQuestion(q);
+          setIsLoading(false);
+      });
     }
   }, [date]);
 
@@ -71,7 +76,9 @@ export function DayDetailDialog({ date, onClose, userProgress }: DayDetailDialog
             </Card>
           </div>
 
-          {question && (
+          {isLoading ? (
+            <p>Loading question details...</p>
+          ) : question && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex justify-between items-center">
@@ -90,7 +97,7 @@ export function DayDetailDialog({ date, onClose, userProgress }: DayDetailDialog
             </Card>
           )}
 
-          {!userProgress && !question && (
+          {!userProgress && !question && !isLoading && (
              <p className="text-center text-muted-foreground">No activity recorded for this day.</p>
           )}
 

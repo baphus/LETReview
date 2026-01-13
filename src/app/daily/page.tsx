@@ -38,8 +38,10 @@ const QuestionOfTheDay = ({ onCorrectAnswer }: { onCorrectAnswer: () => void }) 
     const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
     const [isAnswered, setIsAnswered] = useState(false);
     const [isCorrect, setIsCorrect] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
     
     useEffect(() => {
+        setIsLoading(true);
         getQuestionOfTheDay().then(qotd => {
             setQuestion(qotd);
             if(user){
@@ -55,6 +57,7 @@ const QuestionOfTheDay = ({ onCorrectAnswer }: { onCorrectAnswer: () => void }) 
                     }
                 }
             }
+            setIsLoading(false);
         });
     }, [user]);
 
@@ -87,6 +90,19 @@ const QuestionOfTheDay = ({ onCorrectAnswer }: { onCorrectAnswer: () => void }) 
             toast({ variant: "destructive", title: "Incorrect", description: "Better luck tomorrow!" });
         }
     };
+
+    if (isLoading) {
+        return (
+            <Card className="mb-6">
+                <CardHeader>
+                    <CardTitle className="font-headline text-2xl">Question of the Day</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p>Loading...</p>
+                </CardContent>
+            </Card>
+        )
+    }
 
     if (!question) return null;
 
@@ -328,3 +344,5 @@ export default function DailyPage() {
     </div>
   );
 }
+
+    

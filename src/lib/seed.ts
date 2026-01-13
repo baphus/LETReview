@@ -1,10 +1,11 @@
 
 'use server';
 
-import { getFirestore, writeBatch, collection, doc } from 'firebase/firestore';
+import { getFirestore, writeBatch, doc, collection } from 'firebase/firestore';
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { firebaseConfig } from '@/firebase/config';
-import { sampleQuestions } from './data';
+import allQuestions from '../../docs/questions-seed.json';
+import type { QuizQuestion } from './types';
 
 // IMPORTANT: This is a server-side function and should only be called from a Server Action.
 export async function seedQuestions() {
@@ -20,31 +21,41 @@ export async function seedQuestions() {
   const batch = writeBatch(firestore);
   const questionsCollectionRef = collection(firestore, 'questions');
 
-  sampleQuestions.forEach((question) => {
-    const docId = String(question.id);
-    const docRef = doc(questionsCollectionRef, docId);
-    const firestoreQuestion = {
-        id: docId,
-        category: question.category,
-        difficulty: question.difficulty,
-        question: question.question,
-        choices: question.choices,
-        answer: question.answer,
-        explanation: question.explanation || '',
+  // Group questions by category
+  const categorizedQuestions = allQuestions.reduce((acc, question) => {
+    const category = question.category as 'gen_education' | 'professional';
+    if (!acc[category]) {
+      acc[category] = [];
+    }
+    // Ensure id is a string
+    const questionWithStrId: QuizQuestion = {
+        ...question,
+        id: String(question.id)
     };
-    batch.set(docRef, firestoreQuestion);
-  });
+    acc[category].push(questionWithStrId);
+    return acc;
+  }, {} as Record<'gen_education' | 'professional', QuizQuestion[]>);
+
+  // Set up a batch write for each category document
+  for (const category in categorizedQuestions) {
+    if (Object.prototype.hasOwnProperty.call(categorizedQuestions, category)) {
+      const categoryId = category as 'gen_education' | 'professional';
+      const categoryDocRef = doc(questionsCollectionRef, categoryId);
+      batch.set(categoryDocRef, { questions: categorizedQuestions[categoryId] });
+    }
+  }
 
   try {
     // The batch.commit() is what actually performs the writes.
     await batch.commit();
-    console.log(`${sampleQuestions.length} questions have been successfully seeded to Firestore.`);
-    return { success: true, count: sampleQuestions.length };
+    const count = allQuestions.length;
+    console.log(`${count} questions have been successfully seeded into category documents.`);
+    return { success: true, count: count };
   } catch (error) {
-     // Server-side error logging
-     const errorMessage = `Firestore Permission Denied during seeding: The request to create documents in the 'questions' collection was denied. Please check your firestore.rules.`;
+     const errorMessage = `Firestore Permission Denied during seeding: The request to write documents to the 'questions' collection was denied. Please check your firestore.rules.`;
      console.error(errorMessage, error);
      return { success: false, error: errorMessage };
   }
 }
 
+    

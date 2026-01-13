@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { sampleQuestions } from "@/lib/data";
+import { getQuestions } from "@/lib/data";
 import type { QuizQuestion } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -143,24 +143,11 @@ const QuizCard: FC<{
   );
 };
 
-const getSeed = (str: string) => {
-  let h = 1779033703, i = 0;
-  for (i = 0; i < str.length; i++) {
-    h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
-    h = h << 13 | h >>> 19;
-  }
-  return () => {
-    h = Math.imul(h ^ h >>> 16, 2246822507);
-    h = Math.imul(h ^ h >>> 13, 3266489909);
-    return (h ^= h >>> 16) >>> 0;
-  }
-};
-
 const getTodayKey = () => format(new Date(), 'yyyy-MM-dd');
 
 
 interface ChallengeAnswer {
-    questionId: number;
+    questionId: string;
     userAnswer: string;
     correctAnswer: string;
     isCorrect: boolean;
@@ -188,6 +175,8 @@ function ReviewerPageContent() {
   const [challengeAnswers, setChallengeAnswers] = useState<ChallengeAnswer[]>([]);
   const [passingScore, setPassingScore] = useState(85);
   const [isShuffled, setIsShuffled] = useState(false);
+  const [questions, setQuestions] = useState<QuizQuestion[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
   const { toast } = useToast();
 
@@ -197,28 +186,21 @@ function ReviewerPageContent() {
     }
   }, [user]);
 
-  const questions = useMemo(() => {
-    let baseQuestions = sampleQuestions
-      .filter((q) => q.category === category);
+  const fetchAndSetQuestions = useCallback(async () => {
+      setIsLoading(true);
+      const fetchedQuestions = await getQuestions({
+          category,
+          difficulty: isChallenge ? challengeDifficulty as any : undefined,
+          limit: isChallenge ? challengeCount : undefined,
+          shuffle: isChallenge || isShuffled,
+      });
+      setQuestions(fetchedQuestions);
+      setIsLoading(false);
+  }, [category, isChallenge, challengeDifficulty, challengeCount, isShuffled]);
 
-    if (isChallenge) {
-       const today = new Date().toDateString();
-       const rng = getSeed(today + challengeDifficulty + challengeCategory);
-       const shuffled = baseQuestions
-         .filter(q => q.difficulty === challengeDifficulty)
-         .sort(() => rng() - rng());
-       return shuffled.slice(0, challengeCount);
-    }
-
-    if(isShuffled) {
-        return [...baseQuestions].sort(() => Math.random() - 0.5)
-            .map(q => ({ ...q, choices: [...q.choices].sort(() => Math.random() - 0.5) }));
-    }
-    
-    return baseQuestions
-      .map(q => ({ ...q, choices: [...q.choices].sort(() => Math.random() - 0.5) }));
-
-  }, [category, isChallenge, challengeCount, challengeDifficulty, challengeCategory, isShuffled]);
+  useEffect(() => {
+    fetchAndSetQuestions();
+  }, [fetchAndSetQuestions]);
   
   const currentQuestion = questions[currentIndex];
 
@@ -227,7 +209,8 @@ function ReviewerPageContent() {
     setQuizScore(0);
     setShowResults(false);
     setChallengeAnswers([]);
-  }, []);
+    fetchAndSetQuestions();
+  }, [fetchAndSetQuestions]);
 
   const handleFinishChallenge = async (finalAnswers: ChallengeAnswer[]) => {
     if (!user || !firestore) return;
@@ -345,7 +328,7 @@ function ReviewerPageContent() {
   const handleShuffleToggle = () => {
     setIsShuffled(prev => !prev);
     setCurrentIndex(0);
-    resetQuizState();
+    setChallengeAnswers([]);
     toast({
         title: isShuffled ? "Shuffle Off" : "Shuffle On",
         description: isShuffled ? "Questions are now in order." : "Questions have been shuffled.",
@@ -362,7 +345,14 @@ function ReviewerPageContent() {
         resetQuizState();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, category, isShuffled]);
+  }, [mode, category]);
+
+  useEffect(() => {
+    if(!isChallenge) {
+      fetchAndSetQuestions();
+    }
+  }, [category, isShuffled, fetchAndSetQuestions, isChallenge]);
+
   
   const progressValue = questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
   
@@ -371,6 +361,14 @@ function ReviewerPageContent() {
   if (isChallenge && !currentQuestion && challengeAnswers.length === questions.length && !showResults) {
     handleFinishChallenge(challengeAnswers);
     return null;
+  }
+  
+  if (isLoading) {
+    return (
+        <div className="container mx-auto p-4 max-w-2xl text-center">
+            <p>Loading questions...</p>
+        </div>
+    )
   }
 
   return (
@@ -525,7 +523,7 @@ function ReviewerPageContent() {
                 Previous
             </Button>
             <Button onClick={handleNext}>
-                {currentIndex === questions.length - 1 ? 'Finish' : 'Next'}
+                {currentIndex === questions.length - 1 ? 'Start Over' : 'Next'}
                 {currentIndex < questions.length - 1 && <ArrowRight className="h-4 w-4 ml-2" />}
             </Button>
             </div>
@@ -551,3 +549,5 @@ export default function ReviewPage() {
         </Suspense>
     )
 }
+
+    

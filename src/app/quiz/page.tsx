@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { sampleQuestions } from "@/lib/data";
+import { getQuestions } from "@/lib/data";
 import type { QuizQuestion } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -102,7 +102,7 @@ const QuizCard: FC<{
 
 
 interface ChallengeAnswer {
-    questionId: number;
+    questionId: string;
     userAnswer: string;
     correctAnswer: string;
     isCorrect: boolean;
@@ -119,22 +119,25 @@ export default function QuizPage() {
   const [answeredCurrent, setAnsweredCurrent] = useState(false);
   const [challengeAnswers, setChallengeAnswers] = useState<ChallengeAnswer[]>([]);
   const [isShuffled, setIsShuffled] = useState(false);
+  const [questions, setQuestions] = useState<QuizQuestion[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
   const { toast } = useToast();
 
-  const questions = useMemo(() => {
-    let baseQuestions = sampleQuestions
-      .filter((q) => q.category === category);
-
-    if(isShuffled) {
-        return [...baseQuestions].sort(() => Math.random() - 0.5)
-            .map(q => ({ ...q, choices: [...q.choices].sort(() => Math.random() - 0.5) }));
-    }
-    
-    return baseQuestions
-      .map(q => ({ ...q, choices: [...q.choices].sort(() => Math.random() - 0.5) }));
-
+  const fetchAndSetQuestions = useCallback(async () => {
+    setIsLoading(true);
+    const fetchedQuestions = await getQuestions({
+        category,
+        shuffle: isShuffled,
+    });
+    setQuestions(fetchedQuestions);
+    setIsLoading(false);
   }, [category, isShuffled]);
+
+  useEffect(() => {
+    fetchAndSetQuestions();
+  }, [fetchAndSetQuestions]);
+
 
   const resetQuizState = useCallback(() => {
     setCurrentIndex(0);
@@ -142,7 +145,8 @@ export default function QuizPage() {
     setShowResults(false);
     setChallengeAnswers([]);
     setAnsweredCurrent(false);
-  }, []);
+    fetchAndSetQuestions();
+  }, [fetchAndSetQuestions]);
 
 
   const currentQuestion = questions[currentIndex];
@@ -212,7 +216,8 @@ export default function QuizPage() {
   const handleShuffleToggle = () => {
     setIsShuffled(prev => !prev);
     setCurrentIndex(0);
-    resetQuizState();
+    setChallengeAnswers([]);
+    setAnsweredCurrent(false);
     toast({
         title: isShuffled ? "Shuffle Off" : "Shuffle On",
         description: isShuffled ? "Questions are now in order." : "Questions have been shuffled.",
@@ -222,7 +227,7 @@ export default function QuizPage() {
   useEffect(() => {
     resetQuizState();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category, isShuffled]);
+  }, [category]);
   
   useEffect(() => {
     setAnsweredCurrent(
@@ -236,6 +241,14 @@ export default function QuizPage() {
     if (!currentQuestion) return null;
     return challengeAnswers.find(a => a.questionId === currentQuestion.id)?.userAnswer;
   }, [currentQuestion, challengeAnswers]);
+  
+  if (isLoading) {
+    return (
+        <div className="container mx-auto p-4 max-w-2xl text-center">
+            <p>Loading questions...</p>
+        </div>
+    )
+  }
 
   return (
     <div className="container mx-auto p-4 max-w-2xl">
@@ -356,3 +369,5 @@ export default function QuizPage() {
     </div>
   );
 }
+
+    

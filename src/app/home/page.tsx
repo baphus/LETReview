@@ -7,8 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Separator } from "@/components/ui/separator";
 import { User, Flame, Gem, Award, Shield, Edit, Check, Lock, CheckCircle, Lightbulb } from "lucide-react";
 import Image from "next/image";
-import { streakPets, getQuestionOfTheDay, achievementPets, rarePets, getQuestionForDate } from "@/lib/data";
-import type { PetProfile } from "@/lib/types";
+import { streakPets, getQuestionOfTheDay, achievementPets, rarePets } from "@/lib/data";
+import type { PetProfile, QuizQuestion } from "@/lib/types";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
@@ -40,7 +40,7 @@ export default function HomePage() {
   const [editingPet, setEditingPet] = useState<string | null>(null);
   const [newPetName, setNewPetName] = useState("");
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [questionOfTheDay, setQuestionOfTheDay] = useState<any>(null);
+  const [questionOfTheDay, setQuestionOfTheDay] = useState<QuizQuestion | null>(null);
   
   const todayKey = useMemo(() => getTodayKey(), []);
 
@@ -58,9 +58,6 @@ export default function HomePage() {
         updatedUser.highestStreak = user.streak;
         statsUpdated = true;
     }
-    
-    // Check Pomodoro state from timer hook/store if migrated
-    // For now, this logic will be in profile page or timer page where it can access timer state
     
     let newPetsUnlocked: string[] = [];
     achievementPets.forEach(pet => {
@@ -320,7 +317,7 @@ export default function HomePage() {
 
         <section className="mb-6">
             <h2 className="text-xl font-bold font-headline mb-4">Question of the Day</h2>
-            {questionOfTheDay && (
+            {questionOfTheDay ? (
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center justify-between">
@@ -339,7 +336,7 @@ export default function HomePage() {
                         </CardFooter>
                     )}
                 </Card>
-            )}
+            ) : (<Card><CardContent><p>Loading question...</p></CardContent></Card>)}
         </section>
 
       <Separator className="my-6" />
