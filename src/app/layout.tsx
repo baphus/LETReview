@@ -156,7 +156,9 @@ export default function RootLayout({
         className={`${inter.variable} ${spaceGrotesk.variable} font-body antialiased flex flex-col h-dvh bg-background`}
       >
         <FirebaseClientProvider>
+          <TooltipProvider>
             <RootLayoutContent>{children}</RootLayoutContent>
+          </TooltipProvider>
         </FirebaseClientProvider>
       </body>
     </html>
