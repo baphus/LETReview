@@ -9,7 +9,12 @@ import { sampleQuestions } from './data';
 // IMPORTANT: This is a server-side function and should only be called from a Server Action.
 export async function seedQuestions() {
   // Initialize Firebase for server-side operations
-  const firebaseApp = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+  let firebaseApp;
+  if (!getApps().length) {
+    firebaseApp = initializeApp(firebaseConfig);
+  } else {
+    firebaseApp = getApp();
+  }
   const firestore = getFirestore(firebaseApp);
   
   const batch = writeBatch(firestore);
@@ -42,3 +47,4 @@ export async function seedQuestions() {
      return { success: false, error: errorMessage };
   }
 }
+
