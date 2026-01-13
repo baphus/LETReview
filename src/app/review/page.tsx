@@ -215,10 +215,7 @@ function ReviewerPageContent() {
 
   useEffect(() => {
     fetchAndSetQuestions();
-  // This effect should run only when the component mounts or when dependencies that define the challenge change.
-  // We've moved the state resets into handleTryAgain and handleDialogClose to be more explicit.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isChallenge, challengeDifficulty, challengeCount, challengeCategory]);
+  }, [isChallenge, challengeDifficulty, challengeCount, challengeCategory, fetchAndSetQuestions]);
   
   const currentQuestion = questions[currentIndex];
 
@@ -424,7 +421,7 @@ function ReviewerPageContent() {
   return (
     <div className="container mx-auto p-4 max-w-2xl">
        <Dialog open={showResults} onOpenChange={handleDialogClose}>
-        <DialogContent className="sm:max-w-md w-full h-full sm:h-auto sm:max-h-[90dvh] flex flex-col">
+        <DialogContent className="sm:max-w-xl w-full h-full sm:h-auto sm:max-h-[90dvh] flex flex-col">
           <DialogHeader className="items-center text-center pt-8 sm:pt-0">
             <Trophy className="h-16 w-16 text-yellow-400" />
             <DialogTitle className="text-2xl font-bold font-headline">Challenge Complete!</DialogTitle>
@@ -446,8 +443,8 @@ function ReviewerPageContent() {
                   )
               )}
 
-              <ScrollArea className="h-64 flex-1">
-                  <div className="space-y-4 pr-6">
+              <ScrollArea className="flex-1 -mr-6 pr-6">
+                  <div className="space-y-4">
                       {challengeAnswers.map(answer => (
                           <div key={answer.questionId} className="text-sm p-3 rounded-lg bg-muted">
                               <p className="font-semibold mb-1">{answer.question}</p>
