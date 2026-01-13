@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getQuestions } from "@/lib/data";
 import type { QuizQuestion } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -201,6 +200,8 @@ function ReviewerPageContent() {
 
   useEffect(() => {
     fetchAndSetQuestions();
+    setCurrentIndex(0);
+    setChallengeAnswers([]);
   }, [fetchAndSetQuestions]);
   
   const currentQuestion = questions[currentIndex];
@@ -328,12 +329,6 @@ function ReviewerPageContent() {
 
   const handleShuffleToggle = () => {
     setIsShuffled(prev => !prev);
-    setCurrentIndex(0);
-    setChallengeAnswers([]);
-    toast({
-        title: isShuffled ? "Shuffle Off" : "Shuffle On",
-        description: isShuffled ? "Questions are now in order." : "Questions have been shuffled.",
-    });
   }
   
   const handleTryAgain = () => {
@@ -346,7 +341,7 @@ function ReviewerPageContent() {
         resetQuizState();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, category]);
+  }, [mode, category, isShuffled]);
 
   
   const progressValue = questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
@@ -388,8 +383,8 @@ function ReviewerPageContent() {
   return (
     <div className="container mx-auto p-4 max-w-2xl">
        <Dialog open={showResults} onOpenChange={handleDialogClose}>
-        <DialogContent className="flex flex-col h-auto max-h-[90dvh]">
-          <DialogHeader className="items-center text-center">
+        <DialogContent className="sm:max-w-none w-full h-full max-h-full sm:h-auto sm:max-h-[90dvh] flex flex-col">
+          <DialogHeader className="items-center text-center pt-8 sm:pt-0">
             <Trophy className="h-16 w-16 text-yellow-400" />
             <DialogTitle className="text-2xl font-bold font-headline">Challenge Complete!</DialogTitle>
             <DialogDescription>
@@ -410,7 +405,7 @@ function ReviewerPageContent() {
                   )
               )}
 
-              <ScrollArea className="h-64">
+              <ScrollArea className="h-64 flex-1">
                   <div className="space-y-4 pr-6">
                       {challengeAnswers.map(answer => (
                           <div key={answer.questionId} className="text-sm p-3 rounded-lg bg-muted">
@@ -437,7 +432,7 @@ function ReviewerPageContent() {
               </ScrollArea>
           </div>
 
-          <DialogFooter className="mt-4 pt-4 border-t flex-col sm:flex-col sm:space-x-0 gap-2">
+          <DialogFooter className="mt-auto pt-4 border-t flex-col sm:flex-col sm:space-x-0 gap-2">
             {!isChallengePassed && isChallenge && (
                 <Button onClick={handleTryAgain} variant="secondary">
                     <RefreshCcw className="mr-2 h-4 w-4" />
@@ -460,7 +455,7 @@ function ReviewerPageContent() {
                 </div>
             </header>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+            <div className="flex flex-col sm:flex-row gap-4 items-center">
                  <Select value={category} onValueChange={(value) => setCategory(value as "gened" | "profed" | "majorship")}>
                     <SelectTrigger>
                         <SelectValue placeholder="Select a category" />
