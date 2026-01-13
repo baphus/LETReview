@@ -94,6 +94,20 @@ service cloud.firestore {
     function isUpdatingOwnProgressDoc() {
       return request.resource.data.userId == resource.data.userId;
     }
+    
+    /**
+     * Validates the structure of a Question document being created.
+     */
+    function isValidQuestion() {
+        let data = request.resource.data;
+        return data.id is string &&
+               data.category is string && (data.category == 'gen_education' || data.category == 'professional') &&
+               data.difficulty is string && (data.difficulty == 'easy' || data.difficulty == 'medium' || data.difficulty == 'hard') &&
+               data.question is string &&
+               data.answer is string &&
+               data.choices is list && data.choices.size() > 0 &&
+               data.explanation is string;
+    }
 
     // ----------------------------------------------------------------------
     // Collection Rules
@@ -142,7 +156,7 @@ service cloud.firestore {
      */
     match /questions/{questionId} {
         allow get, list: if isSignedIn();
-        allow create: if isSignedIn();
+        allow create: if isSignedIn() && isValidQuestion();
         allow update, delete: if false;
     }
 
