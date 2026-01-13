@@ -165,6 +165,13 @@ export const useUser = () => {
          router.push('/home');
 
     } catch (error: any) {
+        // This error code means the user closed the popup.
+        // It's a normal behavior, so we can safely ignore it.
+        if (error.code === 'auth/cancelled-popup-request') {
+            console.log("Sign-in cancelled by user.");
+            return;
+        }
+
         console.error("Error linking account:", error);
         toast({
             variant: "destructive",
