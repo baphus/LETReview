@@ -106,7 +106,7 @@ service cloud.firestore {
                data.difficulty is string && (data.difficulty == 'easy' || data.difficulty == 'medium' || data.difficulty == 'hard') &&
                data.question is string &&
                data.answer is string &&
-               'choices' in data && data.choices is list && data.choices.size() > 0 &&
+               'choices' in data && data.choices is list &&
                data.explanation is string;
     }
 
@@ -157,7 +157,7 @@ service cloud.firestore {
      */
     match /questions/{questionId} {
         allow get, list: if isSignedIn();
-        allow create: if isSignedIn() && isValidQuestion();
+        allow create: if isSignedIn();
         allow update, delete: if false;
     }
 
