@@ -158,7 +158,7 @@ export default function LandingPage() {
             <div className="mx-auto w-full max-w-sm space-y-2">
               <Card>
                 <CardContent className="p-6">
-                  <div className="flex items-center mb-2">
+                  <div className="flex items-center justify-center mb-2">
                     <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
                     <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
                     <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />

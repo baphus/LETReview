@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Clock, Coffee, Play, Pause, RotateCcw, Award, Gem, Bell, Flame, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTimer } from "@/hooks/use-timer";
-import { sampleQuestions } from "@/lib/data";
+import { getQuestions } from "@/lib/data";
 import type { QuizQuestion } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -23,21 +23,33 @@ const MiniQuiz = ({ onCorrectAnswer, onIncorrectAnswer, onStreak }: { onCorrectA
     const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
     const [isAnswered, setIsAnswered] = useState(false);
     const [isCorrect, setIsCorrect] = useState(false);
+    const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
+    const [questionIndex, setQuestionIndex] = useState(0);
+
+    useEffect(() => {
+        getQuestions({ difficulty: 'easy', shuffle: true, limit: 10 }).then(setQuizQuestions);
+    }, []);
 
     const getNewQuestion = useCallback(() => {
-        const allQuestions = [...sampleQuestions];
-        const randomIndex = Math.floor(Math.random() * allQuestions.length);
-        const newQuestion = { ...allQuestions[randomIndex] };
+        if (quizQuestions.length === 0) return;
+        
+        const nextIndex = (questionIndex + 1) % quizQuestions.length;
+        setQuestionIndex(nextIndex);
+        
+        const newQuestion = { ...quizQuestions[nextIndex] };
         newQuestion.choices = [...newQuestion.choices].sort(() => Math.random() - 0.5);
         setQuestion(newQuestion);
         setSelectedAnswer(null);
         setIsAnswered(false);
         setIsCorrect(false);
-    }, []);
+    }, [quizQuestions, questionIndex]);
 
     useEffect(() => {
-        getNewQuestion();
-    }, [getNewQuestion]);
+        if (quizQuestions.length > 0) {
+            getNewQuestion();
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [quizQuestions]);
 
     const handleAnswer = (answer: string) => {
         if (isAnswered || !question) return;
