@@ -215,7 +215,7 @@ function ReviewerPageContent() {
 
   useEffect(() => {
     fetchAndSetQuestions();
-  }, [isChallenge, challengeDifficulty, challengeCount, challengeCategory, fetchAndSetQuestions]);
+  }, [fetchAndSetQuestions]);
   
   const currentQuestion = questions[currentIndex];
 
