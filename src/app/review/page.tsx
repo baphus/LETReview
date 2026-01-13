@@ -3,16 +3,7 @@
 
 import { useState, useMemo, type FC, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from 'next/navigation';
-import {
-  ArrowLeft,
-  ArrowRight,
-  BookOpen,
-  CheckCircle,
-  XCircle,
-  Trophy,
-  Shuffle,
-  RefreshCcw,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen, CheckCircle, XCircle, Trophy, Shuffle, RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -24,7 +15,9 @@ import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
-
+import { useUser } from "@/firebase/auth/use-user";
+import { useFirestore } from "@/firebase";
+import { doc, updateDoc, increment } from "firebase/firestore";
 
 const Flashcard: FC<{ question: QuizQuestion }> = ({ question }) => {
   const [isFlipped, setIsFlipped] = useState(false);
@@ -36,7 +29,6 @@ const Flashcard: FC<{ question: QuizQuestion }> = ({ question }) => {
   return (
     <div className="flashcard-container cursor-pointer" onClick={() => setIsFlipped(!isFlipped)}>
       <div className={cn("flashcard w-full h-80 relative", { "is-flipped": isFlipped })}>
-        {/* Front of Card */}
         <div className="flashcard-front absolute w-full h-full">
           <Card className="h-full flex flex-col justify-center items-center text-center p-6 shadow-lg">
             <CardHeader>
@@ -47,7 +39,6 @@ const Flashcard: FC<{ question: QuizQuestion }> = ({ question }) => {
             <p className="text-muted-foreground mt-4">Tap to reveal answer</p>
           </Card>
         </div>
-        {/* Back of Card */}
         <div className="flashcard-back absolute w-full h-full">
           <Card className="h-full flex flex-col justify-center items-center text-center p-6 shadow-lg bg-secondary">
             <CardContent className="flex flex-col items-center justify-center">
@@ -152,7 +143,6 @@ const QuizCard: FC<{
   );
 };
 
-// Function to generate a seed from a string (e.g., today's date)
 const getSeed = (str: string) => {
   let h = 1779033703, i = 0;
   for (i = 0; i < str.length; i++) {
@@ -166,7 +156,6 @@ const getSeed = (str: string) => {
   }
 };
 
-// Function to get local date string in YYYY-MM-DD format
 const getTodayKey = () => format(new Date(), 'yyyy-MM-dd');
 
 
@@ -181,13 +170,14 @@ interface ChallengeAnswer {
 function ReviewerPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { user } = useUser();
+  const firestore = useFirestore();
 
   const isChallenge = searchParams.get('challenge') === 'true';
   const challengeDifficulty = searchParams.get('difficulty') || 'easy';
   const challengeCount = parseInt(searchParams.get('count') || '0', 10);
   const challengeCategory = searchParams.get('category') as "gen_education" | "professional" || "gen_education";
 
-  
   const [category, setCategory] = useState<"gen_education" | "professional">(
     isChallenge ? challengeCategory : "gen_education"
   );
@@ -201,50 +191,11 @@ function ReviewerPageContent() {
   
   const { toast } = useToast();
 
-   // Load state from localStorage on initial mount
   useEffect(() => {
-    if (isChallenge) return; // Don't load state for challenges
-
-    const savedProgress = localStorage.getItem('reviewProgress');
-    if (savedProgress) {
-      try {
-        const { category, mode, currentIndex, isShuffled: savedIsShuffled } = JSON.parse(savedProgress);
-        setCategory(category || 'gen_education');
-        setMode(mode || 'study');
-        setCurrentIndex(currentIndex || 0);
-        setIsShuffled(savedIsShuffled || false);
-      } catch (e) {
-        console.error("Failed to parse review progress", e);
-      }
-    }
-  }, [isChallenge]);
-
-  // Save state to localStorage whenever it changes
-  useEffect(() => {
-    if (isChallenge) return; // Don't save state for challenges
-
-    const progress = {
-      category,
-      mode,
-      currentIndex,
-      isShuffled,
-    };
-    localStorage.setItem('reviewProgress', JSON.stringify(progress));
-  }, [category, mode, currentIndex, isChallenge, isShuffled]);
-
-
-  const loadUserData = useCallback(() => {
-    const savedUser = localStorage.getItem("userProfile");
-    if(savedUser){
-        const user = JSON.parse(savedUser);
+    if (user) {
         setPassingScore(user.passingScore || 85);
     }
-  }, []);
-
-  useEffect(() => {
-    loadUserData();
-  }, [loadUserData])
-
+  }, [user]);
 
   const questions = useMemo(() => {
     let baseQuestions = sampleQuestions
@@ -278,7 +229,9 @@ function ReviewerPageContent() {
     setChallengeAnswers([]);
   }, []);
 
-  const handleFinishChallenge = (finalAnswers: ChallengeAnswer[]) => {
+  const handleFinishChallenge = async (finalAnswers: ChallengeAnswer[]) => {
+    if (!user || !firestore) return;
+
     const finalScore = finalAnswers.reduce((acc, ans) => acc + (ans.isCorrect ? 1 : 0), 0);
     setQuizScore(finalScore);
     setShowResults(true);
@@ -286,71 +239,55 @@ function ReviewerPageContent() {
     const scorePercentage = (finalScore / questions.length) * 100;
     const passed = scorePercentage >= passingScore;
 
-    const savedUser = localStorage.getItem("userProfile");
-    if (savedUser) {
-        const user = JSON.parse(savedUser);
-        const todayKey = getTodayKey();
+    const userRef = doc(firestore, "users", user.uid);
+    const todayKey = getTodayKey();
+    const challengeId = `${challengeDifficulty}-${challengeCategory}`;
+    
+    if (passed) {
+        const todaysChallenges = user.dailyProgress?.[todayKey]?.challengesCompleted || [];
+        const alreadyCompletedToday = todaysChallenges.includes(challengeId);
         
-        if (!user.dailyProgress) user.dailyProgress = {};
-        if (!user.dailyProgress[todayKey]) user.dailyProgress[todayKey] = {};
-
-        const challengeId = `${challengeDifficulty}-${challengeCategory}`;
+        let updates: any = {};
         
-        // Only mark challenge as completed if PASSED
-        if (passed) {
-            if (!user.dailyProgress[todayKey].challengesCompleted) {
-                user.dailyProgress[todayKey].challengesCompleted = [];
+        if (!alreadyCompletedToday) {
+            updates[`dailyProgress.${todayKey}.challengesCompleted`] = [...todaysChallenges, challengeId];
+        }
+
+        const wasAnyChallengeCompletedToday = user.lastChallengeDate === todayKey;
+        const pointsMap = { easy: 25, medium: 75, hard: 150 };
+        const pointsEarned = pointsMap[challengeDifficulty as keyof typeof pointsMap] || 0;
+
+        if (!wasAnyChallengeCompletedToday) {
+            updates.streak = increment(1);
+            if ((user.streak + 1) > user.highestStreak) {
+                updates.highestStreak = user.streak + 1;
             }
-            
-            const alreadyCompletedToday = user.dailyProgress[todayKey].challengesCompleted.includes(challengeId);
-
-            if (!alreadyCompletedToday) {
-                user.dailyProgress[todayKey].challengesCompleted.push(challengeId);
-            }
-
-            // Award points and streak only on the first pass of the day for any challenge
-            const wasAnyChallengeCompletedToday = user.lastChallengeDate === todayKey;
-            
-            if (!wasAnyChallengeCompletedToday) {
-                user.streak = (user.streak || 0) + 1;
-                if (user.streak > (user.highestStreak || 0)) {
-                    user.highestStreak = user.streak;
-                }
-                user.lastChallengeDate = todayKey;
-
-                const pointsMap = { easy: 25, medium: 75, hard: 150 };
-                const pointsEarned = pointsMap[challengeDifficulty as keyof typeof pointsMap] || 0;
-                user.points = (user.points || 0) + pointsEarned;
-                user.dailyProgress[todayKey].pointsEarned = (user.dailyProgress[todayKey].pointsEarned || 0) + pointsEarned;
-
-
+            updates.lastChallengeDate = todayKey;
+            updates.points = increment(pointsEarned);
+            updates[`dailyProgress.${todayKey}.pointsEarned`] = increment(pointsEarned);
+            toast({
+                title: "Challenge Passed!",
+                description: `You earned ${pointsEarned} points and secured your streak!`,
+                className: "bg-green-100 border-green-300"
+            });
+        } else {
+             if (!alreadyCompletedToday) {
+                updates.points = increment(pointsEarned);
+                updates[`dailyProgress.${todayKey}.pointsEarned`] = increment(pointsEarned);
                 toast({
                     title: "Challenge Passed!",
-                    description: `You earned ${pointsEarned} points and secured your streak!`,
+                    description: `You passed another challenge and earned ${pointsEarned} points!`,
                     className: "bg-green-100 border-green-300"
                 });
-            } else {
-                 if (!alreadyCompletedToday) {
-                    const pointsMap = { easy: 25, medium: 75, hard: 150 };
-                    const pointsEarned = pointsMap[challengeDifficulty as keyof typeof pointsMap] || 0;
-                    user.points = (user.points || 0) + pointsEarned;
-                    user.dailyProgress[todayKey].pointsEarned = (user.dailyProgress[todayKey].pointsEarned || 0) + pointsEarned;
-                    toast({
-                        title: "Challenge Passed!",
-                        description: `You passed another challenge and earned ${pointsEarned} points!`,
-                        className: "bg-green-100 border-green-300"
-                    });
-                 } else {
-                     toast({
-                        title: "Challenge Complete!",
-                        description: `You've already earned points for this challenge today.`,
-                        className: "bg-blue-100 border-blue-300"
-                    });
-                 }
-            }
+             } else {
+                 toast({
+                    title: "Challenge Complete!",
+                    description: `You've already earned points for this challenge today.`,
+                    className: "bg-blue-100 border-blue-300"
+                });
+             }
         }
-        
-        localStorage.setItem('userProfile', JSON.stringify(user));
+        await updateDoc(userRef, updates);
     }
   };
 
@@ -387,7 +324,6 @@ function ReviewerPageContent() {
     const newAnswers = [...challengeAnswers.filter(a => a.questionId !== currentQuestion.id), newAnswer];
     setChallengeAnswers(newAnswers);
 
-    // Auto-advance to next question in a challenge
     setTimeout(() => {
         if (currentIndex < questions.length - 1) {
              setCurrentIndex((prev) => prev + 1);
@@ -434,7 +370,7 @@ function ReviewerPageContent() {
 
   if (isChallenge && !currentQuestion && challengeAnswers.length === questions.length && !showResults) {
     handleFinishChallenge(challengeAnswers);
-    return null; // Or a loading indicator
+    return null;
   }
 
   return (
@@ -615,5 +551,3 @@ export default function ReviewPage() {
         </Suspense>
     )
 }
-
-    

@@ -3,22 +3,26 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Clock, Coffee, Play, Pause, RotateCcw, Award, Zap, Sparkles, XCircle, ArrowRight, Gem, Bell, Flame } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Clock, Coffee, Play, Pause, RotateCcw, Award, Gem, Bell, Flame, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTimer } from "@/hooks/use-timer";
 import { sampleQuestions } from "@/lib/data";
 import type { QuizQuestion } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useUser } from "@/firebase/auth/use-user";
+import { useFirestore } from "@/firebase";
+import { doc, updateDoc, increment } from "firebase/firestore";
+import { format } from "date-fns";
 
+const getTodayKey = () => format(new Date(), 'yyyy-MM-dd');
 
 const MiniQuiz = ({ onCorrectAnswer, onIncorrectAnswer, onStreak }: { onCorrectAnswer: (points: number) => void, onIncorrectAnswer: () => void, onStreak: () => void }) => {
     const [question, setQuestion] = useState<QuizQuestion | null>(null);
     const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
     const [isAnswered, setIsAnswered] = useState(false);
     const [isCorrect, setIsCorrect] = useState(false);
-    const { quizStreak } = useTimer();
 
     const getNewQuestion = useCallback(() => {
         const allQuestions = [...sampleQuestions];
@@ -36,21 +40,19 @@ const MiniQuiz = ({ onCorrectAnswer, onIncorrectAnswer, onStreak }: { onCorrectA
     }, [getNewQuestion]);
 
     const handleAnswer = (answer: string) => {
-        if (isAnswered) return;
+        if (isAnswered || !question) return;
 
-        const correct = answer === question?.answer;
+        const correct = answer === question.answer;
         setSelectedAnswer(answer);
         setIsCorrect(correct);
         setIsAnswered(true);
 
         if (correct) {
-            const { quizStreak } = useTimer.getState();
-            const pointsGained = 1 * (quizStreak + 1);
+            const currentStreak = useTimer.getState().quizStreak;
+            const pointsGained = 1 * (currentStreak + 1);
             onCorrectAnswer(pointsGained);
             onStreak();
-            setTimeout(() => {
-                getNewQuestion();
-            }, 1200); 
+            setTimeout(getNewQuestion, 1200); 
         } else {
             onIncorrectAnswer();
         }
@@ -90,12 +92,12 @@ const MiniQuiz = ({ onCorrectAnswer, onIncorrectAnswer, onStreak }: { onCorrectA
                 </div>
             </CardContent>
             {isAnswered && !isCorrect && (
-                <CardFooter className="flex-col gap-2">
+                <Card.Footer className="flex-col gap-2">
                      <p className="text-sm text-center text-muted-foreground">The correct answer is highlighted in green.</p>
                      <Button onClick={getNewQuestion} className="w-full">
                         Next Question <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
-                </CardFooter>
+                </Card.Footer>
             )}
         </Card>
     );
@@ -122,7 +124,8 @@ export default function TimerPage() {
     timerEnded
   } = useTimer();
   
-  const { toast } = useToast();
+  const { user } = useUser();
+  const firestore = useFirestore();
   const [showCombo, setShowCombo] = useState(false);
   const [showPoints, setShowPoints] = useState<{ show: boolean, points: number }>({ show: false, points: 0 });
 
@@ -137,26 +140,37 @@ export default function TimerPage() {
   }, [time, mode, FOCUS_TIME, SHORT_BREAK_TIME, LONG_BREAK_TIME]);
 
   
-  const handleCorrectAnswer = (points: number) => {
-    handleCorrectQuizAnswer(points);
+  const handleCorrectAnswer = async (points: number) => {
+    handleCorrectQuizAnswer(); // This updates the local timer state
+    
+    if (user && firestore) {
+      const userRef = doc(firestore, "users", user.uid);
+      const todayKey = getTodayKey();
+      
+      const newStreak = (quizStreak || 0) + 1;
+      const newHighestStreak = Math.max(highestQuizStreak || 0, newStreak);
+      
+      let updates: any = {
+        points: increment(points),
+        [`dailyProgress.${todayKey}.pointsEarned`]: increment(points),
+      };
+
+      if (newHighestStreak > (user.highestQuizStreak || 0)) {
+        updates.highestQuizStreak = newHighestStreak;
+      }
+      
+      await updateDoc(userRef, updates);
+    }
+    
     setShowPoints({ show: true, points: points });
-    setTimeout(() => {
-        setShowPoints({ show: false, points: 0 });
-    }, 1500);
-  };
-  
-   const handleIncorrectAnswer = () => {
-    handleIncorrectQuizAnswer();
+    setTimeout(() => setShowPoints({ show: false, points: 0 }), 1500);
   };
   
   const handleStreak = () => {
-    // quizStreak from useTimer is not updated immediately, so we get it from the store
     const currentStreak = useTimer.getState().quizStreak;
-    if (currentStreak > 1) { // Only show combo after the first correct answer in a streak
+    if (currentStreak > 1) {
       setShowCombo(true);
-      setTimeout(() => {
-        setShowCombo(false);
-      }, 1500); // Duration of the animation
+      setTimeout(() => setShowCombo(false), 1500);
     }
   }
 
@@ -166,7 +180,6 @@ export default function TimerPage() {
   
   const handleStartNextSession = (nextMode: "shortBreak" | "longBreak") => {
     setMode(nextMode);
-    // Add a slight delay to allow the mode to update before starting the timer
     setTimeout(() => toggleTimer(), 100); 
   }
 
@@ -266,7 +279,7 @@ export default function TimerPage() {
             <div className="relative">
                 <MiniQuiz 
                     onCorrectAnswer={handleCorrectAnswer} 
-                    onIncorrectAnswer={handleIncorrectAnswer} 
+                    onIncorrectAnswer={handleIncorrectQuizAnswer} 
                     onStreak={handleStreak}
                 />
                  {showCombo && useTimer.getState().quizStreak > 1 && (

@@ -4,8 +4,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { User, LogOut, Settings, Edit, Check, Camera, Palette, Gem, Trophy, Clock, Flame, Award } from "lucide-react";
+import { User, LogOut, Camera, Palette, Gem, Trophy, Clock, Award, Check, Edit } from "lucide-react";
 import { useEffect, useState, useRef, ChangeEvent } from "react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -17,22 +16,10 @@ import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { achievementPets, rarePets } from "@/lib/data";
 import { Progress } from "@/components/ui/progress";
-
-
-interface UserProfile {
-    name: string;
-    avatarUrl: string;
-    examDate?: string;
-    passingScore?: number;
-    points: number;
-    streak: number;
-    highestStreak: number;
-    highestQuizStreak: number;
-    completedSessions: number;
-    unlockedThemes: string[];
-    unlockedPets: string[];
-    activeTheme: string;
-}
+import { useUser } from "@/firebase/auth/use-user";
+import { useAuth, useFirestore } from "@/firebase";
+import { doc, updateDoc, increment } from "firebase/firestore";
+import { getAuth, signOut } from "firebase/auth";
 
 const themes = [
     { name: 'Default', value: 'default', cost: 0, colors: { primary: 'hsl(231 48% 48%)', accent: 'hsl(110 32% 48%)' } },
@@ -48,7 +35,7 @@ const allAchievements = [
     petReward: "Owlbert",
     icon: Clock,
     target: 10,
-    getValue: (user: UserProfile) => user.completedSessions || 0,
+    getValue: (user: any) => user.completedSessions || 0,
   },
   {
     name: "Pomodoro Pro",
@@ -56,7 +43,7 @@ const allAchievements = [
     petReward: "Einstein",
     icon: Clock,
     target: 50,
-    getValue: (user: UserProfile) => user.completedSessions || 0,
+    getValue: (user: any) => user.completedSessions || 0,
   },
   {
     name: "Quiz Whiz",
@@ -64,7 +51,7 @@ const allAchievements = [
     petReward: "Sparky",
     icon: Award,
     target: 10,
-    getValue: (user: UserProfile) => user.highestQuizStreak || 0,
+    getValue: (user: any) => user.highestQuizStreak || 0,
   },
   {
     name: "Quiz Master",
@@ -72,7 +59,7 @@ const allAchievements = [
     petReward: "Bolt",
     icon: Award,
     target: 25,
-    getValue: (user: UserProfile) => user.highestQuizStreak || 0,
+    getValue: (user: any) => user.highestQuizStreak || 0,
   },
 ];
 
@@ -80,7 +67,10 @@ const allAchievements = [
 export default function ProfilePage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [user, setUser] = useState<UserProfile | null>(null);
+  const { user } = useUser();
+  const auth = useAuth();
+  const firestore = useFirestore();
+  
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -88,38 +78,20 @@ export default function ProfilePage() {
   const [passingScore, setPassingScore] = useState(85);
 
   useEffect(() => {
-    const savedUser = localStorage.getItem("userProfile");
-    if (savedUser) {
-      const parsedUser = JSON.parse(savedUser);
-       const fullUser = {
-            ...parsedUser,
-            unlockedThemes: parsedUser.unlockedThemes || ['default'],
-            unlockedPets: parsedUser.unlockedPets || [],
-            activeTheme: parsedUser.activeTheme || 'default',
-            highestQuizStreak: parsedUser.highestQuizStreak || 0,
-            completedSessions: parsedUser.completedSessions || 0,
-        };
-      setUser(fullUser);
-      setNewName(fullUser.name);
-      if (fullUser.examDate) {
-        setExamDate(new Date(fullUser.examDate));
+    if (user) {
+      setNewName(user.name);
+      if (user.examDate) {
+        setExamDate(new Date(user.examDate));
       }
-      setPassingScore(fullUser.passingScore || 85);
-      applyTheme(fullUser.activeTheme);
-    } else {
-        router.push('/login');
+      setPassingScore(user.passingScore || 85);
+      applyTheme(user.activeTheme || 'default');
     }
-  }, [router]);
+  }, [user]);
 
-  const saveUser = (updatedUser: UserProfile) => {
-    localStorage.setItem("userProfile", JSON.stringify(updatedUser));
-    setUser(updatedUser);
-  };
-  
-  const handleNameSave = () => {
-    if (user && newName.trim()) {
-        const updatedUser = { ...user, name: newName.trim() };
-        saveUser(updatedUser);
+  const handleNameSave = async () => {
+    if (user && firestore && newName.trim()) {
+        const userRef = doc(firestore, "users", user.uid);
+        await updateDoc(userRef, { name: newName.trim() });
         setEditingName(false);
         toast({
           title: "Success",
@@ -129,14 +101,13 @@ export default function ProfilePage() {
     }
   };
 
-  const handleSettingsSave = () => {
-     if (user) {
-        const updatedUser = { 
-            ...user, 
+  const handleSettingsSave = async () => {
+     if (user && firestore) {
+        const userRef = doc(firestore, "users", user.uid);
+        await updateDoc(userRef, {
             examDate: examDate ? examDate.toISOString() : undefined,
             passingScore: passingScore,
-        };
-        saveUser(updatedUser);
+        });
         toast({
           title: "Success",
           description: "Your settings have been saved.",
@@ -145,19 +116,20 @@ export default function ProfilePage() {
     }
   }
 
-  const handleResetData = () => {
-      localStorage.clear();
-      document.documentElement.classList.remove('mint', 'sunset', 'rose');
-      router.push('/');
+  const handleLogout = async () => {
+      if(auth) {
+        await signOut(auth);
+        router.push('/');
+      }
   };
 
   const handleAvatarClick = () => {
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file && user) {
+    if (file && user && firestore) {
       if (file.size > 2 * 1024 * 1024) { // 2MB limit
         toast({
           variant: "destructive",
@@ -168,10 +140,10 @@ export default function ProfilePage() {
       }
 
       const reader = new FileReader();
-      reader.onload = (event) => {
+      reader.onload = async (event) => {
         const avatarUrl = event.target?.result as string;
-        const updatedUser = { ...user, avatarUrl };
-        saveUser(updatedUser);
+        const userRef = doc(firestore, "users", user.uid);
+        await updateDoc(userRef, { avatarUrl });
       };
       reader.readAsDataURL(file);
     }
@@ -184,24 +156,22 @@ export default function ProfilePage() {
     }
   }
 
-  const handleThemeAction = (themeValue: string, cost: number) => {
-    if (!user) return;
+  const handleThemeAction = async (themeValue: string, cost: number) => {
+    if (!user || !firestore) return;
     
-    // If theme is unlocked, activate it
+    const userRef = doc(firestore, "users", user.uid);
+
     if (user.unlockedThemes.includes(themeValue)) {
-        const updatedUser = { ...user, activeTheme: themeValue };
-        saveUser(updatedUser);
+        await updateDoc(userRef, { activeTheme: themeValue });
         applyTheme(themeValue);
         toast({ title: "Theme Activated!", className: "bg-green-100 border-green-300"});
-    } else { // If theme is locked, try to buy it
+    } else {
         if (user.points >= cost) {
-            const updatedUser = { 
-                ...user, 
-                points: user.points - cost, 
+            await updateDoc(userRef, {
+                points: increment(-cost),
                 unlockedThemes: [...user.unlockedThemes, themeValue],
                 activeTheme: themeValue
-            };
-            saveUser(updatedUser);
+            });
             applyTheme(themeValue);
             toast({ title: "Theme Unlocked!", description: `You spent ${cost} points.`, className: "bg-green-100 border-green-300"});
         } else {
@@ -210,15 +180,14 @@ export default function ProfilePage() {
     }
   }
 
-  const handlePetPurchase = (petName: string, cost: number) => {
-     if (!user) return;
+  const handlePetPurchase = async (petName: string, cost: number) => {
+     if (!user || !firestore) return;
       if (user.points >= cost) {
-        const updatedUser = {
-            ...user,
-            points: user.points - cost,
+        const userRef = doc(firestore, "users", user.uid);
+        await updateDoc(userRef, {
+            points: increment(-cost),
             unlockedPets: [...new Set([...user.unlockedPets, petName])],
-        };
-        saveUser(updatedUser);
+        });
         toast({ title: "Pet Unlocked!", description: `You spent ${cost} points to get ${petName}!`, className: "bg-green-100 border-green-300"});
       } else {
         toast({ variant: "destructive", title: "Not enough points!"});
@@ -444,17 +413,16 @@ export default function ProfilePage() {
 
       <Card className="mt-6">
         <CardHeader>
-            <CardTitle className="text-destructive">Danger Zone</CardTitle>
+            <CardTitle className="text-destructive">Account Actions</CardTitle>
         </CardHeader>
         <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">This action is irreversible. All your progress, points, and pets will be permanently deleted.</p>
-            <Button variant="destructive" className="w-full" onClick={handleResetData}>
+            <p className="text-sm text-muted-foreground mb-4">Log out of your account.</p>
+            <Button variant="destructive" className="w-full" onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />
-                Reset All Data
+                Logout
             </Button>
         </CardContent>
       </Card>
     </div>
   );
 }
-

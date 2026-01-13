@@ -85,11 +85,10 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
     );
   }
   
-  if (isAppPage && !user) {
-    // This case can be a flash while redirecting, or if user is logged out.
-    // A loading skeleton can be shown here, or just null.
-    return null;
-  }
+  // This is handled by the useUser hook redirecting
+  // if (isAppPage && !user) {
+  //   return null;
+  // }
 
   return (
     <TimerProvider>

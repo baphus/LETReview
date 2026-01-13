@@ -5,50 +5,24 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { User, Flame, Gem, Star, Award, Shield, Edit, Check, HelpCircle, Lock, CalendarCheck2, CheckCircle, Lightbulb, TrendingUp } from "lucide-react";
+import { User, Flame, Gem, Award, Shield, Edit, Check, Lock, CheckCircle, Lightbulb } from "lucide-react";
 import Image from "next/image";
 import { pets as streakPets, getQuestionOfTheDay, achievementPets, rarePets } from "@/lib/data";
-import type { QuizQuestion, DailyProgress, PetProfile } from "@/lib/types";
+import type { PetProfile } from "@/lib/types";
 import { useEffect, useState, useMemo, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import Countdown from "@/components/Countdown";
-import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
-import { addDays, format, isBefore, startOfYesterday, startOfDay, isSameDay } from "date-fns";
+import { addDays, format, isBefore, startOfDay, isSameDay } from "date-fns";
 import { DayDetailDialog } from "@/components/DayDetailDialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { useIsMobile } from "@/hooks/use-mobile";
-
-interface UserProfile {
-    name: string;
-    avatarUrl: string;
-    examDate?: string;
-    points: number;
-    streak: number;
-    highestStreak: number;
-    highestQuizStreak: number;
-    completedSessions: number;
-    petNames: Record<string, string>;
-    unlockedPets: string[];
-    dailyProgress: Record<string, DailyProgress>;
-    lastLogin: string;
-    lastChallengeDate?: string;
-}
+import { useUser } from "@/firebase/auth/use-user";
+import { useFirestore } from "@/firebase";
+import { doc, updateDoc } from "firebase/firestore";
 
 const allPets: PetProfile[] = [
     ...streakPets,
@@ -59,20 +33,20 @@ const allPets: PetProfile[] = [
 const getTodayKey = () => format(new Date(), 'yyyy-MM-dd');
 
 export default function HomePage() {
-  const router = useRouter();
   const { toast } = useToast();
-  const isMobile = useIsMobile();
+  const { user } = useUser();
+  const firestore = useFirestore();
   
-  const [user, setUser] = useState<UserProfile | null>(null);
   const [editingPet, setEditingPet] = useState<string | null>(null);
   const [newPetName, setNewPetName] = useState("");
-  const [questionOfTheDay, setQuestionOfTheDay] = useState<QuizQuestion | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   
   const todayKey = useMemo(() => getTodayKey(), []);
-  
-  const checkAchievements = useCallback((user: UserProfile): UserProfile => {
-    let updatedUser = { ...user };
+
+  const checkAchievements = useCallback(async () => {
+    if (!user || !firestore) return;
+
+    let updatedUser: Partial<typeof user> = {};
     let statsUpdated = false;
 
     if (user.streak > (user.highestStreak || 0)) {
@@ -80,25 +54,23 @@ export default function HomePage() {
         statsUpdated = true;
     }
     
-    const pomodoroState = JSON.parse(localStorage.getItem("pomodoroState") || "{}");
-    if (pomodoroState.highestQuizStreak > (user.highestQuizStreak || 0)) {
-        updatedUser.highestQuizStreak = pomodoroState.highestQuizStreak;
-        statsUpdated = true;
-    }
-
+    // Check Pomodoro state from timer hook/store if migrated
+    // For now, this logic will be in profile page or timer page where it can access timer state
+    
+    let newPetsUnlocked: string[] = [];
     achievementPets.forEach(pet => {
-      let isAlreadyUnlocked = updatedUser.unlockedPets.includes(pet.name);
+      let isAlreadyUnlocked = user.unlockedPets.includes(pet.name);
       if (isAlreadyUnlocked) return;
 
       let isUnlockedNow = false;
       if (pet.unlock_criteria.includes('Pomodoro')) {
-        isUnlockedNow = (updatedUser.completedSessions || 0) >= (pet.unlock_value || 0);
+        isUnlockedNow = (user.completedSessions || 0) >= (pet.unlock_value || 0);
       } else if (pet.unlock_criteria.includes('quiz streak')) {
-        isUnlockedNow = (updatedUser.highestQuizStreak || 0) >= (pet.unlock_value || 0);
+        isUnlockedNow = (user.highestQuizStreak || 0) >= (pet.unlock_value || 0);
       }
 
       if (isUnlockedNow) {
-        updatedUser.unlockedPets = [...new Set([...updatedUser.unlockedPets, pet.name])];
+        newPetsUnlocked.push(pet.name);
         statsUpdated = true;
         toast({
           title: "New Pet Unlocked!",
@@ -108,70 +80,26 @@ export default function HomePage() {
       }
     });
 
+    if (newPetsUnlocked.length > 0) {
+      updatedUser.unlockedPets = [...new Set([...user.unlockedPets, ...newPetsUnlocked])];
+    }
+
     if (statsUpdated) {
-      localStorage.setItem("userProfile", JSON.stringify(updatedUser));
+        const userRef = doc(firestore, "users", user.uid);
+        await updateDoc(userRef, updatedUser);
     }
-    return updatedUser;
-  }, [toast]);
-
-
-  const loadUser = useCallback(() => {
-    const savedUser = localStorage.getItem("userProfile");
-    if (savedUser) {
-        let parsedUser: UserProfile = JSON.parse(savedUser);
-
-        if (!parsedUser.petNames) parsedUser.petNames = {};
-        if (!parsedUser.unlockedPets) parsedUser.unlockedPets = [];
-        if (!parsedUser.dailyProgress) parsedUser.dailyProgress = {};
-        if (!parsedUser.highestQuizStreak) parsedUser.highestQuizStreak = 0;
-        
-        const lastLoginDate = parsedUser.lastLogin ? startOfDay(new Date(parsedUser.lastLogin)) : startOfDay(new Date());
-        const today = startOfDay(new Date());
-
-        if (isBefore(lastLoginDate, today)) {
-            const yesterday = startOfYesterday();
-            const lastChallengeDate = parsedUser.lastChallengeDate ? startOfDay(new Date(parsedUser.lastChallengeDate)) : null;
-
-            if (parsedUser.streak > 0 && lastChallengeDate && isBefore(lastChallengeDate, yesterday)) {
-                 toast({
-                    variant: 'destructive',
-                    title: 'Streak Lost!',
-                    description: `You missed a day and lost your ${parsedUser.streak}-day streak.`,
-                });
-                parsedUser.streak = 0;
-            }
-        }
-        
-        parsedUser.lastLogin = todayKey;
-
-        const userWithAchievements = checkAchievements(parsedUser);
-        localStorage.setItem("userProfile", JSON.stringify(userWithAchievements));
-        setUser(userWithAchievements);
-    } else {
-        router.push('/login');
-    }
-  }, [router, todayKey, toast, checkAchievements]);
-
+  }, [user, firestore, toast]);
 
   useEffect(() => {
-    loadUser();
-    setQuestionOfTheDay(getQuestionOfTheDay());
-    
-    const handleFocus = () => loadUser();
-    window.addEventListener('focus', handleFocus);
-    window.addEventListener('storage', handleFocus);
-
-    return () => {
-      window.removeEventListener('focus', handleFocus);
-      window.removeEventListener('storage', handleFocus);
-    };
-  }, [loadUser]);
+    if (user) {
+        checkAchievements();
+    }
+  }, [user, checkAchievements]);
   
   const qotdCompletedDays = useMemo(() => {
     if (!user?.dailyProgress) return [];
     return Object.entries(user.dailyProgress).reduce((acc, [dateStr, progress]) => {
       if (progress.qotdCompleted) {
-        // When parsing yyyy-mm-dd, it's treated as UTC. We need to account for timezone offset.
         const [year, month, day] = dateStr.split('-').map(Number);
         const date = new Date(year, month - 1, day);
         acc.push(date);
@@ -182,8 +110,7 @@ export default function HomePage() {
 
   const streakDays = useMemo(() => {
     if (!user) return [];
-    // Start from today if streak is secured, otherwise yesterday
-    const startDate = user.lastChallengeDate === todayKey ? startOfDay(new Date()) : startOfYesterday();
+    const startDate = user.lastChallengeDate === todayKey ? startOfDay(new Date()) : startOfDay(new Date(user.lastChallengeDate || new Date()));
     return Array.from({ length: user.streak || 0 }, (_, i) => addDays(startDate, -i));
 }, [user, todayKey]);
   
@@ -217,12 +144,12 @@ export default function HomePage() {
     setNewPetName(user.petNames[originalName] || originalName);
   };
   
-  const handlePetNameSave = (originalName: string) => {
-    if (user && newPetName.trim()) {
-        const updatedPetNames = { ...user.petNames, [originalName]: newPetName.trim() };
-        const updatedUser = { ...user, petNames: updatedPetNames };
-        localStorage.setItem("userProfile", JSON.stringify(updatedUser));
-        setUser(updatedUser);
+  const handlePetNameSave = async (originalName: string) => {
+    if (user && firestore && newPetName.trim()) {
+        const userRef = doc(firestore, "users", user.uid);
+        await updateDoc(userRef, {
+            [`petNames.${originalName}`]: newPetName.trim()
+        });
         setEditingPet(null);
         toast({
           title: "Pet renamed!",
@@ -233,17 +160,14 @@ export default function HomePage() {
   }
 
   const handleDayClick = (day: Date) => {
-    // Prevent opening dialog for today's date
-    if (isSameDay(day, startOfDay(new Date()))) {
-      return;
-    }
+    if (isSameDay(day, startOfDay(new Date()))) return;
     if (isBefore(day, startOfDay(new Date()))) {
       setSelectedDate(day);
     }
   };
   
   if (!user) {
-    return null;
+    return null; // Or show loading spinner
   }
   
   const PetDisplay = ({ pet }: { pet: PetProfile }) => {
@@ -310,6 +234,8 @@ export default function HomePage() {
           </div>
     )
   }
+
+  const questionOfTheDay = getQuestionOfTheDay();
 
   return (
     <div className="container mx-auto p-4 max-w-4xl">
@@ -380,8 +306,8 @@ export default function HomePage() {
                             <CheckCircle className="h-4 w-4 mr-1"/> Answered
                         </Badge>
                     ) : (
-                        <Badge variant="outline">
-                            <HelpCircle className="h-4 w-4 mr-1"/> Pending
+                         <Badge variant="outline">
+                             Pending
                         </Badge>
                     )}
                 </CardContent>

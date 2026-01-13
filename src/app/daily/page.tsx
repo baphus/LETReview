@@ -5,10 +5,9 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { CalendarDays, Flame, Gem, Shield, Star, Lock, RefreshCcw, HelpCircle, CheckCircle, XCircle } from "lucide-react";
-import { pets, getQuestionOfTheDay } from "@/lib/data";
+import { CalendarDays, Flame, Gem, Star, RefreshCcw, CheckCircle, XCircle } from "lucide-react";
+import { getQuestionOfTheDay } from "@/lib/data";
 import type { QuizQuestion, DailyProgress } from "@/lib/types";
-import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
@@ -25,23 +24,16 @@ import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { startOfDay, isBefore, startOfYesterday, format } from 'date-fns';
+import { useUser } from "@/firebase/auth/use-user";
+import { useFirestore } from "@/firebase";
+import { doc, updateDoc, increment } from "firebase/firestore";
 
-
-interface UserStats {
-  streak: number;
-  highestStreak: number;
-  points: number;
-  lastChallengeDate?: string;
-  petsUnlocked: number;
-  completedChallenges: string[];
-  dailyProgress: Record<string, DailyProgress>;
-}
-
-// Function to get local date string in YYYY-MM-DD format
 const getTodayKey = () => format(new Date(), 'yyyy-MM-dd');
 
 const QuestionOfTheDay = ({ onCorrectAnswer }: { onCorrectAnswer: () => void }) => {
     const { toast } = useToast();
+    const { user } = useUser();
+    const firestore = useFirestore();
     const [question, setQuestion] = useState<QuizQuestion | null>(null);
     const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
     const [isAnswered, setIsAnswered] = useState(false);
@@ -50,9 +42,7 @@ const QuestionOfTheDay = ({ onCorrectAnswer }: { onCorrectAnswer: () => void }) 
     useEffect(() => {
         const qotd = getQuestionOfTheDay();
         setQuestion(qotd);
-        const savedUser = localStorage.getItem("userProfile");
-        if(savedUser){
-            const user = JSON.parse(savedUser);
+        if(user){
             const todayKey = getTodayKey();
             const todaysProgress = user.dailyProgress?.[todayKey];
 
@@ -62,41 +52,38 @@ const QuestionOfTheDay = ({ onCorrectAnswer }: { onCorrectAnswer: () => void }) 
                 if (previousAnswer) {
                     setSelectedAnswer(previousAnswer);
                     setIsCorrect(previousAnswer === qotd.answer);
-                } else {
-                    // Fallback for older data structure
-                    setSelectedAnswer(qotd.answer);
-                    setIsCorrect(true);
                 }
             }
         }
-    }, []);
+    }, [user]);
 
-    const handleAnswer = (answer: string) => {
-        if (isAnswered) return;
+    const handleAnswer = async (answer: string) => {
+        if (isAnswered || !user || !firestore || !question) return;
 
-        const correct = answer === question?.answer;
+        const correct = answer === question.answer;
         setSelectedAnswer(answer);
         setIsCorrect(correct);
         setIsAnswered(true);
 
-        const savedUser = localStorage.getItem("userProfile");
-        if (savedUser) {
-            let user = JSON.parse(savedUser);
-            const todayKey = getTodayKey();
+        const todayKey = getTodayKey();
+        const userRef = doc(firestore, "users", user.uid);
+        
+        const dailyProgressUpdate = {
+            [`dailyProgress.${todayKey}.qotdCompleted`]: true,
+            [`dailyProgress.${todayKey}.qotdAnswer`]: answer,
+        };
 
-            if (!user.dailyProgress) user.dailyProgress = {};
-            if (!user.dailyProgress[todayKey]) user.dailyProgress[todayKey] = { pointsEarned: 0, pomodorosCompleted: 0, challengesCompleted: [], qotdCompleted: false };
-            
-            user.dailyProgress[todayKey].qotdCompleted = true;
-            user.dailyProgress[todayKey].qotdAnswer = answer;
-
-            if (correct) {
-                onCorrectAnswer(); // This updates the state in the parent component
-                toast({ title: "Correct!", description: "You earned 5 points!", className: "bg-green-100 border-green-300" });
-            } else {
-                 toast({ variant: "destructive", title: "Incorrect", description: "Better luck tomorrow!" });
-            }
-            localStorage.setItem("userProfile", JSON.stringify(user));
+        if (correct) {
+            await updateDoc(userRef, {
+                ...dailyProgressUpdate,
+                points: increment(5),
+                [`dailyProgress.${todayKey}.pointsEarned`]: increment(5)
+            });
+            onCorrectAnswer();
+            toast({ title: "Correct!", description: "You earned 5 points!", className: "bg-green-100 border-green-300" });
+        } else {
+            await updateDoc(userRef, dailyProgressUpdate);
+            toast({ variant: "destructive", title: "Incorrect", description: "Better luck tomorrow!" });
         }
     };
 
@@ -148,112 +135,67 @@ const QuestionOfTheDay = ({ onCorrectAnswer }: { onCorrectAnswer: () => void }) 
 export default function DailyPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [userStats, setUserStats] = useState<UserStats>({
-    streak: 0,
-    highestStreak: 0,
-    points: 0,
-    petsUnlocked: 0,
-    completedChallenges: [],
-    dailyProgress: {},
-  });
+  const { user } = useUser();
+  const firestore = useFirestore();
+
   const [challengeCompletedToday, setChallengeCompletedToday] = useState(false);
   const [streakBroken, setStreakBroken] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<"gen_education" | "professional">("gen_education");
   const todayKey = getTodayKey();
 
-  const loadUserStats = useCallback(() => {
-    const savedUser = localStorage.getItem("userProfile");
-    if (savedUser) {
-      const parsedUser = JSON.parse(savedUser);
-
-      const isCompletedToday = (parsedUser.dailyProgress?.[todayKey]?.challengesCompleted?.length || 0) > 0;
-      setChallengeCompletedToday(isCompletedToday);
-      
-      const lastChallengeDateString = parsedUser.lastChallengeDate;
-      if (lastChallengeDateString) {
-          const lastChallengeDate = startOfDay(new Date(lastChallengeDateString));
-          const yesterday = startOfYesterday();
-
-          if (parsedUser.streak > 0 && isBefore(lastChallengeDate, yesterday)) {
-            setStreakBroken(true);
-            parsedUser.streak = 0;
-            localStorage.setItem("userProfile", JSON.stringify(parsedUser));
-          } else {
-            setStreakBroken(false);
-          }
-      }
-      
-      const todaysChallenges = parsedUser.dailyProgress?.[todayKey]?.challengesCompleted || [];
-
-      setUserStats({
-        streak: parsedUser.streak || 0,
-        highestStreak: parsedUser.highestStreak || 0,
-        points: parsedUser.points || 0,
-        lastChallengeDate: parsedUser.lastChallengeDate,
-        petsUnlocked: parsedUser.petsUnlocked || 0,
-        completedChallenges: todaysChallenges,
-        dailyProgress: parsedUser.dailyProgress || {},
-      });
-    }
-  }, [todayKey]);
-
   useEffect(() => {
-    loadUserStats();
-    // This will run when the component mounts and also when the user navigates back to this page.
-    const handleFocus = () => {
-      loadUserStats();
-    };
-    window.addEventListener('focus', handleFocus);
-    window.addEventListener('storage', handleFocus);
-    return () => {
-      window.removeEventListener('focus', handleFocus);
-       window.removeEventListener('storage', handleFocus);
-    };
-  }, [loadUserStats]);
+    if (user) {
+        const todaysChallenges = user.dailyProgress?.[todayKey]?.challengesCompleted || [];
+        setChallengeCompletedToday(todaysChallenges.length > 0);
+        
+        const lastChallengeDateString = user.lastChallengeDate;
+        if (lastChallengeDateString) {
+            const lastChallengeDate = startOfDay(new Date(lastChallengeDateString));
+            const yesterday = startOfYesterday();
+
+            if (user.streak > 0 && isBefore(lastChallengeDate, yesterday)) {
+                setStreakBroken(true);
+                if (firestore) {
+                    const userRef = doc(firestore, "users", user.uid);
+                    updateDoc(userRef, { streak: 0 });
+                }
+            } else {
+                setStreakBroken(false);
+            }
+        }
+    }
+  }, [user, firestore, todayKey]);
+
 
   const handleStartChallenge = (difficulty: 'easy' | 'medium' | 'hard', count: number) => {
     router.push(`/review?challenge=true&difficulty=${difficulty}&count=${count}&category=${selectedCategory}`);
   };
   
-  const restoreStreakCost = Math.min(250, (userStats.highestStreak || 0) * 10);
+  const restoreStreakCost = Math.min(250, (user?.highestStreak || 0) * 10);
 
-  const handleRestoreStreak = () => {
-     if (userStats.points >= restoreStreakCost) {
-      const savedUser = localStorage.getItem("userProfile");
-      if (savedUser) {
-        const user = JSON.parse(savedUser);
-        user.points -= restoreStreakCost;
-        user.streak = user.highestStreak;
-        localStorage.setItem("userProfile", JSON.stringify(user));
+  const handleRestoreStreak = async () => {
+     if (user && firestore && user.points >= restoreStreakCost) {
+        const userRef = doc(firestore, "users", user.uid);
+        await updateDoc(userRef, {
+            points: increment(-restoreStreakCost),
+            streak: user.highestStreak
+        });
         setStreakBroken(false);
-        setUserStats(prev => ({ ...prev, points: user.points, streak: user.streak }));
         toast({
           title: "Streak Restored!",
           description: `You spent ${restoreStreakCost} points.`,
           className: "bg-green-100 border-green-300"
         });
-      }
     } else {
       toast({ variant: "destructive", title: "Not enough points!", description: `You need ${restoreStreakCost} points to restore your streak.`});
     }
   };
-
-  const handleQotdCorrect = () => {
-    const savedUser = localStorage.getItem("userProfile");
-    if (savedUser) {
-        const user = JSON.parse(savedUser);
-        user.points = (user.points || 0) + 5;
-        
-        const todayKey = getTodayKey();
-        if (!user.dailyProgress) user.dailyProgress = {};
-        if (!user.dailyProgress[todayKey]) user.dailyProgress[todayKey] = { pointsEarned: 0, pomodorosCompleted: 0, challengesCompleted: [], qotdCompleted: false };
-        user.dailyProgress[todayKey].pointsEarned = (user.dailyProgress[todayKey].pointsEarned || 0) + 5;
-
-        localStorage.setItem("userProfile", JSON.stringify(user));
-        setUserStats(prev => ({ ...prev, points: user.points }));
-    }
-  };
-
+  
+  if (!user) {
+      return null; // Or a loading spinner
+  }
+  
+  const todaysChallenges = user.dailyProgress?.[todayKey]?.challengesCompleted || [];
 
   const challenges = [
     { difficulty: 'easy', count: 5, points: 25, color: 'green' },
@@ -277,7 +219,7 @@ export default function DailyPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">{userStats.streak} Days</p>
+            <p className="text-3xl font-bold">{user.streak} Days</p>
           </CardContent>
         </Card>
         <Card>
@@ -288,12 +230,12 @@ export default function DailyPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">{userStats.points}</p>
+            <p className="text-3xl font-bold">{user.points}</p>
           </CardContent>
         </Card>
       </div>
 
-      <QuestionOfTheDay onCorrectAnswer={handleQotdCorrect} />
+      <QuestionOfTheDay onCorrectAnswer={() => {}} />
 
       {challengeCompletedToday && (
          <Card className="mb-6 bg-green-50 border-green-200">
@@ -313,13 +255,13 @@ export default function DailyPage() {
               Oh no! You lost your streak.
             </CardTitle>
             <CardDescription className="text-center text-amber-600">
-              Restore your {userStats.highestStreak}-day streak for {restoreStreakCost} points or start a new challenge.
+              Restore your {user.highestStreak}-day streak for {restoreStreakCost} points or start a new challenge.
             </CardDescription>
           </CardHeader>
           <CardFooter>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button className="w-full" disabled={userStats.points < restoreStreakCost}>
+                <Button className="w-full" disabled={user.points < restoreStreakCost}>
                     <RefreshCcw className="mr-2 h-4 w-4" />
                     Restore Streak ({restoreStreakCost} points)
                 </Button>
@@ -328,7 +270,7 @@ export default function DailyPage() {
                   <AlertDialogHeader>
                     <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                     <AlertDialogDescription>
-                        This will cost {restoreStreakCost} points and restore your streak to {userStats.highestStreak} days.
+                        This will cost {restoreStreakCost} points and restore your streak to {user.highestStreak} days.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
@@ -356,7 +298,7 @@ export default function DailyPage() {
         <div className="space-y-4">
           {challenges.map(challenge => {
              const challengeId = `${challenge.difficulty}-${selectedCategory}`;
-             const isCompleted = userStats.completedChallenges.includes(challengeId);
+             const isCompleted = todaysChallenges.includes(challengeId);
             return (
                 <Card key={challenge.difficulty} className={cn(isCompleted && "bg-muted/50", `border-${challenge.color}-200`)}>
                   <CardHeader>
@@ -385,7 +327,3 @@ export default function DailyPage() {
     </div>
   );
 }
-
-    
-
-    

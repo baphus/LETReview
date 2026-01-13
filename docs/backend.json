@@ -83,8 +83,13 @@
           "description": "The date the last daily challenge was completed."
         },
         "passingScore": {
-            "type": "number",
-            "description": "The user's preferred passing score for challenges."
+          "type": "number",
+          "description": "The user's preferred passing score for challenges."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when the user profile was created."
         }
       },
       "required": ["uid", "name", "email"]
