@@ -214,7 +214,7 @@ function ReviewerPageContent() {
   }, [fetchAndSetQuestions]);
 
   const handleFinishChallenge = async (finalAnswers: ChallengeAnswer[]) => {
-    if (!user || !firestore) return;
+    if (!user || !firestore || finalAnswers.length < questions.length) return;
 
     const finalScore = finalAnswers.reduce((acc, ans) => acc + (ans.isCorrect ? 1 : 0), 0);
     setQuizScore(finalScore);
@@ -348,23 +348,28 @@ function ReviewerPageContent() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, category]);
 
-  useEffect(() => {
-    if(!isChallenge) {
-      fetchAndSetQuestions();
-    }
-  }, [category, isShuffled, fetchAndSetQuestions, isChallenge]);
-
   
   const progressValue = questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
   
   const isChallengePassed = showResults && isChallenge && (quizScore / questions.length * 100) >= passingScore;
 
-  if (isChallenge && !currentQuestion && challengeAnswers.length === questions.length && !showResults) {
-    handleFinishChallenge(challengeAnswers);
-    return null;
+  if (isChallenge && isLoading) {
+    return (
+      <div className="container mx-auto p-4 max-w-2xl text-center">
+          <p>Preparing your challenge...</p>
+      </div>
+    )
+  }
+
+  if (isChallenge && !isLoading && questions.length === 0) {
+     return (
+        <div className="container mx-auto p-4 max-w-2xl text-center">
+            <p>Could not load questions for the challenge.</p>
+        </div>
+    )
   }
   
-  if (isLoading) {
+  if (isLoading && !isChallenge) {
     return (
         <div className="container mx-auto p-4 max-w-2xl text-center">
             <p>Loading questions...</p>
