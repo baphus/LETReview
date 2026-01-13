@@ -1,3 +1,4 @@
+
 /**
  * Core Philosophy: This ruleset enforces a strict user-ownership model. All private user data,
  * including profile information and daily progress, is nested under a path specific to that user
@@ -105,7 +106,7 @@ service cloud.firestore {
                data.difficulty is string && (data.difficulty == 'easy' || data.difficulty == 'medium' || data.difficulty == 'hard') &&
                data.question is string &&
                data.answer is string &&
-               data.choices is list && data.choices.size() > 0 &&
+               'choices' in data && data.choices is list && data.choices.size() > 0 &&
                data.explanation is string;
     }
 
