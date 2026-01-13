@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Clock, Coffee, Play, Pause, RotateCcw, Award, Gem, Bell, Flame, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTimer } from "@/hooks/use-timer";
@@ -104,12 +104,12 @@ const MiniQuiz = ({ onCorrectAnswer, onIncorrectAnswer, onStreak }: { onCorrectA
                 </div>
             </CardContent>
             {isAnswered && !isCorrect && (
-                <Card.Footer className="flex-col gap-2">
+                <CardFooter className="flex-col gap-2">
                      <p className="text-sm text-center text-muted-foreground">The correct answer is highlighted in green.</p>
                      <Button onClick={getNewQuestion} className="w-full">
                         Next Question <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
-                </Card.Footer>
+                </CardFooter>
             )}
         </Card>
     );
