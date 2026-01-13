@@ -157,7 +157,7 @@ export default function DailyPage() {
 
   const [challengeCompletedToday, setChallengeCompletedToday] = useState(false);
   const [streakBroken, setStreakBroken] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<"gen_education" | "professional">("gen_education");
+  const [selectedCategory, setSelectedCategory] = useState<'gened' | 'profed'>("gened");
   const todayKey = getTodayKey();
 
   useEffect(() => {
@@ -304,11 +304,11 @@ export default function DailyPage() {
         <div className="flex flex-col items-center gap-4 mb-4">
             <h2 className="text-2xl font-bold font-headline">Daily Challenges</h2>
              <Tabs value={selectedCategory} onValueChange={(value) => {
-                    setSelectedCategory(value as "gen_education" | "professional");
+                    setSelectedCategory(value as "gened" | "profed");
                 }}>
                 <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="gen_education">General Education</TabsTrigger>
-                    <TabsTrigger value="professional">Professional Education</TabsTrigger>
+                    <TabsTrigger value="gened">Gen Ed</TabsTrigger>
+                    <TabsTrigger value="profed">Prof Ed</TabsTrigger>
                 </TabsList>
             </Tabs>
         </div>
@@ -322,7 +322,7 @@ export default function DailyPage() {
                     <div className="flex justify-between items-start">
                         <div>
                             <CardTitle className="font-headline capitalize">{challenge.difficulty} Challenge</CardTitle>
-                            <CardDescription>Complete a set of {challenge.count} {selectedCategory === 'gen_education' ? 'General' : 'Professional'} Education questions.</CardDescription>
+                            <CardDescription>Complete a set of {challenge.count} {selectedCategory === 'gened' ? 'General' : 'Professional'} Education questions.</CardDescription>
                         </div>
                         {isCompleted && <Badge variant="secondary">Completed</Badge>}
                     </div>

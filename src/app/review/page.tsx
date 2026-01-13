@@ -163,10 +163,10 @@ function ReviewerPageContent() {
   const isChallenge = searchParams.get('challenge') === 'true';
   const challengeDifficulty = searchParams.get('difficulty') || 'easy';
   const challengeCount = parseInt(searchParams.get('count') || '0', 10);
-  const challengeCategory = searchParams.get('category') as "gen_education" | "professional" || "gen_education";
+  const challengeCategory = searchParams.get('category') as 'gened' | 'profed' || "gened";
 
-  const [category, setCategory] = useState<"gen_education" | "professional">(
-    isChallenge ? challengeCategory : "gen_education"
+  const [category, setCategory] = useState<'gened' | 'profed'>(
+    isChallenge ? challengeCategory : "gened"
   );
   const [mode, setMode] = useState<'study' | 'flashcard'>(isChallenge ? 'study' : 'study');
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -448,11 +448,11 @@ function ReviewerPageContent() {
             
             <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
                 <Tabs value={category} onValueChange={(value) => {
-                    setCategory(value as "gen_education" | "professional");
+                    setCategory(value as "gened" | "profed");
                 }}>
                 <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="gen_education">General Education</TabsTrigger>
-                    <TabsTrigger value="professional">Professional Education</TabsTrigger>
+                    <TabsTrigger value="gened">Gen Ed</TabsTrigger>
+                    <TabsTrigger value="profed">Prof Ed</TabsTrigger>
                 </TabsList>
                 </Tabs>
 
@@ -480,7 +480,7 @@ function ReviewerPageContent() {
       {isChallenge && (
          <header className="flex flex-col gap-4 mb-6 text-center">
             <h1 className="text-3xl font-bold font-headline capitalize">{challengeDifficulty} Daily Challenge</h1>
-            <p className="text-muted-foreground">Answer all {questions.length} {challengeCategory === 'gen_education' ? 'General' : 'Professional'} Education questions. You need {passingScore}% to pass.</p>
+            <p className="text-muted-foreground">Answer all {questions.length} {challengeCategory === 'gened' ? 'General' : 'Professional'} Education questions. You need {passingScore}% to pass.</p>
         </header>
       )}
       

@@ -29,7 +29,7 @@ export const getQuestionForDate = async (date: Date): Promise<QuizQuestion> => {
     
     // Determine which category document to read based on whether the day of the year is even or odd
     const dayOfYear = getDayOfYear(date);
-    const category = (dayOfYear % 2 === 0) ? 'gen_education' : 'professional';
+    const category = (dayOfYear % 2 === 0) ? 'gened' : 'profed';
     
     const categoryDocRef = doc(firestore, "questions", category);
     const docSnap = await getDoc(categoryDocRef);
@@ -40,7 +40,7 @@ export const getQuestionForDate = async (date: Date): Promise<QuizQuestion> => {
         questionsInCategory = (docSnap.data().questions || []) as QuizQuestion[];
     } else {
         // Fallback to static data if the document doesn't exist
-        questionsInCategory = staticQuestions.filter(q => q.category === category) as QuizQuestion[];
+        questionsInCategory = staticQuestions.filter(q => q.category === (category === 'gened' ? 'gen_education' : 'professional')) as QuizQuestion[];
     }
 
     if (questionsInCategory.length === 0) {
@@ -65,13 +65,13 @@ export const getQuestionOfTheDay = async (): Promise<QuizQuestion> => {
 };
 
 export const getQuestions = async (options: {
-    category?: 'gen_education' | 'professional';
+    category?: 'gened' | 'profed';
     difficulty?: 'easy' | 'medium' | 'hard';
     limit?: number;
     shuffle?: boolean;
 }): Promise<QuizQuestion[]> => {
     const { firestore } = initializeFirebase();
-    const category = options.category || 'gen_education';
+    const category = options.category || 'gened';
     
     const categoryDocRef = doc(firestore, "questions", category);
     const docSnap = await getDoc(categoryDocRef);
@@ -81,7 +81,7 @@ export const getQuestions = async (options: {
         allQuestions = (docSnap.data().questions || []) as QuizQuestion[];
     } else {
         // Fallback to static data
-        allQuestions = staticQuestions.filter(q => q.category === category) as QuizQuestion[];
+        allQuestions = staticQuestions.filter(q => q.category === (category === 'gened' ? 'gen_education' : 'professional')) as QuizQuestion[];
     }
 
     let filteredQuestions = allQuestions;

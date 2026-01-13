@@ -24,22 +24,24 @@ export async function seedQuestions() {
   // Group questions by category
   const categorizedQuestions = allQuestions.reduce((acc, question) => {
     const category = question.category as 'gen_education' | 'professional';
-    if (!acc[category]) {
-      acc[category] = [];
+    const targetCategory = category === 'gen_education' ? 'gened' : 'profed';
+    
+    if (!acc[targetCategory]) {
+      acc[targetCategory] = [];
     }
     // Ensure id is a string
     const questionWithStrId: QuizQuestion = {
         ...question,
         id: String(question.id)
     };
-    acc[category].push(questionWithStrId);
+    acc[targetCategory].push(questionWithStrId);
     return acc;
-  }, {} as Record<'gen_education' | 'professional', QuizQuestion[]>);
+  }, {} as Record<'gened' | 'profed', QuizQuestion[]>);
 
   // Set up a batch write for each category document
   for (const category in categorizedQuestions) {
     if (Object.prototype.hasOwnProperty.call(categorizedQuestions, category)) {
-      const categoryId = category as 'gen_education' | 'professional';
+      const categoryId = category as 'gened' | 'profed';
       const categoryDocRef = doc(questionsCollectionRef, categoryId);
       batch.set(categoryDocRef, { questions: categorizedQuestions[categoryId] });
     }
