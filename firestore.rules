@@ -15,7 +15,7 @@
  *   data tree. They are explicitly forbidden from listing the top-level `users` collection to
  *   prevent user enumeration.
  * - Public Read-Only Content: The `/questions` and `/pets` collections are publicly readable by any
- *   client to facilitate the app's core functionality. However, all client-side write operations
+ *   client to save on backend queries. However, all client-side write operations
  *   (create, update, delete) to these collections are disabled, as this content is expected to be
  *   managed by developers or backend processes.
  * - Default Denial: Access is denied by default. Rules are written to explicitly grant the minimum
@@ -135,15 +135,15 @@ service cloud.firestore {
     /**
      * @description Stores all LET review questions.
      * @path /questions/{questionId}
-     * @allow (get) Any user, including unauthenticated ones, can read a specific question.
-     * @allow (list) Any user can list all available questions.
-     * @deny (create) Any authenticated user attempts to create a new question.
-     * @deny (delete) Any authenticated user attempts to delete a question.
-     * @principle Provides public read access for application content while locking down all client-side writes.
+     * @allow (get, list) Any authenticated user can read questions.
+     * @allow (create) Any authenticated user can create questions (for seeding).
+     * @deny (update, delete) No client can update or delete questions.
+     * @principle Allows public read access and controlled creation for initial data seeding, while locking down modifications.
      */
     match /questions/{questionId} {
-      allow get, list: if isSignedIn();
-      allow create, update, delete: if false;
+        allow get, list: if isSignedIn();
+        allow create: if isSignedIn();
+        allow update, delete: if false;
     }
 
     /**
