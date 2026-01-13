@@ -430,7 +430,7 @@ function ReviewerPageContent() {
             </DialogDescription>
           </DialogHeader>
           
-          <div className="flex-1 min-h-0 flex flex-col">
+          <div className="flex-1 min-h-0 flex flex-col pr-6">
               {isChallenge && (
                   isChallengePassed ? (
                       <div className="text-center text-green-600 font-semibold p-4 bg-green-50 rounded-lg mb-4">
@@ -443,7 +443,7 @@ function ReviewerPageContent() {
                   )
               )}
 
-              <ScrollArea className="flex-1 -mr-6 pr-6">
+              <ScrollArea className="flex-1">
                   <div className="space-y-4">
                       {challengeAnswers.map(answer => (
                           <div key={answer.questionId} className="text-sm p-3 rounded-lg bg-muted">
