@@ -13,7 +13,7 @@
  * Key Security Decisions:
  * - User Isolation: Users can only read and write their own documents within the `/users/{userId}`
  *   data tree. They are explicitly forbidden from listing the top-level `users` collection to
- *   prevent enumeration of other users.
+ *   prevent user enumeration.
  * - Public Read-Only Content: The `/questions` and `/pets` collections are publicly readable by any
  *   client to facilitate the app's core functionality. However, all client-side write operations
  *   (create, update, delete) to these collections are disabled, as this content is expected to be
@@ -22,7 +22,7 @@
  *   permissions required for the application to function.
  *
  * Denormalization for Authorization: This ruleset relies on denormalization to ensure fast and
- * secure authorization checks. For example, the `User` document contains an `id` field that must
+ * secure authorization checks. For example, the `User` document contains a `uid` field that must
  * match the document's ID, and `DailyProgress` documents contain a `userId` field. This avoids
  * slow and costly `get()` calls in rules, making them more performant and secure.
  *
@@ -65,18 +65,18 @@ service cloud.firestore {
 
     /**
      * Validates that a user is creating their own document and that the
-     * internal 'id' field correctly matches their UID for relational integrity.
+     * internal 'uid' field correctly matches their UID for relational integrity.
      */
     function isCreatingOwnUserDoc(userId) {
-      return isOwner(userId) && request.resource.data.id == userId;
+      return isOwner(userId) && request.resource.data.uid == userId;
     }
 
     /**
-     * Validates that the 'id' field of a user document remains unchanged during an update.
+     * Validates that the 'uid' field of a user document remains unchanged during an update.
      * This prevents re-assigning ownership of the document.
      */
     function isUpdatingOwnUserDoc() {
-      return request.resource.data.id == resource.data.id;
+      return request.resource.data.uid == resource.data.uid;
     }
 
     /**
@@ -103,9 +103,9 @@ service cloud.firestore {
      * @description Manages user profile data.
      * @path /users/{userId}
      * @allow (get) An authenticated user reads their own profile: `auth.uid == 'user_abc'` requests `/users/user_abc`.
-     * @allow (create) A new user creates their own profile document, ensuring the internal `id` field matches their UID.
+     * @allow (create) A new user creates their own profile document, ensuring the internal `uid` field matches their UID.
      * @deny (list) Any user, authenticated or not, attempts to list the `/users` collection.
-     * @deny (update) A user tries to change the immutable `id` field in their profile.
+     * @deny (update) A user tries to change the immutable `uid` field in their profile.
      * @principle Restricts access to a user's own data tree and prevents user enumeration.
      */
     match /users/{userId} {
