@@ -1,11 +1,10 @@
+
 "use client";
 
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { useUser } from "@/firebase/auth/use-user";
-import { useFirestore } from "@/firebase";
-import { doc, updateDoc, increment } from "firebase/firestore";
 
 const FOCUS_TIME = 25 * 60; // 25 minutes
 const SHORT_BREAK_TIME = 5 * 60; // 5 minutes
@@ -87,8 +86,7 @@ useTimer.getState = () => {
 
 export function TimerProvider({ children }: { children: React.ReactNode }) {
   const [timerState, setTimerState] = useState<TimerState>(stateStore);
-  const { user } = useUser();
-  const firestore = useFirestore();
+  const { user, updateUser } = useUser();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -115,21 +113,26 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     const currentMode = currentState.mode || 'focus';
 
     if (currentMode === "focus") {
-       if(user && firestore) {
-           const userRef = doc(firestore, "users", user.uid);
+       if(user) {
            const todayKey = getTodayKey();
            const updatedFocusSessions = (currentState.focusSessionsCompleted || 0) + 1;
 
            const updates: any = {
-               completedSessions: increment(1),
-               [`dailyProgress.${todayKey}.pomodorosCompleted`]: increment(1),
+               completedSessions: (user.completedSessions || 0) + 1,
+               dailyProgress: {
+                    ...user.dailyProgress,
+                    [todayKey]: {
+                        ...(user.dailyProgress?.[todayKey] || {}),
+                        pomodorosCompleted: (user.dailyProgress?.[todayKey]?.pomodorosCompleted || 0) + 1,
+                    }
+                }
            };
            
            if (stateStore.highestQuizStreak > (user.highestQuizStreak || 0)) {
                updates.highestQuizStreak = stateStore.highestQuizStreak;
            }
 
-           await updateDoc(userRef, updates);
+           updateUser(updates);
 
            const notificationBody = (updatedFocusSessions % SESSIONS_UNTIL_LONG_BREAK === 0) 
                ? `Time for a long break.` 
@@ -154,7 +157,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
         endTime: null,
       });
     }
-  }, [user, firestore, showNotification]);
+  }, [user, updateUser, showNotification]);
 
   // Load state from localStorage and user profile
   useEffect(() => {

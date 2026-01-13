@@ -25,16 +25,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from "@/lib/utils";
 import { startOfDay, isBefore, startOfYesterday, format } from 'date-fns';
 import { useUser } from "@/firebase/auth/use-user";
-import { useFirestore } from "@/firebase";
-import { doc, updateDoc, increment } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const getTodayKey = () => format(new Date(), 'yyyy-MM-dd');
 
 const QuestionOfTheDay = ({ onCorrectAnswer }: { onCorrectAnswer: () => void }) => {
     const { toast } = useToast();
-    const { user } = useUser();
-    const firestore = useFirestore();
+    const { user, updateUser } = useUser();
     const [question, setQuestion] = useState<QuizQuestion | null>(null);
     const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
     const [isAnswered, setIsAnswered] = useState(false);
@@ -63,7 +60,7 @@ const QuestionOfTheDay = ({ onCorrectAnswer }: { onCorrectAnswer: () => void }) 
     }, [user]);
 
     const handleAnswer = async (answer: string) => {
-        if (isAnswered || !user || !firestore || !question) return;
+        if (isAnswered || !user || !question) return;
 
         const correct = answer === question.answer;
         setSelectedAnswer(answer);
@@ -71,25 +68,32 @@ const QuestionOfTheDay = ({ onCorrectAnswer }: { onCorrectAnswer: () => void }) 
         setIsAnswered(true);
 
         const todayKey = getTodayKey();
-        const userRef = doc(firestore, "users", user.uid);
         
-        const dailyProgressUpdate = {
-            [`dailyProgress.${todayKey}.qotdCompleted`]: true,
-            [`dailyProgress.${todayKey}.qotdAnswer`]: answer,
+        let dailyProgressUpdate: Partial<DailyProgress> = {
+            qotdCompleted: true,
+            qotdAnswer: answer,
         };
 
+        const updates: any = {};
+
         if (correct) {
-            await updateDoc(userRef, {
-                ...dailyProgressUpdate,
-                points: increment(5),
-                [`dailyProgress.${todayKey}.pointsEarned`]: increment(5)
-            });
+            dailyProgressUpdate.pointsEarned = (user.dailyProgress[todayKey]?.pointsEarned || 0) + 5;
+            updates.points = user.points + 5;
             onCorrectAnswer();
             toast({ title: "Correct!", description: "You earned 5 points!", className: "bg-green-100 border-green-300" });
         } else {
-            await updateDoc(userRef, dailyProgressUpdate);
             toast({ variant: "destructive", title: "Incorrect", description: "Better luck tomorrow!" });
         }
+
+        updates.dailyProgress = {
+            ...user.dailyProgress,
+            [todayKey]: {
+                ...user.dailyProgress[todayKey],
+                ...dailyProgressUpdate,
+            }
+        };
+
+        updateUser(updates);
     };
 
     if (isLoading) {
@@ -161,8 +165,7 @@ const QuestionOfTheDay = ({ onCorrectAnswer }: { onCorrectAnswer: () => void }) 
 export default function DailyPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { user } = useUser();
-  const firestore = useFirestore();
+  const { user, updateUser } = useUser();
 
   const [challengeCompletedToday, setChallengeCompletedToday] = useState(false);
   const [streakBroken, setStreakBroken] = useState(false);
@@ -181,16 +184,13 @@ export default function DailyPage() {
 
             if (user.streak > 0 && isBefore(lastChallengeDate, yesterday)) {
                 setStreakBroken(true);
-                if (firestore) {
-                    const userRef = doc(firestore, "users", user.uid);
-                    updateDoc(userRef, { streak: 0 });
-                }
+                updateUser({ streak: 0 });
             } else {
                 setStreakBroken(false);
             }
         }
     }
-  }, [user, firestore, todayKey]);
+  }, [user, todayKey, updateUser]);
 
 
   const handleStartChallenge = (difficulty: 'easy' | 'medium' | 'hard', count: number) => {
@@ -200,10 +200,9 @@ export default function DailyPage() {
   const restoreStreakCost = Math.min(250, (user?.highestStreak || 0) * 10);
 
   const handleRestoreStreak = async () => {
-     if (user && firestore && user.points >= restoreStreakCost) {
-        const userRef = doc(firestore, "users", user.uid);
-        await updateDoc(userRef, {
-            points: increment(-restoreStreakCost),
+     if (user && user.points >= restoreStreakCost) {
+        updateUser({
+            points: user.points - restoreStreakCost,
             streak: user.highestStreak
         });
         setStreakBroken(false);
@@ -363,5 +362,3 @@ export default function DailyPage() {
     </div>
   );
 }
-
-    

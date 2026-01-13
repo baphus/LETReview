@@ -12,8 +12,6 @@ import type { QuizQuestion } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUser } from "@/firebase/auth/use-user";
-import { useFirestore } from "@/firebase";
-import { doc, updateDoc, increment } from "firebase/firestore";
 import { format } from "date-fns";
 
 const getTodayKey = () => format(new Date(), 'yyyy-MM-dd');
@@ -136,8 +134,7 @@ export default function TimerPage() {
     timerEnded
   } = useTimer();
   
-  const { user } = useUser();
-  const firestore = useFirestore();
+  const { user, updateUser } = useUser();
   const [showCombo, setShowCombo] = useState(false);
   const [showPoints, setShowPoints] = useState<{ show: boolean, points: number }>({ show: false, points: 0 });
 
@@ -155,23 +152,28 @@ export default function TimerPage() {
   const handleCorrectAnswer = async (points: number) => {
     handleCorrectQuizAnswer(); // This updates the local timer state
     
-    if (user && firestore) {
-      const userRef = doc(firestore, "users", user.uid);
+    if (user) {
       const todayKey = getTodayKey();
       
       const newStreak = (quizStreak || 0) + 1;
       const newHighestStreak = Math.max(highestQuizStreak || 0, newStreak);
       
       let updates: any = {
-        points: increment(points),
-        [`dailyProgress.${todayKey}.pointsEarned`]: increment(points),
+        points: (user.points || 0) + points,
+        dailyProgress: {
+            ...user.dailyProgress,
+            [todayKey]: {
+                ...user.dailyProgress[todayKey],
+                pointsEarned: (user.dailyProgress[todayKey]?.pointsEarned || 0) + points,
+            }
+        },
       };
 
       if (newHighestStreak > (user.highestQuizStreak || 0)) {
         updates.highestQuizStreak = newHighestStreak;
       }
       
-      await updateDoc(userRef, updates);
+      updateUser(updates);
     }
     
     setShowPoints({ show: true, points: points });

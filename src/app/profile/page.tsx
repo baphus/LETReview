@@ -4,7 +4,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { User, LogOut, Camera, Palette, Gem, Trophy, Clock, Award, Check, Edit, UserPlus } from "lucide-react";
+import { User, LogOut, Camera, Palette, Gem, Trophy, Clock, Award, Check, Edit, UserPlus, AlertTriangle } from "lucide-react";
 import { useEffect, useState, useRef, ChangeEvent } from "react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -20,6 +20,7 @@ import { useUser } from "@/firebase/auth/use-user";
 import { useAuth, useFirestore } from "@/firebase";
 import { doc, updateDoc, increment } from "firebase/firestore";
 import { getAuth, signOut } from "firebase/auth";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const themes = [
     { name: 'Default', value: 'default', cost: 0, colors: { primary: 'hsl(231 48% 48%)', accent: 'hsl(110 32% 48%)' } },
@@ -67,9 +68,8 @@ const allAchievements = [
 export default function ProfilePage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { user, firebaseUser, linkGoogleAccount } = useUser();
+  const { user, firebaseUser, linkGoogleAccount, updateUser } = useUser();
   const auth = useAuth();
-  const firestore = useFirestore();
   
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState("");
@@ -89,9 +89,8 @@ export default function ProfilePage() {
   }, [user]);
 
   const handleNameSave = async () => {
-    if (user && firestore && newName.trim()) {
-        const userRef = doc(firestore, "users", user.uid);
-        await updateDoc(userRef, { name: newName.trim() });
+    if (user && newName.trim()) {
+        updateUser({ name: newName.trim() });
         setEditingName(false);
         toast({
           title: "Success",
@@ -102,9 +101,8 @@ export default function ProfilePage() {
   };
 
   const handleSettingsSave = async () => {
-     if (user && firestore) {
-        const userRef = doc(firestore, "users", user.uid);
-        await updateDoc(userRef, {
+     if (user) {
+        updateUser({
             examDate: examDate ? examDate.toISOString() : undefined,
             passingScore: passingScore,
         });
@@ -129,7 +127,7 @@ export default function ProfilePage() {
 
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file && user && firestore) {
+    if (file && user) {
       if (file.size > 2 * 1024 * 1024) { // 2MB limit
         toast({
           variant: "destructive",
@@ -142,8 +140,7 @@ export default function ProfilePage() {
       const reader = new FileReader();
       reader.onload = async (event) => {
         const avatarUrl = event.target?.result as string;
-        const userRef = doc(firestore, "users", user.uid);
-        await updateDoc(userRef, { avatarUrl });
+        updateUser({ avatarUrl });
       };
       reader.readAsDataURL(file);
     }
@@ -157,18 +154,17 @@ export default function ProfilePage() {
   }
 
   const handleThemeAction = async (themeValue: string, cost: number) => {
-    if (!user || !firestore) return;
+    if (!user) return;
     
-    const userRef = doc(firestore, "users", user.uid);
-
     if (user.unlockedThemes.includes(themeValue)) {
-        await updateDoc(userRef, { activeTheme: themeValue });
+        updateUser({ activeTheme: themeValue });
         applyTheme(themeValue);
         toast({ title: "Theme Activated!", className: "bg-green-100 border-green-300"});
     } else {
         if (user.points >= cost) {
-            await updateDoc(userRef, {
-                points: increment(-cost),
+             const currentPoints = user.points;
+             updateUser({
+                points: currentPoints - cost,
                 unlockedThemes: [...user.unlockedThemes, themeValue],
                 activeTheme: themeValue
             });
@@ -181,11 +177,11 @@ export default function ProfilePage() {
   }
 
   const handlePetPurchase = async (petName: string, cost: number) => {
-     if (!user || !firestore) return;
+     if (!user) return;
       if (user.points >= cost) {
-        const userRef = doc(firestore, "users", user.uid);
-        await updateDoc(userRef, {
-            points: increment(-cost),
+        const currentPoints = user.points;
+        updateUser({
+            points: currentPoints - cost,
             unlockedPets: [...new Set([...user.unlockedPets, petName])],
         });
         toast({ title: "Pet Unlocked!", description: `You spent ${cost} points to get ${petName}!`, className: "bg-green-100 border-green-300"});
@@ -200,7 +196,14 @@ export default function ProfilePage() {
 
   if (firebaseUser?.isAnonymous) {
       return (
-        <div className="container mx-auto p-4 max-w-2xl h-full flex items-center justify-center">
+        <div className="container mx-auto p-4 max-w-2xl h-full flex flex-col justify-center gap-4">
+             <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Guest Mode</AlertTitle>
+              <AlertDescription>
+                Your progress is saved locally on this device only. Sign in to sync your data across devices.
+              </AlertDescription>
+            </Alert>
             <Card className="w-full">
                 <CardHeader>
                     <CardTitle className="text-center font-headline text-2xl">Save Your Progress</CardTitle>

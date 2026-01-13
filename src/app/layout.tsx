@@ -19,8 +19,6 @@ import { AppSidebar } from "@/components/AppSidebar";
 import SplashScreen from "@/components/SplashScreen";
 import { FirebaseClientProvider } from "@/firebase/client-provider";
 import { useUser } from "@/firebase/auth/use-user";
-import { useAuth } from "@/firebase";
-import { signInAnonymously, onAuthStateChanged } from "firebase/auth";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const spaceGrotesk = Space_Grotesk({
@@ -30,9 +28,8 @@ const spaceGrotesk = Space_Grotesk({
 
 function RootLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { user, isLoading, activeTheme, firebaseUser } = useUser();
+  const { user, isLoading, activeTheme } = useUser();
   const [isShowingSplash, setIsShowingSplash] = useState(pathname === "/");
-  const auth = useAuth();
 
   useEffect(() => {
     if (pathname === '/') {
@@ -53,19 +50,6 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
     }
   }, [pathname]);
 
-  useEffect(() => {
-    if (!auth) return;
-    
-    // If not loading and no user, sign in anonymously
-    onAuthStateChanged(auth, (currentUser) => {
-        if (!currentUser && !isLoading) {
-            signInAnonymously(auth).catch(error => {
-                console.error("Anonymous sign-in failed:", error);
-            });
-        }
-    });
-
-  }, [auth, isLoading]);
 
   useEffect(() => {
     document.documentElement.classList.remove('mint', 'sunset', 'rose');
@@ -80,7 +64,7 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
 
   const isAppPage = pathname !== '/';
 
-  if (isLoading && isAppPage && !firebaseUser) {
+  if (isLoading && isAppPage && !user) {
     return (
       <div className="flex flex-col h-dvh">
         <main className="flex-1 overflow-y-auto p-4">

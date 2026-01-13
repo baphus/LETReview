@@ -16,8 +16,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
 import { useUser } from "@/firebase/auth/use-user";
-import { useFirestore } from "@/firebase";
-import { doc, updateDoc, increment } from "firebase/firestore";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -175,8 +173,7 @@ const QuestionSkeleton = () => (
 function ReviewerPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user } = useUser();
-  const firestore = useFirestore();
+  const { user, updateUser } = useUser();
 
   const isChallenge = searchParams.get('challenge') === 'true';
   const challengeDifficulty = searchParams.get('difficulty') || 'easy';
@@ -234,7 +231,7 @@ function ReviewerPageContent() {
   }, [fetchAndSetQuestions]);
 
   const handleFinishChallenge = async (finalAnswers: ChallengeAnswer[]) => {
-    if (!user || !firestore || finalAnswers.length < questions.length) return;
+    if (!user || finalAnswers.length < questions.length) return;
 
     const finalScore = finalAnswers.reduce((acc, ans) => acc + (ans.isCorrect ? 1 : 0), 0);
     setQuizScore(finalScore);
@@ -243,7 +240,6 @@ function ReviewerPageContent() {
     const scorePercentage = (finalScore / questions.length) * 100;
     const passed = scorePercentage >= passingScore;
 
-    const userRef = doc(firestore, "users", user.uid);
     const todayKey = getTodayKey();
     const challengeId = `${challengeDifficulty}-${challengeCategory}`;
     
@@ -254,7 +250,13 @@ function ReviewerPageContent() {
         let updates: any = {};
         
         if (!alreadyCompletedToday) {
-            updates[`dailyProgress.${todayKey}.challengesCompleted`] = [...todaysChallenges, challengeId];
+            updates.dailyProgress = {
+                ...user.dailyProgress,
+                [todayKey]: {
+                    ...user.dailyProgress[todayKey],
+                    challengesCompleted: [...todaysChallenges, challengeId]
+                }
+            };
         }
 
         const wasAnyChallengeCompletedToday = user.lastChallengeDate === todayKey;
@@ -262,13 +264,21 @@ function ReviewerPageContent() {
         const pointsEarned = pointsMap[challengeDifficulty as keyof typeof pointsMap] || 0;
 
         if (!wasAnyChallengeCompletedToday) {
-            updates.streak = increment(1);
-            if ((user.streak + 1) > user.highestStreak) {
-                updates.highestStreak = user.streak + 1;
+            updates.streak = (user.streak || 0) + 1;
+            if ((updates.streak) > (user.highestStreak || 0)) {
+                updates.highestStreak = updates.streak;
             }
             updates.lastChallengeDate = todayKey;
-            updates.points = increment(pointsEarned);
-            updates[`dailyProgress.${todayKey}.pointsEarned`] = increment(pointsEarned);
+            updates.points = (user.points || 0) + pointsEarned;
+            
+            updates.dailyProgress = {
+                ...updates.dailyProgress,
+                [todayKey]: {
+                    ...updates.dailyProgress?.[todayKey],
+                    pointsEarned: (updates.dailyProgress?.[todayKey]?.pointsEarned || 0) + pointsEarned
+                }
+            };
+
             toast({
                 title: "Challenge Passed!",
                 description: `You earned ${pointsEarned} points and secured your streak!`,
@@ -276,8 +286,15 @@ function ReviewerPageContent() {
             });
         } else {
              if (!alreadyCompletedToday) {
-                updates.points = increment(pointsEarned);
-                updates[`dailyProgress.${todayKey}.pointsEarned`] = increment(pointsEarned);
+                updates.points = (user.points || 0) + pointsEarned;
+                 updates.dailyProgress = {
+                    ...updates.dailyProgress,
+                    [todayKey]: {
+                        ...updates.dailyProgress?.[todayKey],
+                        pointsEarned: (updates.dailyProgress?.[todayKey]?.pointsEarned || 0) + pointsEarned
+                    }
+                };
+
                 toast({
                     title: "Challenge Passed!",
                     description: `You passed another challenge and earned ${pointsEarned} points!`,
@@ -291,7 +308,7 @@ function ReviewerPageContent() {
                 });
              }
         }
-        await updateDoc(userRef, updates);
+        updateUser(updates);
     }
   };
 
@@ -584,5 +601,3 @@ export default function ReviewPage() {
         </Suspense>
     )
 }
-
-    
