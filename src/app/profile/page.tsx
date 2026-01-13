@@ -4,7 +4,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { User, LogOut, Camera, Palette, Gem, Trophy, Clock, Award, Check, Edit } from "lucide-react";
+import { User, LogOut, Camera, Palette, Gem, Trophy, Clock, Award, Check, Edit, UserPlus } from "lucide-react";
 import { useEffect, useState, useRef, ChangeEvent } from "react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -41,7 +41,7 @@ const allAchievements = [
     name: "Pomodoro Pro",
     description: "Complete 50 Pomodoro sessions.",
     petReward: "Einstein",
-    icon: Clock,
+    icon: Award,
     target: 50,
     getValue: (user: any) => user.completedSessions || 0,
   },
@@ -67,7 +67,7 @@ const allAchievements = [
 export default function ProfilePage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { user } = useUser();
+  const { user, firebaseUser, linkGoogleAccount } = useUser();
   const auth = useAuth();
   const firestore = useFirestore();
   
@@ -196,6 +196,27 @@ export default function ProfilePage() {
 
   if (!user) {
     return null; // Or a loading spinner
+  }
+
+  if (firebaseUser?.isAnonymous) {
+      return (
+        <div className="container mx-auto p-4 max-w-2xl h-full flex items-center justify-center">
+            <Card className="w-full">
+                <CardHeader>
+                    <CardTitle className="text-center font-headline text-2xl">Save Your Progress</CardTitle>
+                    <CardDescription className="text-center">
+                        Sign in with Google to save your points, pets, and streaks. Don't lose your hard work!
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Button className="w-full" onClick={linkGoogleAccount}>
+                        <UserPlus className="mr-2 h-4 w-4" />
+                        Sign In with Google
+                    </Button>
+                </CardContent>
+            </Card>
+        </div>
+      )
   }
 
   return (
@@ -427,4 +448,5 @@ export default function ProfilePage() {
       </Card>
     </div>
   );
-}
+
+    
