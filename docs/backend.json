@@ -1,109 +1,267 @@
 {
   "entities": {
-    "UserProfile": {
-      "title": "User Profile",
-      "description": "Represents a user's profile and progress in the app.",
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
       "type": "object",
+      "description": "Represents a user of the LETReviewBuddy application.",
       "properties": {
-        "uid": {
+        "id": {
           "type": "string",
-          "description": "The user's unique ID from Firebase Authentication."
+          "description": "Unique identifier for the user."
         },
-        "name": {
-          "type": "string",
-          "description": "The user's display name."
-        },
-        "avatarUrl": {
-          "type": "string",
-          "description": "URL for the user's avatar image."
-        },
-        "email": {
-          "type": "string",
-          "description": "The user's email address."
-        },
-        "examDate": {
-          "type": "string",
-          "format": "date-time",
-          "description": "The user's scheduled exam date."
-        },
-        "points": {
+        "totalPoints": {
           "type": "number",
-          "description": "Total points earned by the user."
+          "description": "Total points accumulated by the user.",
+          "format": "integer"
         },
-        "streak": {
+        "currentStreak": {
           "type": "number",
-          "description": "Current daily challenge streak."
+          "description": "Current daily streak of the user.",
+          "format": "integer"
         },
-        "highestStreak": {
-          "type": "number",
-          "description": "Highest daily challenge streak achieved."
-        },
-        "highestQuizStreak": {
-          "type": "number",
-          "description": "Highest quiz streak achieved in the Pomodoro timer."
-        },
-        "completedSessions": {
-          "type": "number",
-          "description": "Total number of Pomodoro sessions completed."
-        },
-        "unlockedThemes": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "List of theme names the user has unlocked."
-        },
-        "activeTheme": {
+        "lastStudyDate": {
           "type": "string",
-          "description": "The currently active theme for the user."
+          "description": "The last date the user studied.",
+          "format": "date-time"
         },
         "unlockedPets": {
           "type": "array",
+          "description": "Array of unlocked pet identifiers.",
           "items": {
             "type": "string"
-          },
-          "description": "List of pet names the user has unlocked."
+          }
         },
-        "petNames": {
-          "type": "object",
-          "description": "A map of original pet names to user-given nicknames."
-        },
-        "dailyProgress": {
-          "type": "object",
-          "description": "A map of daily progress, with dates as keys."
-        },
-        "lastLogin": {
-          "type": "string",
-          "format": "date-time",
-          "description": "The last login date of the user."
-        },
-        "lastChallengeDate": {
-          "type": "string",
-          "format": "date",
-          "description": "The date the last daily challenge was completed."
-        },
-        "passingScore": {
+        "completedSessions": {
           "type": "number",
-          "description": "The user's preferred passing score for challenges."
+          "description": "Number of pomodoro sessions completed by the user.",
+          "format": "integer"
+        },
+        "markedQuestions": {
+          "type": "array",
+          "description": "Array of marked question identifiers.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "totalPoints",
+        "currentStreak",
+        "lastStudyDate",
+        "unlockedPets",
+        "completedSessions",
+        "markedQuestions"
+      ]
+    },
+    "Question": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Question",
+      "type": "object",
+      "description": "Represents a question in the LET review.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the question."
+        },
+        "category": {
+          "type": "string",
+          "description": "Category of the question (gen_education | professional)."
+        },
+        "difficulty": {
+          "type": "string",
+          "description": "Difficulty level of the question (easy | medium | hard)."
+        },
+        "question": {
+          "type": "string",
+          "description": "The question text."
+        },
+        "answer": {
+          "type": "string",
+          "description": "The correct answer to the question."
+        },
+        "explanation": {
+          "type": "string",
+          "description": "Explanation of the answer (optional)."
         },
         "createdAt": {
           "type": "string",
-          "format": "date-time",
-          "description": "Timestamp when the user profile was created."
+          "description": "Timestamp indicating when the question was created.",
+          "format": "date-time"
         }
       },
-      "required": ["uid", "name", "email"]
+      "required": [
+        "id",
+        "category",
+        "difficulty",
+        "question",
+        "answer",
+        "createdAt"
+      ]
+    },
+    "DailyProgress": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "DailyProgress",
+      "type": "object",
+      "description": "Represents the daily progress of a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the daily progress entry, typically a combination of userId and date."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N DailyProgress)"
+        },
+        "date": {
+          "type": "string",
+          "description": "The date for which the progress is recorded.",
+          "format": "date"
+        },
+        "easyCompleted": {
+          "type": "boolean",
+          "description": "Indicates whether the easy challenge was completed."
+        },
+        "mediumCompleted": {
+          "type": "boolean",
+          "description": "Indicates whether the medium challenge was completed."
+        },
+        "hardCompleted": {
+          "type": "boolean",
+          "description": "Indicates whether the hard challenge was completed."
+        },
+        "pointsEarned": {
+          "type": "number",
+          "description": "Total points earned for the day.",
+          "format": "integer"
+        },
+        "pomodoroSessions": {
+          "type": "number",
+          "description": "Number of pomodoro sessions completed on this day.",
+          "format": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "date",
+        "easyCompleted",
+        "mediumCompleted",
+        "hardCompleted",
+        "pointsEarned",
+        "pomodoroSessions"
+      ]
+    },
+    "Pet": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Pet",
+      "type": "object",
+      "description": "Represents a pet that can be unlocked.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the pet."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the pet."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the pet."
+        },
+        "pointsRequired": {
+          "type": "number",
+          "description": "Number of points required to unlock the pet.",
+          "format": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description",
+        "pointsRequired"
+      ]
     }
   },
   "auth": {
-    "providers": ["Google"]
+    "providers": [
+      "password",
+      "anonymous"
+    ]
   },
   "firestore": {
-    "/users/{userId}": {
-      "schema": {
-        "$ref": "#/entities/UserProfile"
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profile data. Only the authenticated user can access their own profile data (private data access).",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            }
+          ]
+        }
       },
-      "description": "Stores user profile data."
-    }
+      {
+        "path": "/questions/{questionId}",
+        "definition": {
+          "entityName": "Question",
+          "schema": {
+            "$ref": "#/backend/entities/Question"
+          },
+          "description": "Stores all LET review questions. Public read access is allowed.",
+          "params": [
+            {
+              "name": "questionId",
+              "description": "The unique identifier of the question."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/dailyProgress/{date}",
+        "definition": {
+          "entityName": "DailyProgress",
+          "schema": {
+            "$ref": "#/backend/entities/DailyProgress"
+          },
+          "description": "Stores the daily progress of each user. Only the authenticated user can access their own daily progress entries.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "date",
+              "description": "The date for which the progress is recorded (format: YYYY-MM-DD)."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/pets/{petId}",
+        "definition": {
+          "entityName": "Pet",
+          "schema": {
+            "$ref": "#/backend/entities/Pet"
+          },
+          "description": "Stores the definitions of available pets. Allows public read access.",
+          "params": [
+            {
+              "name": "petId",
+              "description": "The unique identifier of the pet."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to optimize for security, scalability, and the specific features of the LETReviewBuddy application. It adheres to the principle of Authorization Independence by avoiding hierarchical `get()` calls in security rules, which is achieved through denormalization where necessary. It also segregates data based on access requirements, ensuring a homogeneous security posture within each collection.  The use of path-based ownership and consistent naming conventions enhance clarity and debuggability.\n\n*   **/users/{userId}**: Stores user profile data. This path ensures that only the authenticated user can access their own profile data (private data access).  \n*   **/questions/{questionId}**: Stores all LET review questions. This collection requires no user-specific security rules and can allow public read access.\n*   **/users/{userId}/dailyProgress/{date}**: Stores the daily progress of each user, using a composite key of userId and date. This structure facilitates easy querying of a user's daily progress and enforces ownership-based access control.\n*   **/pets/{petId}**: Stores the definitions of available pets.\n\nThis structure supports the required Question Answering Patterns (QAPs) as follows:\n\n*   **Secure List Operations**: Each collection (`users`, `questions`, `/users/{userId}/dailyProgress`, and `pets`) can be listed securely because the rules only depend on the authenticated user's ID (`request.auth.uid`) and/or the document data itself, and there are no dependencies on parent documents.\n*   **Authorization Independence**: The structure ensures that security rules do not rely on fetching data from other documents (no `get()` calls), maintaining atomicity for operations like creating new daily progress entries or updating user profiles."
   }
 }

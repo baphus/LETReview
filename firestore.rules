@@ -1,0 +1,167 @@
+/**
+ * Core Philosophy: This ruleset enforces a strict user-ownership model. All private user data,
+ * including profile information and daily progress, is nested under a path specific to that user
+ * (`/users/{userId}`). Access to this data is restricted to the authenticated owner. Publicly
+ * readable data, such as review questions and unlockable pets, is stored in separate top-level
+ * collections, ensuring a clean separation between private and public content.
+ *
+ * Data Structure: The data is organized into three main top-level collections: `users`, `questions`,
+ * and `pets`. The `users` collection contains documents for each user, which in turn contain a
+ * `dailyProgress` subcollection to track their activity. This hierarchical structure for user data
+ * simplifies ownership-based security rules.
+ *
+ * Key Security Decisions:
+ * - User Isolation: Users can only read and write their own documents within the `/users/{userId}`
+ *   data tree. They are explicitly forbidden from listing the top-level `users` collection to
+ *   prevent enumeration of other users.
+ * - Public Read-Only Content: The `/questions` and `/pets` collections are publicly readable by any
+ *   client to facilitate the app's core functionality. However, all client-side write operations
+ *   (create, update, delete) to these collections are disabled, as this content is expected to be
+ *   managed by developers or backend processes.
+ * - Default Denial: Access is denied by default. Rules are written to explicitly grant the minimum
+ *   permissions required for the application to function.
+ *
+ * Denormalization for Authorization: This ruleset relies on denormalization to ensure fast and
+ * secure authorization checks. For example, the `User` document contains an `id` field that must
+ * match the document's ID, and `DailyProgress` documents contain a `userId` field. This avoids
+ * slow and costly `get()` calls in rules, making them more performant and secure.
+ *
+ * Structural Segregation: The design correctly segregates private user data (`/users`) from
+ * public application data (`/questions`, `/pets`). This is a best practice that simplifies rules
+ * and improves query performance and security, especially for list operations.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ----------------------------------------------------------------------
+    // Helper Functions
+    // ----------------------------------------------------------------------
+
+    /**
+     * Checks if the user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Checks if the currently authenticated user's UID matches the provided userId.
+     * This is the foundation of the ownership model.
+     * @param userId The UID to check against the request's auth UID.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * Checks for ownership on an existing document. Used for update and delete
+     * operations to prevent acting on non-existent data.
+     * @param userId The UID to check for ownership.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * Validates that a user is creating their own document and that the
+     * internal 'id' field correctly matches their UID for relational integrity.
+     */
+    function isCreatingOwnUserDoc(userId) {
+      return isOwner(userId) && request.resource.data.id == userId;
+    }
+
+    /**
+     * Validates that the 'id' field of a user document remains unchanged during an update.
+     * This prevents re-assigning ownership of the document.
+     */
+    function isUpdatingOwnUserDoc() {
+      return request.resource.data.id == resource.data.id;
+    }
+
+    /**
+     * Validates that a user is creating a progress document within their own data tree
+     * and that the internal 'userId' field correctly links back to them.
+     */
+    function isCreatingOwnProgressDoc(userId) {
+      return isOwner(userId) && request.resource.data.userId == userId;
+    }
+
+    /**
+     * Validates that the 'userId' field of a progress document remains unchanged during an update,
+     * ensuring the record cannot be moved to another user.
+     */
+    function isUpdatingOwnProgressDoc() {
+      return request.resource.data.userId == resource.data.userId;
+    }
+
+    // ----------------------------------------------------------------------
+    // Collection Rules
+    // ----------------------------------------------------------------------
+
+    /**
+     * @description Manages user profile data.
+     * @path /users/{userId}
+     * @allow (get) An authenticated user reads their own profile: `auth.uid == 'user_abc'` requests `/users/user_abc`.
+     * @allow (create) A new user creates their own profile document, ensuring the internal `id` field matches their UID.
+     * @deny (list) Any user, authenticated or not, attempts to list the `/users` collection.
+     * @deny (update) A user tries to change the immutable `id` field in their profile.
+     * @principle Restricts access to a user's own data tree and prevents user enumeration.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isCreatingOwnUserDoc(userId);
+      allow update: if isExistingOwner(userId) && isUpdatingOwnUserDoc();
+      allow delete: if isExistingOwner(userId);
+
+      /**
+       * @description Manages a user's daily progress records.
+       * @path /users/{userId}/dailyProgress/{date}
+       * @allow (list) An authenticated user lists their own daily progress entries.
+       * @allow (create) An authenticated user creates a new progress entry for themselves, ensuring the internal `userId` is correct.
+       * @deny (get) User 'user_abc' tries to read a progress entry for 'user_xyz'.
+       * @deny (update) User 'user_abc' tries to change the `userId` on one of their own progress entries.
+       * @principle Enforces strict ownership for all documents within a user's private subcollection.
+       */
+      match /dailyProgress/{date} {
+        allow get, list: if isOwner(userId);
+        allow create: if isCreatingOwnProgressDoc(userId);
+        allow update: if isExistingOwner(userId) && isUpdatingOwnProgressDoc();
+        allow delete: if isExistingOwner(userId);
+      }
+    }
+
+    /**
+     * @description Stores all LET review questions.
+     * @path /questions/{questionId}
+     * @allow (get) Any user, including unauthenticated ones, can read a specific question.
+     * @allow (list) Any user can list all available questions.
+     * @deny (create) Any authenticated user attempts to create a new question.
+     * @deny (delete) Any authenticated user attempts to delete a question.
+     * @principle Provides public read access for application content while locking down all client-side writes.
+     */
+    match /questions/{questionId} {
+      allow get, list: if true;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    /**
+     * @description Stores definitions of unlockable pets.
+     * @path /pets/{petId}
+     * @allow (get) Any user, including unauthenticated ones, can read a specific pet's details.
+     * @allow (list) Any user can list all available pets.
+     * @deny (create) Any authenticated user attempts to create a new pet entry.
+     * @deny (update) Any authenticated user attempts to update a pet.
+     * @principle Provides public read access for application content while locking down all client-side writes.
+     */
+    match /pets/{petId} {
+      allow get, list: if true;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+  }
+}
