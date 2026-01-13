@@ -157,7 +157,7 @@ export default function DailyPage() {
 
   const [challengeCompletedToday, setChallengeCompletedToday] = useState(false);
   const [streakBroken, setStreakBroken] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<'gened' | 'profed'>("gened");
+  const [selectedCategory, setSelectedCategory] = useState<'gened' | 'profed' | 'majorship'>("gened");
   const todayKey = getTodayKey();
 
   useEffect(() => {
@@ -219,6 +219,14 @@ export default function DailyPage() {
     { difficulty: 'medium', count: 10, points: 75, color: 'yellow' },
     { difficulty: 'hard', count: 15, points: 150, color: 'red' },
   ];
+
+  const getCategoryName = (category: 'gened' | 'profed' | 'majorship') => {
+      switch (category) {
+          case 'gened': return 'General';
+          case 'profed': return 'Professional';
+          case 'majorship': return 'Majorship';
+      }
+  }
 
   return (
     <div className="container mx-auto p-4 max-w-2xl">
@@ -304,11 +312,12 @@ export default function DailyPage() {
         <div className="flex flex-col items-center gap-4 mb-4">
             <h2 className="text-2xl font-bold font-headline">Daily Challenges</h2>
              <Tabs value={selectedCategory} onValueChange={(value) => {
-                    setSelectedCategory(value as "gened" | "profed");
+                    setSelectedCategory(value as "gened" | "profed" | "majorship");
                 }}>
-                <TabsList className="grid w-full grid-cols-2">
+                <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="gened">Gen Ed</TabsTrigger>
                     <TabsTrigger value="profed">Prof Ed</TabsTrigger>
+                    <TabsTrigger value="majorship">Majorship</TabsTrigger>
                 </TabsList>
             </Tabs>
         </div>
@@ -322,7 +331,7 @@ export default function DailyPage() {
                     <div className="flex justify-between items-start">
                         <div>
                             <CardTitle className="font-headline capitalize">{challenge.difficulty} Challenge</CardTitle>
-                            <CardDescription>Complete a set of {challenge.count} {selectedCategory === 'gened' ? 'General' : 'Professional'} Education questions.</CardDescription>
+                            <CardDescription>Complete a set of {challenge.count} {getCategoryName(selectedCategory)} Education questions.</CardDescription>
                         </div>
                         {isCompleted && <Badge variant="secondary">Completed</Badge>}
                     </div>
@@ -344,5 +353,3 @@ export default function DailyPage() {
     </div>
   );
 }
-
-    

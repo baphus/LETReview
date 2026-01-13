@@ -163,9 +163,9 @@ function ReviewerPageContent() {
   const isChallenge = searchParams.get('challenge') === 'true';
   const challengeDifficulty = searchParams.get('difficulty') || 'easy';
   const challengeCount = parseInt(searchParams.get('count') || '0', 10);
-  const challengeCategory = searchParams.get('category') as 'gened' | 'profed' || "gened";
+  const challengeCategory = searchParams.get('category') as 'gened' | 'profed' | 'majorship' || "gened";
 
-  const [category, setCategory] = useState<'gened' | 'profed'>(
+  const [category, setCategory] = useState<'gened' | 'profed' | 'majorship'>(
     isChallenge ? challengeCategory : "gened"
   );
   const [mode, setMode] = useState<'study' | 'flashcard'>(isChallenge ? 'study' : 'study');
@@ -371,6 +371,14 @@ function ReviewerPageContent() {
     )
   }
 
+  const getCategoryName = (category: 'gened' | 'profed' | 'majorship') => {
+      switch (category) {
+          case 'gened': return 'General';
+          case 'profed': return 'Professional';
+          case 'majorship': return 'Majorship';
+      }
+  }
+
   return (
     <div className="container mx-auto p-4 max-w-2xl">
        <Dialog open={showResults} onOpenChange={handleDialogClose}>
@@ -448,11 +456,12 @@ function ReviewerPageContent() {
             
             <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
                 <Tabs value={category} onValueChange={(value) => {
-                    setCategory(value as "gened" | "profed");
+                    setCategory(value as "gened" | "profed" | "majorship");
                 }}>
-                <TabsList className="grid w-full grid-cols-2">
+                <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="gened">Gen Ed</TabsTrigger>
                     <TabsTrigger value="profed">Prof Ed</TabsTrigger>
+                    <TabsTrigger value="majorship">Majorship</TabsTrigger>
                 </TabsList>
                 </Tabs>
 
@@ -480,7 +489,7 @@ function ReviewerPageContent() {
       {isChallenge && (
          <header className="flex flex-col gap-4 mb-6 text-center">
             <h1 className="text-3xl font-bold font-headline capitalize">{challengeDifficulty} Daily Challenge</h1>
-            <p className="text-muted-foreground">Answer all {questions.length} {challengeCategory === 'gened' ? 'General' : 'Professional'} Education questions. You need {passingScore}% to pass.</p>
+            <p className="text-muted-foreground">Answer all {questions.length} {getCategoryName(challengeCategory)} Education questions. You need {passingScore}% to pass.</p>
         </header>
       )}
       
@@ -549,5 +558,3 @@ export default function ReviewPage() {
         </Suspense>
     )
 }
-
-    

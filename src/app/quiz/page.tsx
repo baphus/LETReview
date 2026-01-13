@@ -112,7 +112,7 @@ interface ChallengeAnswer {
 export default function QuizPage() {
   const router = useRouter();
 
-  const [category, setCategory] = useState<'gened' | 'profed'>("gened");
+  const [category, setCategory] = useState<'gened' | 'profed' | 'majorship'>("gened");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [quizScore, setQuizScore] = useState(0);
   const [showResults, setShowResults] = useState(false);
@@ -306,11 +306,12 @@ export default function QuizPage() {
             
             <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
                 <Tabs value={category} onValueChange={(value) => {
-                    setCategory(value as "gened" | "profed");
+                    setCategory(value as "gened" | "profed" | "majorship");
                 }}>
-                <TabsList className="grid w-full grid-cols-2">
+                <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="gened">Gen Ed</TabsTrigger>
                     <TabsTrigger value="profed">Prof Ed</TabsTrigger>
+                    <TabsTrigger value="majorship">Majorship</TabsTrigger>
                 </TabsList>
                 </Tabs>
 
@@ -369,5 +370,3 @@ export default function QuizPage() {
     </div>
   );
 }
-
-    
