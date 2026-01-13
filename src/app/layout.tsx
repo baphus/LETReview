@@ -107,20 +107,22 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
 
   return (
     <TimerProvider>
-      <SidebarProvider>
-        <Sidebar>
-          <SidebarContent>
-            <AppSidebar />
-          </SidebarContent>
-        </Sidebar>
-        <SidebarInset>
-          <main className="flex-1 overflow-y-auto pb-20 md:pb-4">
-            {children}
-          </main>
-          <BottomNav />
-          <Toaster />
-        </SidebarInset>
-      </SidebarProvider>
+      <TooltipProvider delayDuration={0}>
+        <SidebarProvider>
+          <Sidebar>
+            <SidebarContent>
+              <AppSidebar />
+            </SidebarContent>
+          </Sidebar>
+          <SidebarInset>
+            <main className="flex-1 overflow-y-auto pb-20 md:pb-4">
+              {children}
+            </main>
+            <BottomNav />
+            <Toaster />
+          </SidebarInset>
+        </SidebarProvider>
+      </TooltipProvider>
     </TimerProvider>
   );
 }
@@ -154,9 +156,7 @@ export default function RootLayout({
         className={`${inter.variable} ${spaceGrotesk.variable} font-body antialiased flex flex-col h-dvh bg-background`}
       >
         <FirebaseClientProvider>
-          <TooltipProvider delayDuration={0}>
             <RootLayoutContent>{children}</RootLayoutContent>
-          </TooltipProvider>
         </FirebaseClientProvider>
       </body>
     </html>
