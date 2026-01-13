@@ -1,4 +1,3 @@
-
 import type { QuizQuestion, PetProfile } from "./types";
 
 export const sampleQuestions: QuizQuestion[] = [
@@ -1910,7 +1909,7 @@ export const sampleQuestions: QuizQuestion[] = [
     id: 239,
     category: "professional",
     difficulty: "medium",
-    question: '“Men are built not born.” This quotation by John Watson states that _____.',
+    question: '"Men are built not born.” This quotation by John Watson states that _____.',
     choices: ["the ineffectiveness of training on a person’s development", "the effect of environmental stimulation on a person’s development", "the absence of genetic influence on a person’s development", "the effect of heredity"],
     answer: "the effect of environmental stimulation on a person’s development",
   },
@@ -5107,7 +5106,7 @@ export const getQuestionOfTheDay = (): QuizQuestion => {
     return getQuestionForDate(new Date());
 };
 
-export const pets: PetProfile[] = [
+export const streakPets: PetProfile[] = [
     {
         name: "Rocky",
         unlock_criteria: "1-day streak",
@@ -5204,5 +5203,3 @@ export const achievementPets: PetProfile[] = [
 export const rarePets: PetProfile[] = [
     { name: "Draco", unlock_criteria: "Purchase in store", cost: 1000, image: "/pets/draco.png", hint: "fire breathing", streak_req: 0 },
 ];
-
-    

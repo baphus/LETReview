@@ -1,4 +1,3 @@
-
 'use client';
 import { useAuth, useFirestore } from '@/firebase';
 import { User, onAuthStateChanged } from 'firebase/auth';

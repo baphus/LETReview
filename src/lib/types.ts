@@ -1,4 +1,3 @@
-
 import { FieldValue } from 'firebase/firestore';
 
 export interface QuizQuestion {

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
@@ -68,7 +67,9 @@ const dispatch = (newState: Partial<TimerState>) => {
       timerEnded: stateStore.timerEnded,
       time: stateStore.time,
     }
-    localStorage.setItem("pomodoroState", JSON.stringify(sessionState));
+    if (typeof window !== 'undefined') {
+        localStorage.setItem("pomodoroState", JSON.stringify(sessionState));
+    }
     listeners.forEach(listener => listener(stateStore));
 };
 
@@ -98,19 +99,19 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const showNotification = useCallback((title: string, options?: NotificationOptions) => {
-    if ('Notification' in window && Notification.permission === 'granted') {
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
       new Notification(title, options);
     }
   }, []);
 
   const requestNotificationPermission = useCallback(() => {
-    if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
       Notification.requestPermission();
     }
   }, []);
   
   const handleTimerEnd = useCallback(async () => {
-    const currentState = JSON.parse(localStorage.getItem("pomodoroState") || "{}");
+    const currentState = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem("pomodoroState") || "{}") : {};
     const currentMode = currentState.mode || 'focus';
 
     if (currentMode === "focus") {
@@ -158,6 +159,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   // Load state from localStorage and user profile
   useEffect(() => {
     requestNotificationPermission();
+    if (typeof window === 'undefined') return;
 
     const savedSessionState = localStorage.getItem("pomodoroState");
     if (savedSessionState) {

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -34,13 +33,15 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (pathname === '/') {
       setIsShowingSplash(true);
-      const splashShown = sessionStorage.getItem("splashShown");
+      const splashShown = typeof window !== 'undefined' ? sessionStorage.getItem("splashShown") : null;
       if (splashShown) {
         setIsShowingSplash(false);
       } else {
         setTimeout(() => {
           setIsShowingSplash(false);
-          sessionStorage.setItem("splashShown", "true");
+          if(typeof window !== 'undefined') {
+            sessionStorage.setItem("splashShown", "true");
+          }
         }, 3000);
       }
     } else {

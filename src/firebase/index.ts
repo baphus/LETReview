@@ -1,4 +1,3 @@
-
 import { FirebaseApp, initializeApp } from "firebase/app";
 import { Auth, getAuth } from "firebase/auth";
 import { Firestore, getFirestore } from "firebase/firestore";
@@ -9,11 +8,14 @@ let auth: Auth;
 let firestore: Firestore;
 
 export const initializeFirebase = () => {
-  if (!app) {
-    app = initializeApp(firebaseConfig);
-    auth = getAuth(app);
-    firestore = getFirestore(app);
+  if (typeof window !== 'undefined') {
+    if (!app) {
+      app = initializeApp(firebaseConfig);
+      auth = getAuth(app);
+      firestore = getFirestore(app);
+    }
   }
+  // @ts-ignore
   return { app, auth, firestore };
 };
 
