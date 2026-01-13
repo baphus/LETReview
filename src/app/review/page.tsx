@@ -7,6 +7,7 @@ import { ArrowLeft, ArrowRight, BookOpen, CheckCircle, XCircle, Trophy, Shuffle,
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getQuestions } from "@/lib/data";
 import type { QuizQuestion } from "@/lib/types";
@@ -82,7 +83,7 @@ const StudyCard: FC<{ question: QuizQuestion }> = ({ question }) => {
             })}
         </div>
         {question.explanation && (
-          <div className="p-4 bg-blue-50 border-blue-200 rounded-md">
+          <div className="p-4 bg-blue-50 border-blue-200 rounded-lg">
             <h4 className="font-semibold text-blue-800 mb-1">Explanation</h4>
             <p className="text-sm text-blue-700">{question.explanation}</p>
           </div>
@@ -129,7 +130,7 @@ const QuizCard: FC<{
                     <Card 
                         key={`${choice}-${index}`}
                         onClick={() => handleAnswerClick(choice)}
-                        className={cn("p-4 transition-all", getChallengeClass())}
+                        className={cn("p-4 transition-all rounded-lg", getChallengeClass())}
                     >
                         <div className="flex items-center justify-between">
                             <p>{choice}</p>
@@ -394,11 +395,11 @@ function ReviewerPageContent() {
           <div className="flex-1 min-h-0 flex flex-col">
               {isChallenge && (
                   isChallengePassed ? (
-                      <div className="text-center text-green-600 font-semibold p-4 bg-green-50 rounded-md mb-4">
+                      <div className="text-center text-green-600 font-semibold p-4 bg-green-50 rounded-lg mb-4">
                           <p>Congratulations! You passed the challenge.</p>
                       </div>
                   ) : (
-                      <div className="text-center text-red-600 font-semibold p-4 bg-red-50 rounded-md mb-4">
+                      <div className="text-center text-red-600 font-semibold p-4 bg-red-50 rounded-lg mb-4">
                           <p>So close! You needed {passingScore}% to pass. Don't give up!</p>
                       </div>
                   )
@@ -407,7 +408,7 @@ function ReviewerPageContent() {
               <ScrollArea className="h-64">
                   <div className="space-y-4 pr-6">
                       {challengeAnswers.map(answer => (
-                          <div key={answer.questionId} className="text-sm p-3 rounded-md bg-muted">
+                          <div key={answer.questionId} className="text-sm p-3 rounded-lg bg-muted">
                               <p className="font-semibold mb-1">{answer.question}</p>
                               {answer.isCorrect ? (
                                   <div className="flex items-center gap-2 text-green-600">
@@ -454,18 +455,19 @@ function ReviewerPageContent() {
                 </div>
             </header>
             
-            <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
-                <Tabs value={category} onValueChange={(value) => {
-                    setCategory(value as "gened" | "profed" | "majorship");
-                }}>
-                <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="gened">General Education</TabsTrigger>
-                    <TabsTrigger value="profed">Professional Education</TabsTrigger>
-                    <TabsTrigger value="majorship">Majorship</TabsTrigger>
-                </TabsList>
-                </Tabs>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                 <Select value={category} onValueChange={(value) => setCategory(value as "gened" | "profed" | "majorship")}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select a category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="gened">General Education</SelectItem>
+                        <SelectItem value="profed">Professional Education</SelectItem>
+                        <SelectItem value="majorship">Majorship</SelectItem>
+                    </SelectContent>
+                </Select>
 
-                <div className="flex gap-2 w-full sm:w-auto">
+                <div className="flex gap-2 w-full">
                     <Tabs value={mode} onValueChange={(value) => setMode(value as "study" | "flashcard")} className="w-full">
                         <TabsList className="grid w-full grid-cols-2">
                             <TabsTrigger value="study">Study</TabsTrigger>

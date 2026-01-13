@@ -21,7 +21,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { startOfDay, isBefore, startOfYesterday, format } from 'date-fns';
 import { useUser } from "@/firebase/auth/use-user";
@@ -124,7 +124,7 @@ const QuestionOfTheDay = ({ onCorrectAnswer }: { onCorrectAnswer: () => void }) 
                             onClick={() => handleAnswer(choice)}
                             disabled={isAnswered}
                             className={cn(
-                                "h-auto whitespace-normal justify-start p-4 w-full text-left",
+                                "h-auto whitespace-normal justify-start p-4 w-full text-left rounded-lg",
                                 isAnswered && isTheCorrectAnswer && "bg-green-100 border-green-300 hover:bg-green-100 text-green-800",
                                 isAnswered && isSelected && !isTheCorrectAnswer && "bg-red-100 border-red-300 hover:bg-red-100 text-red-800",
                                 isAnswered && !isSelected && !isTheCorrectAnswer && "opacity-60"
@@ -311,15 +311,16 @@ export default function DailyPage() {
       <section>
         <div className="flex flex-col items-center gap-4 mb-4">
             <h2 className="text-2xl font-bold font-headline">Daily Challenges</h2>
-             <Tabs value={selectedCategory} onValueChange={(value) => {
-                    setSelectedCategory(value as "gened" | "profed" | "majorship");
-                }}>
-                <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="gened">General Education</TabsTrigger>
-                    <TabsTrigger value="profed">Professional Education</TabsTrigger>
-                    <TabsTrigger value="majorship">Majorship</TabsTrigger>
-                </TabsList>
-            </Tabs>
+             <Select value={selectedCategory} onValueChange={(value) => setSelectedCategory(value as "gened" | "profed" | "majorship")}>
+                <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="gened">General Education</SelectItem>
+                    <SelectItem value="profed">Professional Education</SelectItem>
+                    <SelectItem value="majorship">Majorship</SelectItem>
+                </SelectContent>
+            </Select>
         </div>
         <div className="space-y-4">
           {challenges.map(challenge => {

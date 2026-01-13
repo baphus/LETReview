@@ -16,7 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getQuestions } from "@/lib/data";
 import type { QuizQuestion } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -78,7 +78,7 @@ const QuizCard: FC<{
                         key={`${choice}-${index}`}
                         onClick={() => !isDisabled && handleAnswerClick(choice)}
                         className={cn(
-                            "p-4 transition-all",
+                            "p-4 transition-all rounded-lg",
                             isChallenge ? getChallengeClass() : getNonChallengeClass(),
                             isDisabled ? "cursor-not-allowed" : "cursor-pointer"
                         )}
@@ -266,7 +266,7 @@ export default function QuizPage() {
               <ScrollArea className="flex-1 -mr-6 pr-6">
                   <div className="space-y-4">
                       {challengeAnswers.map(answer => (
-                          <div key={answer.questionId} className="text-sm p-3 rounded-md bg-muted">
+                          <div key={answer.questionId} className="text-sm p-3 rounded-lg bg-muted">
                               <p className="font-semibold mb-1">{answer.question}</p>
                               {answer.isCorrect ? (
                                   <div className="flex items-center gap-2 text-green-600">
@@ -304,18 +304,19 @@ export default function QuizPage() {
                 </div>
             </header>
             
-            <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
-                <Tabs value={category} onValueChange={(value) => {
-                    setCategory(value as "gened" | "profed" | "majorship");
-                }}>
-                <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="gened">General Education</TabsTrigger>
-                    <TabsTrigger value="profed">Professional Education</TabsTrigger>
-                    <TabsTrigger value="majorship">Majorship</TabsTrigger>
-                </TabsList>
-                </Tabs>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                <Select value={category} onValueChange={(value) => setCategory(value as "gened" | "profed" | "majorship")}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select a category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="gened">General Education</SelectItem>
+                        <SelectItem value="profed">Professional Education</SelectItem>
+                        <SelectItem value="majorship">Majorship</SelectItem>
+                    </SelectContent>
+                </Select>
 
-                <div className="flex gap-2 w-full sm:w-auto">
+                <div className="flex justify-end gap-2 w-full">
                      <Button 
                         variant={isShuffled ? "default" : "outline"} 
                         size="icon" 
