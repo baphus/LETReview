@@ -309,8 +309,8 @@ export default function QuizPage() {
                     setCategory(value as "gened" | "profed" | "majorship");
                 }}>
                 <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="gened">Gen Ed</TabsTrigger>
-                    <TabsTrigger value="profed">Prof Ed</TabsTrigger>
+                    <TabsTrigger value="gened">General Education</TabsTrigger>
+                    <TabsTrigger value="profed">Professional Education</TabsTrigger>
                     <TabsTrigger value="majorship">Majorship</TabsTrigger>
                 </TabsList>
                 </Tabs>

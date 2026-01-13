@@ -222,8 +222,8 @@ export default function DailyPage() {
 
   const getCategoryName = (category: 'gened' | 'profed' | 'majorship') => {
       switch (category) {
-          case 'gened': return 'General';
-          case 'profed': return 'Professional';
+          case 'gened': return 'General Education';
+          case 'profed': return 'Professional Education';
           case 'majorship': return 'Majorship';
       }
   }
@@ -315,8 +315,8 @@ export default function DailyPage() {
                     setSelectedCategory(value as "gened" | "profed" | "majorship");
                 }}>
                 <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="gened">Gen Ed</TabsTrigger>
-                    <TabsTrigger value="profed">Prof Ed</TabsTrigger>
+                    <TabsTrigger value="gened">General Education</TabsTrigger>
+                    <TabsTrigger value="profed">Professional Education</TabsTrigger>
                     <TabsTrigger value="majorship">Majorship</TabsTrigger>
                 </TabsList>
             </Tabs>
@@ -331,7 +331,7 @@ export default function DailyPage() {
                     <div className="flex justify-between items-start">
                         <div>
                             <CardTitle className="font-headline capitalize">{challenge.difficulty} Challenge</CardTitle>
-                            <CardDescription>Complete a set of {challenge.count} {getCategoryName(selectedCategory)} Education questions.</CardDescription>
+                            <CardDescription>Complete a set of {challenge.count} {getCategoryName(selectedCategory)} questions.</CardDescription>
                         </div>
                         {isCompleted && <Badge variant="secondary">Completed</Badge>}
                     </div>

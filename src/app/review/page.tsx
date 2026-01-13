@@ -373,8 +373,8 @@ function ReviewerPageContent() {
 
   const getCategoryName = (category: 'gened' | 'profed' | 'majorship') => {
       switch (category) {
-          case 'gened': return 'General';
-          case 'profed': return 'Professional';
+          case 'gened': return 'General Education';
+          case 'profed': return 'Professional Education';
           case 'majorship': return 'Majorship';
       }
   }
@@ -459,8 +459,8 @@ function ReviewerPageContent() {
                     setCategory(value as "gened" | "profed" | "majorship");
                 }}>
                 <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="gened">Gen Ed</TabsTrigger>
-                    <TabsTrigger value="profed">Prof Ed</TabsTrigger>
+                    <TabsTrigger value="gened">General Education</TabsTrigger>
+                    <TabsTrigger value="profed">Professional Education</TabsTrigger>
                     <TabsTrigger value="majorship">Majorship</TabsTrigger>
                 </TabsList>
                 </Tabs>
@@ -489,7 +489,7 @@ function ReviewerPageContent() {
       {isChallenge && (
          <header className="flex flex-col gap-4 mb-6 text-center">
             <h1 className="text-3xl font-bold font-headline capitalize">{challengeDifficulty} Daily Challenge</h1>
-            <p className="text-muted-foreground">Answer all {questions.length} {getCategoryName(challengeCategory)} Education questions. You need {passingScore}% to pass.</p>
+            <p className="text-muted-foreground">Answer all {questions.length} {getCategoryName(challengeCategory)} questions. You need {passingScore}% to pass.</p>
         </header>
       )}
       
