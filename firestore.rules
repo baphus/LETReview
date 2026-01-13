@@ -142,10 +142,8 @@ service cloud.firestore {
      * @principle Provides public read access for application content while locking down all client-side writes.
      */
     match /questions/{questionId} {
-      allow get, list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if false;
     }
 
     /**
@@ -159,9 +157,7 @@ service cloud.firestore {
      */
     match /pets/{petId} {
       allow get, list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow create, update, delete: if false;
     }
   }
 }

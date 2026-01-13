@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Separator } from "@/components/ui/separator";
 import { User, Flame, Gem, Award, Shield, Edit, Check, Lock, CheckCircle, Lightbulb } from "lucide-react";
 import Image from "next/image";
-import { streakPets, getQuestionOfTheDay, achievementPets, rarePets } from "@/lib/data";
+import { streakPets, getQuestionOfTheDay, achievementPets, rarePets, getQuestionForDate } from "@/lib/data";
 import type { PetProfile } from "@/lib/types";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import Link from "next/link";
@@ -40,8 +40,13 @@ export default function HomePage() {
   const [editingPet, setEditingPet] = useState<string | null>(null);
   const [newPetName, setNewPetName] = useState("");
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [questionOfTheDay, setQuestionOfTheDay] = useState<any>(null);
   
   const todayKey = useMemo(() => getTodayKey(), []);
+
+  useEffect(() => {
+    getQuestionOfTheDay().then(setQuestionOfTheDay);
+  }, []);
 
   const checkAchievements = useCallback(async () => {
     if (!user || !firestore) return;
@@ -234,8 +239,6 @@ export default function HomePage() {
           </div>
     )
   }
-
-  const questionOfTheDay = getQuestionOfTheDay();
 
   return (
     <div className="container mx-auto p-4 max-w-4xl">

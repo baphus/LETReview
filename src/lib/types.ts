@@ -1,13 +1,14 @@
 import { FieldValue } from 'firebase/firestore';
 
 export interface QuizQuestion {
-  id: number;
+  id: string; // Changed from number to string for Firestore
   category: "gen_education" | "professional";
   difficulty: "easy" | "medium" | "hard";
   question: string;
   choices: string[];
   answer: string;
   explanation?: string;
+  // No longer need createdAt from the old schema
 }
 
 export interface PetProfile {

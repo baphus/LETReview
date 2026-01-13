@@ -85,10 +85,12 @@
           "type": "string",
           "description": "Explanation of the answer (optional)."
         },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp indicating when the question was created.",
-          "format": "date-time"
+        "choices": {
+          "type": "array",
+          "description": "An array of choices for the question.",
+          "items": {
+            "type": "string"
+          }
         }
       },
       "required": [
@@ -97,7 +99,7 @@
         "difficulty",
         "question",
         "answer",
-        "createdAt"
+        "choices"
       ]
     },
     "DailyProgress": {

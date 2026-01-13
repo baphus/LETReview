@@ -1,6 +1,8 @@
+import { getFirestore, collection, query, where, getDocs, limit, getDoc, doc } from 'firebase/firestore';
+import { initializeFirebase } from '@/firebase';
 import type { QuizQuestion, PetProfile } from "./types";
 
-export const sampleQuestions: QuizQuestion[] = [
+export const sampleQuestions: Omit<QuizQuestion, 'id'>[] & { id: number }[] = [
   {
     id: 1,
     category: "gen_education",
@@ -5069,7 +5071,7 @@ export const sampleQuestions: QuizQuestion[] = [
   }
 ]
 // Function to generate a seed from a string (e.g., today's date)
-const getSeed = (str: string) => {
+const getSeed = (str: string): (() => number) => {
   let h = 1779033703, i = 0;
   for (i = 0; i < str.length; i++) {
     h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
@@ -5089,11 +5091,24 @@ const getDayOfYear = (date: Date): number => {
     return Math.floor(diff / oneDay);
 };
 
-export const getQuestionForDate = (date: Date): QuizQuestion => {
+export const getQuestionForDate = async (date: Date): Promise<QuizQuestion> => {
+    const { firestore } = initializeFirebase();
     const dayOfYear = getDayOfYear(date);
-    const index = dayOfYear % sampleQuestions.length;
-    const question = { ...sampleQuestions[index] };
+    const docId = String((dayOfYear % sampleQuestions.length) + 1); //Firestore IDs are strings
+    
+    const questionRef = doc(firestore, "questions", docId);
+    const docSnap = await getDoc(questionRef);
 
+    let question: QuizQuestion;
+
+    if (docSnap.exists()) {
+        question = docSnap.data() as QuizQuestion;
+    } else {
+        // Fallback to static data if not found
+        const staticQuestion = sampleQuestions.find(q => String(q.id) === docId)!;
+        question = { ...staticQuestion, id: String(staticQuestion.id) };
+    }
+    
     // Deterministically shuffle choices so they are not always in the same order
     const dateString = date.toDateString();
     const rng = getSeed(dateString + question.id);
@@ -5102,9 +5117,45 @@ export const getQuestionForDate = (date: Date): QuizQuestion => {
     return question;
 }
 
-export const getQuestionOfTheDay = (): QuizQuestion => {
+export const getQuestionOfTheDay = async (): Promise<QuizQuestion> => {
     return getQuestionForDate(new Date());
 };
+
+export const getQuestions = async (options: {
+    category?: 'gen_education' | 'professional';
+    difficulty?: 'easy' | 'medium' | 'hard';
+    limit?: number;
+    shuffle?: boolean;
+}): Promise<QuizQuestion[]> => {
+    const { firestore } = initializeFirebase();
+    const questionsCollection = collection(firestore, 'questions');
+    let q = query(questionsCollection);
+
+    if (options.category) {
+        q = query(q, where('category', '==', options.category));
+    }
+    if (options.difficulty) {
+        q = query(q, where('difficulty', '==', options.difficulty));
+    }
+    
+    const querySnapshot = await getDocs(q);
+    let questions = querySnapshot.docs.map(doc => doc.data() as QuizQuestion);
+    
+    if (options.shuffle) {
+        questions = questions.sort(() => Math.random() - 0.5);
+    }
+    if (options.limit) {
+        questions = questions.slice(0, options.limit);
+    }
+
+    // Shuffle choices for each question
+    questions.forEach(question => {
+        question.choices = [...question.choices].sort(() => Math.random() - 0.5);
+    });
+
+    return questions;
+};
+
 
 export const streakPets: PetProfile[] = [
     {

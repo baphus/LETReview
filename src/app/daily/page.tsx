@@ -40,21 +40,22 @@ const QuestionOfTheDay = ({ onCorrectAnswer }: { onCorrectAnswer: () => void }) 
     const [isCorrect, setIsCorrect] = useState(false);
     
     useEffect(() => {
-        const qotd = getQuestionOfTheDay();
-        setQuestion(qotd);
-        if(user){
-            const todayKey = getTodayKey();
-            const todaysProgress = user.dailyProgress?.[todayKey];
+        getQuestionOfTheDay().then(qotd => {
+            setQuestion(qotd);
+            if(user){
+                const todayKey = getTodayKey();
+                const todaysProgress = user.dailyProgress?.[todayKey];
 
-            if(todaysProgress?.qotdCompleted){
-                setIsAnswered(true);
-                const previousAnswer = todaysProgress.qotdAnswer;
-                if (previousAnswer) {
-                    setSelectedAnswer(previousAnswer);
-                    setIsCorrect(previousAnswer === qotd.answer);
+                if(todaysProgress?.qotdCompleted){
+                    setIsAnswered(true);
+                    const previousAnswer = todaysProgress.qotdAnswer;
+                    if (previousAnswer) {
+                        setSelectedAnswer(previousAnswer);
+                        setIsCorrect(previousAnswer === qotd.answer);
+                    }
                 }
             }
-        }
+        });
     }, [user]);
 
     const handleAnswer = async (answer: string) => {

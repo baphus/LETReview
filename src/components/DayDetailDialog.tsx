@@ -21,7 +21,7 @@ export function DayDetailDialog({ date, onClose, userProgress }: DayDetailDialog
 
   useEffect(() => {
     if (date) {
-      setQuestion(getQuestionForDate(date));
+      getQuestionForDate(date).then(setQuestion);
     }
   }, [date]);
 

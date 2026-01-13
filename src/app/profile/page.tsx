@@ -4,7 +4,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { User, LogOut, Camera, Palette, Gem, Trophy, Clock, Award, Check, Edit } from "lucide-react";
+import { User, LogOut, Camera, Palette, Gem, Trophy, Clock, Award, Check, Edit, Database } from "lucide-react";
 import { useEffect, useState, useRef, ChangeEvent } from "react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -20,6 +20,7 @@ import { useUser } from "@/firebase/auth/use-user";
 import { useAuth, useFirestore } from "@/firebase";
 import { doc, updateDoc, increment } from "firebase/firestore";
 import { getAuth, signOut } from "firebase/auth";
+import { seedQuestions } from "@/lib/seed";
 
 const themes = [
     { name: 'Default', value: 'default', cost: 0, colors: { primary: 'hsl(231 48% 48%)', accent: 'hsl(110 32% 48%)' } },
@@ -76,6 +77,7 @@ export default function ProfilePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [examDate, setExamDate] = useState<Date | undefined>(undefined);
   const [passingScore, setPassingScore] = useState(85);
+  const [isSeeding, setIsSeeding] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -193,6 +195,23 @@ export default function ProfilePage() {
         toast({ variant: "destructive", title: "Not enough points!"});
       }
   }
+  
+  const handleSeedData = async () => {
+    setIsSeeding(true);
+    toast({ title: 'Seeding Database...', description: 'Please wait while we populate the questions.' });
+    try {
+        const result = await seedQuestions();
+        if (result.success) {
+            toast({ title: 'Success!', description: `${result.count} questions have been added to the database.`, className: 'bg-green-100 border-green-200'});
+        } else {
+            throw new Error(result.error || 'An unknown error occurred.');
+        }
+    } catch (error) {
+        toast({ variant: 'destructive', title: 'Seeding Failed', description: (error as Error).message });
+    } finally {
+        setIsSeeding(false);
+    }
+  };
 
   if (!user) {
     return null; // Or a loading spinner
@@ -405,22 +424,33 @@ export default function ProfilePage() {
             This app is a review companion designed to help aspiring educators prepare for the Licensure Examination for Teachers (LET) in the Philippines.
           </p>
           <br />
-          <p className="text-sm text-muted-foreground italic">
+           <p className="text-sm text-muted-foreground italic">
             This app is lovingly dedicated to my girlfriend, Yve, an aspiring teacher who inspired this project.
           </p>
         </CardContent>
       </Card>
 
-      <Card className="mt-6">
+       <Card className="mt-6">
         <CardHeader>
-            <CardTitle className="text-destructive">Account Actions</CardTitle>
+            <CardTitle className="text-destructive">Danger Zone</CardTitle>
         </CardHeader>
-        <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">Log out of your account.</p>
-            <Button variant="destructive" className="w-full" onClick={handleLogout}>
-                <LogOut className="mr-2 h-4 w-4" />
-                Logout
-            </Button>
+        <CardContent className="flex flex-col gap-4">
+            <div>
+                 <p className="text-sm text-muted-foreground mb-2">
+                    This will populate your Firestore database with the sample questions. Only do this once.
+                 </p>
+                <Button variant="outline" className="w-full" onClick={handleSeedData} disabled={isSeeding}>
+                    <Database className="mr-2 h-4 w-4" />
+                    {isSeeding ? 'Seeding...' : 'Seed Question Database'}
+                </Button>
+            </div>
+            <div>
+                <p className="text-sm text-muted-foreground mb-2">Log out of your account.</p>
+                <Button variant="destructive" className="w-full" onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
+                </Button>
+            </div>
         </CardContent>
       </Card>
     </div>
