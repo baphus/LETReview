@@ -165,10 +165,10 @@ export const useUser = () => {
          router.push('/home');
 
     } catch (error: any) {
-        // This error code means the user closed the popup.
+        // These error codes mean the user closed the popup.
         // It's a normal behavior, so we can safely ignore it.
-        if (error.code === 'auth/cancelled-popup-request') {
-            console.log("Sign-in cancelled by user.");
+        if (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user') {
+            console.log("Sign-in popup closed by user.");
             return;
         }
 
