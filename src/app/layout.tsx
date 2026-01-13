@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -18,6 +19,8 @@ import { AppSidebar } from "@/components/AppSidebar";
 import SplashScreen from "@/components/SplashScreen";
 import { FirebaseClientProvider } from "@/firebase/client-provider";
 import { useUser } from "@/firebase/auth/use-user";
+import { useAuth } from "@/firebase";
+import { signInAnonymously, onAuthStateChanged } from "firebase/auth";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const spaceGrotesk = Space_Grotesk({
@@ -27,8 +30,9 @@ const spaceGrotesk = Space_Grotesk({
 
 function RootLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { user, isLoading, activeTheme } = useUser();
+  const { user, isLoading, activeTheme, firebaseUser } = useUser();
   const [isShowingSplash, setIsShowingSplash] = useState(pathname === "/");
+  const auth = useAuth();
 
   useEffect(() => {
     if (pathname === '/') {
@@ -50,6 +54,20 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
   }, [pathname]);
 
   useEffect(() => {
+    if (!auth) return;
+    
+    // If not loading and no user, sign in anonymously
+    onAuthStateChanged(auth, (currentUser) => {
+        if (!currentUser && !isLoading) {
+            signInAnonymously(auth).catch(error => {
+                console.error("Anonymous sign-in failed:", error);
+            });
+        }
+    });
+
+  }, [auth, isLoading]);
+
+  useEffect(() => {
     document.documentElement.classList.remove('mint', 'sunset', 'rose');
     if (activeTheme && activeTheme !== 'default') {
       document.documentElement.classList.add(activeTheme);
@@ -60,9 +78,9 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
     return <SplashScreen />;
   }
 
-  const isAppPage = !['/', '/login'].includes(pathname);
+  const isAppPage = pathname !== '/';
 
-  if (isLoading && isAppPage) {
+  if (isLoading && isAppPage && !firebaseUser) {
     return (
       <div className="flex flex-col h-dvh">
         <main className="flex-1 overflow-y-auto p-4">
@@ -88,7 +106,18 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
   
   // This is handled by the useUser hook redirecting
   if (isAppPage && !user) {
-    return null;
+    return (
+       <div className="flex flex-col h-dvh">
+        <main className="flex-1 overflow-y-auto p-4">
+          <div className="flex items-center gap-2 mb-6">
+            <Skeleton className="h-8 w-8" />
+            <Skeleton className="h-8 w-48" />
+          </div>
+          <Skeleton className="h-64 w-full" />
+        </main>
+        <Skeleton className="h-16 w-full" />
+      </div>
+    );
   }
 
   return (

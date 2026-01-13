@@ -2,7 +2,7 @@ import { FieldValue } from 'firebase/firestore';
 
 export interface QuizQuestion {
   id: string; // Changed from number to string for Firestore
-  category: "gen_education" | "professional";
+  category: "gened" | "profed" | "majorship";
   difficulty: "easy" | "medium" | "hard";
   question: string;
   choices: string[];

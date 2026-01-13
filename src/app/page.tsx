@@ -8,6 +8,7 @@ import { BookOpen, CalendarDays, Clock, Award, ChevronRight, Star, Check } from 
 import Image from 'next/image';
 import LandingHeader from "@/components/LandingHeader";
 import LandingFooter from "@/components/LandingFooter";
+import { useUser } from "@/firebase/auth/use-user";
 
 const features = [
   {
@@ -65,6 +66,9 @@ const features = [
 ];
 
 export default function LandingPage() {
+  const { user, firebaseUser } = useUser();
+  const isAnonymous = firebaseUser?.isAnonymous;
+
   return (
     <div className="flex flex-col min-h-screen bg-background font-body">
       <LandingHeader />
@@ -83,9 +87,9 @@ export default function LandingPage() {
                 </p>
               </div>
               <div>
-                <Link href="/login">
+                <Link href={user ? "/home" : "/login"}>
                   <Button size="lg">
-                    Get Started for Free
+                    {user ? "Go to Dashboard" : "Get Started for Free"}
                     <ChevronRight className="w-5 h-5 ml-2" />
                   </Button>
                 </Link>
@@ -179,9 +183,9 @@ export default function LandingPage() {
             <p className="max-w-[600px] mx-auto text-muted-foreground md:text-xl mb-6">
               Sign up today and take the first step towards becoming a Licensed Professional Teacher.
             </p>
-            <Link href="/login">
-              <Button size="lg">
-                Claim Your Reviewer Access
+            <Link href={user && !isAnonymous ? "/home" : "/login"}>
+               <Button size="lg">
+                {user && !isAnonymous ? "Go to Dashboard" : "Sign Up to Save Progress"}
               </Button>
             </Link>
           </div>

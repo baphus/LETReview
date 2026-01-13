@@ -4,8 +4,22 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import Logo from "./Logo";
+import { useUser } from "@/firebase/auth/use-user";
 
 export default function LandingHeader() {
+  const { user, firebaseUser, linkGoogleAccount } = useUser();
+  const isAnonymous = firebaseUser?.isAnonymous;
+
+  const handleLoginClick = () => {
+    if (user && isAnonymous) {
+      linkGoogleAccount();
+    } else if (!user) {
+      // This case might happen if anonymous sign-in is slow.
+      // The button can trigger the linking process which starts with Google sign-in.
+      linkGoogleAccount();
+    }
+  }
+
   return (
     <header className="px-4 lg:px-6 h-16 flex items-center shadow-sm sticky top-0 bg-background/95 backdrop-blur z-10">
       <Link href="/" className="flex items-center justify-center">
@@ -20,9 +34,13 @@ export default function LandingHeader() {
         <Link href="#testimonials" className="text-sm font-medium hover:underline underline-offset-4">
           Testimonials
         </Link>
-        <Link href="/login">
-            <Button>Login</Button>
-        </Link>
+        {user && !isAnonymous ? (
+           <Link href="/home">
+             <Button>Dashboard</Button>
+           </Link>
+        ) : (
+            <Button onClick={handleLoginClick}>Login with Google</Button>
+        )}
       </nav>
     </header>
   );

@@ -1,8 +1,9 @@
+
 "use client";
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { BookOpen, CalendarDays, Clock, Home, User, Lightbulb } from "lucide-react";
+import { BookOpen, CalendarDays, Clock, Home, User, Lightbulb, LogIn } from "lucide-react";
 import {
   SidebarHeader,
   SidebarMenu,
@@ -32,7 +33,9 @@ export function AppSidebar() {
   const searchParams = useSearchParams();
   const { time, isActive } = useTimer();
   const { state: sidebarState } = useSidebar();
-  const { user } = useUser();
+  const { user, firebaseUser, linkGoogleAccount } = useUser();
+  const isAnonymous = firebaseUser?.isAnonymous;
+
 
   const TimerIndicator = () => {
     if (!isActive) return null;
@@ -103,26 +106,46 @@ export function AppSidebar() {
             <>
             <SidebarSeparator />
             <SidebarFooter>
-                <Link href="/profile" className="w-full">
+                {isAnonymous ? (
                     <SidebarMenuButton
-                        isActive={pathname === '/profile'}
-                        tooltip={{ children: user.name }}
+                        onClick={() => linkGoogleAccount()}
+                        tooltip={{ children: 'Sign in to save progress' }}
                         className="h-14"
                     >
                          <div className="flex items-center gap-3">
                             <Avatar className="h-8 w-8">
-                                <AvatarImage src={user.avatarUrl} alt={user.name} />
                                 <AvatarFallback>
-                                    <User className="h-4 w-4" />
+                                    <LogIn className="h-4 w-4" />
                                 </AvatarFallback>
                             </Avatar>
                             <div className="flex flex-col items-start group-data-[collapsible=icon]:hidden">
-                                <span className="font-semibold text-sm">{user.name}</span>
-                                <span className="text-xs text-muted-foreground">View Profile</span>
+                                <span className="font-semibold text-sm">Sign In</span>
+                                <span className="text-xs text-muted-foreground">Save Your Progress</span>
                             </div>
                         </div>
                     </SidebarMenuButton>
-                </Link>
+                ) : (
+                    <Link href="/profile" className="w-full">
+                        <SidebarMenuButton
+                            isActive={pathname === '/profile'}
+                            tooltip={{ children: user.name }}
+                            className="h-14"
+                        >
+                            <div className="flex items-center gap-3">
+                                <Avatar className="h-8 w-8">
+                                    <AvatarImage src={user.avatarUrl} alt={user.name} />
+                                    <AvatarFallback>
+                                        <User className="h-4 w-4" />
+                                    </AvatarFallback>
+                                </Avatar>
+                                <div className="flex flex-col items-start group-data-[collapsible=icon]:hidden">
+                                    <span className="font-semibold text-sm">{user.name}</span>
+                                    <span className="text-xs text-muted-foreground">View Profile</span>
+                                </div>
+                            </div>
+                        </SidebarMenuButton>
+                    </Link>
+                )}
             </SidebarFooter>
             </>
         )}
