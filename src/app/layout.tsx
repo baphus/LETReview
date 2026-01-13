@@ -87,9 +87,9 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
   }
   
   // This is handled by the useUser hook redirecting
-  // if (isAppPage && !user) {
-  //   return null;
-  // }
+  if (isAppPage && !user) {
+    return null;
+  }
 
   return (
     <TimerProvider>
