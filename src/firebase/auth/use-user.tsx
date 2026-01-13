@@ -12,6 +12,8 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import type { UserProfile } from '@/lib/types';
 import { format } from "date-fns";
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 const getTodayKey = () => format(new Date(), 'yyyy-MM-dd');
 
@@ -72,12 +74,27 @@ export const useUser = () => {
           };
           setDoc(userRef, newUserProfile).then(() => {
             setUser(newUserProfile);
+          }).catch(async (serverError) => {
+            const permissionError = new FirestorePermissionError({
+              path: userRef.path,
+              operation: 'create',
+              requestResourceData: newUserProfile,
+            });
+            errorEmitter.emit('permission-error', permissionError);
           });
         }
         setIsLoading(false);
         if (pathname === '/login' || pathname === '/') {
           router.push('/home');
         }
+      },
+      (error) => {
+         const permissionError = new FirestorePermissionError({
+            path: userRef.path,
+            operation: 'get',
+          });
+          errorEmitter.emit('permission-error', permissionError);
+          setIsLoading(false);
       });
       return () => unsubscribe();
     }

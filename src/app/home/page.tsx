@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Separator } from "@/components/ui/separator";
 import { User, Flame, Gem, Award, Shield, Edit, Check, Lock, CheckCircle, Lightbulb } from "lucide-react";
 import Image from "next/image";
-import { pets as streakPets, getQuestionOfTheDay, achievementPets, rarePets } from "@/lib/data";
+import { streakPets, getQuestionOfTheDay, achievementPets, rarePets } from "@/lib/data";
 import type { PetProfile } from "@/lib/types";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import Link from "next/link";
