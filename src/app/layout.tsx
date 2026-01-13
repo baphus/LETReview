@@ -19,6 +19,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import SplashScreen from "@/components/SplashScreen";
 import { FirebaseClientProvider } from "@/firebase/client-provider";
 import { useUser } from "@/firebase/auth/use-user";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const spaceGrotesk = Space_Grotesk({
@@ -153,7 +154,9 @@ export default function RootLayout({
         className={`${inter.variable} ${spaceGrotesk.variable} font-body antialiased flex flex-col h-dvh bg-background`}
       >
         <FirebaseClientProvider>
-          <RootLayoutContent>{children}</RootLayoutContent>
+          <TooltipProvider delayDuration={0}>
+            <RootLayoutContent>{children}</RootLayoutContent>
+          </TooltipProvider>
         </FirebaseClientProvider>
       </body>
     </html>
