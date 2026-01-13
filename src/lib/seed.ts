@@ -1,13 +1,15 @@
 'use server';
 
-import { getFirestore, writeBatch, collection } from 'firebase/firestore';
-import { initializeFirebase } from '@/firebase';
+import { getFirestore, writeBatch, collection, doc } from 'firebase/firestore';
+import { initializeApp, getApps, getApp } from 'firebase/app';
+import { firebaseConfig } from '@/firebase/config';
 import { sampleQuestions } from './data';
 
 // IMPORTANT: This is a server-side function and should only be called from a Server Action.
 export async function seedQuestions() {
-  const { firestore } = initializeFirebase();
-  const questionsCollection = collection(firestore, 'questions');
+  // Initialize Firebase Admin SDK for server-side operations
+  const firebaseApp = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+  const firestore = getFirestore(firebaseApp);
   
   // Use a batch to write all documents at once for efficiency.
   const batch = writeBatch(firestore);
@@ -15,7 +17,7 @@ export async function seedQuestions() {
   sampleQuestions.forEach((question) => {
     // Convert the numeric ID to a string for the document ID in Firestore.
     const docId = String(question.id);
-    const docRef = collection(firestore, 'questions', docId);
+    const docRef = doc(firestore, 'questions', docId);
 
     // Create a new object for Firestore, ensuring all fields match the target schema.
     const firestoreQuestion = {
