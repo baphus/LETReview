@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
 
 
 const QuizCard: FC<{ 
@@ -108,6 +109,22 @@ interface ChallengeAnswer {
     isCorrect: boolean;
     question: string;
 }
+
+const QuestionSkeleton = () => (
+    <Card className="w-full min-h-80 shadow-lg relative p-6">
+      <CardHeader className="p-0 mb-4">
+        <Skeleton className="h-8 w-3/4" />
+      </CardHeader>
+      <CardContent className="p-0">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+        </div>
+      </CardContent>
+    </Card>
+)
 
 export default function QuizPage() {
   const router = useRouter();
@@ -242,14 +259,6 @@ export default function QuizPage() {
     return challengeAnswers.find(a => a.questionId === currentQuestion.id)?.userAnswer;
   }, [currentQuestion, challengeAnswers]);
   
-  if (isLoading) {
-    return (
-        <div className="container mx-auto p-4 max-w-2xl text-center">
-            <p>Loading questions...</p>
-        </div>
-    )
-  }
-
   return (
     <div className="container mx-auto p-4 max-w-2xl">
        <Dialog open={showResults} onOpenChange={handleDialogClose}>
@@ -331,7 +340,9 @@ export default function QuizPage() {
         </>
 
       <div className="my-6">
-        {questions.length > 0 && currentQuestion ? (
+        {isLoading ? (
+          <QuestionSkeleton />
+        ) : questions.length > 0 && currentQuestion ? (
           <>
             <QuizCard 
                 question={currentQuestion} 
@@ -371,3 +382,5 @@ export default function QuizPage() {
     </div>
   );
 }
+
+    

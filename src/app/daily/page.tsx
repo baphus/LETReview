@@ -27,6 +27,7 @@ import { startOfDay, isBefore, startOfYesterday, format } from 'date-fns';
 import { useUser } from "@/firebase/auth/use-user";
 import { useFirestore } from "@/firebase";
 import { doc, updateDoc, increment } from "firebase/firestore";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const getTodayKey = () => format(new Date(), 'yyyy-MM-dd');
 
@@ -98,7 +99,15 @@ const QuestionOfTheDay = ({ onCorrectAnswer }: { onCorrectAnswer: () => void }) 
                     <CardTitle className="font-headline text-2xl">Question of the Day</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <p>Loading...</p>
+                     <div className="space-y-4">
+                        <Skeleton className="h-6 w-3/4" />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <Skeleton className="h-12 w-full" />
+                            <Skeleton className="h-12 w-full" />
+                            <Skeleton className="h-12 w-full" />
+                            <Skeleton className="h-12 w-full" />
+                        </div>
+                    </div>
                 </CardContent>
             </Card>
         )
@@ -354,3 +363,5 @@ export default function DailyPage() {
     </div>
   );
 }
+
+    

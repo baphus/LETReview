@@ -18,6 +18,8 @@ import { format } from "date-fns";
 import { useUser } from "@/firebase/auth/use-user";
 import { useFirestore } from "@/firebase";
 import { doc, updateDoc, increment } from "firebase/firestore";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const Flashcard: FC<{ question: QuizQuestion }> = ({ question }) => {
   const [isFlipped, setIsFlipped] = useState(false);
@@ -154,6 +156,22 @@ interface ChallengeAnswer {
     question: string;
 }
 
+const QuestionSkeleton = () => (
+    <Card className="w-full min-h-80 shadow-lg relative p-6">
+      <CardHeader className="p-0 mb-4">
+        <Skeleton className="h-8 w-3/4" />
+      </CardHeader>
+      <CardContent className="p-0">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+        </div>
+      </CardContent>
+    </Card>
+)
+
 function ReviewerPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -200,9 +218,10 @@ function ReviewerPageContent() {
 
   useEffect(() => {
     fetchAndSetQuestions();
-    setCurrentIndex(0);
-    setChallengeAnswers([]);
-  }, [fetchAndSetQuestions]);
+  // This effect should run only when the component mounts or when dependencies that define the challenge change.
+  // We've moved the state resets into handleTryAgain and handleDialogClose to be more explicit.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isChallenge, challengeDifficulty, challengeCount, challengeCategory]);
   
   const currentQuestion = questions[currentIndex];
 
@@ -333,12 +352,15 @@ function ReviewerPageContent() {
   
   const handleTryAgain = () => {
     setShowResults(false);
-    resetQuizState();
+    setCurrentIndex(0);
+    setChallengeAnswers([]);
+    setQuizScore(0);
+    fetchAndSetQuestions();
   };
 
   useEffect(() => {
     if (!isChallenge) {
-        resetQuizState();
+        fetchAndSetQuestions();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, category, isShuffled]);
@@ -348,26 +370,28 @@ function ReviewerPageContent() {
   
   const isChallengePassed = showResults && isChallenge && (quizScore / questions.length * 100) >= passingScore;
 
-  if (isChallenge && isLoading) {
+  if (isLoading) {
     return (
       <div className="container mx-auto p-4 max-w-2xl text-center">
-          <p>Preparing your challenge...</p>
+          {isChallenge ? (
+            <>
+                <header className="flex flex-col gap-4 mb-6 text-center">
+                    <h1 className="text-3xl font-bold font-headline capitalize">{challengeDifficulty} Daily Challenge</h1>
+                    <p className="text-muted-foreground">Preparing your challenge...</p>
+                </header>
+                <QuestionSkeleton />
+            </>
+          ) : (
+             <QuestionSkeleton />
+          )}
       </div>
     )
   }
-
+  
   if (isChallenge && !isLoading && questions.length === 0) {
      return (
         <div className="container mx-auto p-4 max-w-2xl text-center">
             <p>Could not load questions for the challenge.</p>
-        </div>
-    )
-  }
-  
-  if (isLoading && !isChallenge) {
-    return (
-        <div className="container mx-auto p-4 max-w-2xl text-center">
-            <p>Loading questions...</p>
         </div>
     )
   }
@@ -383,7 +407,7 @@ function ReviewerPageContent() {
   return (
     <div className="container mx-auto p-4 max-w-2xl">
        <Dialog open={showResults} onOpenChange={handleDialogClose}>
-        <DialogContent className="sm:max-w-none w-full h-full max-h-full sm:h-auto sm:max-h-[90dvh] flex flex-col">
+        <DialogContent className="sm:max-w-md w-full h-full sm:h-auto sm:max-h-[90dvh] flex flex-col">
           <DialogHeader className="items-center text-center pt-8 sm:pt-0">
             <Trophy className="h-16 w-16 text-yellow-400" />
             <DialogTitle className="text-2xl font-bold font-headline">Challenge Complete!</DialogTitle>
@@ -455,7 +479,7 @@ function ReviewerPageContent() {
                 </div>
             </header>
             
-            <div className="flex flex-col sm:flex-row gap-4 items-center">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
                  <Select value={category} onValueChange={(value) => setCategory(value as "gened" | "profed" | "majorship")}>
                     <SelectTrigger>
                         <SelectValue placeholder="Select a category" />
@@ -560,3 +584,5 @@ export default function ReviewPage() {
         </Suspense>
     )
 }
+
+    
