@@ -16,8 +16,9 @@ import {
 import { Badge } from "./ui/badge";
 import { useTimer } from "@/hooks/use-timer";
 import { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
-import { useEffect, useState } from "react";
 import Logo from "./Logo";
+import { useUser } from "@/firebase/auth/use-user";
+
 
 const navItems = [
   { href: "/home", label: "Home", icon: Home },
@@ -27,26 +28,12 @@ const navItems = [
   { href: "/timer", label: "Timer", icon: Clock },
 ];
 
-interface UserProfile {
-    name: string;
-    avatarUrl: string;
-}
-
 export function AppSidebar() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { time, isActive } = useTimer();
   const { state: sidebarState } = useSidebar();
-  const [user, setUser] = useState<UserProfile | null>(null);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-        const savedUser = localStorage.getItem("userProfile");
-        if (savedUser) {
-            setUser(JSON.parse(savedUser));
-        }
-    }
-  }, [pathname]);
+  const { user } = useUser();
 
   const TimerIndicator = () => {
     if (!isActive) return null;

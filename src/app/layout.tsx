@@ -2,8 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import type { Metadata } from "next";
+import { usePathname } from "next/navigation";
 import { Inter, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import BottomNav from "@/components/BottomNav";
@@ -15,10 +14,11 @@ import {
   SidebarContent,
   SidebarInset,
   SidebarProvider,
-  SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import SplashScreen from "@/components/SplashScreen";
+import { FirebaseClientProvider } from "@/firebase/client-provider";
+import { useUser } from "@/firebase/auth/use-user";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const spaceGrotesk = Space_Grotesk({
@@ -27,61 +27,41 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 function RootLayoutContent({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
   const pathname = usePathname();
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const { user, isLoading, activeTheme } = useUser();
   const [isShowingSplash, setIsShowingSplash] = useState(pathname === "/");
 
   useEffect(() => {
     if (pathname === '/') {
-        setIsShowingSplash(true);
-         const splashShown = sessionStorage.getItem("splashShown");
-        if (splashShown) {
-            setIsShowingSplash(false);
-        } else {
-            setTimeout(() => {
-                setIsShowingSplash(false);
-                sessionStorage.setItem("splashShown", "true");
-            }, 3000); 
-        }
-    } else {
+      setIsShowingSplash(true);
+      const splashShown = sessionStorage.getItem("splashShown");
+      if (splashShown) {
         setIsShowingSplash(false);
+      } else {
+        setTimeout(() => {
+          setIsShowingSplash(false);
+          sessionStorage.setItem("splashShown", "true");
+        }, 3000);
+      }
+    } else {
+      setIsShowingSplash(false);
     }
   }, [pathname]);
 
-   const applyActiveTheme = () => {
-        const savedUser = localStorage.getItem("userProfile");
-        if (savedUser) {
-            const user = JSON.parse(savedUser);
-            if (user.activeTheme && user.activeTheme !== 'default') {
-                document.documentElement.classList.add(user.activeTheme);
-            }
-        }
-    };
-
   useEffect(() => {
-    if (isShowingSplash) return;
-
-    applyActiveTheme();
-    const userProfile = localStorage.getItem("userProfile");
-    const isAuthPage = pathname === "/login" || pathname === "/";
-    
-    if (!userProfile && !isAuthPage) {
-      router.replace("/login");
-    } else if (userProfile && isAuthPage) {
-      router.replace("/home");
-    } else {
-      setIsCheckingAuth(false);
+    document.documentElement.classList.remove('mint', 'sunset', 'rose');
+    if (activeTheme && activeTheme !== 'default') {
+      document.documentElement.classList.add(activeTheme);
     }
-  }, [pathname, router, isShowingSplash]);
+  }, [activeTheme]);
 
   if (isShowingSplash && pathname === "/") {
     return <SplashScreen />;
   }
-  
+
   const isAppPage = !['/', '/login'].includes(pathname);
 
-  if (isCheckingAuth && isAppPage) {
+  if (isLoading && isAppPage) {
     return (
       <div className="flex flex-col h-dvh">
         <main className="flex-1 overflow-y-auto p-4">
@@ -104,6 +84,12 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
       </TimerProvider>
     );
   }
+  
+  if (isAppPage && !user) {
+    // This case can be a flash while redirecting, or if user is logged out.
+    // A loading skeleton can be shown here, or just null.
+    return null;
+  }
 
   return (
     <TimerProvider>
@@ -114,9 +100,6 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
           </SidebarContent>
         </Sidebar>
         <SidebarInset>
-          <header className="p-2 border-b md:hidden">
-            {/* The sidebar trigger is removed from here for mobile view */}
-          </header>
           <main className="flex-1 overflow-y-auto pb-20 md:pb-4">
             {children}
           </main>
@@ -156,7 +139,9 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${spaceGrotesk.variable} font-body antialiased flex flex-col h-dvh bg-background`}
       >
-        <RootLayoutContent>{children}</RootLayoutContent>
+        <FirebaseClientProvider>
+          <RootLayoutContent>{children}</RootLayoutContent>
+        </FirebaseClientProvider>
       </body>
     </html>
   );

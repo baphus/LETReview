@@ -1,0 +1,104 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Represents a user's profile and progress in the app.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "The user's unique ID from Firebase Authentication."
+        },
+        "name": {
+          "type": "string",
+          "description": "The user's display name."
+        },
+        "avatarUrl": {
+          "type": "string",
+          "description": "URL for the user's avatar image."
+        },
+        "email": {
+          "type": "string",
+          "description": "The user's email address."
+        },
+        "examDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The user's scheduled exam date."
+        },
+        "points": {
+          "type": "number",
+          "description": "Total points earned by the user."
+        },
+        "streak": {
+          "type": "number",
+          "description": "Current daily challenge streak."
+        },
+        "highestStreak": {
+          "type": "number",
+          "description": "Highest daily challenge streak achieved."
+        },
+        "highestQuizStreak": {
+          "type": "number",
+          "description": "Highest quiz streak achieved in the Pomodoro timer."
+        },
+        "completedSessions": {
+          "type": "number",
+          "description": "Total number of Pomodoro sessions completed."
+        },
+        "unlockedThemes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of theme names the user has unlocked."
+        },
+        "activeTheme": {
+          "type": "string",
+          "description": "The currently active theme for the user."
+        },
+        "unlockedPets": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of pet names the user has unlocked."
+        },
+        "petNames": {
+          "type": "object",
+          "description": "A map of original pet names to user-given nicknames."
+        },
+        "dailyProgress": {
+          "type": "object",
+          "description": "A map of daily progress, with dates as keys."
+        },
+        "lastLogin": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The last login date of the user."
+        },
+        "lastChallengeDate": {
+          "type": "string",
+          "format": "date",
+          "description": "The date the last daily challenge was completed."
+        },
+        "passingScore": {
+            "type": "number",
+            "description": "The user's preferred passing score for challenges."
+        }
+      },
+      "required": ["uid", "name", "email"]
+    }
+  },
+  "auth": {
+    "providers": ["Google"]
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/UserProfile"
+      },
+      "description": "Stores user profile data."
+    }
+  }
+}
