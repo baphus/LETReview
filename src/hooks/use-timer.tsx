@@ -1,7 +1,7 @@
 
 "use client";
 
-import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { useUser } from "@/firebase/auth/use-user";
@@ -89,6 +89,11 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   const { user, updateUser } = useUser();
   const { toast } = useToast();
 
+  const userRef = useRef(user);
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
+
   useEffect(() => {
     listeners.add(setTimerState);
     return () => {
@@ -111,24 +116,26 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   const handleTimerEnd = useCallback(async () => {
     const currentState = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem("pomodoroState") || "{}") : {};
     const currentMode = currentState.mode || 'focus';
+    const currentUser = userRef.current;
+
 
     if (currentMode === "focus") {
-       if(user) {
+       if(currentUser) {
            const todayKey = getTodayKey();
            const updatedFocusSessions = (currentState.focusSessionsCompleted || 0) + 1;
 
            const updates: any = {
-               completedSessions: (user.completedSessions || 0) + 1,
+               completedSessions: (currentUser.completedSessions || 0) + 1,
                dailyProgress: {
-                    ...user.dailyProgress,
+                    ...currentUser.dailyProgress,
                     [todayKey]: {
-                        ...(user.dailyProgress?.[todayKey] || {}),
-                        pomodorosCompleted: (user.dailyProgress?.[todayKey]?.pomodorosCompleted || 0) + 1,
+                        ...(currentUser.dailyProgress?.[todayKey] || {}),
+                        pomodorosCompleted: (currentUser.dailyProgress?.[todayKey]?.pomodorosCompleted || 0) + 1,
                     }
                 }
            };
            
-           if (stateStore.highestQuizStreak > (user.highestQuizStreak || 0)) {
+           if (stateStore.highestQuizStreak > (currentUser.highestQuizStreak || 0)) {
                updates.highestQuizStreak = stateStore.highestQuizStreak;
            }
 
@@ -157,7 +164,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
         endTime: null,
       });
     }
-  }, [user, updateUser, showNotification]);
+  }, [updateUser, showNotification]);
 
   // Load state from localStorage and user profile
   useEffect(() => {

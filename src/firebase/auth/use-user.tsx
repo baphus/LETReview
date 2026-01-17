@@ -10,6 +10,7 @@ import {
   serverTimestamp,
   getDoc,
   writeBatch,
+  updateDoc,
 } from 'firebase/firestore';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
@@ -185,14 +186,18 @@ export const useUser = () => {
   
   const user = firebaseUser?.isAnonymous ? localUser : firestoreUser;
 
+  const memoizedUpdateUser = useCallback((data: Partial<UserProfile>) => {
+      if (firebaseUser?.isAnonymous) {
+          updateLocalUser(data);
+      } else if (firestore && firebaseUser) {
+          const userRef = doc(firestore, "users", firebaseUser.uid);
+          updateDoc(userRef, data);
+      }
+  }, [firebaseUser, firestore, updateLocalUser]);
+
   return { 
     user,
-    updateUser: firebaseUser?.isAnonymous ? updateLocalUser : (data: Partial<UserProfile>) => {
-        if (firestore && firebaseUser) {
-            const userRef = doc(firestore, "users", firebaseUser.uid);
-            updateDoc(userRef, data);
-        }
-    },
+    updateUser: memoizedUpdateUser,
     firebaseUser, 
     isLoading,
     activeTheme: user?.activeTheme || 'default',
