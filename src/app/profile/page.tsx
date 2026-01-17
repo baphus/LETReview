@@ -18,10 +18,14 @@ import { achievementPets, rarePets } from "@/lib/data";
 import { Progress } from "@/components/ui/progress";
 import { useUser } from "@/firebase/auth/use-user";
 import { useAuth, useFirestore } from "@/firebase";
-import { doc, updateDoc, increment } from "firebase/firestore";
+import { doc, updateDoc, writeBatch, collection } from "firebase/firestore";
 import { getAuth, signOut } from "firebase/auth";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { seedDatabase } from "@/lib/seed";
+import reviewersSeed from '../../../docs/reviewers-seed.json';
+import subjectsSeed from '../../../docs/subjects-seed.json';
+import topicsSeed from '../../../docs/topics-seed.json';
+import questionsSeed from '../../../docs/questions-seed.json';
+import type { QuizQuestion } from '@/lib/types';
 
 const themes = [
     { name: 'Default', value: 'default', cost: 0, colors: { primary: 'hsl(231 48% 48%)', accent: 'hsl(110 32% 48%)' } },
@@ -71,6 +75,7 @@ export default function ProfilePage() {
   const { toast } = useToast();
   const { user, firebaseUser, linkGoogleAccount, updateUser } = useUser();
   const auth = useAuth();
+  const firestore = useFirestore();
   
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState("");
@@ -90,23 +95,78 @@ export default function ProfilePage() {
   }, [user]);
 
   const handleSeed = async () => {
-    try {
-      const result = await seedDatabase();
-      if (result.success) {
+    if (!firestore) {
         toast({
-          title: "Database Seeded",
-          description: `${result.count} documents were successfully added.`,
-          className: "bg-green-100 border-green-300"
+            variant: "destructive",
+            title: "Firestore not available",
+            description: "Please try again later.",
         });
-      } else {
-        throw new Error(result.error);
+        return;
+    }
+    try {
+      const batch = writeBatch(firestore);
+
+      // Seed Subjects
+      const subjectsCollectionRef = collection(firestore, 'subjects');
+      subjectsSeed.forEach((subject) => {
+        const subjectDocRef = doc(subjectsCollectionRef, subject.id);
+        batch.set(subjectDocRef, subject);
+      });
+
+      // Seed Topics
+      const topicsCollectionRef = collection(firestore, 'topics');
+      topicsSeed.forEach((topic) => {
+        const topicDocRef = doc(topicsCollectionRef, topic.id);
+        batch.set(topicDocRef, topic);
+      });
+
+      // Seed Reviewers
+      const reviewersCollectionRef = collection(firestore, 'reviewers');
+      reviewersSeed.forEach((reviewer: any) => {
+        const reviewerDocRef = doc(reviewersCollectionRef, reviewer.id);
+        const data = { ...reviewer, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+        batch.set(reviewerDocRef, data);
+      });
+      
+      // Seed Questions
+      const questionsCollectionRef = collection(firestore, 'questions');
+      
+      const questionsByCategory = (questionsSeed as QuizQuestion[]).reduce((acc, q) => {
+        const question = q as QuizQuestion;
+        if (question.category) {
+            if (!acc[question.category]) {
+                acc[question.category] = [];
+            }
+            acc[question.category].push(question);
+        }
+        return acc;
+      }, {} as Record<string, QuizQuestion[]>);
+
+      // Create one document per category that has questions
+      for (const category in questionsByCategory) {
+        if (questionsByCategory[category].length > 0) {
+          const categoryDocRef = doc(questionsCollectionRef, category);
+          batch.set(categoryDocRef, { questions: questionsByCategory[category] });
+        }
       }
+
+      await batch.commit();
+
+      const totalCount = reviewersSeed.length + subjectsSeed.length + topicsSeed.length + Object.keys(questionsByCategory).length;
+      
+      toast({
+        title: "Database Seeded",
+        description: `${totalCount} documents were successfully added.`,
+        className: "bg-green-100 border-green-300"
+      });
+
     } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Seeding Failed",
         description: error.message || "An unknown error occurred.",
       });
+      console.error("Seeding failed:", error);
     }
   };
 
