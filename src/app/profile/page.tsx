@@ -4,7 +4,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { User, LogOut, Camera, Palette, Gem, Trophy, Clock, Award, Check, Edit, UserPlus, AlertTriangle } from "lucide-react";
+import { User, LogOut, Camera, Palette, Gem, Trophy, Clock, Award, Check, Edit, UserPlus, AlertTriangle, Database } from "lucide-react";
 import { useEffect, useState, useRef, ChangeEvent } from "react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -21,6 +21,7 @@ import { useAuth, useFirestore } from "@/firebase";
 import { doc, updateDoc, increment } from "firebase/firestore";
 import { getAuth, signOut } from "firebase/auth";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { seedDatabase } from "@/lib/seed";
 
 const themes = [
     { name: 'Default', value: 'default', cost: 0, colors: { primary: 'hsl(231 48% 48%)', accent: 'hsl(110 32% 48%)' } },
@@ -87,6 +88,27 @@ export default function ProfilePage() {
       applyTheme(user.activeTheme || 'default');
     }
   }, [user]);
+
+  const handleSeed = async () => {
+    try {
+      const result = await seedDatabase();
+      if (result.success) {
+        toast({
+          title: "Database Seeded",
+          description: `${result.count} documents were successfully added.`,
+          className: "bg-green-100 border-green-300"
+        });
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Seeding Failed",
+        description: error.message || "An unknown error occurred.",
+      });
+    }
+  };
 
   const handleNameSave = async () => {
     if (user && newName.trim()) {
@@ -447,9 +469,21 @@ export default function ProfilePage() {
                     Logout
                 </Button>
             </div>
+             <div>
+                <p className="text-sm text-muted-foreground mb-2">
+                    Seed the database with initial questions and articles. This should only be run once.
+                </p>
+                <Button variant="destructive" className="w-full" onClick={handleSeed}>
+                    <Database className="mr-2 h-4 w-4" />
+                    Seed Database
+                </Button>
+            </div>
         </CardContent>
       </Card>
     </div>
   );
+
+    
+
 
     

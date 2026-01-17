@@ -8,13 +8,9 @@ import allQuestions from '../../docs/questions-seed.json';
 import articlesSeed from '../../docs/articles-seed.json';
 import type { QuizQuestion, ReviewArticle } from './types';
 
-// This file is no longer used for seeding from the client.
-// It can be used for server-side scripts if needed in the future.
-// The primary seeding functionality has been removed from the UI.
-
 /**
- * A server-side utility to seed the database.
- * This is not exposed to the client.
+ * A server-side utility to seed the database with initial questions and articles.
+ * This can be triggered from a client component (e.g., a button in an admin/profile section).
  */
 export async function seedDatabase() {
   let firebaseApp;
@@ -71,3 +67,5 @@ export async function seedDatabase() {
      return { success: false, error: errorMessage };
   }
 }
+
+    
