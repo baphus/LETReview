@@ -23,7 +23,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
 const navItems = [
   { href: "/home", label: "Home", icon: Home },
-  { href: "/review", label: "Review", icon: BookOpen },
+  { href: "/reviewer/review", label: "Reviewer", icon: BookOpen },
   { href: "/quiz", label: "Quiz", icon: Lightbulb },
   { href: "/daily", label: "Daily", icon: CalendarDays },
   { href: "/timer", label: "Timer", icon: Clock },
@@ -60,9 +60,9 @@ export function AppSidebar() {
   const NavItem = ({ href, label, icon: Icon }: (typeof navItems)[0]) => {
       let isActivePath = false;
       if (href === '/daily') {
-        isActivePath = pathname.startsWith('/daily') || (pathname.startsWith('/review') && isChallenge);
-      } else if (href === '/review') {
-        isActivePath = pathname.startsWith('/review') && !isChallenge;
+        isActivePath = pathname.startsWith('/daily') || (pathname.startsWith('/reviewer/questions') && isChallenge);
+      } else if (href.startsWith('/reviewer')) {
+        isActivePath = pathname.startsWith('/reviewer') && !isChallenge;
       } else {
         isActivePath = pathname.startsWith(href);
       }

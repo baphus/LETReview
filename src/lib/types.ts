@@ -9,7 +9,18 @@ export interface QuizQuestion {
   choices: string[];
   answer: string;
   explanation?: string;
-  // No longer need createdAt from the old schema
+}
+
+export type ReviewArticleType = "Article" | "Video" | "Mixed";
+
+export interface ReviewArticle {
+    slug: string;
+    title: string;
+    category: "gened" | "profed" | "majorship";
+    description: string;
+    type: ReviewArticleType;
+    readingTime: number; // in minutes
+    difficulty: "easy" | "medium" | "hard";
 }
 
 export interface PetProfile {

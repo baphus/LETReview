@@ -198,7 +198,7 @@ export default function DailyPage() {
 
 
   const handleStartChallenge = (difficulty: 'easy' | 'medium' | 'hard', count: number) => {
-    router.push(`/review?challenge=true&difficulty=${difficulty}&count=${count}&category=${selectedCategory}`);
+    router.push(`/reviewer/questions?challenge=true&difficulty=${difficulty}&count=${count}&category=${selectedCategory}`);
   };
   
   const restoreStreakCost = Math.min(250, (user?.highestStreak || 0) * 10);
