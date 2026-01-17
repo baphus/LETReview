@@ -373,8 +373,7 @@ export default function NewReviewerPage() {
                                       key={topic.id}
                                       control={form.control}
                                       name="topicIds"
-                                      render={({ field }) => {
-                                      return (
+                                      render={({ field }) => (
                                           <FormItem key={topic.id} className="flex flex-row items-center space-x-3 space-y-0">
                                           <FormControl>
                                               <Checkbox
@@ -394,8 +393,7 @@ export default function NewReviewerPage() {
                                               {topic.name}
                                           </FormLabel>
                                           </FormItem>
-                                      )
-                                      }}
+                                      )}
                                   />
                                   )) : <p className="text-sm text-muted-foreground text-center">No topics found for this subject. Add one!</p>}
                               </div>
@@ -416,7 +414,7 @@ export default function NewReviewerPage() {
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select category" />
-                            </Trigger>
+                            </SelectTrigger>
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="gened">General Education</SelectItem>
