@@ -25,6 +25,7 @@ const reviewerFormSchema = z.object({
   slug: z.string().min(3, "Slug must be at least 3 characters long.").regex(/^[a-z0-9-]+$/, "Slug can only contain lowercase letters, numbers, and hyphens."),
   excerpt: z.string().min(20, "Excerpt is too short.").max(300, "Excerpt is too long."),
   content: z.string().min(100, "Content must be at least 100 characters long."),
+  category: z.enum(['gened', 'profed', 'majorship']),
   subjectId: z.string({ required_error: "Please select a subject." }).min(1, "Please select a subject."),
   topicIds: z.array(z.string()).refine(value => value.some(item => item), {
     message: "You have to select at least one topic.",
@@ -58,6 +59,7 @@ export default function NewReviewerPage() {
       difficulty: 'medium',
       reviewerType: 'article',
       topicIds: [],
+      category: 'profed',
     },
   });
 
@@ -83,6 +85,7 @@ export default function NewReviewerPage() {
 
     const newReviewer: Omit<Reviewer, 'id'> = {
       ...data,
+      contentFormat: 'markdown',
       status: 'published',
       orderIndex: 0, 
       createdBy: user.uid,
@@ -246,8 +249,30 @@ export default function NewReviewerPage() {
                   )}
                 />
             </div>
-             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-               <FormField
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <FormField
+                  control={form.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Category</FormLabel>
+                       <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select category" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                           <SelectItem value="gened">General Education</SelectItem>
+                           <SelectItem value="profed">Professional Education</SelectItem>
+                           <SelectItem value="majorship">Majorship</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
                   control={form.control}
                   name="difficulty"
                   render={({ field }) => (
@@ -269,6 +294,8 @@ export default function NewReviewerPage() {
                     </FormItem>
                   )}
                 />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                  <FormField
                   control={form.control}
                   name="reviewerType"

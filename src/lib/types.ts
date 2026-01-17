@@ -23,6 +23,7 @@ export interface Reviewer {
   excerpt: string;
   content: string;
   contentFormat: 'markdown';
+  category: 'gened' | 'profed' | 'majorship';
   subjectId: string;
   topicIds: string[];
   difficulty: 'easy' | 'medium' | 'hard';

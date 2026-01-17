@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "Reviewer": {
@@ -10,6 +11,7 @@
         "excerpt": { "type": "string" },
         "content": { "type": "string", "description": "Markdown content of the article." },
         "contentFormat": { "type": "string", "enum": ["markdown"] },
+        "category": { "type": "string", "enum": ["gened", "profed", "majorship"] },
         "subjectId": { "type": "string" },
         "topicIds": { "type": "array", "items": { "type": "string" } },
         "difficulty": { "type": "string", "enum": ["easy", "medium", "hard"] },
@@ -22,7 +24,7 @@
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["title", "slug", "content", "subjectId", "difficulty", "reviewerType", "status"]
+      "required": ["title", "slug", "content", "subjectId", "difficulty", "reviewerType", "status", "category"]
     },
     "Subject": {
       "title": "Subject",

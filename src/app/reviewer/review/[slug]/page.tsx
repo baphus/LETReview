@@ -14,6 +14,8 @@ import { Clock, Tag, Brain, Book, Video } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { useUser } from '@/firebase/auth/use-user';
+import { AddQuestionDialog } from '@/components/AddQuestionDialog';
 
 const articleTypeIcons = {
   "article": <Book className="h-4 w-4" />,
@@ -40,6 +42,7 @@ export default function ReviewArticlePage() {
     const params = useParams();
     const slug = params.slug as string;
     const firestore = useFirestore();
+    const { isAdmin } = useUser();
 
     const articleQuery = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -131,7 +134,10 @@ export default function ReviewArticlePage() {
                             <CardDescription>Keep track of your progress and move on.</CardDescription>
                         </CardHeader>
                         <CardFooter>
-                            <Button variant="secondary">Mark as Completed</Button>
+                           <div className="w-full flex gap-2">
+                                <Button variant="secondary" className="flex-1">Mark as Completed</Button>
+                                {isAdmin && article && <AddQuestionDialog article={article} />}
+                           </div>
                         </CardFooter>
                     </Card>
                 </div>
