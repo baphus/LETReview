@@ -63,7 +63,7 @@ export default function NewReviewerPage() {
 
   const subjectForm = useForm<z.infer<typeof subjectSchema>>({
     resolver: zodResolver(subjectSchema),
-    defaultValues: { name: "", color: "#" },
+    defaultValues: { name: "", color: "#3F51B5" },
   });
 
   const topicForm = useForm<z.infer<typeof topicSchema>>({
@@ -115,7 +115,7 @@ export default function NewReviewerPage() {
         id: slug,
       });
       toast({ title: 'Subject Added', description: `${data.name} has been added.` });
-      subjectForm.reset({ name: "", color: "#" });
+      subjectForm.reset({ name: "", color: "#3F51B5" });
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Error', description: error.message });
     }
@@ -246,9 +246,23 @@ export default function NewReviewerPage() {
               <FormField control={subjectForm.control} name="name" render={({ field }) => (
                 <FormItem className="flex-1"><FormLabel>Subject Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
               )} />
-              <FormField control={subjectForm.control} name="color" render={({ field }) => (
-                <FormItem><FormLabel>Color</FormLabel><FormControl><Input {...field} className="w-24" /></FormControl><FormMessage /></FormItem>
-              )} />
+              <FormField
+                control={subjectForm.control}
+                name="color"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Color</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="color"
+                        {...field}
+                        className="w-24 h-10 p-1 cursor-pointer"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <Button type="submit" disabled={subjectForm.formState.isSubmitting}>Add Subject</Button>
             </form>
           </Form>
