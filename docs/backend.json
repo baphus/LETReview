@@ -1,244 +1,92 @@
 {
   "entities": {
-    "User": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "User",
+    "Reviewer": {
+      "title": "Reviewer",
+      "description": "Represents a single review article or content piece.",
       "type": "object",
-      "description": "Represents a user of the LETReviewBuddy application.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the user."
-        },
-        "totalPoints": {
-          "type": "number",
-          "description": "Total points accumulated by the user.",
-          "format": "integer"
-        },
-        "currentStreak": {
-          "type": "number",
-          "description": "Current daily streak of the user.",
-          "format": "integer"
-        },
-        "lastStudyDate": {
-          "type": "string",
-          "description": "The last date the user studied.",
-          "format": "date-time"
-        },
-        "unlockedPets": {
-          "type": "array",
-          "description": "Array of unlocked pet identifiers.",
-          "items": {
-            "type": "string"
-          }
-        },
-        "completedSessions": {
-          "type": "number",
-          "description": "Number of pomodoro sessions completed by the user.",
-          "format": "integer"
-        },
-        "markedQuestions": {
-          "type": "array",
-          "description": "Array of marked question identifiers.",
-          "items": {
-            "type": "string"
-          }
-        }
+        "title": { "type": "string" },
+        "slug": { "type": "string" },
+        "excerpt": { "type": "string" },
+        "content": { "type": "string", "description": "Markdown content of the article." },
+        "contentFormat": { "type": "string", "enum": ["markdown"] },
+        "subjectId": { "type": "string" },
+        "topicIds": { "type": "array", "items": { "type": "string" } },
+        "difficulty": { "type": "string", "enum": ["easy", "medium", "hard"] },
+        "reviewerType": { "type": "string", "enum": ["article", "video", "mixed"] },
+        "estimatedTime": { "type": "number", "description": "Estimated time in minutes." },
+        "status": { "type": "string", "enum": ["draft", "published", "archived"] },
+        "orderIndex": { "type": "number" },
+        "createdBy": { "type": "string" },
+        "publishedAt": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
       },
-      "required": [
-        "id",
-        "totalPoints",
-        "currentStreak",
-        "lastStudyDate",
-        "unlockedPets",
-        "completedSessions",
-        "markedQuestions"
-      ]
+      "required": ["title", "slug", "content", "subjectId", "difficulty", "reviewerType", "status"]
+    },
+    "Subject": {
+      "title": "Subject",
+      "description": "A top-level category for reviewers and questions (e.g., General Education).",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "slug": { "type": "string" },
+        "color": { "type": "string" },
+        "orderIndex": { "type": "number" }
+      },
+      "required": ["name", "slug"]
+    },
+    "Topic": {
+      "title": "Topic",
+      "description": "A sub-category within a subject.",
+      "type": "object",
+      "properties": {
+        "subjectId": { "type": "string" },
+        "name": { "type": "string" },
+        "slug": { "type": "string" }
+      },
+      "required": ["subjectId", "name", "slug"]
     },
     "Question": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Question",
-      "type": "object",
-      "description": "Represents a question in the LET review.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the question."
+        "title": "Question",
+        "description": "Represents a single practice question.",
+        "type": "object",
+        "properties": {
+          "subjectId": { "type": "string" },
+          "topicIds": { "type": "array", "items": { "type": "string" } },
+          "difficulty": { "type": "string", "enum": ["easy", "medium", "hard"] },
+          "type": { "type": "string", "enum": ["multiple_choice"] },
+          "question": { "type": "string" },
+          "choices": { "type": "array", "items": { "type": "string" } },
+          "correctAnswer": { "type": "string" },
+          "explanation": { "type": "string" },
+          "reviewerIds": { "type": "array", "items": { "type": "string" } }
         },
-        "category": {
-          "type": "string",
-          "description": "Category of the question (gened | profed | majorship)."
-        },
-        "difficulty": {
-          "type": "string",
-          "description": "Difficulty level of the question (easy | medium | hard)."
-        },
-        "question": {
-          "type": "string",
-          "description": "The question text."
-        },
-        "answer": {
-          "type": "string",
-          "description": "The correct answer to the question."
-        },
-        "explanation": {
-          "type": "string",
-          "description": "Explanation of the answer (optional)."
-        },
-        "choices": {
-          "type": "array",
-          "description": "An array of choices for the question.",
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "id",
-        "category",
-        "difficulty",
-        "question",
-        "answer",
-        "choices"
-      ]
+        "required": ["subjectId", "difficulty", "type", "question", "choices", "correctAnswer"]
     },
-    "QuestionCategory": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "QuestionCategory",
+     "ReviewerProgress": {
+      "title": "Reviewer Progress",
+      "description": "Tracks a user's progress on a specific reviewer article.",
       "type": "object",
-      "description": "A document containing all questions for a specific category.",
       "properties": {
-        "questions": {
-          "type": "array",
-          "description": "An array of Question objects.",
-          "items": {
-            "$ref": "#/entities/Question"
-          }
-        }
+        "status": { "type": "string", "enum": ["not_started", "in_progress", "completed"] },
+        "progressPercent": { "type": "number" },
+        "lastReadPosition": { "type": "number" },
+        "updatedAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["questions"]
+      "required": ["status", "updatedAt"]
     },
-    "ReviewArticle": {
-      "title": "Review Article",
-      "description": "Represents a review article for a specific topic.",
+    "ReviewerBookmark": {
+      "title": "Reviewer Bookmark",
+      "description": "Marks a reviewer article as bookmarked by a user.",
       "type": "object",
       "properties": {
-        "slug": {
-          "type": "string",
-          "description": "URL-friendly identifier for the article."
-        },
-        "title": {
-          "type": "string"
-        },
-        "category": {
-          "type": "string",
-          "enum": ["gened", "profed", "majorship"]
-        },
-        "description": {
-          "type": "string"
-        },
-        "type": {
-          "type": "string",
-          "enum": ["Article", "Video", "Mixed"]
-        },
-        "readingTime": {
-          "type": "number",
-          "format": "integer"
-        },
-        "difficulty": {
-          "type": "string",
-          "enum": ["easy", "medium", "hard"]
-        },
-        "content": {
-          "type": "string",
-          "description": "The full content of the article in Markdown or HTML."
-        }
+        "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["slug", "title", "category", "description", "type", "readingTime", "difficulty"]
+      "required": ["createdAt"]
     },
-    "DailyProgress": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "DailyProgress",
-      "type": "object",
-      "description": "Represents the daily progress of a user.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the daily progress entry, typically a combination of userId and date."
-        },
-        "userId": {
-          "type": "string",
-          "description": "Reference to User. (Relationship: User 1:N DailyProgress)"
-        },
-        "date": {
-          "type": "string",
-          "description": "The date for which the progress is recorded.",
-          "format": "date"
-        },
-        "easyCompleted": {
-          "type": "boolean",
-          "description": "Indicates whether the easy challenge was completed."
-        },
-        "mediumCompleted": {
-          "type": "boolean",
-          "description": "Indicates whether the medium challenge was completed."
-        },
-        "hardCompleted": {
-          "type": "boolean",
-          "description": "Indicates whether the hard challenge was completed."
-        },
-        "pointsEarned": {
-          "type": "number",
-          "description": "Total points earned for the day.",
-          "format": "integer"
-        },
-        "pomodoroSessions": {
-          "type": "number",
-          "description": "Number of pomodoro sessions completed on this day.",
-          "format": "integer"
-        }
-      },
-      "required": [
-        "id",
-        "userId",
-        "date",
-        "easyCompleted",
-        "mediumCompleted",
-        "hardCompleted",
-        "pointsEarned",
-        "pomodoroSessions"
-      ]
-    },
-    "Pet": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Pet",
-      "type": "object",
-      "description": "Represents a pet that can be unlocked.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the pet."
-        },
-        "name": {
-          "type": "string",
-          "description": "Name of the pet."
-        },
-        "description": {
-          "type": "string",
-          "description": "Description of the pet."
-        },
-        "pointsRequired": {
-          "type": "number",
-          "description": "Number of points required to unlock the pet.",
-          "format": "integer"
-        }
-      },
-      "required": [
-        "id",
-        "name",
-        "description",
-        "pointsRequired"
-      ]
+    "User": {
+        "$ref": "#/backend/entities/User"
     }
   },
   "auth": {
@@ -253,87 +101,58 @@
         "path": "/users/{userId}",
         "definition": {
           "entityName": "User",
-          "schema": {
-            "$ref": "#/backend/entities/User"
-          },
-          "description": "Stores user profile data. Only the authenticated user can access their own profile data (private data access).",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user."
-            }
-          ]
+          "schema": { "$ref": "#/backend/entities/User" },
+          "description": "Stores user profile data."
         }
       },
       {
-        "path": "/questions/{categoryId}",
+        "path": "/users/{userId}/reviewerProgress/{reviewerId}",
         "definition": {
-          "entityName": "QuestionCategory",
-          "schema": {
-            "$ref": "#/entities/QuestionCategory"
-          },
-          "description": "Stores all LET review questions, grouped by category. The categoryId will be 'gened', 'profed', or 'majorship'. Public read access is allowed.",
-          "params": [
-            {
-              "name": "categoryId",
-              "description": "The category of the questions ('gened', 'profed', or 'majorship')."
-            }
-          ]
+            "entityName": "ReviewerProgress",
+            "schema": { "$ref": "#/backend/entities/ReviewerProgress" },
+            "description": "Tracks user progress for each reviewer article."
         }
       },
       {
-        "path": "/reviewers/{articleId}",
+        "path": "/users/{userId}/reviewerBookmarks/{reviewerId}",
         "definition": {
-          "entityName": "ReviewArticle",
-          "schema": {
-            "$ref": "#/entities/ReviewArticle"
-          },
-          "description": "Stores review articles for various subjects. Public read access is allowed.",
-          "params": [
-            {
-              "name": "articleId",
-              "description": "The unique identifier of the review article, typically a URL slug."
-            }
-          ]
+            "entityName": "ReviewerBookmark",
+            "schema": { "$ref": "#/backend/entities/ReviewerBookmark" },
+            "description": "Stores user bookmarks for reviewer articles."
         }
       },
       {
-        "path": "/users/{userId}/dailyProgress/{date}",
+        "path": "/reviewers/{reviewerId}",
         "definition": {
-          "entityName": "DailyProgress",
-          "schema": {
-            "$ref": "#/backend/entities/DailyProgress"
-          },
-          "description": "Stores the daily progress of each user. Only the authenticated user can access their own daily progress entries.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user."
-            },
-            {
-              "name": "date",
-              "description": "The date for which the progress is recorded (format: YYYY-MM-DD)."
-            }
-          ]
+          "entityName": "Reviewer",
+          "schema": { "$ref": "#/backend/entities/Reviewer" },
+          "description": "Stores all review articles. Publicly readable."
         }
       },
       {
-        "path": "/pets/{petId}",
+        "path": "/subjects/{subjectId}",
         "definition": {
-          "entityName": "Pet",
-          "schema": {
-            "$ref": "#/backend/entities/Pet"
-          },
-          "description": "Stores the definitions of available pets. Allows public read access.",
-          "params": [
-            {
-              "name": "petId",
-              "description": "The unique identifier of the pet."
-            }
-          ]
+          "entityName": "Subject",
+          "schema": { "$ref": "#/backend/entities/Subject" },
+          "description": "Stores all subjects. Publicly readable."
+        }
+      },
+      {
+        "path": "/topics/{topicId}",
+        "definition": {
+          "entityName": "Topic",
+          "schema": { "$ref": "#/backend/entities/Topic" },
+          "description": "Stores all topics. Publicly readable."
+        }
+      },
+       {
+        "path": "/questions/{questionId}",
+        "definition": {
+          "entityName": "Question",
+          "schema": { "$ref": "#/backend/entities/Question" },
+          "description": "Stores all questions as individual documents. Publicly readable."
         }
       }
-    ],
-    "reasoning": "The Firestore structure is designed to optimize for security, scalability, and the specific features of the LETReviewBuddy application. It adheres to the principle of Authorization Independence by avoiding hierarchical `get()` calls in security rules, which is achieved through denormalization where necessary. It also segregates data based on access requirements, ensuring a homogeneous security posture within each collection.  The use of path-based ownership and consistent naming conventions enhance clarity and debuggability.\n\n*   **/users/{userId}**: Stores user profile data. This path ensures that only the authenticated user can access their own profile data (private data access).  \n*   **/questions/{categoryId}**: Stores all LET review questions, grouped into two documents: 'gened' and 'profed'. This allows for efficient retrieval of all questions for a category in a single read, while still allowing public read access.\n*   **/reviewers/{articleId}**: Stores all review articles, allowing for public read access.\n*   **/users/{userId}/dailyProgress/{date}**: Stores the daily progress of each user, using a composite key of userId and date. This facilitates easy querying of a user's daily progress and enforces ownership-based access control.\n*   **/pets/{petId}**: Stores the definitions of available pets.\n\nThis structure supports the required Question Answering Patterns (QAPs) as follows:\n\n*   **Secure List Operations**: Each collection (`users`, `questions`, `reviewers`, `/users/{userId}/dailyProgress`, and `pets`) can be listed securely because the rules only depend on the authenticated user's ID (`request.auth.uid`) and/or the document data itself, and there are no dependencies on parent documents.\n*   **Authorization Independence**: The structure ensures that security rules do not rely on fetching data from other documents (no `get()` calls), maintaining atomicity for operations like creating new daily progress entries or updating user profiles."
+    ]
   }
 }

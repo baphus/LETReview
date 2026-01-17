@@ -1,28 +1,71 @@
 
 import { FieldValue } from 'firebase/firestore';
 
+export interface Subject {
+  id: string;
+  name: string;
+  slug: string;
+  color: string;
+  orderIndex: number;
+}
+
+export interface Topic {
+  id: string;
+  subjectId: string;
+  name: string;
+  slug: string;
+}
+
+export interface Reviewer {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string;
+  content: string;
+  contentFormat: 'markdown';
+  subjectId: string;
+  topicIds: string[];
+  difficulty: 'easy' | 'medium' | 'hard';
+  reviewerType: 'article' | 'video' | 'mixed';
+  estimatedTime: number;
+  status: 'draft' | 'published' | 'archived';
+  orderIndex: number;
+  createdBy?: string;
+  publishedAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface QuizQuestion {
-  id: string; // Changed from number to string for Firestore
+  id: string;
+  subjectId?: string;
+  topicIds?: string[];
   category: "gened" | "profed" | "majorship";
   difficulty: "easy" | "medium" | "hard";
+  type?: "multiple_choice";
   question: string;
   choices: string[];
+  correctAnswer?: string;
   answer: string;
   explanation?: string;
+  reviewerIds?: string[];
 }
 
+
+export interface ReviewerProgress {
+  status: 'not_started' | 'in_progress' | 'completed';
+  progressPercent: number;
+  lastReadPosition: number;
+  updatedAt: string;
+}
+
+export interface ReviewerBookmark {
+  createdAt: string;
+}
+
+// Keeping existing types that are not directly replaced
 export type ReviewArticleType = "Article" | "Video" | "Mixed";
-
-export interface ReviewArticle {
-    slug: string;
-    title: string;
-    category: "gened" | "profed" | "majorship";
-    description: string;
-    type: ReviewArticleType;
-    readingTime: number; // in minutes
-    difficulty: "easy" | "medium" | "hard";
-    content?: string;
-}
+export interface ReviewArticle extends Reviewer {} // for backwards compatibility in other files
 
 export interface PetProfile {
   name: string;

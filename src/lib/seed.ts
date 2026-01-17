@@ -4,9 +4,11 @@
 import { getFirestore, writeBatch, doc, collection } from 'firebase/firestore';
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { firebaseConfig } from '@/firebase/config';
-import allQuestions from '../../docs/questions-seed.json';
-import articlesSeed from '../../docs/articles-seed.json';
-import type { QuizQuestion, ReviewArticle } from './types';
+import reviewersSeed from '../../docs/reviewers-seed.json';
+import subjectsSeed from '../../docs/subjects-seed.json';
+import topicsSeed from '../../docs/topics-seed.json';
+import questionsSeed from '../../docs/questions-seed.json';
+import { Reviewer } from './types';
 
 /**
  * A server-side utility to seed the database with initial questions and articles.
@@ -23,43 +25,39 @@ export async function seedDatabase() {
   
   const batch = writeBatch(firestore);
 
+  // Seed Subjects
+  const subjectsCollectionRef = collection(firestore, 'subjects');
+  subjectsSeed.forEach((subject) => {
+    const subjectDocRef = doc(subjectsCollectionRef, subject.id);
+    batch.set(subjectDocRef, subject);
+  });
+
+  // Seed Topics
+  const topicsCollectionRef = collection(firestore, 'topics');
+  topicsSeed.forEach((topic) => {
+    const topicDocRef = doc(topicsCollectionRef, topic.id);
+    batch.set(topicDocRef, topic);
+  });
+
+  // Seed Reviewers
+  const reviewersCollectionRef = collection(firestore, 'reviewers');
+  reviewersSeed.forEach((reviewer) => {
+    const reviewerDocRef = doc(reviewersCollectionRef, reviewer.id);
+    const data = { ...reviewer, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+    batch.set(reviewerDocRef, data);
+  });
+  
   // Seed Questions
   const questionsCollectionRef = collection(firestore, 'questions');
-
-  const categorizedQuestions = allQuestions.reduce((acc, question) => {
-    const category = question.category as 'gen_education' | 'professional';
-    const targetCategory = category === 'gen_education' ? 'gened' : 'profed';
-    
-    if (!acc[targetCategory]) {
-      acc[targetCategory] = [];
-    }
-    const questionWithStrId: QuizQuestion = {
-        ...question,
-        id: String(question.id)
-    };
-    acc[targetCategory].push(questionWithStrId);
-    return acc;
-  }, {} as Record<'gened' | 'profed', QuizQuestion[]>);
-
-  for (const category in categorizedQuestions) {
-    if (Object.prototype.hasOwnProperty.call(categorizedQuestions, category)) {
-      const categoryId = category as 'gened' | 'profed';
-      const categoryDocRef = doc(questionsCollectionRef, categoryId);
-      batch.set(categoryDocRef, { questions: categorizedQuestions[categoryId] });
-    }
-  }
-
-  // Seed Review Articles
-  const articlesCollectionRef = collection(firestore, 'reviewers');
-  articlesSeed.forEach((article: ReviewArticle) => {
-    const articleDocRef = doc(articlesCollectionRef, article.slug);
-    batch.set(articleDocRef, article);
+  questionsSeed.forEach((question) => {
+    const questionDocRef = doc(questionsCollectionRef, question.id);
+    batch.set(questionDocRef, question);
   });
 
   try {
     await batch.commit();
-    const totalCount = allQuestions.length + articlesSeed.length;
-    console.log(`${totalCount} documents have been successfully seeded.`);
+    const totalCount = reviewersSeed.length + subjectsSeed.length + topicsSeed.length + questionsSeed.length;
+    console.log(`${totalCount} documents have been successfully seeded across all collections.`);
     return { success: true, count: totalCount };
   } catch (error) {
      const errorMessage = `Firestore seeding failed.`;
