@@ -1,7 +1,6 @@
-
 "use client";
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Clock, Book, Video, Brain, Bookmark } from 'lucide-react';
@@ -10,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, orderBy } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import type { Reviewer as ReviewArticle } from '@/lib/types'; // Using alias
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -49,14 +48,18 @@ export default function ReviewPage() {
         if (!firestore) return null;
         const baseQuery = collection(firestore, 'reviewers');
         if (subjectId === 'all') {
-            return query(baseQuery, where('status', '==', 'published'), orderBy('orderIndex'));
+            return query(baseQuery, where('status', '==', 'published'));
         } else {
-            return query(baseQuery, where('status', '==', 'published'), where('subjectId', '==', subjectId), orderBy('orderIndex'));
+            return query(baseQuery, where('status', '==', 'published'), where('subjectId', '==', subjectId));
         }
     }, [firestore, subjectId]);
     
-    // TODO: Fetch subjects for the filter dropdown
     const { data: articles, isLoading } = useCollection<ReviewArticle>(articlesQuery);
+
+    const sortedArticles = useMemo(() => {
+        if (!articles) return [];
+        return [...articles].sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0));
+    }, [articles]);
 
     return (
         <div>
@@ -75,7 +78,7 @@ export default function ReviewPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {isLoading && Array.from({ length: 3 }).map((_, i) => <ReviewCardSkeleton key={i} />)}
                 
-                {!isLoading && articles?.map(article => (
+                {!isLoading && sortedArticles.map(article => (
                     <Card key={article.slug} className="flex flex-col">
                         <CardHeader>
                             <div className="flex justify-between items-start">
