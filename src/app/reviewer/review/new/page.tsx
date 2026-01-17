@@ -254,10 +254,15 @@ export default function NewReviewerPage() {
 
   return (
     <>
-        <div className="mb-6">
-            <p className="text-sm text-muted-foreground mb-2">Seed the database with initial questions and articles. This should only be run once.</p>
-            <Button variant="outline" className="w-full" onClick={handleSeed}><Database className="mr-2 h-4 w-4" />Seed Database</Button>
-        </div>
+      <Card className="mb-6">
+          <CardHeader>
+              <CardTitle>Content Management</CardTitle>
+          </CardHeader>
+          <CardContent>
+              <p className="text-sm text-muted-foreground mb-2">Seed the database with initial questions and articles. This should only be run once.</p>
+              <Button variant="outline" className="w-full" onClick={handleSeed}><Database className="mr-2 h-4 w-4" />Seed Database</Button>
+          </CardContent>
+      </Card>
       
       <Card>
         <CardHeader>
@@ -436,7 +441,7 @@ export default function NewReviewerPage() {
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select difficulty" />
-                            </Trigger>
+                            </SelectTrigger>
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="easy">Easy</SelectItem>
@@ -460,7 +465,7 @@ export default function NewReviewerPage() {
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select type" />
-                            </Trigger>
+                            </SelectTrigger>
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="article">Article</SelectItem>
