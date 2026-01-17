@@ -1,6 +1,7 @@
 [
   {
     "id": "q1-piaget-stages",
+    "category": "profed",
     "subjectId": "educational-psychology",
     "topicIds": ["cognitive-development"],
     "difficulty": "easy",
@@ -13,6 +14,7 @@
   },
   {
     "id": "q2-vygotsky-zpd",
+    "category": "profed",
     "subjectId": "educational-psychology",
     "topicIds": ["cognitive-development"],
     "difficulty": "medium",
@@ -25,6 +27,7 @@
   },
   {
     "id": "q3-piaget-assimilation",
+    "category": "profed",
     "subjectId": "educational-psychology",
     "topicIds": ["cognitive-development"],
     "difficulty": "hard",

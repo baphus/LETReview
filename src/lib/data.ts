@@ -40,7 +40,7 @@ export const getQuestionForDate = async (date: Date): Promise<QuizQuestion> => {
         questionsInCategory = (docSnap.data().questions || []) as QuizQuestion[];
     } else {
         // Fallback to static data if the document doesn't exist
-        questionsInCategory = staticQuestions.filter(q => q.category === (category === 'gened' ? 'gen_education' : 'professional')) as QuizQuestion[];
+        questionsInCategory = staticQuestions.filter(q => (q as QuizQuestion).category === category) as QuizQuestion[];
     }
 
     if (questionsInCategory.length === 0) {
@@ -65,7 +65,7 @@ export const getQuestionOfTheDay = async (): Promise<QuizQuestion> => {
 };
 
 export const getQuestions = async (options: {
-    category?: 'gened' | 'profed';
+    category?: 'gened' | 'profed' | 'majorship';
     difficulty?: 'easy' | 'medium' | 'hard';
     limit?: number;
     shuffle?: boolean;
@@ -81,7 +81,7 @@ export const getQuestions = async (options: {
         allQuestions = (docSnap.data().questions || []) as QuizQuestion[];
     } else {
         // Fallback to static data
-        allQuestions = staticQuestions.filter(q => q.category === (category === 'gened' ? 'gen_education' : 'professional')) as QuizQuestion[];
+        allQuestions = staticQuestions.filter(q => (q as QuizQuestion).category === category) as QuizQuestion[];
     }
 
     let filteredQuestions = allQuestions;
@@ -202,5 +202,3 @@ export const achievementPets: PetProfile[] = [
 export const rarePets: PetProfile[] = [
     { name: "Draco", unlock_criteria: "Purchase in store", cost: 1000, image: "/pets/draco.png", hint: "fire breathing", streak_req: 0 },
 ];
-
-    

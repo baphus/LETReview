@@ -45,7 +45,7 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
-    match /questions/{questionId} {
+    match /questions/{categoryId} {
       allow get, list: if true;
       allow create, update, delete: if isAdmin();
     }

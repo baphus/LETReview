@@ -8,10 +8,10 @@ import reviewersSeed from '../../docs/reviewers-seed.json';
 import subjectsSeed from '../../docs/subjects-seed.json';
 import topicsSeed from '../../docs/topics-seed.json';
 import questionsSeed from '../../docs/questions-seed.json';
-import { Reviewer } from './types';
+import { Reviewer, QuizQuestion } from './types';
 
 /**
- * A server-side utility to seed the database with initial questions and articles.
+ * A server-side utility to seed the database with initial content.
  * This can be triggered from a client component (e.g., a button in an admin/profile section).
  */
 export async function seedDatabase() {
@@ -49,14 +49,29 @@ export async function seedDatabase() {
   
   // Seed Questions
   const questionsCollectionRef = collection(firestore, 'questions');
-  questionsSeed.forEach((question) => {
-    const questionDocRef = doc(questionsCollectionRef, question.id);
-    batch.set(questionDocRef, question);
-  });
+  
+  const questionsByCategory = questionsSeed.reduce((acc, q) => {
+    const question = q as QuizQuestion;
+    if (question.category) {
+        if (!acc[question.category]) {
+            acc[question.category] = [];
+        }
+        acc[question.category].push(question);
+    }
+    return acc;
+  }, {} as Record<string, QuizQuestion[]>);
+
+  // Create one document per category that has questions
+  for (const category in questionsByCategory) {
+    if (questionsByCategory[category].length > 0) {
+      const categoryDocRef = doc(questionsCollectionRef, category);
+      batch.set(categoryDocRef, { questions: questionsByCategory[category] });
+    }
+  }
 
   try {
     await batch.commit();
-    const totalCount = reviewersSeed.length + subjectsSeed.length + topicsSeed.length + questionsSeed.length;
+    const totalCount = reviewersSeed.length + subjectsSeed.length + topicsSeed.length + Object.keys(questionsByCategory).length;
     console.log(`${totalCount} documents have been successfully seeded across all collections.`);
     return { success: true, count: totalCount };
   } catch (error) {
