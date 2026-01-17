@@ -38,7 +38,7 @@ const reviewerFormSchema = z.object({
   slug: z.string().min(3, "Slug must be at least 3 characters long.").regex(/^[a-z0-9-]+$/, "Slug can only contain lowercase letters, numbers, and hyphens."),
   excerpt: z.string().min(20, "Excerpt is too short.").max(300, "Excerpt is too long."),
   content: z.string().min(100, "Content must be at least 100 characters long."),
-  category: z.enum(['gened', 'profed', 'majorship']),
+  category: z.enum(['gened', 'profed', 'majorship'], { required_error: "Please select a category." }),
   subjectId: z.string({ required_error: "Please select a subject." }).min(1, "Please select a subject."),
   topicIds: z.array(z.string()).refine(value => value.some(item => item), {
     message: "You have to select at least one topic.",
@@ -58,6 +58,12 @@ const subjectSchema = z.object({
 const topicSchema = z.object({
   name: z.string().min(3, "Topic name must be at least 3 characters."),
 });
+
+const categories = [
+    { id: 'gened', name: 'General Education' },
+    { id: 'profed', name: 'Professional Education' },
+    { id: 'majorship', name: 'Majorship' },
+] as const;
 
 export default function NewReviewerPage() {
   const router = useRouter();
@@ -98,6 +104,7 @@ export default function NewReviewerPage() {
   });
 
   const titleValue = form.watch("title");
+  const selectedCategory = form.watch("category");
   const selectedSubjectId = form.watch("subjectId");
 
   useEffect(() => {
@@ -115,13 +122,14 @@ export default function NewReviewerPage() {
   }, [isUserLoading, isAdmin, router, toast]);
 
   const handleAddSubject = async (data: z.infer<typeof subjectSchema>) => {
-    if (!firestore) return;
+    if (!firestore || !selectedCategory) return;
     const slug = data.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
     try {
       const subjectRef = doc(firestore, 'subjects', slug);
       await setDoc(subjectRef, {
         ...data,
         slug,
+        categoryId: selectedCategory,
         orderIndex: subjects?.length || 0,
         id: slug,
       });
@@ -148,7 +156,6 @@ export default function NewReviewerPage() {
       toast({ title: 'Topic Added', description: `${data.name} has been added.` });
       topicForm.reset();
       setIsAddTopicOpen(false);
-      // Automatically select the new topic
       form.setValue('topicIds', [...form.getValues('topicIds'), slug], { shouldValidate: true });
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Error', description: error.message });
@@ -222,8 +229,8 @@ export default function NewReviewerPage() {
       orderIndex: 0, 
       createdBy: user.uid,
       publishedAt: new Date().toISOString(),
-      createdAt: serverTimestamp() as any, // Let server set this
-      updatedAt: serverTimestamp() as any, // Let server set this
+      createdAt: serverTimestamp() as any,
+      updatedAt: serverTimestamp() as any,
     };
 
     try {
@@ -327,110 +334,117 @@ export default function NewReviewerPage() {
                   </FormItem>
                 )}
               />
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <FormField
                     control={form.control}
-                    name="subjectId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Subject</FormLabel>
-                        <Select onValueChange={(value) => {
-                            if (value === 'add-new') {
-                                setIsAddSubjectOpen(true);
-                            } else {
-                                field.onChange(value);
-                                form.setValue('topicIds', []); // Reset topics when subject changes
-                            }
-                        }} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select a subject" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {isLoadingSubjects ? <SelectItem value="loading" disabled>Loading...</SelectItem> : subjects?.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-                            <SelectItem value="add-new" className="text-primary font-semibold">
-                                <span className="flex items-center"><PlusCircle className="h-4 w-4 mr-2" /> Add new subject...</span>
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  {selectedSubjectId && (
-                     <FormField
-                        control={form.control}
-                        name="topicIds"
-                        render={() => (
-                          <FormItem>
-                              <div className="flex justify-between items-center mb-2">
-                                  <FormLabel>Topics</FormLabel>
-                                  <Button type="button" variant="outline" size="sm" onClick={() => setIsAddTopicOpen(true)}>
-                                      <PlusCircle className="h-4 w-4 mr-2" />
-                                      New Topic
-                                  </Button>
-                              </div>
-                            
-                              <div className="max-h-40 overflow-y-auto rounded-md border p-4 space-y-2">
-                              {isLoadingTopics ? <p>Loading...</p> : availableTopics.length > 0 ? availableTopics.map((topic) => (
-                                  <FormField
-                                      key={topic.id}
-                                      control={form.control}
-                                      name="topicIds"
-                                      render={({ field }) => (
-                                          <FormItem key={topic.id} className="flex flex-row items-center space-x-3 space-y-0">
-                                          <FormControl>
-                                              <Checkbox
-                                              checked={field.value?.includes(topic.id)}
-                                              onCheckedChange={(checked) => {
-                                                  return checked
-                                                  ? field.onChange([...field.value, topic.id])
-                                                  : field.onChange(
-                                                      field.value?.filter(
-                                                          (value) => value !== topic.id
-                                                      )
-                                                      )
-                                              }}
-                                              />
-                                          </FormControl>
-                                          <FormLabel className="text-sm font-normal">
-                                              {topic.name}
-                                          </FormLabel>
-                                          </FormItem>
-                                      )}
-                                  />
-                                  )) : <p className="text-sm text-muted-foreground text-center">No topics found for this subject. Add one!</p>}
-                              </div>
-                              <FormMessage />
-                          </FormItem>
-                        )}
-                    />
-                  )}
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <FormField
-                    control={form.control}
                     name="category"
                     render={({ field }) => (
-                      <FormItem>
+                    <FormItem>
                         <FormLabel>Category</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
+                        <Select onValueChange={(value) => {
+                            field.onChange(value);
+                            form.setValue('subjectId', ''); // Reset subject when category changes
+                            form.setValue('topicIds', []); // Reset topics too
+                        }} defaultValue={field.value}>
+                        <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Select category" />
+                            <SelectValue placeholder="Select category" />
                             </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="gened">General Education</SelectItem>
-                            <SelectItem value="profed">Professional Education</SelectItem>
-                            <SelectItem value="majorship">Majorship</SelectItem>
-                          </SelectContent>
+                        </FormControl>
+                        <SelectContent>
+                            {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                        </SelectContent>
                         </Select>
                         <FormMessage />
-                      </FormItem>
+                    </FormItem>
                     )}
-                  />
+                />
+                {selectedCategory && (
+                    <FormField
+                        control={form.control}
+                        name="subjectId"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Subject</FormLabel>
+                            <Select onValueChange={(value) => {
+                                if (value === 'add-new') {
+                                    setIsAddSubjectOpen(true);
+                                } else {
+                                    field.onChange(value);
+                                    form.setValue('topicIds', []); // Reset topics when subject changes
+                                }
+                            }} value={field.value}>
+                            <FormControl>
+                                <SelectTrigger>
+                                <SelectValue placeholder="Select a subject" />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                {isLoadingSubjects ? <SelectItem value="loading" disabled>Loading...</SelectItem> : subjects?.filter(s => s.categoryId === selectedCategory).map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                                <SelectItem value="add-new" className="text-primary font-semibold">
+                                    <span className="flex items-center"><PlusCircle className="h-4 w-4 mr-2" /> Add new subject...</span>
+                                </SelectItem>
+                            </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                )}
+              </div>
+              
+              {selectedSubjectId && (
+                    <FormField
+                    control={form.control}
+                    name="topicIds"
+                    render={() => (
+                        <FormItem>
+                            <div className="flex justify-between items-center mb-2">
+                                <FormLabel>Topics</FormLabel>
+                                <Button type="button" variant="outline" size="sm" onClick={() => setIsAddTopicOpen(true)}>
+                                    <PlusCircle className="h-4 w-4 mr-2" />
+                                    New Topic
+                                </Button>
+                            </div>
+                        
+                            <div className="max-h-40 overflow-y-auto rounded-md border p-4 space-y-2">
+                            {isLoadingTopics ? <p>Loading...</p> : availableTopics.length > 0 ? availableTopics.map((topic) => (
+                                <FormField
+                                    key={topic.id}
+                                    control={form.control}
+                                    name="topicIds"
+                                    render={({ field }) => (
+                                        <FormItem key={topic.id} className="flex flex-row items-center space-x-3 space-y-0">
+                                        <FormControl>
+                                            <Checkbox
+                                            checked={field.value?.includes(topic.id)}
+                                            onCheckedChange={(checked) => {
+                                                return checked
+                                                ? field.onChange([...field.value, topic.id])
+                                                : field.onChange(
+                                                    field.value?.filter(
+                                                        (value) => value !== topic.id
+                                                    )
+                                                    )
+                                            }}
+                                            />
+                                        </FormControl>
+                                        <FormLabel className="text-sm font-normal">
+                                            {topic.name}
+                                        </FormLabel>
+                                        </FormItem>
+                                    )}
+                                />
+                                )) : <p className="text-sm text-muted-foreground text-center">No topics found for this subject. Add one!</p>}
+                            </div>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <FormField
                     control={form.control}
                     name="difficulty"
@@ -453,8 +467,6 @@ export default function NewReviewerPage() {
                       </FormItem>
                     )}
                   />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <FormField
                     control={form.control}
                     name="reviewerType"
@@ -477,20 +489,20 @@ export default function NewReviewerPage() {
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={form.control}
-                    name="estimatedTime"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Estimated Time (min)</FormLabel>
-                        <FormControl>
-                          <Input type="number" placeholder="25" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
               </div>
+              <FormField
+                control={form.control}
+                name="estimatedTime"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Estimated Time (min)</FormLabel>
+                    <FormControl>
+                        <Input type="number" placeholder="25" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Publish Article
@@ -505,6 +517,7 @@ export default function NewReviewerPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add New Subject</DialogTitle>
+             <DialogDescription>For category: {categories.find(c => c.id === selectedCategory)?.name || '...'}</DialogDescription>
           </DialogHeader>
           <Form {...subjectForm}>
             <form onSubmit={subjectForm.handleSubmit(handleAddSubject)} className="space-y-4">

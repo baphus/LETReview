@@ -1,6 +1,8 @@
+
 [
   {
     "id": "educational-psychology",
+    "categoryId": "profed",
     "name": "Educational Psychology",
     "slug": "educational-psychology",
     "color": "#3F51B5",

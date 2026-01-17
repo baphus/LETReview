@@ -14,6 +14,7 @@ import { collection, query, where, orderBy } from 'firebase/firestore';
 import type { Reviewer as ReviewArticle, Subject } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useUser } from '@/firebase/auth/use-user';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const articleTypeIcons = {
   "article": <Book className="h-4 w-4" />,
@@ -43,19 +44,25 @@ const ReviewCardSkeleton = () => (
 );
 
 export default function ReviewPage() {
+    const [categoryId, setCategoryId] = useState<'gened' | 'profed' | 'majorship'>('profed');
     const [subjectId, setSubjectId] = useState<'all' | string>('all');
     const firestore = useFirestore();
     const { isAdmin } = useUser();
 
     const articlesQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        const baseQuery = collection(firestore, 'reviewers');
-        if (subjectId === 'all') {
-            return query(baseQuery, where('status', '==', 'published'));
-        } else {
-            return query(baseQuery, where('status', '==', 'published'), where('subjectId', '==', subjectId));
+        let q = query(
+            collection(firestore, 'reviewers'),
+            where('status', '==', 'published'),
+            where('category', '==', categoryId)
+        );
+
+        if (subjectId !== 'all') {
+            q = query(q, where('subjectId', '==', subjectId));
         }
-    }, [firestore, subjectId]);
+        
+        return q;
+    }, [firestore, categoryId, subjectId]);
     
     const subjectsQuery = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -65,6 +72,11 @@ export default function ReviewPage() {
     const { data: articles, isLoading: isLoadingArticles } = useCollection<ReviewArticle>(articlesQuery);
     const { data: subjects, isLoading: isLoadingSubjects } = useCollection<Subject>(subjectsQuery);
 
+    const filteredSubjects = useMemo(() => {
+        if (!subjects) return [];
+        return subjects.filter(s => s.categoryId === categoryId);
+    }, [subjects, categoryId]);
+
     const sortedArticles = useMemo(() => {
         if (!articles) return [];
         // Perform client-side sorting
@@ -73,30 +85,42 @@ export default function ReviewPage() {
 
     return (
         <div>
-            <div className="flex flex-col sm:flex-row gap-4 mb-6 items-center">
-                <Select value={subjectId} onValueChange={(value) => setSubjectId(value)}>
-                    <SelectTrigger className="w-full sm:w-auto">
-                        <SelectValue placeholder="Filter by subject" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All Subjects</SelectItem>
-                        {isLoadingSubjects ? (
-                            <SelectItem value="loading" disabled>Loading...</SelectItem>
-                        ) : (
-                            subjects?.map(subject => (
-                                <SelectItem key={subject.id} value={subject.id}>{subject.name}</SelectItem>
-                            ))
-                        )}
-                    </SelectContent>
-                </Select>
-                 {isAdmin && (
-                    <Link href="/reviewer/review/new" passHref className="w-full sm:w-auto sm:ml-auto">
-                        <Button className="w-full justify-center">
-                            <PlusCircle className="mr-2 h-4 w-4" />
-                            New Article
-                        </Button>
-                    </Link>
-                )}
+            <div className="flex flex-col gap-4 mb-6">
+                <Tabs value={categoryId} onValueChange={(value) => {
+                    setCategoryId(value as 'gened' | 'profed' | 'majorship');
+                    setSubjectId('all');
+                }}>
+                    <TabsList className="grid w-full grid-cols-3">
+                        <TabsTrigger value="gened">General Ed</TabsTrigger>
+                        <TabsTrigger value="profed">Professional Ed</TabsTrigger>
+                        <TabsTrigger value="majorship">Majorship</TabsTrigger>
+                    </TabsList>
+                </Tabs>
+                <div className="flex flex-col sm:flex-row gap-4 items-center">
+                    <Select value={subjectId} onValueChange={(value) => setSubjectId(value)}>
+                        <SelectTrigger className="w-full sm:w-auto">
+                            <SelectValue placeholder="Filter by subject" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Subjects</SelectItem>
+                            {isLoadingSubjects ? (
+                                <SelectItem value="loading" disabled>Loading...</SelectItem>
+                            ) : (
+                                filteredSubjects.map(subject => (
+                                    <SelectItem key={subject.id} value={subject.id}>{subject.name}</SelectItem>
+                                ))
+                            )}
+                        </SelectContent>
+                    </Select>
+                    {isAdmin && (
+                        <Link href="/reviewer/review/new" passHref className="w-full sm:w-auto sm:ml-auto">
+                            <Button className="w-full justify-center">
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                New Article
+                            </Button>
+                        </Link>
+                    )}
+                </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {isLoadingArticles && Array.from({ length: 3 }).map((_, i) => <ReviewCardSkeleton key={i} />)}

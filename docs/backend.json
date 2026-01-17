@@ -28,15 +28,16 @@
     },
     "Subject": {
       "title": "Subject",
-      "description": "A top-level category for reviewers and questions (e.g., General Education).",
+      "description": "A subject within a category (e.g., Educational Psychology within Professional Education).",
       "type": "object",
       "properties": {
+        "categoryId": { "type": "string", "enum": ["gened", "profed", "majorship"] },
         "name": { "type": "string" },
         "slug": { "type": "string" },
         "color": { "type": "string" },
         "orderIndex": { "type": "number" }
       },
-      "required": ["name", "slug"]
+      "required": ["categoryId", "name", "slug"]
     },
     "Topic": {
       "title": "Topic",

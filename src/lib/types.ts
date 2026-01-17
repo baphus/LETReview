@@ -3,6 +3,7 @@ import { FieldValue } from 'firebase/firestore';
 
 export interface Subject {
   id: string;
+  categoryId: 'gened' | 'profed' | 'majorship';
   name: string;
   slug: string;
   color: string;
