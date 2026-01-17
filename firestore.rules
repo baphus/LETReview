@@ -11,6 +11,11 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    function isAdmin() {
+      // Admin user ID with special permissions
+      return isSignedIn() && request.auth.uid == 'q4vgkFodzoSaPM1BuNbRI0Wx9YZ2';
+    }
+
     match /users/{userId} {
       allow read, write: if isOwner(userId);
 
@@ -27,22 +32,22 @@ service cloud.firestore {
 
     match /subjects/{subjectId} {
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow create, update, delete: if isAdmin();
     }
 
     match /topics/{topicId} {
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow create, update, delete: if isAdmin();
     }
 
     match /reviewers/{reviewerId} {
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow create, update, delete: if isAdmin();
     }
 
     match /questions/{questionId} {
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow create, update, delete: if isAdmin();
     }
 
     match /pets/{petId} {
