@@ -103,7 +103,7 @@ export default function ProfilePage() {
   const handleSettingsSave = async () => {
      if (user) {
         updateUser({
-            examDate: examDate ? examDate.toISOString() : undefined,
+            examDate: examDate ? examDate.toISOString() : null,
             passingScore: passingScore,
         });
         toast({
@@ -452,3 +452,5 @@ export default function ProfilePage() {
     </div>
   );
 }
+
+    
