@@ -69,22 +69,55 @@ export const getQuestions = async (options: {
     difficulty?: 'easy' | 'medium' | 'hard';
     limit?: number;
     shuffle?: boolean;
+    topicId?: string;
 }): Promise<QuizQuestion[]> => {
     const { firestore } = initializeFirebase();
-    const category = options.category || 'gened';
     
-    const categoryDocRef = doc(firestore, "questions", category);
-    const docSnap = await getDoc(categoryDocRef);
-
     let allQuestions: QuizQuestion[] = [];
-    if (docSnap.exists()) {
-        allQuestions = (docSnap.data().questions || []) as QuizQuestion[];
+
+    if (options.topicId) {
+        // If filtering by topic, fetch from all categories and then filter.
+        const categories: Array<'gened' | 'profed' | 'majorship'> = ['gened', 'profed', 'majorship'];
+        try {
+            const categoryDocs = await Promise.all(
+                categories.map(cat => getDoc(doc(firestore, "questions", cat)))
+            );
+            
+            for (const docSnap of categoryDocs) {
+                if (docSnap.exists()) {
+                    allQuestions.push(...(docSnap.data().questions || []));
+                }
+            }
+        } catch (e) {
+            console.error("Error fetching topic questions from firestore, using fallback", e);
+            allQuestions = staticQuestions as QuizQuestion[];
+        }
+        
+        // Fallback for when firestore is empty
+        if (allQuestions.length === 0) {
+            allQuestions = staticQuestions as QuizQuestion[];
+        }
+
     } else {
-        // Fallback to static data
-        allQuestions = staticQuestions.filter(q => (q as QuizQuestion).category === category) as QuizQuestion[];
+        const category = options.category || 'gened';
+        const categoryDocRef = doc(firestore, "questions", category);
+        const docSnap = await getDoc(categoryDocRef);
+
+        if (docSnap.exists()) {
+            allQuestions = (docSnap.data().questions || []) as QuizQuestion[];
+        } else {
+            // Fallback to static data
+            allQuestions = staticQuestions.filter(q => (q as QuizQuestion).category === category) as QuizQuestion[];
+        }
     }
 
+
     let filteredQuestions = allQuestions;
+
+    if (options.topicId) {
+        filteredQuestions = filteredQuestions.filter(q => q.topicIds?.includes(options.topicId as string));
+    }
+    
     if (options.difficulty) {
         filteredQuestions = filteredQuestions.filter(q => q.difficulty === options.difficulty);
     }
@@ -99,7 +132,9 @@ export const getQuestions = async (options: {
 
     // Shuffle choices for each question
     filteredQuestions.forEach(question => {
-        question.choices = [...question.choices].sort(() => Math.random() - 0.5);
+        if(question.choices) {
+            question.choices = [...question.choices].sort(() => Math.random() - 0.5);
+        }
     });
 
     return filteredQuestions;

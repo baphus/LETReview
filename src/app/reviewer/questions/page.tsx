@@ -18,6 +18,8 @@ import { format } from "date-fns";
 import { useUser } from "@/firebase/auth/use-user";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from 'next/link';
+import { useFirestore } from '@/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 const StudyCard: FC<{ question: QuizQuestion }> = ({ question }) => {
   return (
@@ -138,11 +140,13 @@ function QuestionsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, isAdmin, updateUser } = useUser();
+  const firestore = useFirestore();
 
   const isChallenge = searchParams.get('challenge') === 'true';
   const challengeDifficulty = searchParams.get('difficulty') || 'easy';
   const challengeCount = parseInt(searchParams.get('count') || '0', 10);
   const challengeCategory = searchParams.get('category') as 'gened' | 'profed' | 'majorship' || "gened";
+  const topicId = searchParams.get('topic');
 
   const [category, setCategory] = useState<'gened' | 'profed' | 'majorship'>(
     isChallenge ? challengeCategory : "gened"
@@ -155,9 +159,23 @@ function QuestionsPageContent() {
   const [isShuffled, setIsShuffled] = useState(false);
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [topicName, setTopicName] = useState<string | null>(null);
   
   const { toast } = useToast();
 
+  useEffect(() => {
+    if (topicId && firestore) {
+        const topicRef = doc(firestore, 'topics', topicId);
+        getDoc(topicRef).then(docSnap => {
+            if (docSnap.exists()) {
+                setTopicName(docSnap.data().name);
+            }
+        });
+    } else {
+        setTopicName(null);
+    }
+  }, [topicId, firestore]);
+  
   useEffect(() => {
     if (user) {
         setPassingScore(user.passingScore || 85);
@@ -171,10 +189,11 @@ function QuestionsPageContent() {
           difficulty: isChallenge ? challengeDifficulty as any : undefined,
           limit: isChallenge ? challengeCount : undefined,
           shuffle: isChallenge || isShuffled,
+          topicId: topicId || undefined,
       });
       setQuestions(fetchedQuestions);
       setIsLoading(false);
-  }, [category, isChallenge, challengeDifficulty, challengeCount, isShuffled]);
+  }, [category, isChallenge, challengeDifficulty, challengeCount, isShuffled, topicId]);
 
   useEffect(() => {
     fetchAndSetQuestions();
@@ -449,7 +468,7 @@ function QuestionsPageContent() {
         </DialogContent>
       </Dialog>
       
-      {!isChallenge && (
+      {!isChallenge && !topicId && (
         <>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center mb-6">
                  <Select value={category} onValueChange={(value) => setCategory(value as "gened" | "profed" | "majorship")}>
@@ -492,6 +511,20 @@ function QuestionsPageContent() {
         </header>
       )}
       
+      {topicId && (
+          <Card className="mb-6 bg-primary/5">
+              <CardHeader>
+                  <CardTitle className="font-headline">Practice Questions: {topicName || 'Loading...'}</CardTitle>
+                  <CardDescription>You're viewing questions related to a specific topic. This is study mode.</CardDescription>
+              </CardHeader>
+              <CardFooter>
+                <Button variant="outline" onClick={() => router.push('/reviewer/questions')}>
+                    <XCircle className="mr-2 h-4 w-4" /> Clear Filter
+                </Button>
+              </CardFooter>
+          </Card>
+      )}
+
       <div className="my-6">
         {questions.length > 0 && currentQuestion ? (
           <>
