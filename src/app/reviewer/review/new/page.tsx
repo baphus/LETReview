@@ -14,15 +14,24 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import type { Subject, Topic, Reviewer, QuizQuestion } from '@/lib/types';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, Database } from 'lucide-react';
+import { Loader2, Database, PlusCircle } from 'lucide-react';
 import reviewersSeed from '../../../../../docs/reviewers-seed.json';
 import subjectsSeed from '../../../../../docs/subjects-seed.json';
 import topicsSeed from '../../../../../docs/topics-seed.json';
 import questionsSeed from '../../../../../docs/questions-seed.json';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 
 const reviewerFormSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters long."),
@@ -48,7 +57,6 @@ const subjectSchema = z.object({
 
 const topicSchema = z.object({
   name: z.string().min(3, "Topic name must be at least 3 characters."),
-  subjectId: z.string().min(1, "Please select a subject."),
 });
 
 export default function NewReviewerPage() {
@@ -57,6 +65,8 @@ export default function NewReviewerPage() {
   const { user, isAdmin, isLoading: isUserLoading } = useUser();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAddSubjectOpen, setIsAddSubjectOpen] = useState(false);
+  const [isAddTopicOpen, setIsAddTopicOpen] = useState(false);
 
   const { data: subjects, isLoading: isLoadingSubjects } = useCollection<Subject>(useMemoFirebase(() => firestore ? query(collection(firestore, 'subjects')) : null, [firestore]));
   const { data: topics, isLoading: isLoadingTopics } = useCollection<Topic>(useMemoFirebase(() => firestore ? query(collection(firestore, 'topics')) : null, [firestore]));
@@ -68,7 +78,7 @@ export default function NewReviewerPage() {
 
   const topicForm = useForm<z.infer<typeof topicSchema>>({
     resolver: zodResolver(topicSchema),
-    defaultValues: { name: "", subjectId: "" },
+    defaultValues: { name: "" },
   });
 
   const form = useForm<ReviewerFormValues>({
@@ -88,6 +98,7 @@ export default function NewReviewerPage() {
   });
 
   const titleValue = form.watch("title");
+  const selectedSubjectId = form.watch("subjectId");
 
   useEffect(() => {
     if (titleValue) {
@@ -115,24 +126,30 @@ export default function NewReviewerPage() {
         id: slug,
       });
       toast({ title: 'Subject Added', description: `${data.name} has been added.` });
-      subjectForm.reset({ name: "", color: "#3F51B5" });
+      subjectForm.reset();
+      setIsAddSubjectOpen(false);
+      form.setValue('subjectId', slug, { shouldValidate: true });
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Error', description: error.message });
     }
   };
   
   const handleAddTopic = async (data: z.infer<typeof topicSchema>) => {
-    if (!firestore) return;
+    if (!firestore || !selectedSubjectId) return;
     const slug = data.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
     try {
       const topicRef = doc(firestore, 'topics', slug);
       await setDoc(topicRef, {
         ...data,
+        subjectId: selectedSubjectId,
         slug,
         id: slug,
       });
       toast({ title: 'Topic Added', description: `${data.name} has been added.` });
-      topicForm.reset({ name: "", subjectId: "" });
+      topicForm.reset();
+      setIsAddTopicOpen(false);
+      // Automatically select the new topic
+      form.setValue('topicIds', [...form.getValues('topicIds'), slug], { shouldValidate: true });
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Error', description: error.message });
     }
@@ -232,62 +249,15 @@ export default function NewReviewerPage() {
   if (isUserLoading || !isAdmin) {
     return <div className="text-center p-8">Checking permissions...</div>;
   }
+  
+  const availableTopics = topics?.filter(t => t.subjectId === selectedSubjectId) || [];
 
   return (
     <>
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="font-headline text-2xl">Content Management</CardTitle>
-          <CardDescription>Quickly add new subjects and topics, or seed the entire database.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <Form {...subjectForm}>
-            <form onSubmit={subjectForm.handleSubmit(handleAddSubject)} className="flex items-end gap-2">
-              <FormField control={subjectForm.control} name="name" render={({ field }) => (
-                <FormItem className="flex-1"><FormLabel>Subject Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-              )} />
-              <FormField
-                control={subjectForm.control}
-                name="color"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Color</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="color"
-                        {...field}
-                        className="w-24 h-10 p-1 cursor-pointer"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button type="submit" disabled={subjectForm.formState.isSubmitting}>Add Subject</Button>
-            </form>
-          </Form>
-          <Form {...topicForm}>
-            <form onSubmit={topicForm.handleSubmit(handleAddTopic)} className="flex items-end gap-2">
-              <FormField control={topicForm.control} name="subjectId" render={({ field }) => (
-                <FormItem className="flex-1"><FormLabel>Parent Subject</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl><SelectTrigger><SelectValue placeholder="Select a subject" /></SelectTrigger></FormControl>
-                    <SelectContent>{isLoadingSubjects ? <SelectItem value="loading" disabled>Loading...</SelectItem> : subjects?.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
-                  </Select>
-                <FormMessage /></FormItem>
-              )} />
-              <FormField control={topicForm.control} name="name" render={({ field }) => (
-                <FormItem className="flex-1"><FormLabel>Topic Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-              )} />
-              <Button type="submit" disabled={topicForm.formState.isSubmitting}>Add Topic</Button>
-            </form>
-          </Form>
-           <div>
+        <div className="mb-6">
             <p className="text-sm text-muted-foreground mb-2">Seed the database with initial questions and articles. This should only be run once.</p>
             <Button variant="outline" className="w-full" onClick={handleSeed}><Database className="mr-2 h-4 w-4" />Seed Database</Button>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
       
       <Card>
         <CardHeader>
@@ -359,7 +329,14 @@ export default function NewReviewerPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Subject</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={(value) => {
+                            if (value === 'add-new') {
+                                setIsAddSubjectOpen(true);
+                            } else {
+                                field.onChange(value);
+                                form.setValue('topicIds', []); // Reset topics when subject changes
+                            }
+                        }} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select a subject" />
@@ -367,57 +344,66 @@ export default function NewReviewerPage() {
                           </FormControl>
                           <SelectContent>
                             {isLoadingSubjects ? <SelectItem value="loading" disabled>Loading...</SelectItem> : subjects?.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                            <SelectItem value="add-new" className="text-primary font-semibold">
+                                <span className="flex items-center"><PlusCircle className="h-4 w-4 mr-2" /> Add new subject...</span>
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={form.control}
-                    name="topicIds"
-                    render={() => (
-                      <FormItem>
-                        <FormLabel>Topics</FormLabel>
-                        <FormDescription>
-                          Select applicable topics for this article.
-                        </FormDescription>
-                        <div className="max-h-40 overflow-y-auto rounded-md border p-4 space-y-2">
-                          {isLoadingTopics ? <p>Loading...</p> : topics?.map((topic) => (
-                              <FormField
-                                key={topic.id}
-                                control={form.control}
-                                name="topicIds"
-                                render={({ field }) => {
-                                  return (
-                                    <FormItem key={topic.id} className="flex flex-row items-center space-x-3 space-y-0">
-                                      <FormControl>
-                                        <Checkbox
-                                          checked={field.value?.includes(topic.id)}
-                                          onCheckedChange={(checked) => {
-                                            return checked
-                                              ? field.onChange([...field.value, topic.id])
-                                              : field.onChange(
-                                                  field.value?.filter(
-                                                    (value) => value !== topic.id
-                                                  )
-                                                )
-                                          }}
-                                        />
-                                      </FormControl>
-                                      <FormLabel className="text-sm font-normal">
-                                        {topic.name}
-                                      </FormLabel>
-                                    </FormItem>
-                                  )
-                                }}
-                              />
-                            ))}
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  {selectedSubjectId && (
+                     <FormField
+                        control={form.control}
+                        name="topicIds"
+                        render={() => (
+                          <FormItem>
+                              <div className="flex justify-between items-center mb-2">
+                                  <FormLabel>Topics</FormLabel>
+                                  <Button type="button" variant="outline" size="sm" onClick={() => setIsAddTopicOpen(true)}>
+                                      <PlusCircle className="h-4 w-4 mr-2" />
+                                      New Topic
+                                  </Button>
+                              </div>
+                            
+                              <div className="max-h-40 overflow-y-auto rounded-md border p-4 space-y-2">
+                              {isLoadingTopics ? <p>Loading...</p> : availableTopics.length > 0 ? availableTopics.map((topic) => (
+                                  <FormField
+                                      key={topic.id}
+                                      control={form.control}
+                                      name="topicIds"
+                                      render={({ field }) => {
+                                      return (
+                                          <FormItem key={topic.id} className="flex flex-row items-center space-x-3 space-y-0">
+                                          <FormControl>
+                                              <Checkbox
+                                              checked={field.value?.includes(topic.id)}
+                                              onCheckedChange={(checked) => {
+                                                  return checked
+                                                  ? field.onChange([...field.value, topic.id])
+                                                  : field.onChange(
+                                                      field.value?.filter(
+                                                          (value) => value !== topic.id
+                                                      )
+                                                      )
+                                              }}
+                                              />
+                                          </FormControl>
+                                          <FormLabel className="text-sm font-normal">
+                                              {topic.name}
+                                          </FormLabel>
+                                          </FormItem>
+                                      )
+                                      }}
+                                  />
+                                  )) : <p className="text-sm text-muted-foreground text-center">No topics found for this subject. Add one!</p>}
+                              </div>
+                              <FormMessage />
+                          </FormItem>
+                        )}
+                    />
+                  )}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <FormField
@@ -430,7 +416,7 @@ export default function NewReviewerPage() {
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select category" />
-                            </SelectTrigger>
+                            </Trigger>
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="gened">General Education</SelectItem>
@@ -452,7 +438,7 @@ export default function NewReviewerPage() {
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select difficulty" />
-                            </SelectTrigger>
+                            </Trigger>
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="easy">Easy</SelectItem>
@@ -476,7 +462,7 @@ export default function NewReviewerPage() {
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select type" />
-                            </SelectTrigger>
+                            </Trigger>
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="article">Article</SelectItem>
@@ -510,6 +496,56 @@ export default function NewReviewerPage() {
           </Form>
         </CardContent>
       </Card>
+
+      {/* Add Subject Dialog */}
+      <Dialog open={isAddSubjectOpen} onOpenChange={setIsAddSubjectOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Subject</DialogTitle>
+          </DialogHeader>
+          <Form {...subjectForm}>
+            <form onSubmit={subjectForm.handleSubmit(handleAddSubject)} className="space-y-4">
+              <FormField control={subjectForm.control} name="name" render={({ field }) => (
+                <FormItem><FormLabel>Subject Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+              )} />
+              <FormField control={subjectForm.control} name="color" render={({ field }) => (
+                  <FormItem><FormLabel>Color</FormLabel><FormControl><Input type="color" {...field} className="p-1 h-10 w-full" /></FormControl><FormMessage /></FormItem>
+              )} />
+              <DialogFooter>
+                <Button type="button" variant="ghost" onClick={() => setIsAddSubjectOpen(false)}>Cancel</Button>
+                <Button type="submit" disabled={subjectForm.formState.isSubmitting}>
+                    {subjectForm.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Add Subject
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Add Topic Dialog */}
+      <Dialog open={isAddTopicOpen} onOpenChange={setIsAddTopicOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Topic</DialogTitle>
+            <DialogDescription>For subject: {subjects?.find(s => s.id === selectedSubjectId)?.name || '...'}</DialogDescription>
+          </DialogHeader>
+          <Form {...topicForm}>
+            <form onSubmit={topicForm.handleSubmit(handleAddTopic)} className="space-y-4">
+              <FormField control={topicForm.control} name="name" render={({ field }) => (
+                <FormItem><FormLabel>Topic Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+              )} />
+              <DialogFooter>
+                <Button type="button" variant="ghost" onClick={() => setIsAddTopicOpen(false)}>Cancel</Button>
+                <Button type="submit" disabled={topicForm.formState.isSubmitting}>
+                    {topicForm.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Add Topic
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
