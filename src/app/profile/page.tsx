@@ -4,7 +4,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { User, LogOut, Camera, Palette, Gem, Trophy, Clock, Award, Check, Edit, UserPlus, AlertTriangle, Database, PlusCircle } from "lucide-react";
+import { User, LogOut, Camera, Palette, Gem, Trophy, Clock, Award, Check, Edit, UserPlus, AlertTriangle } from "lucide-react";
 import { useEffect, useState, useRef, ChangeEvent } from "react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -17,20 +17,10 @@ import Image from "next/image";
 import { achievementPets, rarePets } from "@/lib/data";
 import { Progress } from "@/components/ui/progress";
 import { useUser } from "@/firebase/auth/use-user";
-import { useAuth, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { doc, updateDoc, writeBatch, collection, addDoc, query, orderBy, getDoc, setDoc } from "firebase/firestore";
+import { useAuth, useFirestore } from "@/firebase";
+import { doc, updateDoc } from "firebase/firestore";
 import { signOut } from "firebase/auth";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import reviewersSeed from '../../../docs/reviewers-seed.json';
-import subjectsSeed from '../../../docs/subjects-seed.json';
-import topicsSeed from '../../../docs/topics-seed.json';
-import questionsSeed from '../../../docs/questions-seed.json';
-import type { QuizQuestion, Subject } from '@/lib/types';
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from 'zod';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const themes = [
     { name: 'Default', value: 'default', cost: 0, colors: { primary: 'hsl(231 48% 48%)', accent: 'hsl(110 32% 48%)' } },
@@ -74,41 +64,18 @@ const allAchievements = [
   },
 ];
 
-const subjectSchema = z.object({
-  name: z.string().min(3, "Subject name must be at least 3 characters."),
-  color: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Must be a valid hex color code (e.g., #RRGGBB)."),
-});
-
-const topicSchema = z.object({
-  name: z.string().min(3, "Topic name must be at least 3 characters."),
-  subjectId: z.string().min(1, "Please select a subject."),
-});
 
 export default function ProfilePage() {
   const router = useRouter();
   const { toast } = useToast();
   const { user, firebaseUser, linkGoogleAccount, updateUser, isAdmin } = useUser();
   const auth = useAuth();
-  const firestore = useFirestore();
   
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [examDate, setExamDate] = useState<Date | undefined>(undefined);
   const [passingScore, setPassingScore] = useState(85);
-
-  const subjectsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'subjects'), orderBy('orderIndex')) : null, [firestore]);
-  const { data: subjects, isLoading: isLoadingSubjects } = useCollection<Subject>(subjectsQuery);
-
-  const subjectForm = useForm<z.infer<typeof subjectSchema>>({
-    resolver: zodResolver(subjectSchema),
-    defaultValues: { name: "", color: "#" },
-  });
-
-  const topicForm = useForm<z.infer<typeof topicSchema>>({
-    resolver: zodResolver(topicSchema),
-    defaultValues: { name: "", subjectId: "" },
-  });
 
   useEffect(() => {
     if (user) {
@@ -120,62 +87,6 @@ export default function ProfilePage() {
       applyTheme(user.activeTheme || 'default');
     }
   }, [user]);
-
-  const handleSeed = async () => {
-    if (!firestore) {
-        toast({ variant: "destructive", title: "Firestore not available" });
-        return;
-    }
-    try {
-      const batch = writeBatch(firestore);
-
-      subjectsSeed.forEach((subject) => {
-        batch.set(doc(firestore, 'subjects', subject.id), subject);
-      });
-
-      topicsSeed.forEach((topic) => {
-        batch.set(doc(firestore, 'topics', topic.id), topic);
-      });
-
-      reviewersSeed.forEach((reviewer: any) => {
-        batch.set(doc(firestore, 'reviewers', reviewer.id), { ...reviewer, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
-      });
-      
-      const questionsByCategory = (questionsSeed as QuizQuestion[]).reduce((acc, q) => {
-        if (q.category) {
-            if (!acc[q.category]) acc[q.category] = [];
-            acc[q.category].push(q);
-        }
-        return acc;
-      }, {} as Record<string, QuizQuestion[]>);
-
-      for (const category in questionsByCategory) {
-        const categoryDocRef = doc(firestore, 'questions', category);
-        const existingDoc = await getDoc(categoryDocRef);
-        if (existingDoc.exists()) {
-          batch.update(categoryDocRef, { questions: questionsByCategory[category] });
-        } else {
-          batch.set(categoryDocRef, { questions: questionsByCategory[category] });
-        }
-      }
-
-      await batch.commit();
-      
-      toast({
-        title: "Database Seeded",
-        description: `Content was successfully added.`,
-        className: "bg-green-100 border-green-300"
-      });
-
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Seeding Failed",
-        description: error.message || "An unknown error occurred.",
-      });
-      console.error("Seeding failed:", error);
-    }
-  };
 
   const handleNameSave = async () => {
     if (user && newName.trim()) {
@@ -278,39 +189,6 @@ export default function ProfilePage() {
         toast({ variant: "destructive", title: "Not enough points!"});
       }
   }
-
-  const handleAddSubject = async (data: z.infer<typeof subjectSchema>) => {
-    if (!firestore) return;
-    const slug = data.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-    try {
-      await addDoc(collection(firestore, 'subjects'), {
-        ...data,
-        slug,
-        orderIndex: subjects?.length || 0,
-        id: slug,
-      });
-      toast({ title: 'Subject Added', description: `${data.name} has been added.` });
-      subjectForm.reset({ name: "", color: "#" });
-    } catch (error: any) {
-      toast({ variant: 'destructive', title: 'Error', description: error.message });
-    }
-  };
-  
-  const handleAddTopic = async (data: z.infer<typeof topicSchema>) => {
-    if (!firestore) return;
-    const slug = data.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-    try {
-      await addDoc(collection(firestore, 'topics'), {
-        ...data,
-        slug,
-        id: slug,
-      });
-      toast({ title: 'Topic Added', description: `${data.name} has been added.` });
-      topicForm.reset({ name: "", subjectId: "" });
-    } catch (error: any) {
-      toast({ variant: 'destructive', title: 'Error', description: error.message });
-    }
-  };
 
 
   if (!user) {
@@ -542,79 +420,6 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
 
-      {isAdmin && (
-        <>
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle>Content Management</CardTitle>
-              <CardDescription>Add new subjects and topics to the database.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <Form {...subjectForm}>
-                <form onSubmit={subjectForm.handleSubmit(handleAddSubject)} className="space-y-4 p-4 border rounded-lg">
-                  <h3 className="font-medium">Add New Subject</h3>
-                  <FormField control={subjectForm.control} name="name" render={({ field }) => (
-                    <FormItem><FormLabel>Subject Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                  <FormField control={subjectForm.control} name="color" render={({ field }) => (
-                    <FormItem><FormLabel>Color (Hex)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                  <Button type="submit" disabled={subjectForm.formState.isSubmitting}>Add Subject</Button>
-                </form>
-              </Form>
-              <Form {...topicForm}>
-                <form onSubmit={topicForm.handleSubmit(handleAddTopic)} className="space-y-4 p-4 border rounded-lg">
-                  <h3 className="font-medium">Add New Topic</h3>
-                  <FormField control={topicForm.control} name="subjectId" render={({ field }) => (
-                    <FormItem><FormLabel>Subject</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl><SelectTrigger><SelectValue placeholder="Select a subject" /></SelectTrigger></FormControl>
-                        <SelectContent>{isLoadingSubjects ? <SelectItem value="loading" disabled>Loading...</SelectItem> : subjects?.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
-                      </Select>
-                    <FormMessage /></FormItem>
-                  )} />
-                  <FormField control={topicForm.control} name="name" render={({ field }) => (
-                    <FormItem><FormLabel>Topic Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                  <Button type="submit" disabled={topicForm.formState.isSubmitting}>Add Topic</Button>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
-
-          <Card className="mt-6">
-            <CardHeader><CardTitle className="text-destructive">Danger Zone</CardTitle></CardHeader>
-            <CardContent className="flex flex-col gap-4">
-              <div>
-                <p className="text-sm text-muted-foreground mb-2">Log out of your account.</p>
-                <Button variant="destructive" className="w-full" onClick={handleLogout}><LogOut className="mr-2 h-4 w-4" />Logout</Button>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground mb-2">Seed the database with initial questions and articles. This should only be run once.</p>
-                <Button variant="destructive" className="w-full" onClick={handleSeed}><Database className="mr-2 h-4 w-4" />Seed Database</Button>
-              </div>
-            </CardContent>
-          </Card>
-        </>
-      )}
-
-      {!isAdmin && (
-         <Card className="mt-6">
-            <CardHeader>
-                <CardTitle className="text-destructive">Danger Zone</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4">
-                <div>
-                    <p className="text-sm text-muted-foreground mb-2">Log out of your account.</p>
-                    <Button variant="destructive" className="w-full" onClick={handleLogout}>
-                        <LogOut className="mr-2 h-4 w-4" />
-                        Logout
-                    </Button>
-                </div>
-            </CardContent>
-         </Card>
-      )}
-
       <Card className="mt-6">
         <CardHeader>
           <CardTitle>About LETReview</CardTitle>
@@ -627,6 +432,21 @@ export default function ProfilePage() {
            <p className="text-sm text-muted-foreground italic">
             This app is lovingly dedicated to my girlfriend, Yve, an aspiring teacher who inspired this project.
           </p>
+        </CardContent>
+      </Card>
+
+      <Card className="mt-6">
+        <CardHeader>
+            <CardTitle className="text-destructive">Danger Zone</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+            <div>
+                <p className="text-sm text-muted-foreground mb-2">Log out of your account.</p>
+                <Button variant="destructive" className="w-full" onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
+                </Button>
+            </div>
         </CardContent>
       </Card>
     </div>
