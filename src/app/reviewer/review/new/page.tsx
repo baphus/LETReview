@@ -25,7 +25,7 @@ const reviewerFormSchema = z.object({
   slug: z.string().min(3, "Slug must be at least 3 characters long.").regex(/^[a-z0-9-]+$/, "Slug can only contain lowercase letters, numbers, and hyphens."),
   excerpt: z.string().min(20, "Excerpt is too short.").max(300, "Excerpt is too long."),
   content: z.string().min(100, "Content must be at least 100 characters long."),
-  subjectId: z.string({ required_error: "Please select a subject." }),
+  subjectId: z.string({ required_error: "Please select a subject." }).min(1, "Please select a subject."),
   topicIds: z.array(z.string()).refine(value => value.some(item => item), {
     message: "You have to select at least one topic.",
   }),
@@ -49,6 +49,12 @@ export default function NewReviewerPage() {
   const form = useForm<ReviewerFormValues>({
     resolver: zodResolver(reviewerFormSchema),
     defaultValues: {
+      title: '',
+      slug: '',
+      excerpt: '',
+      content: '',
+      subjectId: '',
+      estimatedTime: 25,
       difficulty: 'medium',
       reviewerType: 'article',
       topicIds: [],
