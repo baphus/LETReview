@@ -23,7 +23,7 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
-    match /review_articles/{articleId} {
+    match /reviewers/{articleId} {
       allow get, list: if true;
       allow create, update, delete: if false;
     }

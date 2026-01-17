@@ -47,7 +47,7 @@ export default function ReviewPage() {
 
     const articlesQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        const baseQuery = collection(firestore, 'review_articles');
+        const baseQuery = collection(firestore, 'reviewers');
         if (category === 'all') {
             return query(baseQuery, orderBy('title'));
         } else {

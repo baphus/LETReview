@@ -50,7 +50,7 @@ export async function seedDatabase() {
   }
 
   // Seed Review Articles
-  const articlesCollectionRef = collection(firestore, 'review_articles');
+  const articlesCollectionRef = collection(firestore, 'reviewers');
   articlesSeed.forEach((article: ReviewArticle) => {
     const articleDocRef = doc(articlesCollectionRef, article.slug);
     batch.set(articleDocRef, article);
@@ -67,5 +67,3 @@ export async function seedDatabase() {
      return { success: false, error: errorMessage };
   }
 }
-
-    
