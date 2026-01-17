@@ -74,7 +74,9 @@ const QuestionOfTheDay = ({ onCorrectAnswer }: { onCorrectAnswer: () => void }) 
             qotdAnswer: answer,
         };
 
-        const updates: any = {};
+        const updates: any = {
+            questionsAnswered: (user.questionsAnswered || 0) + 1
+        };
 
         if (correct) {
             dailyProgressUpdate.pointsEarned = (user.dailyProgress[todayKey]?.pointsEarned || 0) + 5;

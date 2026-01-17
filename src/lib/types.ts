@@ -49,4 +49,5 @@ export interface UserProfile {
     lastChallengeDate?: string;
     passingScore?: number;
     createdAt?: FieldValue;
+    questionsAnswered?: number;
 }

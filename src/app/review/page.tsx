@@ -331,6 +331,11 @@ function ReviewerPageContent() {
   };
   
   const handleAnswer = (correct: boolean, answer: string) => {
+    const alreadyAnsweredInSession = challengeAnswers.some(a => a.questionId === currentQuestion.id);
+    if (!alreadyAnsweredInSession && user) {
+        updateUser({ questionsAnswered: (user.questionsAnswered || 0) + 1 });
+    }
+
     const newAnswer: ChallengeAnswer = {
         questionId: currentQuestion.id,
         userAnswer: answer,

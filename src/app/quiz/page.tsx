@@ -24,6 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useUser } from "@/firebase/auth/use-user";
 
 
 const QuizCard: FC<{ 
@@ -128,6 +129,7 @@ const QuestionSkeleton = () => (
 
 export default function QuizPage() {
   const router = useRouter();
+  const { user, updateUser } = useUser();
 
   const [category, setCategory] = useState<'gened' | 'profed' | 'majorship'>("gened");
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -188,6 +190,12 @@ export default function QuizPage() {
   };
   
   const handleAnswer = (correct: boolean, answer: string) => {
+    const isFirstTimeAnsweringThis = !challengeAnswers.some(a => a.questionId === currentQuestion.id);
+
+    if (isFirstTimeAnsweringThis && user) {
+        updateUser({ questionsAnswered: (user.questionsAnswered || 0) + 1 });
+    }
+
     const newAnswers = [...challengeAnswers];
     const existingAnswerIndex = newAnswers.findIndex(a => a.questionId === currentQuestion.id);
     
@@ -382,5 +390,3 @@ export default function QuizPage() {
     </div>
   );
 }
-
-    

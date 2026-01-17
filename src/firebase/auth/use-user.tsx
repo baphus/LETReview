@@ -57,6 +57,7 @@ export const useUser = () => {
           lastLogin: getTodayKey(),
           passingScore: 85,
           createdAt: serverTimestamp(),
+          questionsAnswered: 0,
         };
         const userRef = doc(firestore, 'users', firebaseUser.uid);
         setDoc(userRef, newUserProfile, { merge: true }).then(() => {
@@ -150,6 +151,7 @@ export const useUser = () => {
             email: result.user.email || anonData.email,
             avatarUrl: result.user.photoURL || anonData.avatarUrl,
             createdAt: serverTimestamp(),
+            questionsAnswered: anonData.questionsAnswered || 0,
         };
 
         // Write the merged data to the new user's document
@@ -197,4 +199,3 @@ export const useUser = () => {
     linkGoogleAccount
   };
 };
-

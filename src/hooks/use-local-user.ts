@@ -24,6 +24,7 @@ const createDefaultUser = (): UserProfile => ({
     dailyProgress: {},
     lastLogin: getTodayKey(),
     passingScore: 85,
+    questionsAnswered: 0,
 });
 
 export const useLocalUser = () => {
