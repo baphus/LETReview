@@ -21,6 +21,7 @@ export interface ReviewArticle {
     type: ReviewArticleType;
     readingTime: number; // in minutes
     difficulty: "easy" | "medium" | "hard";
+    content?: string;
 }
 
 export interface PetProfile {

@@ -1,11 +1,12 @@
 
 'use server';
 
-import { getFirestore, writeBatch, doc } from 'firebase/firestore';
+import { getFirestore, writeBatch, doc, collection } from 'firebase/firestore';
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { firebaseConfig } from '@/firebase/config';
 import allQuestions from '../../docs/questions-seed.json';
-import type { QuizQuestion } from './types';
+import articlesSeed from '../../docs/articles-seed.json';
+import type { QuizQuestion, ReviewArticle } from './types';
 
 // This file is no longer used for seeding from the client.
 // It can be used for server-side scripts if needed in the future.
@@ -25,7 +26,9 @@ export async function seedDatabase() {
   const firestore = getFirestore(firebaseApp);
   
   const batch = writeBatch(firestore);
-  const questionsCollectionRef = doc(firestore, 'questions');
+
+  // Seed Questions
+  const questionsCollectionRef = collection(firestore, 'questions');
 
   const categorizedQuestions = allQuestions.reduce((acc, question) => {
     const category = question.category as 'gen_education' | 'professional';
@@ -50,11 +53,18 @@ export async function seedDatabase() {
     }
   }
 
+  // Seed Review Articles
+  const articlesCollectionRef = collection(firestore, 'review_articles');
+  articlesSeed.forEach((article: ReviewArticle) => {
+    const articleDocRef = doc(articlesCollectionRef, article.slug);
+    batch.set(articleDocRef, article);
+  });
+
   try {
     await batch.commit();
-    const count = allQuestions.length;
-    console.log(`${count} questions have been successfully seeded.`);
-    return { success: true, count: count };
+    const totalCount = allQuestions.length + articlesSeed.length;
+    console.log(`${totalCount} documents have been successfully seeded.`);
+    return { success: true, count: totalCount };
   } catch (error) {
      const errorMessage = `Firestore seeding failed.`;
      console.error(errorMessage, error);

@@ -118,6 +118,44 @@
       },
       "required": ["questions"]
     },
+    "ReviewArticle": {
+      "title": "Review Article",
+      "description": "Represents a review article for a specific topic.",
+      "type": "object",
+      "properties": {
+        "slug": {
+          "type": "string",
+          "description": "URL-friendly identifier for the article."
+        },
+        "title": {
+          "type": "string"
+        },
+        "category": {
+          "type": "string",
+          "enum": ["gened", "profed", "majorship"]
+        },
+        "description": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["Article", "Video", "Mixed"]
+        },
+        "readingTime": {
+          "type": "number",
+          "format": "integer"
+        },
+        "difficulty": {
+          "type": "string",
+          "enum": ["easy", "medium", "hard"]
+        },
+        "content": {
+          "type": "string",
+          "description": "The full content of the article in Markdown or HTML."
+        }
+      },
+      "required": ["slug", "title", "category", "description", "type", "readingTime", "difficulty"]
+    },
     "DailyProgress": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "DailyProgress",
@@ -244,6 +282,22 @@
         }
       },
       {
+        "path": "/review_articles/{articleId}",
+        "definition": {
+          "entityName": "ReviewArticle",
+          "schema": {
+            "$ref": "#/entities/ReviewArticle"
+          },
+          "description": "Stores review articles for various subjects. Public read access is allowed.",
+          "params": [
+            {
+              "name": "articleId",
+              "description": "The unique identifier of the review article, typically a URL slug."
+            }
+          ]
+        }
+      },
+      {
         "path": "/users/{userId}/dailyProgress/{date}",
         "definition": {
           "entityName": "DailyProgress",
@@ -280,6 +334,6 @@
         }
       }
     ],
-    "reasoning": "The Firestore structure is designed to optimize for security, scalability, and the specific features of the LETReviewBuddy application. It adheres to the principle of Authorization Independence by avoiding hierarchical `get()` calls in security rules, which is achieved through denormalization where necessary. It also segregates data based on access requirements, ensuring a homogeneous security posture within each collection.  The use of path-based ownership and consistent naming conventions enhance clarity and debuggability.\n\n*   **/users/{userId}**: Stores user profile data. This path ensures that only the authenticated user can access their own profile data (private data access).  \n*   **/questions/{categoryId}**: Stores all LET review questions, grouped into two documents: 'gened' and 'profed'. This allows for efficient retrieval of all questions for a category in a single read, while still allowing public read access.\n*   **/users/{userId}/dailyProgress/{date}**: Stores the daily progress of each user, using a composite key of userId and date. This facilitates easy querying of a user's daily progress and enforces ownership-based access control.\n*   **/pets/{petId}**: Stores the definitions of available pets.\n\nThis structure supports the required Question Answering Patterns (QAPs) as follows:\n\n*   **Secure List Operations**: Each collection (`users`, `questions`, `/users/{userId}/dailyProgress`, and `pets`) can be listed securely because the rules only depend on the authenticated user's ID (`request.auth.uid`) and/or the document data itself, and there are no dependencies on parent documents.\n*   **Authorization Independence**: The structure ensures that security rules do not rely on fetching data from other documents (no `get()` calls), maintaining atomicity for operations like creating new daily progress entries or updating user profiles."
+    "reasoning": "The Firestore structure is designed to optimize for security, scalability, and the specific features of the LETReviewBuddy application. It adheres to the principle of Authorization Independence by avoiding hierarchical `get()` calls in security rules, which is achieved through denormalization where necessary. It also segregates data based on access requirements, ensuring a homogeneous security posture within each collection.  The use of path-based ownership and consistent naming conventions enhance clarity and debuggability.\n\n*   **/users/{userId}**: Stores user profile data. This path ensures that only the authenticated user can access their own profile data (private data access).  \n*   **/questions/{categoryId}**: Stores all LET review questions, grouped into two documents: 'gened' and 'profed'. This allows for efficient retrieval of all questions for a category in a single read, while still allowing public read access.\n*   **/review_articles/{articleId}**: Stores all review articles, allowing for public read access.\n*   **/users/{userId}/dailyProgress/{date}**: Stores the daily progress of each user, using a composite key of userId and date. This facilitates easy querying of a user's daily progress and enforces ownership-based access control.\n*   **/pets/{petId}**: Stores the definitions of available pets.\n\nThis structure supports the required Question Answering Patterns (QAPs) as follows:\n\n*   **Secure List Operations**: Each collection (`users`, `questions`, `review_articles`, `/users/{userId}/dailyProgress`, and `pets`) can be listed securely because the rules only depend on the authenticated user's ID (`request.auth.uid`) and/or the document data itself, and there are no dependencies on parent documents.\n*   **Authorization Independence**: The structure ensures that security rules do not rely on fetching data from other documents (no `get()` calls), maintaining atomicity for operations like creating new daily progress entries or updating user profiles."
   }
 }
