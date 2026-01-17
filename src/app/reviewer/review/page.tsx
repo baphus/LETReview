@@ -1,17 +1,19 @@
+
 "use client";
 
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Clock, Book, Video, Brain, Bookmark } from 'lucide-react';
+import { Clock, Book, Video, Brain, Bookmark, PlusCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
-import type { Reviewer as ReviewArticle } from '@/lib/types'; // Using alias
+import { collection, query, where, orderBy } from 'firebase/firestore';
+import type { Reviewer as ReviewArticle, Subject } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useUser } from '@/firebase/auth/use-user';
 
 const articleTypeIcons = {
   "article": <Book className="h-4 w-4" />,
@@ -43,6 +45,7 @@ const ReviewCardSkeleton = () => (
 export default function ReviewPage() {
     const [subjectId, setSubjectId] = useState<'all' | string>('all');
     const firestore = useFirestore();
+    const { isAdmin } = useUser();
 
     const articlesQuery = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -54,36 +57,56 @@ export default function ReviewPage() {
         }
     }, [firestore, subjectId]);
     
-    const { data: articles, isLoading } = useCollection<ReviewArticle>(articlesQuery);
+    const subjectsQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return query(collection(firestore, 'subjects'), orderBy('orderIndex'));
+    }, [firestore]);
+
+    const { data: articles, isLoading: isLoadingArticles } = useCollection<ReviewArticle>(articlesQuery);
+    const { data: subjects, isLoading: isLoadingSubjects } = useCollection<Subject>(subjectsQuery);
 
     const sortedArticles = useMemo(() => {
         if (!articles) return [];
+        // Perform client-side sorting
         return [...articles].sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0));
     }, [articles]);
 
     return (
         <div>
-            <div className="flex flex-col sm:flex-row gap-4 mb-6">
+            <div className="flex flex-col sm:flex-row gap-4 mb-6 items-center">
                 <Select value={subjectId} onValueChange={(value) => setSubjectId(value)}>
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full sm:w-auto">
                         <SelectValue placeholder="Filter by subject" />
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">All Subjects</SelectItem>
-                        {/* TODO: Dynamically populate subjects */}
-                        <SelectItem value="educational-psychology">Educational Psychology</SelectItem>
+                        {isLoadingSubjects ? (
+                            <SelectItem value="loading" disabled>Loading...</SelectItem>
+                        ) : (
+                            subjects?.map(subject => (
+                                <SelectItem key={subject.id} value={subject.id}>{subject.name}</SelectItem>
+                            ))
+                        )}
                     </SelectContent>
                 </Select>
+                 {isAdmin && (
+                    <Link href="/reviewer/review/new" passHref className="w-full sm:w-auto sm:ml-auto">
+                        <Button className="w-full justify-center">
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            New Article
+                        </Button>
+                    </Link>
+                )}
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {isLoading && Array.from({ length: 3 }).map((_, i) => <ReviewCardSkeleton key={i} />)}
+                {isLoadingArticles && Array.from({ length: 3 }).map((_, i) => <ReviewCardSkeleton key={i} />)}
                 
-                {!isLoading && sortedArticles.map(article => (
+                {!isLoadingArticles && sortedArticles.map(article => (
                     <Card key={article.slug} className="flex flex-col">
                         <CardHeader>
                             <div className="flex justify-between items-start">
-                                <Badge variant="secondary" className="capitalize mb-2" style={{ backgroundColor: '#3F51B5', color: 'white' }}>
-                                    {article.subjectId.replace(/-/g, ' ')}
+                                <Badge variant="secondary" className="capitalize mb-2" style={{ backgroundColor: subjects?.find(s => s.id === article.subjectId)?.color || '#6c757d', color: 'white' }}>
+                                    {subjects?.find(s => s.id === article.subjectId)?.name || article.subjectId}
                                 </Badge>
                                  <Badge
                                     className={cn(
@@ -123,7 +146,7 @@ export default function ReviewPage() {
                 ))}
             </div>
 
-            {!isLoading && articles?.length === 0 && (
+            {!isLoadingArticles && articles?.length === 0 && (
                 <div className="col-span-full text-center py-10">
                     <p className="text-muted-foreground">No review articles found for this category.</p>
                 </div>

@@ -1,4 +1,3 @@
-
 'use client';
 import { useAuth, useFirestore } from '@/firebase';
 import { User, onAuthStateChanged, linkWithCredential, GoogleAuthProvider, signInWithPopup, signInAnonymously } from 'firebase/auth';
@@ -187,6 +186,7 @@ export const useUser = () => {
   }, [auth, firestore, router, toast, localUser, clearLocalUser]);
   
   const user = firebaseUser?.isAnonymous ? localUser : firestoreUser;
+  const isAdmin = user?.uid === 'q4vgkFodzoSaPM1BuNbRI0Wx9YZ2';
 
   const memoizedUpdateUser = useCallback((data: Partial<UserProfile>) => {
       if (firebaseUser?.isAnonymous) {
@@ -199,6 +199,7 @@ export const useUser = () => {
 
   return { 
     user,
+    isAdmin,
     updateUser: memoizedUpdateUser,
     firebaseUser, 
     isLoading,

@@ -3,7 +3,7 @@
 
 import { useState, useMemo, type FC, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from 'next/navigation';
-import { ArrowLeft, ArrowRight, BookOpen, CheckCircle, XCircle, Trophy, Shuffle, RefreshCcw } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen, CheckCircle, XCircle, Trophy, Shuffle, RefreshCcw, PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -17,6 +17,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
 import { useUser } from "@/firebase/auth/use-user";
 import { Skeleton } from "@/components/ui/skeleton";
+import Link from 'next/link';
 
 const StudyCard: FC<{ question: QuizQuestion }> = ({ question }) => {
   return (
@@ -136,7 +137,7 @@ const QuestionSkeleton = () => (
 function QuestionsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, updateUser } = useUser();
+  const { user, isAdmin, updateUser } = useUser();
 
   const isChallenge = searchParams.get('challenge') === 'true';
   const challengeDifficulty = searchParams.get('difficulty') || 'easy';
@@ -461,15 +462,25 @@ function QuestionsPageContent() {
                         <SelectItem value="majorship">Majorship</SelectItem>
                     </SelectContent>
                 </Select>
-                 <Button 
-                    variant={isShuffled ? "secondary" : "outline"} 
-                    onClick={handleShuffleToggle}
-                    aria-label="Shuffle questions"
-                    className="w-full sm:w-auto"
-                 >
-                    <Shuffle className="h-4 w-4 mr-2" />
-                    {isShuffled ? "Shuffled" : "Shuffle"}
-                </Button>
+                <div className="flex gap-2 justify-start sm:justify-end">
+                    <Button 
+                        variant={isShuffled ? "secondary" : "outline"} 
+                        onClick={handleShuffleToggle}
+                        aria-label="Shuffle questions"
+                        className="w-full sm:w-auto"
+                    >
+                        <Shuffle className="h-4 w-4 mr-2" />
+                        {isShuffled ? "Shuffled" : "Shuffle"}
+                    </Button>
+                     {isAdmin && (
+                        <Link href="/reviewer/questions/new" passHref className="w-full sm:w-auto">
+                            <Button className="w-full justify-center">
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                New
+                            </Button>
+                        </Link>
+                    )}
+                </div>
             </div>
         </>
       )}
