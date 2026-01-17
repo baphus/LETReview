@@ -190,10 +190,11 @@ export default function QuizPage() {
   };
   
   const handleAnswer = (correct: boolean, answer: string) => {
-    const isFirstTimeAnsweringThis = !challengeAnswers.some(a => a.questionId === currentQuestion.id);
-
-    if (isFirstTimeAnsweringThis && user) {
-        updateUser({ questionsAnswered: (user.questionsAnswered || 0) + 1 });
+    if (user && !user.answeredQuestionIds?.includes(currentQuestion.id)) {
+        updateUser({ 
+            questionsAnswered: (user.questionsAnswered || 0) + 1,
+            answeredQuestionIds: [...(user.answeredQuestionIds || []), currentQuestion.id]
+        });
     }
 
     const newAnswers = [...challengeAnswers];

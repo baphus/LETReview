@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Clock, Coffee, Play, Pause, RotateCcw, Award, Gem, Bell, Flame, ArrowRight } from "lucide-react";
@@ -16,7 +16,7 @@ import { format } from "date-fns";
 
 const getTodayKey = () => format(new Date(), 'yyyy-MM-dd');
 
-const MiniQuiz = ({ onCorrectAnswer, onIncorrectAnswer, onStreak }: { onCorrectAnswer: (points: number) => void, onIncorrectAnswer: () => void, onStreak: () => void }) => {
+const MiniQuiz = ({ onCorrectAnswer, onIncorrectAnswer, onStreak }: { onCorrectAnswer: (points: number, questionId: string) => void, onIncorrectAnswer: () => void, onStreak: () => void }) => {
     const [question, setQuestion] = useState<QuizQuestion | null>(null);
     const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
     const [isAnswered, setIsAnswered] = useState(false);
@@ -60,7 +60,7 @@ const MiniQuiz = ({ onCorrectAnswer, onIncorrectAnswer, onStreak }: { onCorrectA
         if (correct) {
             const currentStreak = useTimer.getState().quizStreak;
             const pointsGained = 1 * (currentStreak + 1);
-            onCorrectAnswer(pointsGained);
+            onCorrectAnswer(pointsGained, question.id);
             onStreak();
             setTimeout(getNewQuestion, 1200); 
         } else {
@@ -149,7 +149,7 @@ export default function TimerPage() {
   }, [time, mode, FOCUS_TIME, SHORT_BREAK_TIME, LONG_BREAK_TIME]);
 
   
-  const handleCorrectAnswer = async (points: number) => {
+  const handleCorrectAnswer = useCallback(async (points: number, questionId: string) => {
     handleCorrectQuizAnswer(); // This updates the local timer state
     
     if (user) {
@@ -173,12 +173,17 @@ export default function TimerPage() {
         updates.highestQuizStreak = newHighestStreak;
       }
       
+      if (!user.answeredQuestionIds?.includes(questionId)) {
+          updates.questionsAnswered = (user.questionsAnswered || 0) + 1;
+          updates.answeredQuestionIds = [...(user.answeredQuestionIds || []), questionId];
+      }
+
       updateUser(updates);
     }
     
     setShowPoints({ show: true, points: points });
     setTimeout(() => setShowPoints({ show: false, points: 0 }), 1500);
-  };
+  }, [user, quizStreak, highestQuizStreak, updateUser, handleCorrectQuizAnswer]);
   
   const handleStreak = () => {
     const currentStreak = useTimer.getState().quizStreak;

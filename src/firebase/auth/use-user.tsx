@@ -59,6 +59,7 @@ export const useUser = () => {
           passingScore: 85,
           createdAt: serverTimestamp(),
           questionsAnswered: 0,
+          answeredQuestionIds: [],
         };
         const userRef = doc(firestore, 'users', firebaseUser.uid);
         setDoc(userRef, newUserProfile, { merge: true }).then(() => {
@@ -153,6 +154,7 @@ export const useUser = () => {
             avatarUrl: result.user.photoURL || anonData.avatarUrl,
             createdAt: serverTimestamp(),
             questionsAnswered: anonData.questionsAnswered || 0,
+            answeredQuestionIds: anonData.answeredQuestionIds || [],
         };
 
         // Write the merged data to the new user's document

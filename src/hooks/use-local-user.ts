@@ -18,13 +18,13 @@ const createDefaultUser = (): UserProfile => ({
     highestQuizStreak: 0,
     completedSessions: 0,
     unlockedThemes: ['default'],
-    activeTheme: 'default',
     unlockedPets: [],
     petNames: {},
     dailyProgress: {},
     lastLogin: getTodayKey(),
     passingScore: 85,
     questionsAnswered: 0,
+    answeredQuestionIds: [],
 });
 
 export const useLocalUser = () => {

@@ -74,13 +74,15 @@ const QuestionOfTheDay = ({ onCorrectAnswer }: { onCorrectAnswer: () => void }) 
             qotdAnswer: answer,
         };
 
-        const updates: any = {
-            questionsAnswered: (user.questionsAnswered || 0) + 1
-        };
+        const updates: any = {};
+        if (!user.answeredQuestionIds?.includes(question.id)) {
+            updates.questionsAnswered = (user.questionsAnswered || 0) + 1;
+            updates.answeredQuestionIds = [...(user.answeredQuestionIds || []), question.id];
+        }
 
         if (correct) {
             dailyProgressUpdate.pointsEarned = (user.dailyProgress[todayKey]?.pointsEarned || 0) + 5;
-            updates.points = user.points + 5;
+            updates.points = (user.points || 0) + 5;
             onCorrectAnswer();
             toast({ title: "Correct!", description: "You earned 5 points!", className: "bg-green-100 border-green-300" });
         } else {

@@ -1,3 +1,4 @@
+
 import { FieldValue } from 'firebase/firestore';
 
 export interface QuizQuestion {
@@ -50,4 +51,5 @@ export interface UserProfile {
     passingScore?: number;
     createdAt?: FieldValue;
     questionsAnswered?: number;
+    answeredQuestionIds?: string[];
 }
