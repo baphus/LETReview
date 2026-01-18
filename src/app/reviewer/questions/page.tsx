@@ -20,6 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import Link from 'next/link';
 import { useFirestore } from '@/firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import { Label } from "@/components/ui/label";
 
 const StudyCard: FC<{ question: QuizQuestion }> = ({ question }) => {
   return (
@@ -142,6 +143,8 @@ function QuestionsPageContent() {
   const { user, isAdmin, updateUser } = useUser();
   const firestore = useFirestore();
 
+  const [initialQuizPhase, setInitialQuizPhase] = useState<'settings' | 'active' | 'study'>('study');
+  
   const isChallenge = searchParams.get('challenge') === 'true';
   const challengeDifficulty = searchParams.get('difficulty') || 'easy';
   const challengeCount = parseInt(searchParams.get('count') || '0', 10);
@@ -149,7 +152,7 @@ function QuestionsPageContent() {
   const topicId = searchParams.get('topic');
 
   const [category, setCategory] = useState<'gened' | 'profed' | 'majorship'>("gened");
-  const [quizPhase, setQuizPhase] = useState<'settings' | 'active' | 'results' | 'study'>('study');
+  const [quizPhase, setQuizPhase] = useState<'settings' | 'active' | 'results' | 'study'>(initialQuizPhase);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [quizScore, setQuizScore] = useState(0);
   const [showResults, setShowResults] = useState(false);
@@ -164,16 +167,17 @@ function QuestionsPageContent() {
   const [practiceQuizConfig, setPracticeQuizConfig] = useState({ count: 10, difficulty: 'all' });
 
   const { toast } = useToast();
-
+  
   useEffect(() => {
+    let phase: 'settings' | 'active' | 'study' = 'study';
     if (isChallenge) {
+      phase = 'active';
       setCategory(challengeCategory);
-      setQuizPhase('active');
     } else if (topicId) {
-      setQuizPhase('settings');
-    } else {
-      setQuizPhase('study');
+      phase = 'settings';
     }
+    setInitialQuizPhase(phase);
+    setQuizPhase(phase);
   }, [isChallenge, challengeCategory, topicId]);
 
   useEffect(() => {
