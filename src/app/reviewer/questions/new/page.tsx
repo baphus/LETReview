@@ -106,7 +106,7 @@ export default function NewQuestionPage() {
     const newQuestion: Omit<QuizQuestion, 'id'> & { id: string } = {
       id: questionId,
       category: selectedCategory,
-      subjectId: selectedSubject || undefined,
+      ...(selectedSubject && { subjectId: selectedSubject }),
       topicIds: selectedTopics,
       difficulty: data.difficulty,
       type: 'multiple_choice',
@@ -119,7 +119,7 @@ export default function NewQuestionPage() {
     try {
       const batch = writeBatch(firestore);
       const questionRef = doc(firestore, 'questions', questionId);
-      batch.set(questionRef, newQuestion);
+      batch.set(questionRef, newQuestion as any);
       await batch.commit();
 
       toast({
@@ -171,7 +171,7 @@ export default function NewQuestionPage() {
       return {
         id: `q-batch-${Date.now().toString(36)}-${index}`,
         category: selectedCategory,
-        subjectId: selectedSubject || undefined,
+        ...(selectedSubject && { subjectId: selectedSubject }),
         topicIds: selectedTopics,
         ...item
       };
@@ -186,7 +186,7 @@ export default function NewQuestionPage() {
       const batch = writeBatch(firestore);
       newQuestions.forEach(q => {
           const questionRef = doc(firestore, 'questions', q.id);
-          batch.set(questionRef, q);
+          batch.set(questionRef, q as any);
       });
       await batch.commit();
       toast({ title: 'Batch Import Successful!', description: `${newQuestions.length} questions have been added.` });
