@@ -100,8 +100,66 @@
       },
       "required": ["createdAt"]
     },
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Stores user profile and progress data.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "avatarUrl": { "type": "string", "format": "uri" },
+        "email": { "type": "string", "format": "email" },
+        "examDate": { "type": "string", "format": "date-time" },
+        "points": { "type": "number" },
+        "streak": { "type": "number" },
+        "highestStreak": { "type": "number" },
+        "highestQuizStreak": { "type": "number" },
+        "completedSessions": { "type": "number" },
+        "unlockedThemes": { "type": "array", "items": { "type": "string" } },
+        "unlockedPets": { "type": "array", "items": { "type": "string" } },
+        "activeTheme": { "type": "string" },
+        "petNames": { "type": "object", "additionalProperties": { "type": "string" } },
+        "dailyProgress": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/backend/entities/DailyProgress" }
+        },
+        "lastLogin": { "type": "string", "format": "date" },
+        "lastChallengeDate": { "type": "string", "format": "date" },
+        "passingScore": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "questionsAnswered": { "type": "number" },
+        "answeredQuestionIds": { "type": "array", "items": { "type": "string" } },
+        "quizProgress": {
+          "type": "object",
+          "description": "Tracks user's quiz performance per topic.",
+          "additionalProperties": { "$ref": "#/backend/entities/TopicQuizProgress" }
+        }
+      }
+    },
+    "DailyProgress": {
+        "title": "Daily Progress",
+        "description": "Tracks a user's progress for a single day.",
+        "type": "object",
+        "properties": {
+            "qotdCompleted": { "type": "boolean" },
+            "qotdAnswer": { "type": "string" },
+            "challengesCompleted": { "type": "array", "items": { "type": "string" } },
+            "pomodorosCompleted": { "type": "number" },
+            "pointsEarned": { "type": "number" }
+        }
+    },
+    "TopicQuizProgress": {
+        "title": "Topic Quiz Progress",
+        "description": "Tracks a user's quiz scores for a specific topic.",
+        "type": "object",
+        "properties": {
+            "scores": { "type": "array", "items": { "type": "number" } },
+            "highestScore": { "type": "number" },
+            "averageScore": { "type": "number" }
+        }
+    },
     "User": {
-        "$ref": "#/backend/entities/User"
+        "$ref": "#/backend/entities/UserProfile"
     }
   },
   "auth": {
@@ -116,7 +174,7 @@
         "path": "/users/{userId}",
         "definition": {
           "entityName": "User",
-          "schema": { "$ref": "#/backend/entities/User" },
+          "schema": { "$ref": "#/backend/entities/UserProfile" },
           "description": "Stores user profile data."
         }
       },

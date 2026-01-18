@@ -87,6 +87,12 @@ export interface DailyProgress {
     pointsEarned?: number;
 }
 
+export interface TopicQuizProgress {
+  scores: number[];
+  highestScore: number;
+  averageScore: number;
+}
+
 export interface UserProfile {
     uid: string;
     name: string;
@@ -109,4 +115,5 @@ export interface UserProfile {
     createdAt?: FieldValue;
     questionsAnswered?: number;
     answeredQuestionIds?: string[];
+    quizProgress?: Record<string, TopicQuizProgress>;
 }

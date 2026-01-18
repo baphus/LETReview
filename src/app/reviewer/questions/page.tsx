@@ -3,13 +3,13 @@
 
 import { useState, useMemo, type FC, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from 'next/navigation';
-import { ArrowLeft, ArrowRight, BookOpen, CheckCircle, XCircle, Trophy, Shuffle, RefreshCcw, PlusCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen, CheckCircle, XCircle, Trophy, Shuffle, RefreshCcw, PlusCircle, BarChart, Gauge, Repeat } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getQuestions } from "@/lib/data";
-import type { QuizQuestion } from "@/lib/types";
+import type { QuizQuestion, TopicQuizProgress } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -151,6 +151,9 @@ function QuestionsPageContent() {
   const [category, setCategory] = useState<'gened' | 'profed' | 'majorship'>(
     isChallenge ? challengeCategory : "gened"
   );
+  
+  const [quizPhase, setQuizPhase] = useState<'settings' | 'active' | 'results' | 'study'>(topicId && !isChallenge ? 'settings' : 'study');
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const [quizScore, setQuizScore] = useState(0);
   const [showResults, setShowResults] = useState(false);
@@ -161,6 +164,10 @@ function QuestionsPageContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [topicName, setTopicName] = useState<string | null>(null);
   
+  const [topicStats, setTopicStats] = useState<TopicQuizProgress | null>(null);
+  const [practiceQuizConfig, setPracticeQuizConfig] = useState({ count: 10, difficulty: 'all' });
+
+
   const { toast } = useToast();
 
   useEffect(() => {
@@ -179,16 +186,22 @@ function QuestionsPageContent() {
   useEffect(() => {
     if (user) {
         setPassingScore(user.passingScore || 85);
+        if (topicId) {
+            setTopicStats(user.quizProgress?.[topicId] || { scores: [], highestScore: 0, averageScore: 0 });
+        }
     }
-  }, [user]);
+  }, [user, topicId]);
 
-  const fetchAndSetQuestions = useCallback(async () => {
+  const fetchAndSetQuestions = useCallback(async (config?: { count: number, difficulty: string }) => {
       setIsLoading(true);
+      
+      const difficulty = config?.difficulty === 'all' ? undefined : config?.difficulty as 'easy' | 'medium' | 'hard';
+      
       const fetchedQuestions = await getQuestions({
           category,
-          difficulty: isChallenge ? challengeDifficulty as any : undefined,
-          limit: isChallenge ? challengeCount : undefined,
-          shuffle: isChallenge || isShuffled,
+          difficulty: isChallenge ? challengeDifficulty as any : difficulty,
+          limit: isChallenge ? challengeCount : config?.count,
+          shuffle: isChallenge || isShuffled || !!topicId,
           topicId: topicId || undefined,
       });
       setQuestions(fetchedQuestions);
@@ -196,8 +209,10 @@ function QuestionsPageContent() {
   }, [category, isChallenge, challengeDifficulty, challengeCount, isShuffled, topicId]);
 
   useEffect(() => {
-    fetchAndSetQuestions();
-  }, [fetchAndSetQuestions]);
+    if (quizPhase === 'study' && !topicId && !isChallenge) {
+        fetchAndSetQuestions();
+    }
+  }, [fetchAndSetQuestions, quizPhase, topicId, isChallenge]);
   
   const currentQuestion = questions[currentIndex];
 
@@ -206,67 +221,53 @@ function QuestionsPageContent() {
     setQuizScore(0);
     setShowResults(false);
     setChallengeAnswers([]);
-    fetchAndSetQuestions();
-  }, [fetchAndSetQuestions]);
-
-  const handleFinishChallenge = async (finalAnswers: ChallengeAnswer[]) => {
-    if (!user || finalAnswers.length < questions.length) return;
-
-    const finalScore = finalAnswers.reduce((acc, ans) => acc + (ans.isCorrect ? 1 : 0), 0);
-    setQuizScore(finalScore);
-    setShowResults(true);
-
-    const scorePercentage = (finalScore / questions.length) * 100;
-    const passed = scorePercentage >= passingScore;
-
-    const todayKey = getTodayKey();
-    const challengeId = `${challengeDifficulty}-${challengeCategory}`;
     
-    if (passed) {
-        const todaysChallenges = user.dailyProgress?.[todayKey]?.challengesCompleted || [];
-        const alreadyCompletedToday = todaysChallenges.includes(challengeId);
-        
-        let updates: any = {};
-        
-        if (!alreadyCompletedToday) {
-            updates.dailyProgress = {
-                ...user.dailyProgress,
-                [todayKey]: {
-                    ...user.dailyProgress[todayKey],
-                    challengesCompleted: [...todaysChallenges, challengeId]
-                }
-            };
-        }
+    if (topicId) {
+        setQuizPhase('settings');
+    } else if (!isChallenge) {
+        fetchAndSetQuestions();
+    }
+    
+  }, [fetchAndSetQuestions, topicId, isChallenge]);
 
-        const wasAnyChallengeCompletedToday = user.lastChallengeDate === todayKey;
-        const pointsMap = { easy: 25, medium: 75, hard: 150 };
-        const pointsEarned = pointsMap[challengeDifficulty as keyof typeof pointsMap] || 0;
+  const handleFinishQuiz = useCallback(async (finalAnswers: ChallengeAnswer[], finalScore: number) => {
+    if (isChallenge) {
+        setShowResults(true);
 
-        if (!wasAnyChallengeCompletedToday) {
-            updates.streak = (user.streak || 0) + 1;
-            if ((updates.streak) > (user.highestStreak || 0)) {
-                updates.highestStreak = updates.streak;
-            }
-            updates.lastChallengeDate = todayKey;
-            updates.points = (user.points || 0) + pointsEarned;
+        const scorePercentage = (finalScore / questions.length) * 100;
+        const passed = scorePercentage >= passingScore;
+        const todayKey = getTodayKey();
+        const challengeId = `${challengeDifficulty}-${challengeCategory}`;
+        
+        if (passed) {
+            const todaysChallenges = user?.dailyProgress?.[todayKey]?.challengesCompleted || [];
+            const alreadyCompletedToday = todaysChallenges.includes(challengeId);
             
-            updates.dailyProgress = {
-                ...updates.dailyProgress,
-                [todayKey]: {
-                    ...updates.dailyProgress?.[todayKey],
-                    pointsEarned: (updates.dailyProgress?.[todayKey]?.pointsEarned || 0) + pointsEarned
-                }
-            };
+            let updates: any = {};
+            
+            if (!alreadyCompletedToday) {
+                updates.dailyProgress = {
+                    ...user?.dailyProgress,
+                    [todayKey]: {
+                        ...user?.dailyProgress?.[todayKey],
+                        challengesCompleted: [...todaysChallenges, challengeId]
+                    }
+                };
+            }
 
-            toast({
-                title: "Challenge Passed!",
-                description: `You earned ${pointsEarned} points and secured your streak!`,
-                className: "bg-green-100 border-green-300"
-            });
-        } else {
-             if (!alreadyCompletedToday) {
-                updates.points = (user.points || 0) + pointsEarned;
-                 updates.dailyProgress = {
+            const wasAnyChallengeCompletedToday = user?.lastChallengeDate === todayKey;
+            const pointsMap = { easy: 25, medium: 75, hard: 150 };
+            const pointsEarned = pointsMap[challengeDifficulty as keyof typeof pointsMap] || 0;
+
+            if (!wasAnyChallengeCompletedToday) {
+                updates.streak = (user?.streak || 0) + 1;
+                if ((updates.streak) > (user?.highestStreak || 0)) {
+                    updates.highestStreak = updates.streak;
+                }
+                updates.lastChallengeDate = todayKey;
+                updates.points = (user?.points || 0) + pointsEarned;
+                
+                updates.dailyProgress = {
                     ...updates.dailyProgress,
                     [todayKey]: {
                         ...updates.dailyProgress?.[todayKey],
@@ -276,42 +277,58 @@ function QuestionsPageContent() {
 
                 toast({
                     title: "Challenge Passed!",
-                    description: `You passed another challenge and earned ${pointsEarned} points!`,
+                    description: `You earned ${pointsEarned} points and secured your streak!`,
                     className: "bg-green-100 border-green-300"
                 });
-             } else {
-                 toast({
-                    title: "Challenge Complete!",
-                    description: `You've already earned points for this challenge today.`,
-                    className: "bg-blue-100 border-blue-300"
-                });
-             }
+            } else {
+                 if (!alreadyCompletedToday) {
+                    updates.points = (user?.points || 0) + pointsEarned;
+                     updates.dailyProgress = {
+                        ...updates.dailyProgress,
+                        [todayKey]: {
+                            ...updates.dailyProgress?.[todayKey],
+                            pointsEarned: (updates.dailyProgress?.[todayKey]?.pointsEarned || 0) + pointsEarned
+                        }
+                    };
+
+                    toast({
+                        title: "Challenge Passed!",
+                        description: `You passed another challenge and earned ${pointsEarned} points!`,
+                        className: "bg-green-100 border-green-300"
+                    });
+                 } else {
+                     toast({
+                        title: "Challenge Complete!",
+                        description: `You've already earned points for this challenge today.`,
+                        className: "bg-blue-100 border-blue-300"
+                    });
+                 }
+            }
+            if (user) updateUser(updates);
         }
-        updateUser(updates);
-    }
-  };
+    } else if (topicId && user) {
+        setQuizPhase('results');
+        const scorePercentage = (finalScore / questions.length) * 100;
+        
+        const existingProgress = user.quizProgress?.[topicId] || { scores: [], highestScore: 0, averageScore: 0 };
+        const newScores = [...existingProgress.scores, scorePercentage];
+        const newHighest = Math.max(existingProgress.highestScore, scorePercentage);
+        const newAverage = newScores.reduce((a, b) => a + b, 0) / newScores.length;
 
-
-  const handleNext = () => {
-    if (currentIndex < questions.length - 1) {
-        setCurrentIndex((prev) => prev + 1);
-    } else {
-        if (isChallenge) {
-            handleFinishChallenge(challengeAnswers);
-        } else {
-            setCurrentIndex(0); 
-        }
+        const updatePayload = {
+            quizProgress: {
+                ...user.quizProgress,
+                [topicId]: {
+                    scores: newScores,
+                    highestScore: newHighest,
+                    averageScore: newAverage,
+                }
+            }
+        };
+        updateUser(updatePayload);
     }
-  };
+  }, [isChallenge, questions.length, passingScore, challengeDifficulty, challengeCategory, user, updateUser, toast, topicId]);
 
-  const handlePrev = () => {
-    if (currentIndex > 0) {
-        setCurrentIndex((prev) => prev - 1);
-    } else {
-        setCurrentIndex(questions.length - 1); // Loop to the end
-    }
-  };
-  
   const handleAnswer = (correct: boolean, answer: string) => {
     if (user && !user.answeredQuestionIds?.includes(currentQuestion.id)) {
         updateUser({ 
@@ -330,15 +347,25 @@ function QuestionsPageContent() {
 
     const newAnswers = [...challengeAnswers.filter(a => a.questionId !== currentQuestion.id), newAnswer];
     setChallengeAnswers(newAnswers);
+    setQuizScore(prev => prev + (correct ? 1 : 0));
 
     setTimeout(() => {
         if (currentIndex < questions.length - 1) {
              setCurrentIndex((prev) => prev + 1);
         } else {
-            handleFinishChallenge(newAnswers);
+            const finalScore = newAnswers.reduce((acc, ans) => acc + (ans.isCorrect ? 1 : 0), 0);
+            handleFinishQuiz(newAnswers, finalScore);
         }
     }, 300);
   };
+  
+    const handleStartPracticeQuiz = () => {
+        setCurrentIndex(0);
+        setChallengeAnswers([]);
+        setQuizScore(0);
+        fetchAndSetQuestions(practiceQuizConfig);
+        setQuizPhase('active');
+    };
 
   const handleDialogClose = () => {
     setShowResults(false);
@@ -360,20 +387,11 @@ function QuestionsPageContent() {
     setQuizScore(0);
     fetchAndSetQuestions();
   };
-
-  useEffect(() => {
-    if (!isChallenge) {
-        fetchAndSetQuestions();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category, isShuffled]);
-
   
   const progressValue = questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
-  
   const isChallengePassed = showResults && isChallenge && (quizScore / questions.length * 100) >= passingScore;
 
-  if (isLoading) {
+  if (isLoading && (quizPhase !== 'settings')) {
     return (
       <div className="container mx-auto p-4 max-w-2xl text-center">
           {isChallenge ? (
@@ -405,6 +423,114 @@ function QuestionsPageContent() {
           case 'profed': return 'Professional Education';
           case 'majorship': return 'Majorship';
       }
+  }
+
+  if (topicId && !isChallenge) {
+    if (quizPhase === 'settings') {
+      return (
+        <div className="max-w-2xl mx-auto space-y-6">
+          <header>
+            <h1 className="text-3xl font-bold font-headline">Practice Quiz</h1>
+            <p className="text-muted-foreground">Topic: {topicName || 'Loading...'}</p>
+          </header>
+
+          <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><BarChart className="h-5 w-5 text-primary"/> Your Stats for this Topic</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 gap-4">
+                <div className="p-4 bg-muted/50 rounded-lg text-center">
+                    <p className="text-sm text-muted-foreground">Highest Score</p>
+                    <p className="text-3xl font-bold">{topicStats?.highestScore.toFixed(0) || 0}%</p>
+                </div>
+                 <div className="p-4 bg-muted/50 rounded-lg text-center">
+                    <p className="text-sm text-muted-foreground">Average Score</p>
+                    <p className="text-3xl font-bold">{topicStats?.averageScore.toFixed(0) || 0}%</p>
+                </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader><CardTitle>Quiz Settings</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+                <div>
+                    <Label>Number of Questions</Label>
+                    <Select value={String(practiceQuizConfig.count)} onValueChange={(val) => setPracticeQuizConfig(c => ({...c, count: Number(val)}))}>
+                        <SelectTrigger><SelectValue/></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="5">5</SelectItem>
+                            <SelectItem value="10">10</SelectItem>
+                            <SelectItem value="15">15</SelectItem>
+                            <SelectItem value="20">20</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+                 <div>
+                    <Label>Difficulty</Label>
+                    <Select value={practiceQuizConfig.difficulty} onValueChange={(val) => setPracticeQuizConfig(c => ({...c, difficulty: val}))}>
+                        <SelectTrigger><SelectValue/></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Difficulties</SelectItem>
+                            <SelectItem value="easy">Easy</SelectItem>
+                            <SelectItem value="medium">Medium</SelectItem>
+                            <SelectItem value="hard">Hard</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+            </CardContent>
+            <CardFooter>
+                <Button className="w-full" onClick={handleStartPracticeQuiz}>Start Quiz</Button>
+            </CardFooter>
+          </Card>
+        </div>
+      )
+    }
+    
+    if (quizPhase === 'results') {
+      const scorePercent = (quizScore / questions.length) * 100;
+        return (
+             <div className="max-w-2xl mx-auto space-y-6">
+                <header className="text-center">
+                    <Trophy className="h-16 w-16 text-yellow-400 mx-auto" />
+                    <h1 className="text-3xl font-bold font-headline mt-2">Quiz Complete!</h1>
+                    <p className="text-muted-foreground">You scored {quizScore} out of {questions.length}</p>
+                </header>
+                <Card>
+                    <CardHeader><CardTitle className="text-center">{scorePercent.toFixed(0)}%</CardTitle></CardHeader>
+                    <CardContent><Progress value={scorePercent} /></CardContent>
+                </Card>
+                <ScrollArea className="max-h-60 mt-4 pr-6 border rounded-lg p-4">
+                  <div className="space-y-4">
+                      {challengeAnswers.map(answer => (
+                          <div key={answer.questionId} className="text-sm p-3 rounded-lg bg-muted">
+                              <p className="font-semibold mb-1">{answer.question}</p>
+                              {answer.isCorrect ? (
+                                  <div className="flex items-center gap-2 text-green-600">
+                                      <CheckCircle className="h-4 w-4 shrink-0" /> 
+                                      <span>Your answer: {answer.userAnswer}</span>
+                                  </div>
+                              ) : (
+                                  <div className="space-y-1">
+                                      <div className="flex items-center gap-2 text-red-600">
+                                          <XCircle className="h-4 w-4 shrink-0" />
+                                          <span>Your answer: {answer.userAnswer}</span>
+                                      </div>
+                                          <div className="flex items-center gap-2 text-green-600 pl-6">
+                                          <span>Correct answer: {answer.correctAnswer}</span>
+                                      </div>
+                                  </div>
+                              )}
+                          </div>
+                      ))}
+                  </div>
+                </ScrollArea>
+                <Button className="w-full" onClick={() => setQuizPhase('settings')}>
+                    <Repeat className="mr-2 h-4 w-4"/>
+                    Take Another Quiz
+                </Button>
+            </div>
+        )
+    }
   }
 
   return (
@@ -510,44 +636,32 @@ function QuestionsPageContent() {
             <p className="text-muted-foreground">Answer all {questions.length} {getCategoryName(challengeCategory)} questions. You need {passingScore}% to pass.</p>
         </header>
       )}
-      
-      {topicId && (
-          <Card className="mb-6 bg-primary/5">
-              <CardHeader>
-                  <CardTitle className="font-headline">Practice Questions: {topicName || 'Loading...'}</CardTitle>
-                  <CardDescription>You're viewing questions related to a specific topic. This is study mode.</CardDescription>
-              </CardHeader>
-              <CardFooter>
-                <Button variant="outline" onClick={() => router.push('/reviewer/questions')}>
-                    <XCircle className="mr-2 h-4 w-4" /> Clear Filter
-                </Button>
-              </CardFooter>
-          </Card>
-      )}
 
       <div className="my-6">
         {questions.length > 0 && currentQuestion ? (
           <>
-            {isChallenge ? (
+            {isChallenge || (topicId && quizPhase === 'active') ? (
               <QuizCard 
                 question={currentQuestion} 
                 onAnswer={handleAnswer} 
               />
             ) : (
-              <StudyCard question={currentQuestion} />
+                quizPhase === 'study' && <StudyCard question={currentQuestion} />
             )}
           </>
         ) : (
-          <Card className="h-80 flex justify-center items-center">
-             <div className="text-center text-muted-foreground">
-              <p>No questions found for this criteria.</p>
-              {isChallenge && <p>Please check back tomorrow for new questions.</p>}
-            </div>
-          </Card>
+          !isLoading && (
+            <Card className="h-80 flex justify-center items-center">
+               <div className="text-center text-muted-foreground">
+                <p>No questions found for this criteria.</p>
+                {isChallenge && <p>Please check back tomorrow for new questions.</p>}
+              </div>
+            </Card>
+          )
         )}
       </div>
 
-      {!isChallenge && (
+      {(quizPhase === 'study' && !topicId && !isChallenge) && (
          <footer className="flex flex-col gap-4">
             <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
@@ -556,11 +670,11 @@ function QuestionsPageContent() {
             </div>
             <Progress value={progressValue} />
             <div className="flex justify-between items-center">
-            <Button onClick={handlePrev} disabled={questions.length <= 1}>
+            <Button onClick={() => setCurrentIndex(p => p > 0 ? p-1 : questions.length - 1)} disabled={questions.length <= 1}>
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Previous
             </Button>
-            <Button onClick={handleNext}>
+            <Button onClick={() => setCurrentIndex(p => p < questions.length - 1 ? p+1 : 0)}>
                 {currentIndex === questions.length - 1 ? 'Start Over' : 'Next'}
                 {currentIndex < questions.length - 1 && <ArrowRight className="h-4 w-4 ml-2" />}
             </Button>
@@ -568,7 +682,7 @@ function QuestionsPageContent() {
         </footer>
       )}
 
-       {isChallenge && (
+       {(isChallenge || (topicId && quizPhase === 'active')) && (
          <footer className="flex flex-col gap-4">
             <Progress value={progressValue} />
             <p className="text-sm text-muted-foreground text-center">
@@ -582,7 +696,7 @@ function QuestionsPageContent() {
 
 export default function QuestionsPage() {
     return (
-        <Suspense fallback={<div>Loading...</div>}>
+        <Suspense fallback={<div className="max-w-2xl mx-auto"><QuestionSkeleton /></div>}>
             <QuestionsPageContent />
         </Suspense>
     )

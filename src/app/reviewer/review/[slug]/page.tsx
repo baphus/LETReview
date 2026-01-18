@@ -141,12 +141,12 @@ export default function ReviewArticlePage() {
                 <div className="grid md:grid-cols-2 gap-4">
                     <Card className="bg-primary/5">
                         <CardHeader>
-                            <CardTitle>Practice Questions</CardTitle>
+                            <CardTitle>Practice Quiz</CardTitle>
                             <CardDescription>Test your understanding of this topic.</CardDescription>
                         </CardHeader>
                         <CardFooter>
                             <Link href={`/reviewer/questions?topic=${article.topicIds[0]}`} passHref>
-                                <Button>Related Questions</Button>
+                                <Button>Start Practice Quiz</Button>
                             </Link>
                         </CardFooter>
                     </Card>
