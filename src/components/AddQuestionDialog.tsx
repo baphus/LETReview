@@ -95,7 +95,7 @@ export function AddQuestionDialog({ article }: AddQuestionDialogProps) {
     setIsSubmitting(true);
     
     const questionId = 'q-' + article.slug.slice(0, 20) + '-' + Date.now().toString(36);
-    const newQuestion: Omit<QuizQuestion, 'answer'> = {
+    const newQuestion: QuizQuestion = {
       id: questionId,
       category: article.category,
       subjectId: article.subjectId,
@@ -158,7 +158,7 @@ export function AddQuestionDialog({ article }: AddQuestionDialogProps) {
     }
 
     const batchQuestions = validationResult.data;
-    const newQuestions: Omit<QuizQuestion, 'answer'>[] = [];
+    const newQuestions: QuizQuestion[] = [];
     let errorFound = false;
 
     for (const [index, item] of batchQuestions.entries()) {

@@ -52,7 +52,7 @@ const MiniQuiz = ({ onCorrectAnswer, onIncorrectAnswer, onStreak }: { onCorrectA
     const handleAnswer = (answer: string) => {
         if (isAnswered || !question) return;
 
-        const correct = answer === question.answer;
+        const correct = answer === question.correctAnswer;
         setSelectedAnswer(answer);
         setIsCorrect(correct);
         setIsAnswered(true);
@@ -79,7 +79,7 @@ const MiniQuiz = ({ onCorrectAnswer, onIncorrectAnswer, onStreak }: { onCorrectA
                 <p className="text-center font-semibold">{question.question}</p>
                 <div className="grid grid-cols-1 gap-2">
                     {question.choices.map((choice, index) => {
-                        const isTheCorrectAnswer = choice === question.answer;
+                        const isTheCorrectAnswer = choice === question.correctAnswer;
                         const isSelected = choice === selectedAnswer;
 
                         return (
@@ -298,7 +298,7 @@ export default function TimerPage() {
             <div className="relative">
                 <MiniQuiz 
                     onCorrectAnswer={handleCorrectAnswer} 
-                    onIncorrectAnswer={handleIncorrectQuizAnswer} 
+                    onIncorrectQuizAnswer={handleIncorrectQuizAnswer} 
                     onStreak={handleStreak}
                 />
                  {showCombo && useTimer.getState().quizStreak > 1 && (

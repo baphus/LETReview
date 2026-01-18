@@ -37,7 +37,7 @@ const QuizCard: FC<{
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(userAnswer || null);
 
   const handleAnswerClick = (answer: string) => {
-    const correct = answer === question.answer;
+    const correct = answer === question.correctAnswer;
     setSelectedAnswer(answer);
     onAnswer(correct, answer);
   };
@@ -56,7 +56,7 @@ const QuizCard: FC<{
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {question.choices.map((choice, index) => {
                 const isSelected = selectedAnswer === choice;
-                const isTheCorrectAnswer = choice === question.answer;
+                const isTheCorrectAnswer = choice === question.correctAnswer;
                 
                 let isDisabled = false;
                 if (!isChallenge && hasAnswered) {
@@ -94,7 +94,7 @@ const QuizCard: FC<{
                 )
             })}
         </div>
-        {!isChallenge && hasAnswered && selectedAnswer !== question.answer && question.explanation && (
+        {!isChallenge && hasAnswered && selectedAnswer !== question.correctAnswer && question.explanation && (
            <p className="text-sm text-muted-foreground mt-4 p-2 bg-muted rounded-md">{question.explanation}</p>
         )}
       </CardContent>
@@ -210,7 +210,7 @@ export default function QuizPage() {
         newAnswers.push({
             questionId: currentQuestion.id,
             userAnswer: answer,
-            correctAnswer: currentQuestion.answer,
+            correctAnswer: currentQuestion.correctAnswer,
             isCorrect: correct,
             question: currentQuestion.question,
         });
@@ -256,6 +256,7 @@ export default function QuizPage() {
   }, [category]);
   
   useEffect(() => {
+    if(!currentQuestion) return;
     setAnsweredCurrent(
         challengeAnswers.some(a => a.questionId === currentQuestion?.id)
     );
@@ -280,33 +281,31 @@ export default function QuizPage() {
             </DialogDescription>
           </DialogHeader>
           
-          <div className="flex-1 min-h-0 flex flex-col">
-              <ScrollArea className="flex-1">
-                  <div className="space-y-4 pr-6">
-                      {challengeAnswers.map(answer => (
-                          <div key={answer.questionId} className="text-sm p-3 rounded-lg bg-muted">
-                              <p className="font-semibold mb-1">{answer.question}</p>
-                              {answer.isCorrect ? (
-                                  <div className="flex items-center gap-2 text-green-600">
-                                      <CheckCircle className="h-4 w-4 shrink-0" /> 
+          <ScrollArea className="flex-1 -mr-6 pr-6">
+              <div className="space-y-4">
+                  {challengeAnswers.map(answer => (
+                      <div key={answer.questionId} className="text-sm p-3 rounded-lg bg-muted">
+                          <p className="font-semibold mb-1">{answer.question}</p>
+                          {answer.isCorrect ? (
+                              <div className="flex items-center gap-2 text-green-600">
+                                  <CheckCircle className="h-4 w-4 shrink-0" /> 
+                                  <span>Your answer: {answer.userAnswer}</span>
+                              </div>
+                          ) : (
+                              <div className="space-y-1">
+                                  <div className="flex items-center gap-2 text-red-600">
+                                      <XCircle className="h-4 w-4 shrink-0" />
                                       <span>Your answer: {answer.userAnswer}</span>
                                   </div>
-                              ) : (
-                                  <div className="space-y-1">
-                                      <div className="flex items-center gap-2 text-red-600">
-                                          <XCircle className="h-4 w-4 shrink-0" />
-                                          <span>Your answer: {answer.userAnswer}</span>
-                                      </div>
-                                          <div className="flex items-center gap-2 text-green-600 pl-6">
-                                          <span>Correct answer: {answer.correctAnswer}</span>
-                                      </div>
+                                      <div className="flex items-center gap-2 text-green-600 pl-6">
+                                      <span>Correct answer: {answer.correctAnswer}</span>
                                   </div>
-                              )}
-                          </div>
-                      ))}
-                  </div>
-              </ScrollArea>
-          </div>
+                              </div>
+                          )}
+                      </div>
+                  ))}
+              </div>
+          </ScrollArea>
 
           <DialogFooter className="mt-4 pt-4 border-t">
             <Button onClick={handleDialogClose} className="w-full">

@@ -51,7 +51,7 @@ const QuestionOfTheDay = ({ onCorrectAnswer }: { onCorrectAnswer: () => void }) 
                     const previousAnswer = todaysProgress.qotdAnswer;
                     if (previousAnswer) {
                         setSelectedAnswer(previousAnswer);
-                        setIsCorrect(previousAnswer === qotd.answer);
+                        setIsCorrect(previousAnswer === qotd.correctAnswer);
                     }
                 }
             }
@@ -62,7 +62,7 @@ const QuestionOfTheDay = ({ onCorrectAnswer }: { onCorrectAnswer: () => void }) 
     const handleAnswer = async (answer: string) => {
         if (isAnswered || !user || !question) return;
 
-        const correct = answer === question.answer;
+        const correct = answer === question.correctAnswer;
         setSelectedAnswer(answer);
         setIsCorrect(correct);
         setIsAnswered(true);
@@ -131,7 +131,7 @@ const QuestionOfTheDay = ({ onCorrectAnswer }: { onCorrectAnswer: () => void }) 
             </CardHeader>
             <CardContent className="space-y-2">
                  {question.choices.map((choice, index) => {
-                    const isTheCorrectAnswer = choice === question.answer;
+                    const isTheCorrectAnswer = choice === question.correctAnswer;
                     const isSelected = choice === selectedAnswer;
 
                     return (

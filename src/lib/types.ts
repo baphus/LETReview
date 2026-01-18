@@ -47,8 +47,7 @@ export interface QuizQuestion {
   type?: "multiple_choice";
   question: string;
   choices: string[];
-  correctAnswer?: string;
-  answer: string;
+  correctAnswer: string;
   explanation?: string;
   reviewerIds?: string[];
 }

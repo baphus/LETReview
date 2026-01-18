@@ -31,7 +31,7 @@ const StudyCard: FC<{ question: QuizQuestion }> = ({ question }) => {
       <CardContent className="p-0 space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {question.choices.map((choice, index) => {
-                const isCorrect = choice === question.answer;
+                const isCorrect = choice === question.correctAnswer;
                 return (
                     <Card 
                         key={`${choice}-${index}`}
@@ -67,7 +67,7 @@ const QuizCard: FC<{
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
 
   const handleAnswerClick = (answer: string) => {
-    const correct = answer === question.answer;
+    const correct = answer === question.correctAnswer;
     setSelectedAnswer(answer);
     onAnswer(correct, answer);
   };
@@ -350,7 +350,7 @@ function QuestionsPageContent() {
     const newAnswer: ChallengeAnswer = {
         questionId: currentQuestion.id,
         userAnswer: answer,
-        correctAnswer: currentQuestion.answer,
+        correctAnswer: currentQuestion.correctAnswer,
         isCorrect: correct,
         question: currentQuestion.question,
     };
