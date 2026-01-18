@@ -509,8 +509,8 @@ function QuestionsPageContent() {
                     <CardHeader><CardTitle className="text-center">{scorePercent.toFixed(0)}%</CardTitle></CardHeader>
                     <CardContent><Progress value={scorePercent} /></CardContent>
                 </Card>
-                <ScrollArea className="max-h-60 mt-4 pr-6 border rounded-lg p-4">
-                  <div className="space-y-4">
+                <ScrollArea className="max-h-80 mt-4 border rounded-lg">
+                  <div className="space-y-4 p-4">
                       {challengeAnswers.map(answer => (
                           <div key={answer.questionId} className="text-sm p-3 rounded-lg bg-muted">
                               <p className="font-semibold mb-1">{answer.question}</p>
@@ -534,10 +534,16 @@ function QuestionsPageContent() {
                       ))}
                   </div>
                 </ScrollArea>
-                <Button className="w-full" onClick={() => setQuizPhase('settings')}>
-                    <Repeat className="mr-2 h-4 w-4"/>
-                    Take Another Quiz
-                </Button>
+                <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                    <Button className="w-full" onClick={() => setQuizPhase('settings')}>
+                        <Repeat className="mr-2 h-4 w-4"/>
+                        Take Another Quiz
+                    </Button>
+                    <Button variant="outline" className="w-full" onClick={() => router.back()}>
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        Back to Article
+                    </Button>
+                </div>
             </div>
         )
     }

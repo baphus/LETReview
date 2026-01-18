@@ -281,8 +281,8 @@ export default function QuizPage() {
           </DialogHeader>
           
           <div className="flex-1 min-h-0 flex flex-col">
-              <ScrollArea className="flex-1 -mr-6 pr-6">
-                  <div className="space-y-4">
+              <ScrollArea className="flex-1">
+                  <div className="space-y-4 pr-6">
                       {challengeAnswers.map(answer => (
                           <div key={answer.questionId} className="text-sm p-3 rounded-lg bg-muted">
                               <p className="font-semibold mb-1">{answer.question}</p>
@@ -309,7 +309,10 @@ export default function QuizPage() {
           </div>
 
           <DialogFooter className="mt-4 pt-4 border-t">
-            <Button onClick={handleDialogClose} className="w-full">Try Again</Button>
+            <Button onClick={handleDialogClose} className="w-full">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Go Back
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
