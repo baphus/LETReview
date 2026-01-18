@@ -18,23 +18,6 @@
     "publishedAt": "2024-01-01T12:00:00Z"
   },
   {
-    "id": "gened-complete-notes",
-    "title": "Complete General Education Notes",
-    "slug": "complete-general-education-notes",
-    "category": "gened",
-    "excerpt": "A comprehensive collection of notes for the General Education exam, covering Philippine literature, history, and government.",
-    "content": "# Complete General Education Notes\n\nThis is a compilation of notes from Franklin - Online LET, CSE, IELTS & Celpip Private Tutorial.\n\n---\n\n## Philippine Literature & History\n\n*   The first book written in the Philippines was **DOCTRINA CRISTIANA**.\n*   The Father of Ilocano Literature is **PEDRO BUKANEG**.\n*   The Father of Tagalog Poetry is **FRANCISCO BALTAZAR**.\n*   **Lola Basyang** is the pen name of SEVERINO REYES.\n*   The first and longest-running komiks series in the Philippines is **KENKOY** (Liwayway Magasin, 1929).\n*   The Father of Pampango Literature who wrote \"There is no God\" is **JUAN CRISOSTOMO SOTO**.\n*   The oldest existing newspaper in the Philippines since the 1900s is **MANILA BULLETIN**.\n*   The Father of Modern Tagalog Poetry is **ALEJANDRO ABADILLA**.\n*   The work of Bonifacio which tells the history of the Philippines is **ANG DAPAT MABATID NG MGA TAGALOG**.\n*   Jose Rizal wrote the popular fable **The Monkey and the Turtle**.\n*   Andres Bonifacio's Ten Commandments is known as **THE DECALOGUE**.\n*   Rizal's model for Pilosopong Tasyo was **PACIANO RIZAL**.\n*   The character **SIMOUN** from El Filibusterismo does not reflect Rizal's own personality.\n*   The line 'whoever knows not how to love his native tongue is worse than any beast or even smelly fish' is from **TO MY FELLOW CHILDREN**.\n*   Rizal's pen names were **DIMASALANG** and **LAONG-LAAN**.\n*   **Taga-ilog** is JUAN LUNA's pen name.\n*   **TALINDAW** is a song about love.\n*   Jose Ma. Panganiban was known for his **'Memoria Fotografica'**.\n*   **AMADO HERNANDEZ** is known as the poet of the workers or laborers.\n*   Ilocano balagtasan is called **BUKANEGAN**.\n*   The Visayan epic about good manners and right conduct is **MARAGTAS**.\n*   The father of Filipino newspaper is **PASCUAL POBLETE**.\n*   **Lupang Tinubuan** by NARCISO REYES is considered to be the best story written during the Japanese Period.\n*   The original title of Ibong Adarna was **CORIDO AT BUHAY NA PINAGDAANAN NG TATLONG PRINSIPENG ANAC NG HARING FERNANDO AT REYNA VALERIANA SA CAHARIANG BERBANIA**.\n*   **PANDEREGLA** was the first Filipino bread.\n\n## Philippine Heroes & Figures\n\n*   The Great Plebian: **Andres Bonifacio**\n*   The Father of the Katipunan: **Andres Bonifacio**\n*   Hero of the Tirad Pass Battle: **Gregorio Del Pilar**\n*   President of the First Philippine Republic: **General Emilio Aguinaldo**\n*   Brain of the Philippine Revolution: **Apolinario Mabini**\n*   Martyred Priests in 1872: **GOMBURZA**\n*   Brain of the Katipunan: **Emilio Jacinto**\n*   Co-founder of La Independencia: **General Antonio Luna**\n*   Mother of Balintawak: **Melchora Aquino**\n*   The first Filipino alphabet was called **ALIBATA/BAYBAYIN** and consisted of 15 LETTERS.\n*   Greatest Filipino Orator of the Propaganda Movement: **Graciano Lopez-Jaena**\n*   First Filipino Cannon-maker: **Pandar Pira**\n*   Managing Editor of La Solidaridad: **Mariano Ponce**\n*   Lakambini of Katipunan: **Gregoria de Jesus**\n*   Poet of the Revolution: **Fernando Ma. Guerrero**\n*   First University of the Philippines President: **Rafael Palma**\n*   Greatest Filipino Painter: **Juan Luna**\n*   First Filipino Poetess: **Leona Florentino**\n*   Founder of Philippine Socialism: **Isabelo Delos Reyes**\n*   Author of the Spanish lyrics of the Philippine National Anthem: **Jose Palma**",
-    "contentFormat": "markdown",
-    "subjectId": "general-education-concepts",
-    "topicIds": ["philippine-history-and-literature"],
-    "difficulty": "medium",
-    "reviewerType": "article",
-    "estimatedTime": 60,
-    "status": "published",
-    "orderIndex": 1,
-    "publishedAt": "2024-05-21T12:00:00Z"
-  },
-  {
     "id": "profed-foundations-notes",
     "title": "Foundations of Education Notes",
     "slug": "foundations-of-education-notes",
