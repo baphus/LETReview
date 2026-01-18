@@ -144,56 +144,56 @@
     "reviewerIds": ["gened-complete-notes"]
   },
   {
-    "id": "q-gened-ra9155",
-    "category": "gened",
-    "subjectId": "general-education-concepts",
-    "topicIds": ["philippine-history-and-literature"],
+    "id": "q-profed-ra9155",
+    "category": "profed",
+    "subjectId": "the-teaching-profession",
+    "topicIds": ["legal-bases-of-education"],
     "difficulty": "hard",
     "type": "multiple_choice",
     "question": "Which Republic Act is known as the 'Governance of Basic Education Act of 2001'?",
     "choices": ["RA 9155", "RA 7722", "RA 7796", "RA 10533"],
     "correctAnswer": "RA 9155",
     "explanation": "RA 9155 provides the framework for the governance of basic education in the Philippines, renaming the Department of Education, Culture and Sports (DECS) to the Department of Education (DepEd).",
-    "reviewerIds": ["gened-complete-notes"]
+    "reviewerIds": ["profed-foundations-notes"]
   },
   {
-    "id": "q-gened-ra10533",
-    "category": "gened",
-    "subjectId": "general-education-concepts",
-    "topicIds": ["philippine-history-and-literature"],
+    "id": "q-profed-ra10533",
+    "category": "profed",
+    "subjectId": "the-teaching-profession",
+    "topicIds": ["legal-bases-of-education"],
     "difficulty": "hard",
     "type": "multiple_choice",
     "question": "The K-12 program was institutionalized through which Republic Act?",
     "choices": ["RA 10533", "RA 9155", "RA 7784", "RA 6655"],
     "correctAnswer": "RA 10533",
     "explanation": "RA 10533, or the Enhanced Basic Education Act of 2013, established the K-12 program, adding two years of senior high school.",
-    "reviewerIds": ["gened-complete-notes"]
+    "reviewerIds": ["profed-foundations-notes"]
   },
   {
-    "id": "q-gened-ism-naturalism",
-    "category": "gened",
-    "subjectId": "general-education-concepts",
-    "topicIds": ["philippine-history-and-literature"],
+    "id": "q-profed-ism-naturalism",
+    "category": "profed",
+    "subjectId": "the-teaching-profession",
+    "topicIds": ["educational-philosophies"],
     "difficulty": "medium",
     "type": "multiple_choice",
     "question": "Which educational philosophy posits that 'nature is better than civilization' and that learning should be based on the natural world?",
     "choices": ["Naturalism", "Idealism", "Realism", "Existentialism"],
     "correctAnswer": "Naturalism",
     "explanation": "Naturalism is a philosophy that holds that only nature exists and that it is the source of all knowledge and value.",
-    "reviewerIds": ["gened-complete-notes"]
+    "reviewerIds": ["profed-foundations-notes"]
   },
   {
-    "id": "q-gened-ism-essentialism",
-    "category": "gened",
-    "subjectId": "general-education-concepts",
-    "topicIds": ["philippine-history-and-literature"],
+    "id": "q-profed-ism-essentialism",
+    "category": "profed",
+    "subjectId": "the-teaching-profession",
+    "topicIds": ["educational-philosophies"],
     "difficulty": "medium",
     "type": "multiple_choice",
     "question": "The educational philosophy focused on teaching the '3Rs' (Reading, 'Riting, 'Rithmetic) and other fundamental skills is known as:",
     "choices": ["Essentialism", "Progressivism", "Perennialism", "Behaviorism"],
     "correctAnswer": "Essentialism",
     "explanation": "Essentialism advocates for a curriculum that focuses on teaching essential knowledge and skills that are necessary for all individuals to possess.",
-    "reviewerIds": ["gened-complete-notes"]
+    "reviewerIds": ["profed-foundations-notes"]
   },
   {
     "id": "q-gened-haring-fernando",

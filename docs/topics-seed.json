@@ -11,5 +11,17 @@
     "subjectId": "general-education-concepts",
     "name": "Philippine History and Literature",
     "slug": "philippine-history-and-literature"
+  },
+  {
+    "id": "educational-philosophies",
+    "subjectId": "the-teaching-profession",
+    "name": "Educational Philosophies",
+    "slug": "educational-philosophies"
+  },
+  {
+    "id": "legal-bases-of-education",
+    "subjectId": "the-teaching-profession",
+    "name": "Legal Bases of Education",
+    "slug": "legal-bases-of-education"
   }
 ]
