@@ -182,23 +182,10 @@ export default function NewReviewerPage() {
         batch.set(doc(firestore, 'reviewers', reviewer.id), { ...reviewer, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
       });
       
-      const questionsByCategory = (questionsSeed as QuizQuestion[]).reduce((acc, q) => {
-        if (q.category) {
-            if (!acc[q.category]) acc[q.category] = [];
-            acc[q.category].push(q);
-        }
-        return acc;
-      }, {} as Record<string, QuizQuestion[]>);
-
-      for (const category in questionsByCategory) {
-        const categoryDocRef = doc(firestore, 'questions', category);
-        const existingDoc = await getDoc(categoryDocRef);
-        if (existingDoc.exists()) {
-          batch.update(categoryDocRef, { questions: questionsByCategory[category] });
-        } else {
-          batch.set(categoryDocRef, { questions: questionsByCategory[category] });
-        }
-      }
+      questionsSeed.forEach((question) => {
+        const questionRef = doc(firestore, 'questions', question.id);
+        batch.set(questionRef, question);
+      });
 
       await batch.commit();
       

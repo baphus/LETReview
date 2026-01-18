@@ -26,33 +26,35 @@ const getSeed = (str: string): (() => number) => {
 
 export const getQuestionForDate = async (date: Date): Promise<QuizQuestion> => {
     const { firestore } = initializeFirebase();
-    
-    // Determine which category document to read based on whether the day of the year is even or odd
     const dayOfYear = getDayOfYear(date);
     const category = (dayOfYear % 2 === 0) ? 'gened' : 'profed';
     
-    const categoryDocRef = doc(firestore, "questions", category);
-    const docSnap = await getDoc(categoryDocRef);
-
     let questionsInCategory: QuizQuestion[] = [];
+    
+    try {
+        const questionsRef = collection(firestore, 'questions');
+        const q = query(questionsRef, where('category', '==', category));
+        const querySnapshot = await getDocs(q);
 
-    if (docSnap.exists()) {
-        questionsInCategory = (docSnap.data().questions || []) as QuizQuestion[];
-    } else {
-        // Fallback to static data if the document doesn't exist
+        if (!querySnapshot.empty) {
+            questionsInCategory = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuizQuestion));
+        } else {
+            questionsInCategory = staticQuestions.filter(q => (q as QuizQuestion).category === category) as QuizQuestion[];
+        }
+    } catch (e) {
+        console.error("Error fetching QOTD from Firestore, using fallback", e);
         questionsInCategory = staticQuestions.filter(q => (q as QuizQuestion).category === category) as QuizQuestion[];
     }
 
+
     if (questionsInCategory.length === 0) {
-        // Ultimate fallback if Firestore is empty and static file has no questions for the category
+        // Ultimate fallback
         return staticQuestions[0] as QuizQuestion;
     }
 
-    // Use the day of the year to pick a question from the category list
     const questionIndex = dayOfYear % questionsInCategory.length;
     const question = questionsInCategory[questionIndex];
 
-    // Deterministically shuffle choices so they are not always in the same order
     const dateString = date.toDateString();
     const rng = getSeed(dateString + question.id);
     question.choices = [...question.choices].sort(() => rng() - rng());
@@ -75,49 +77,43 @@ export const getQuestions = async (options: {
     
     let allQuestions: QuizQuestion[] = [];
 
-    if (options.topicId) {
-        // If filtering by topic, fetch from all categories and then filter.
-        const categories: Array<'gened' | 'profed' | 'majorship'> = ['gened', 'profed', 'majorship'];
-        try {
-            const categoryDocs = await Promise.all(
-                categories.map(cat => getDoc(doc(firestore, "questions", cat)))
-            );
-            
-            for (const docSnap of categoryDocs) {
-                if (docSnap.exists()) {
-                    allQuestions.push(...(docSnap.data().questions || []));
-                }
-            }
-        } catch (e) {
-            console.error("Error fetching topic questions from firestore, using fallback", e);
-            allQuestions = staticQuestions as QuizQuestion[];
+    try {
+        const questionsRef = collection(firestore, 'questions');
+        const queryConstraints = [];
+        if (options.category) {
+            queryConstraints.push(where('category', '==', options.category));
+        }
+        if (options.topicId) {
+            // Firestore doesn't support 'OR' queries on different fields easily.
+            // For topics, we can't also filter by category directly in the query if not all documents have it.
+            // We'll fetch by topic and then filter by category if needed, though usually a topic belongs to a category.
+            queryConstraints.push(where('topicIds', 'array-contains', options.topicId));
         }
         
-        // Fallback for when firestore is empty
-        if (allQuestions.length === 0) {
+        const q = query(questionsRef, ...queryConstraints);
+        const querySnapshot = await getDocs(q);
+        
+        if (!querySnapshot.empty) {
+            allQuestions = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuizQuestion));
+        } else {
+             // Fallback to static data if firestore is empty
             allQuestions = staticQuestions as QuizQuestion[];
         }
 
-    } else {
-        const category = options.category || 'gened';
-        const categoryDocRef = doc(firestore, "questions", category);
-        const docSnap = await getDoc(categoryDocRef);
-
-        if (docSnap.exists()) {
-            allQuestions = (docSnap.data().questions || []) as QuizQuestion[];
-        } else {
-            // Fallback to static data
-            allQuestions = staticQuestions.filter(q => (q as QuizQuestion).category === category) as QuizQuestion[];
-        }
-    }
-
-
-    let filteredQuestions = allQuestions;
-
-    if (options.topicId) {
-        filteredQuestions = filteredQuestions.filter(q => q.topicIds?.includes(options.topicId as string));
+    } catch (e) {
+        console.error("Error fetching questions from firestore, using fallback", e);
+        allQuestions = staticQuestions as QuizQuestion[];
     }
     
+    let filteredQuestions = allQuestions;
+
+    // Apply filters that were not applied in the query (or for static data)
+    if (allQuestions === staticQuestions && options.category) {
+         filteredQuestions = filteredQuestions.filter(q => q.category === options.category);
+    }
+    if (allQuestions === staticQuestions && options.topicId) {
+        filteredQuestions = filteredQuestions.filter(q => q.topicIds?.includes(options.topicId as string));
+    }
     if (options.difficulty) {
         filteredQuestions = filteredQuestions.filter(q => q.difficulty === options.difficulty);
     }

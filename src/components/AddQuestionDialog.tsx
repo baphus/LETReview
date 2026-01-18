@@ -22,7 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { PlusCircle, Loader2, Code } from 'lucide-react';
 import { useFirestore } from '@/firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, writeBatch } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import type { Reviewer, QuizQuestion } from '@/lib/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -95,7 +95,7 @@ export function AddQuestionDialog({ article }: AddQuestionDialogProps) {
     setIsSubmitting(true);
     
     const questionId = 'q-' + article.slug.slice(0, 20) + '-' + Date.now().toString(36);
-    const newQuestion: QuizQuestion = {
+    const newQuestion: Omit<QuizQuestion, 'answer'> = {
       id: questionId,
       category: article.category,
       subjectId: article.subjectId,
@@ -106,17 +106,13 @@ export function AddQuestionDialog({ article }: AddQuestionDialogProps) {
       question: data.question,
       choices: data.choices,
       correctAnswer: data.choices[parseInt(data.correctAnswerIndex)],
-      answer: data.choices[parseInt(data.correctAnswerIndex)],
       explanation: data.explanation,
     };
 
-    const categoryDocRef = doc(firestore, 'questions', article.category);
+    const questionRef = doc(firestore, 'questions', questionId);
 
     try {
-      const docSnap = await getDoc(categoryDocRef);
-      const existingQuestions = docSnap.exists() ? docSnap.data().questions || [] : [];
-      const newQuestions = [...existingQuestions, newQuestion];
-      await setDoc(categoryDocRef, { questions: newQuestions }, { merge: true });
+      await setDoc(questionRef, newQuestion);
 
       toast({
         title: 'Question Added!',
@@ -162,7 +158,7 @@ export function AddQuestionDialog({ article }: AddQuestionDialogProps) {
     }
 
     const batchQuestions = validationResult.data;
-    const newQuestions: QuizQuestion[] = [];
+    const newQuestions: Omit<QuizQuestion, 'answer'>[] = [];
     let errorFound = false;
 
     for (const [index, item] of batchQuestions.entries()) {
@@ -183,7 +179,6 @@ export function AddQuestionDialog({ article }: AddQuestionDialogProps) {
         question: item.question,
         choices: item.choices,
         correctAnswer: item.correctAnswer,
-        answer: item.correctAnswer,
         explanation: item.explanation,
       });
     }
@@ -193,13 +188,13 @@ export function AddQuestionDialog({ article }: AddQuestionDialogProps) {
       return;
     }
 
-    const categoryDocRef = doc(firestore, 'questions', article.category);
-
     try {
-      const docSnap = await getDoc(categoryDocRef);
-      const existingQuestions = docSnap.exists() ? docSnap.data().questions || [] : [];
-      const updatedQuestions = [...existingQuestions, ...newQuestions];
-      await setDoc(categoryDocRef, { questions: updatedQuestions }, { merge: true });
+      const batch = writeBatch(firestore);
+      newQuestions.forEach(q => {
+          const questionRef = doc(firestore, 'questions', q.id);
+          batch.set(questionRef, q);
+      });
+      await batch.commit();
 
       toast({
         title: 'Batch Import Successful!',

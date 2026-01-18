@@ -55,6 +55,7 @@
         "description": "Represents a single practice question.",
         "type": "object",
         "properties": {
+          "id": { "type": "string"},
           "category": { "type": "string", "enum": ["gened", "profed", "majorship"] },
           "subjectId": { "type": "string" },
           "topicIds": { "type": "array", "items": { "type": "string" } },
@@ -66,18 +67,7 @@
           "explanation": { "type": "string" },
           "reviewerIds": { "type": "array", "items": { "type": "string" } }
         },
-        "required": ["subjectId", "difficulty", "type", "question", "choices", "correctAnswer", "category"]
-    },
-    "QuestionSet": {
-      "title": "Question Set",
-      "description": "A set of questions for a specific category like General Education or Professional Education.",
-      "type": "object",
-      "properties": {
-        "questions": {
-          "type": "array",
-          "items": { "$ref": "#/backend/entities/Question" }
-        }
-      }
+        "required": ["id", "subjectId", "difficulty", "type", "question", "choices", "correctAnswer", "category"]
     },
      "ReviewerProgress": {
       "title": "Reviewer Progress",
@@ -219,11 +209,11 @@
         }
       },
        {
-        "path": "/questions/{categoryId}",
+        "path": "/questions/{questionId}",
         "definition": {
-          "entityName": "QuestionSet",
-          "schema": { "$ref": "#/backend/entities/QuestionSet" },
-          "description": "Stores a set of questions for a category (gened, profed, majorship)."
+          "entityName": "Question",
+          "schema": { "$ref": "#/backend/entities/Question" },
+          "description": "Stores all practice questions as individual documents."
         }
       }
     ]
