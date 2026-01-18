@@ -67,7 +67,7 @@
           "explanation": { "type": "string" },
           "reviewerIds": { "type": "array", "items": { "type": "string" } }
         },
-        "required": ["id", "subjectId", "difficulty", "type", "question", "choices", "correctAnswer", "category"]
+        "required": ["id", "difficulty", "type", "question", "choices", "correctAnswer", "category"]
     },
      "ReviewerProgress": {
       "title": "Reviewer Progress",

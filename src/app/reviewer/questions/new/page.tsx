@@ -96,8 +96,8 @@ export default function NewQuestionPage() {
   }, [isUserLoading, isAdmin, router, toast]);
 
   const onSingleSubmit = async (data: SingleQuestionFormValues) => {
-    if (!firestore || !selectedSubject) {
-      toast({ variant: 'destructive', title: 'Context Missing', description: 'Please select a category and subject first.' });
+    if (!firestore) {
+      toast({ variant: 'destructive', title: 'Database not available', description: 'Please try again later.' });
       return;
     }
     setIsSubmitting(true);
@@ -106,7 +106,7 @@ export default function NewQuestionPage() {
     const newQuestion: Omit<QuizQuestion, 'id'> & { id: string } = {
       id: questionId,
       category: selectedCategory,
-      subjectId: selectedSubject,
+      subjectId: selectedSubject || undefined,
       topicIds: selectedTopics,
       difficulty: data.difficulty,
       type: 'multiple_choice',
@@ -136,8 +136,8 @@ export default function NewQuestionPage() {
   };
   
   const onBatchSubmit = async (data: BatchImportFormValues) => {
-    if (!firestore || !selectedSubject) {
-      toast({ variant: 'destructive', title: 'Context Missing', description: 'Please select a category and subject first.' });
+    if (!firestore) {
+      toast({ variant: 'destructive', title: 'Database not available', description: 'Please try again later.' });
       return;
     }
     setIsSubmitting(true);
@@ -171,7 +171,7 @@ export default function NewQuestionPage() {
       return {
         id: `q-batch-${Date.now().toString(36)}-${index}`,
         category: selectedCategory,
-        subjectId: selectedSubject,
+        subjectId: selectedSubject || undefined,
         topicIds: selectedTopics,
         ...item
       };
@@ -224,7 +224,7 @@ export default function NewQuestionPage() {
       <Card className="mb-6">
         <CardHeader>
           <CardTitle>Set Question Context</CardTitle>
-          <CardDescription>Choose the category, subject, and topics for the questions you're about to add.</CardDescription>
+          <CardDescription>Choose the category, and optionally the subject and topics for the questions.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -240,7 +240,7 @@ export default function NewQuestionPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Subject</Label>
+              <Label>Subject (optional)</Label>
               <Select value={selectedSubject} onValueChange={(v) => {setSelectedSubject(v); setSelectedTopics([]);}}>
                 <SelectTrigger><SelectValue placeholder="Select a subject" /></SelectTrigger>
                 <SelectContent>
@@ -324,7 +324,7 @@ export default function NewQuestionPage() {
                     <FormField control={singleQuestionForm.control} name="explanation" render={({ field }) => (
                         <FormItem><FormLabel>Explanation</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
-                  <Button type="submit" disabled={isSubmitting || !selectedSubject}>
+                  <Button type="submit" disabled={isSubmitting}>
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Save Question
                   </Button>
@@ -356,7 +356,7 @@ export default function NewQuestionPage() {
                         </AlertDescription>
                     </Alert>
 
-                  <Button type="submit" disabled={isSubmitting || !selectedSubject}>
+                  <Button type="submit" disabled={isSubmitting}>
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Import Questions
                   </Button>
