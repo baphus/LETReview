@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -227,8 +228,8 @@ export default function NewQuestionPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormItem>
-              <FormLabel>Category</FormLabel>
+            <div className="space-y-2">
+              <Label>Category</Label>
               <Select value={selectedCategory} onValueChange={(v) => {setSelectedCategory(v as any); setSelectedSubject(''); setSelectedTopics([]);}}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -237,20 +238,20 @@ export default function NewQuestionPage() {
                   <SelectItem value="majorship">Majorship</SelectItem>
                 </SelectContent>
               </Select>
-            </FormItem>
-            <FormItem>
-              <FormLabel>Subject</FormLabel>
+            </div>
+            <div className="space-y-2">
+              <Label>Subject</Label>
               <Select value={selectedSubject} onValueChange={(v) => {setSelectedSubject(v); setSelectedTopics([]);}}>
                 <SelectTrigger><SelectValue placeholder="Select a subject" /></SelectTrigger>
                 <SelectContent>
                   {isLoadingSubjects ? <SelectItem value="loading" disabled>Loading...</SelectItem> : subjects?.filter(s => s.categoryId === selectedCategory).map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
                 </SelectContent>
               </Select>
-            </FormItem>
+            </div>
           </div>
           {selectedSubject && (
-            <FormItem>
-              <FormLabel>Topics (optional)</FormLabel>
+            <div className="space-y-2">
+              <Label>Topics (optional)</Label>
               <div className="max-h-40 overflow-y-auto rounded-md border p-4 space-y-2">
                 {isLoadingTopics ? <p>Loading...</p> : (topics?.filter(t => t.subjectId === selectedSubject) || []).map(topic => (
                   <div key={topic.id} className="flex items-center gap-2">
@@ -265,7 +266,7 @@ export default function NewQuestionPage() {
                   </div>
                 ))}
               </div>
-            </FormItem>
+            </div>
           )}
         </CardContent>
       </Card>
