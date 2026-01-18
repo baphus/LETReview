@@ -148,12 +148,8 @@ function QuestionsPageContent() {
   const challengeCategory = searchParams.get('category') as 'gened' | 'profed' | 'majorship' || "gened";
   const topicId = searchParams.get('topic');
 
-  const [category, setCategory] = useState<'gened' | 'profed' | 'majorship'>(
-    isChallenge ? challengeCategory : "gened"
-  );
-  
-  const [quizPhase, setQuizPhase] = useState<'settings' | 'active' | 'results' | 'study'>(topicId && !isChallenge ? 'settings' : 'study');
-
+  const [category, setCategory] = useState<'gened' | 'profed' | 'majorship'>("gened");
+  const [quizPhase, setQuizPhase] = useState<'settings' | 'active' | 'results' | 'study'>('study');
   const [currentIndex, setCurrentIndex] = useState(0);
   const [quizScore, setQuizScore] = useState(0);
   const [showResults, setShowResults] = useState(false);
@@ -167,8 +163,18 @@ function QuestionsPageContent() {
   const [topicStats, setTopicStats] = useState<TopicQuizProgress | null>(null);
   const [practiceQuizConfig, setPracticeQuizConfig] = useState({ count: 10, difficulty: 'all' });
 
-
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (isChallenge) {
+      setCategory(challengeCategory);
+      setQuizPhase('active');
+    } else if (topicId) {
+      setQuizPhase('settings');
+    } else {
+      setQuizPhase('study');
+    }
+  }, [isChallenge, challengeCategory, topicId]);
 
   useEffect(() => {
     if (topicId && firestore) {
@@ -209,8 +215,8 @@ function QuestionsPageContent() {
   }, [category, isChallenge, challengeDifficulty, challengeCount, isShuffled, topicId]);
 
   useEffect(() => {
-    if (quizPhase === 'study' && !topicId && !isChallenge) {
-        fetchAndSetQuestions();
+    if ((isChallenge && quizPhase === 'active') || (quizPhase === 'study' && !topicId && !isChallenge)) {
+      fetchAndSetQuestions();
     }
   }, [fetchAndSetQuestions, quizPhase, topicId, isChallenge]);
   
@@ -701,3 +707,5 @@ export default function QuestionsPage() {
         </Suspense>
     )
 }
+
+    
