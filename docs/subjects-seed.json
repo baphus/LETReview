@@ -7,5 +7,13 @@
     "slug": "educational-psychology",
     "color": "#3F51B5",
     "orderIndex": 0
+  },
+  {
+    "id": "general-education-concepts",
+    "categoryId": "gened",
+    "name": "General Education Concepts",
+    "slug": "general-education-concepts",
+    "color": "#4CAF50",
+    "orderIndex": 1
   }
 ]

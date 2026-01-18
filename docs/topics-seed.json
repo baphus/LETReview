@@ -1,8 +1,15 @@
+
 [
   {
     "id": "cognitive-development",
     "subjectId": "educational-psychology",
     "name": "Cognitive Development",
     "slug": "cognitive-development"
+  },
+  {
+    "id": "philippine-history-and-literature",
+    "subjectId": "general-education-concepts",
+    "name": "Philippine History and Literature",
+    "slug": "philippine-history-and-literature"
   }
 ]
