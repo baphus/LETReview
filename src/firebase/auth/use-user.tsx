@@ -1,3 +1,4 @@
+
 'use client';
 import { useAuth, useFirestore } from '@/firebase';
 import { User, onAuthStateChanged, linkWithCredential, GoogleAuthProvider, signInWithPopup, signInAnonymously } from 'firebase/auth';
@@ -193,9 +194,16 @@ export const useUser = () => {
           updateLocalUser(data);
       } else if (firestore && firebaseUser) {
           const userRef = doc(firestore, "users", firebaseUser.uid);
-          updateDoc(userRef, data);
+          updateDoc(userRef, data).catch((error) => {
+            console.error("Failed to update user:", error);
+            toast({
+                variant: 'destructive',
+                title: 'Update failed',
+                description: 'Could not save your changes. ' + error.message,
+            });
+          });
       }
-  }, [firebaseUser, firestore, updateLocalUser]);
+  }, [firebaseUser, firestore, updateLocalUser, toast]);
 
   return { 
     user,

@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query, where, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import type { Reviewer } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -16,6 +16,9 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/firebase/auth/use-user';
 import { AddQuestionDialog } from '@/components/AddQuestionDialog';
+import { useToast } from '@/hooks/use-toast';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 const articleTypeIcons = {
   "article": <Book className="h-4 w-4" />,
@@ -42,7 +45,8 @@ export default function ReviewArticlePage() {
     const params = useParams();
     const slug = params.slug as string;
     const firestore = useFirestore();
-    const { isAdmin } = useUser();
+    const { user, isAdmin } = useUser();
+    const { toast } = useToast();
 
     const articleQuery = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -51,6 +55,46 @@ export default function ReviewArticlePage() {
 
     const { data: articles, isLoading } = useCollection<Reviewer>(articleQuery);
     const article = articles?.[0];
+
+    const handleMarkAsComplete = () => {
+        if (!user || !firestore || !article) {
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'You must be logged in to save progress.',
+            });
+            return;
+        }
+
+        const progressRef = doc(firestore, `users/${user.uid}/reviewerProgress`, article.id);
+        const progressData = {
+            status: 'completed',
+            progressPercent: 100,
+            updatedAt: serverTimestamp(),
+        };
+
+        setDoc(progressRef, progressData, { merge: true })
+            .catch(async (serverError) => {
+                console.error("Error marking as complete: ", serverError);
+                toast({
+                    variant: 'destructive',
+                    title: 'Error',
+                    description: 'Could not save your progress.',
+                });
+                const permissionError = new FirestorePermissionError({
+                    path: progressRef.path,
+                    operation: 'write',
+                    requestResourceData: progressData,
+                });
+                errorEmitter.emit('permission-error', permissionError);
+            });
+        
+        toast({
+            title: "Progress Saved!",
+            description: "You've marked this article as completed.",
+            className: "bg-green-100 border-green-300",
+        });
+    };
 
     if (isLoading) {
         return <ArticleSkeleton />;
@@ -111,7 +155,7 @@ export default function ReviewArticlePage() {
                     </CardHeader>
                     <CardFooter>
                        <div className="w-full flex gap-2">
-                            <Button variant="secondary" className="flex-1">Mark as Completed</Button>
+                            <Button variant="secondary" className="flex-1" onClick={handleMarkAsComplete}>Mark as Completed</Button>
                             {isAdmin && article && <AddQuestionDialog article={article} />}
                        </div>
                     </CardFooter>
@@ -164,4 +208,5 @@ export default function ReviewArticlePage() {
         </article>
     );
 }
+
 
