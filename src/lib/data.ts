@@ -1,3 +1,4 @@
+
 import { getFirestore, collection, query, where, getDocs, limit, getDoc, doc } from 'firebase/firestore';
 import { initializeFirebase } from '@/firebase';
 import type { QuizQuestion, PetProfile } from "./types";
@@ -75,7 +76,8 @@ export const getQuestions = async (options: {
 }): Promise<QuizQuestion[]> => {
     const { firestore } = initializeFirebase();
     
-    let allQuestions: QuizQuestion[] = [];
+    let fetchedQuestions: QuizQuestion[] = [];
+    let fromFallback = false;
 
     try {
         const questionsRef = collection(firestore, 'questions');
@@ -83,10 +85,10 @@ export const getQuestions = async (options: {
         if (options.category) {
             queryConstraints.push(where('category', '==', options.category));
         }
+        if (options.difficulty) {
+            queryConstraints.push(where('difficulty', '==', options.difficulty));
+        }
         if (options.topicId) {
-            // Firestore doesn't support 'OR' queries on different fields easily.
-            // For topics, we can't also filter by category directly in the query if not all documents have it.
-            // We'll fetch by topic and then filter by category if needed, though usually a topic belongs to a category.
             queryConstraints.push(where('topicIds', 'array-contains', options.topicId));
         }
         
@@ -94,28 +96,31 @@ export const getQuestions = async (options: {
         const querySnapshot = await getDocs(q);
         
         if (!querySnapshot.empty) {
-            allQuestions = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuizQuestion));
+            fetchedQuestions = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuizQuestion));
         } else {
-             // Fallback to static data if firestore is empty
-            allQuestions = staticQuestions as QuizQuestion[];
+             fetchedQuestions = staticQuestions as QuizQuestion[];
+             fromFallback = true;
         }
 
     } catch (e) {
         console.error("Error fetching questions from firestore, using fallback", e);
-        allQuestions = staticQuestions as QuizQuestion[];
+        fetchedQuestions = staticQuestions as QuizQuestion[];
+        fromFallback = true;
     }
     
-    let filteredQuestions = allQuestions;
+    let filteredQuestions = fetchedQuestions;
 
-    // Apply filters that were not applied in the query (or for static data)
-    if (allQuestions === staticQuestions && options.category) {
-         filteredQuestions = filteredQuestions.filter(q => q.category === options.category);
-    }
-    if (allQuestions === staticQuestions && options.topicId) {
-        filteredQuestions = filteredQuestions.filter(q => q.topicIds?.includes(options.topicId as string));
-    }
-    if (options.difficulty) {
-        filteredQuestions = filteredQuestions.filter(q => q.difficulty === options.difficulty);
+    // If we used fallback, we need to apply filters manually
+    if (fromFallback) {
+        if (options.category) {
+            filteredQuestions = filteredQuestions.filter(q => q.category === options.category);
+        }
+        if (options.difficulty) {
+            filteredQuestions = filteredQuestions.filter(q => q.difficulty === options.difficulty);
+        }
+        if (options.topicId) {
+            filteredQuestions = filteredQuestions.filter(q => q.topicIds?.includes(options.topicId as string));
+        }
     }
     
     if (options.shuffle) {

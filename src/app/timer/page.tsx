@@ -298,7 +298,7 @@ export default function TimerPage() {
             <div className="relative">
                 <MiniQuiz 
                     onCorrectAnswer={handleCorrectAnswer} 
-                    onIncorrectQuizAnswer={handleIncorrectQuizAnswer} 
+                    onIncorrectAnswer={handleIncorrectQuizAnswer} 
                     onStreak={handleStreak}
                 />
                  {showCombo && useTimer.getState().quizStreak > 1 && (
