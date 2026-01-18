@@ -91,6 +91,32 @@ export default function ReviewArticlePage() {
                     </div>
                 </div>
             </header>
+
+            <div className="not-prose grid md:grid-cols-2 gap-4 mb-8">
+                <Card className="bg-primary/5">
+                    <CardHeader>
+                        <CardTitle>Practice Quiz</CardTitle>
+                        <CardDescription>Test your understanding of this topic.</CardDescription>
+                    </CardHeader>
+                    <CardFooter>
+                        <Link href={`/reviewer/questions?topic=${article.topicIds[0]}`} passHref>
+                            <Button>Start Practice Quiz</Button>
+                        </Link>
+                    </CardFooter>
+                </Card>
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>Mark as Complete</CardTitle>
+                        <CardDescription>Keep track of your progress and move on.</CardDescription>
+                    </CardHeader>
+                    <CardFooter>
+                       <div className="w-full flex gap-2">
+                            <Button variant="secondary" className="flex-1">Mark as Completed</Button>
+                            {isAdmin && article && <AddQuestionDialog article={article} />}
+                       </div>
+                    </CardFooter>
+                </Card>
+            </div>
             
             <div className="markdown-content">
                  <ReactMarkdown 
@@ -135,35 +161,7 @@ export default function ReviewArticlePage() {
                     {article.content}
                 </ReactMarkdown>
             </div>
-
-            <footer className="mt-12 border-t pt-8">
-                <h3 className="text-xl font-bold font-headline mb-4">What's Next?</h3>
-                <div className="grid md:grid-cols-2 gap-4">
-                    <Card className="bg-primary/5">
-                        <CardHeader>
-                            <CardTitle>Practice Quiz</CardTitle>
-                            <CardDescription>Test your understanding of this topic.</CardDescription>
-                        </CardHeader>
-                        <CardFooter>
-                            <Link href={`/reviewer/questions?topic=${article.topicIds[0]}`} passHref>
-                                <Button>Start Practice Quiz</Button>
-                            </Link>
-                        </CardFooter>
-                    </Card>
-                     <Card>
-                        <CardHeader>
-                            <CardTitle>Mark as Complete</CardTitle>
-                            <CardDescription>Keep track of your progress and move on.</CardDescription>
-                        </CardHeader>
-                        <CardFooter>
-                           <div className="w-full flex gap-2">
-                                <Button variant="secondary" className="flex-1">Mark as Completed</Button>
-                                {isAdmin && article && <AddQuestionDialog article={article} />}
-                           </div>
-                        </CardFooter>
-                    </Card>
-                </div>
-            </footer>
         </article>
     );
 }
+
