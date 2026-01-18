@@ -12,6 +12,7 @@ import {
   Trophy,
   Shuffle,
   Lightbulb,
+  PlusCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -25,6 +26,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUser } from "@/firebase/auth/use-user";
+import Link from 'next/link';
 
 
 const QuizCard: FC<{ 
@@ -129,7 +131,7 @@ const QuestionSkeleton = () => (
 
 export default function QuizPage() {
   const router = useRouter();
-  const { user, updateUser } = useUser();
+  const { user, isAdmin, updateUser } = useUser();
 
   const [category, setCategory] = useState<'gened' | 'profed' | 'majorship'>("gened");
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -346,6 +348,13 @@ export default function QuizPage() {
                      >
                         <Shuffle className="h-4 w-4" />
                     </Button>
+                    {isAdmin && (
+                        <Link href="/reviewer/questions/new" passHref>
+                            <Button variant="outline" size="icon" className="shrink-0" aria-label="Add new question">
+                                <PlusCircle className="h-4 w-4" />
+                            </Button>
+                        </Link>
+                    )}
                 </div>
             </div>
         </>
