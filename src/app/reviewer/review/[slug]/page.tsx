@@ -100,8 +100,6 @@ export default function ReviewArticlePage() {
                         h2: ({node, ...props}) => <h3 className="text-2xl font-bold font-headline mt-10 mb-4" {...props} />,
                         h3: ({node, ...props}) => <h4 className="text-xl font-bold font-headline mt-8 mb-4" {...props} />,
                         p: ({node, ...props}) => <p className="leading-7 mb-4" {...props} />,
-                        ul: ({node, ...props}) => <ul className="list-disc list-inside pl-4 mb-5 space-y-2" {...props} />,
-                        ol: ({node, ...props}) => <ol className="list-decimal list-inside pl-4 mb-5 space-y-2" {...props} />,
                         a: ({node, ...props}) => <a className="text-primary underline hover:text-primary/90" {...props} />,
                         strong: ({node, ...props}) => <strong className="font-semibold" {...props} />,
                         blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-primary bg-muted/50 p-4 italic my-6 rounded-r-lg" {...props} />,
