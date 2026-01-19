@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -13,25 +14,25 @@ import { useUser } from "@/firebase/auth/use-user";
 const features = [
   {
     icon: <BookOpen className="w-8 h-8 text-primary" />,
-    title: "Comprehensive Reviewer",
-    description: "Tackle thousands of questions in both Study and Flashcard modes.",
+    title: "Reviewer & Practice Quiz",
+    description: "Master concepts with in-depth articles and test your knowledge with thousands of practice questions.",
     benefits: [
-        "Master General and Professional Education topics.",
-        "Choose between study and flashcard modes.",
-        "Learn at your own pace."
+        "Study detailed articles on GENED & PROFED.",
+        "Take practice quizzes by topic or category.",
+        "Track your quiz performance over time."
     ],
-    link: "/review",
+    link: "/reviewer/review",
     image: "/images/landing/feature-reviewer.png",
     image_hint: "studying app",
   },
   {
     icon: <CalendarDays className="w-8 h-8 text-primary" />,
-    title: "Daily Challenges",
-    description: "Keep your skills sharp with daily questions and challenges.",
+    title: "Daily Challenges & Streaks",
+    description: "Stay consistent and motivated with daily questions and challenges to build your study habit.",
     benefits: [
-        "Earn points for completing challenges.",
-        "Build your study streak.",
-        "Climb the leaderboard."
+        "Answer the Question of the Day for bonus points.",
+        "Complete challenges to build and maintain your streak.",
+        "Visualize your progress with the activity calendar."
     ],
     link: "/daily",
     image: "/images/landing/feature-challenges.png",
@@ -39,12 +40,12 @@ const features = [
   },
   {
     icon: <Clock className="w-8 h-8 text-primary" />,
-    title: "Pomodoro Timer",
-    description: "Boost your productivity with a built-in Pomodoro timer.",
+    title: "Productivity Timer",
+    description: "Enhance your focus and manage your study time effectively with the built-in Pomodoro timer.",
     benefits: [
-        "Stay focused during study sessions.",
-        "Take effective breaks.",
-        "Earn bonus points with mini-quizzes."
+        "Manage work and break periods using the Pomodoro technique.",
+        "Earn extra points by answering quick questions during focus sessions.",
+        "Build your quiz streak to unlock special rewards."
     ],
     link: "/timer",
     image: "/images/landing/feature-timer.png",
@@ -52,18 +53,19 @@ const features = [
   },
   {
     icon: <Award className="w-8 h-8 text-primary" />,
-    title: "Gamified Progress",
-    description: "Stay motivated by earning points and unlocking rewards.",
+    title: "Gamified Dashboard",
+    description: "Track your progress, unlock cute pets, and customize your app to make studying more fun.",
     benefits: [
-        "Unlock cute pets as you build your streak.",
-        "Customize your app theme.",
-        "Make studying fun and engaging."
+        "Keep your core stats (streak, points) always in view.",
+        "Unlock companion pets by maintaining streaks and completing achievements.",
+        "Personalize your experience with custom themes."
     ],
     link: "/home",
     image: "/images/landing/feature-progress.png",
     image_hint: "gamified progress pets",
   }
 ];
+
 
 export default function LandingPage() {
   const { user, firebaseUser, linkGoogleAccount } = useUser();
