@@ -1,7 +1,8 @@
+
 'use client';
 
 import Link from 'next/link';
-import { Flame, Gem, User } from 'lucide-react';
+import { Flame, Gem, User, HelpCircle } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useUser } from '@/firebase/auth/use-user';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -46,6 +47,7 @@ export function AppHeader() {
          <div className="flex items-center gap-3 sm:gap-4">
             <Skeleton className="h-8 w-14 rounded-full" />
             <Skeleton className="h-8 w-14 rounded-full" />
+            <Skeleton className="h-8 w-14 rounded-full" />
             <Skeleton className="h-9 w-9 rounded-full" />
         </div>
       ) : user && (
@@ -57,6 +59,10 @@ export function AppHeader() {
           <div className="flex items-center gap-1 rounded-full bg-muted px-3 py-1.5 text-sm font-semibold">
             <Gem className="h-5 w-5 text-accent" />
             <span>{user.points}</span>
+          </div>
+          <div className="hidden sm:flex items-center gap-1 rounded-full bg-muted px-3 py-1.5 text-sm font-semibold">
+            <HelpCircle className="h-5 w-5 text-primary" />
+            <span>{user.questionsAnswered || 0}</span>
           </div>
            <Link href="/profile">
               <Avatar className="h-9 w-9 border-2 border-transparent hover:border-primary transition-colors">

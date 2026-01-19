@@ -4,7 +4,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { User, LogOut, Camera, Palette, Gem, Trophy, Clock, Award, Check, Edit, UserPlus, AlertTriangle, MessageSquare } from "lucide-react";
+import { User, LogOut, Camera, Palette, Gem, Trophy, Clock, Award, Check, Edit, UserPlus, AlertTriangle, MessageSquare, Flame, HelpCircle, Star } from "lucide-react";
 import { useEffect, useState, useRef, ChangeEvent } from "react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -275,6 +275,45 @@ export default function ProfilePage() {
             
         </CardContent>
       </Card>
+      
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>Your Statistics</CardTitle>
+          <CardDescription>A summary of your review journey so far.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="flex flex-col items-center justify-center p-4 bg-muted/50 rounded-lg">
+            <Flame className="h-8 w-8 text-destructive mb-2" />
+            <p className="text-2xl font-bold">{user.streak}</p>
+            <p className="text-sm text-muted-foreground">Current Streak</p>
+          </div>
+           <div className="flex flex-col items-center justify-center p-4 bg-muted/50 rounded-lg">
+            <Gem className="h-8 w-8 text-accent mb-2" />
+            <p className="text-2xl font-bold">{user.points}</p>
+            <p className="text-sm text-muted-foreground">Total Points</p>
+          </div>
+          <div className="flex flex-col items-center justify-center p-4 bg-muted/50 rounded-lg">
+            <HelpCircle className="h-8 w-8 text-primary mb-2" />
+            <p className="text-2xl font-bold">{user.questionsAnswered || 0}</p>
+            <p className="text-sm text-muted-foreground">Questions Answered</p>
+          </div>
+           <div className="flex flex-col items-center justify-center p-4 bg-muted/50 rounded-lg">
+            <Trophy className="h-8 w-8 text-accent mb-2" />
+            <p className="text-2xl font-bold">{user.highestStreak}</p>
+            <p className="text-sm text-muted-foreground">Highest Streak</p>
+          </div>
+          <div className="flex flex-col items-center justify-center p-4 bg-muted/50 rounded-lg">
+            <Clock className="h-8 w-8 text-primary mb-2" />
+            <p className="text-2xl font-bold">{user.completedSessions || 0}</p>
+            <p className="text-sm text-muted-foreground">Pomodoros</p>
+          </div>
+          <div className="flex flex-col items-center justify-center p-4 bg-muted/50 rounded-lg">
+            <Star className="h-8 w-8 text-accent mb-2" />
+            <p className="text-2xl font-bold">{user.highestQuizStreak || 0}</p>
+            <p className="text-sm text-muted-foreground">Highest Quiz Streak</p>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card className="mt-6">
         <CardHeader>
@@ -465,4 +504,3 @@ export default function ProfilePage() {
     
 
     
-

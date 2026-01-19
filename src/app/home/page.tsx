@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { User, Flame, Gem, Award, Shield, Edit, Check, Lock, CheckCircle, Lightbulb, HelpCircle, Clock, XCircle } from "lucide-react";
+import { User, Flame, Edit, Check, Lock, Lightbulb } from "lucide-react";
 import Image from "next/image";
 import { streakPets, getQuestionOfTheDay, achievementPets, rarePets } from "@/lib/data";
 import type { PetProfile, QuizQuestion } from "@/lib/types";
@@ -20,7 +20,6 @@ import { format, isToday, isFuture } from "date-fns";
 import { DayDetailDialog } from "@/components/DayDetailDialog";
 import { useUser } from "@/firebase/auth/use-user";
 import { ActivityCalendar } from "@/components/ActivityCalendar";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 
 const allPets: PetProfile[] = [
@@ -240,56 +239,6 @@ export default function HomePage() {
           </CardFooter>
         </Card>
       )}
-
-       <section className="mb-6">
-        <h2 className="text-xl font-bold font-headline mb-4">Today's Activity</h2>
-         <Card>
-            <CardContent className="p-4 flex items-center justify-around flex-wrap gap-4">
-                <Tooltip>
-                    <TooltipTrigger className="flex items-center gap-2 p-2 rounded-md hover:bg-muted">
-                        <Gem className="h-5 w-5 text-accent" />
-                        <span className="text-lg font-bold">{todaysProgress.pointsEarned || 0}</span>
-                    </TooltipTrigger>
-                    <TooltipContent><p>Points Earned Today</p></TooltipContent>
-                </Tooltip>
-
-                <Tooltip>
-                    <TooltipTrigger className="flex items-center gap-2 p-2 rounded-md hover:bg-muted">
-                        <Clock className="h-5 w-5 text-destructive" />
-                        <span className="text-lg font-bold">{todaysProgress.pomodorosCompleted || 0}</span>
-                    </TooltipTrigger>
-                    <TooltipContent><p>Pomodoros Completed</p></TooltipContent>
-                </Tooltip>
-
-                <Tooltip>
-                    <TooltipTrigger className="flex items-center gap-2 p-2 rounded-md hover:bg-muted">
-                        <HelpCircle className="h-5 w-5 text-primary" />
-                        <span className="text-lg font-bold">{todaysProgress.questionsAnswered || 0}</span>
-                    </TooltipTrigger>
-                    <TooltipContent><p>Questions Answered Today</p></TooltipContent>
-                </Tooltip>
-
-                <Tooltip>
-                    <TooltipTrigger className="flex items-center gap-2 p-2 rounded-md hover:bg-muted">
-                        <Award className="h-5 w-5 text-yellow-500" />
-                        <span className="text-lg font-bold">{todaysProgress.challengesCompleted?.length || 0}</span>
-                    </TooltipTrigger>
-                    <TooltipContent><p>Challenges Completed</p></TooltipContent>
-                </Tooltip>
-
-                <Tooltip>
-                    <TooltipTrigger className="p-2 rounded-md hover:bg-muted">
-                        {todaysProgress.qotdCompleted ? (
-                            <CheckCircle className="h-6 w-6 text-green-600" />
-                        ) : (
-                             <XCircle className="h-6 w-6 text-muted-foreground" />
-                        )}
-                    </TooltipTrigger>
-                    <TooltipContent><p>Question of the Day {todaysProgress.qotdCompleted ? 'Answered' : 'Pending'}</p></TooltipContent>
-                </Tooltip>
-            </CardContent>
-        </Card>
-       </section>
 
         <section className="mb-6">
             <h2 className="text-xl font-bold font-headline mb-4">Question of the Day</h2>
