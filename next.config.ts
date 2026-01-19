@@ -1,34 +1,4 @@
 
-import type {NextConfig} from 'next';
-
-const nextConfig: NextConfig = {
-  /* config options here */
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: '**',
-      },
-    ],
-  },
-  async rewrites() {
-    return [
-      {
-        source: '/__/auth/:path*',
-        destination: 'https://letreview.firebaseapp.com/__/auth/:path*',
-      },
-       {
-        source: '/__/firebase/:path*',
-        destination: 'https://letreview.firebaseapp.com/__/firebase/:path*',
-      },
-    ];
-  },
-};
-
-export default nextConfig;
+// This file is intentionally left blank. 
+// The Next.js configuration has been moved to next.config.js to resolve a build error.
+// The build environment does not support TypeScript for Next.js configuration.
