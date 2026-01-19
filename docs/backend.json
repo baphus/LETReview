@@ -151,6 +151,20 @@
     },
     "User": {
         "$ref": "#/backend/entities/UserProfile"
+    },
+    "Feedback": {
+      "title": "Feedback",
+      "description": "Represents user-submitted feedback.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "feedbackText": { "type": "string" },
+        "pageUrl": { "type": "string" },
+        "type": { "type": "string", "enum": ["bug", "feature", "general"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "userName", "feedbackText", "type", "createdAt"]
     }
   },
   "auth": {
@@ -215,6 +229,14 @@
           "entityName": "Question",
           "schema": { "$ref": "#/backend/entities/Question" },
           "description": "Stores all practice questions as individual documents."
+        }
+      },
+      {
+        "path": "/feedback/{feedbackId}",
+        "definition": {
+          "entityName": "Feedback",
+          "schema": { "$ref": "#/backend/entities/Feedback" },
+          "description": "Stores user-submitted feedback."
         }
       }
     ]

@@ -4,7 +4,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { User, LogOut, Camera, Palette, Gem, Trophy, Clock, Award, Check, Edit, UserPlus, AlertTriangle } from "lucide-react";
+import { User, LogOut, Camera, Palette, Gem, Trophy, Clock, Award, Check, Edit, UserPlus, AlertTriangle, MessageSquare } from "lucide-react";
 import { useEffect, useState, useRef, ChangeEvent } from "react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -21,6 +21,7 @@ import { useAuth, useFirestore } from "@/firebase";
 import { doc, updateDoc } from "firebase/firestore";
 import { signOut } from "firebase/auth";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { FeedbackDialog } from "@/components/FeedbackDialog";
 
 const themes = [
     { name: 'Default', value: 'default', cost: 0, colors: { primary: 'hsl(231 48% 48%)', accent: 'hsl(110 32% 48%)' } },
@@ -432,6 +433,18 @@ export default function ProfilePage() {
            <p className="text-sm text-muted-foreground italic">
             This app is lovingly dedicated to my girlfriend, Yve, an aspiring teacher who inspired this project.
           </p>
+        </CardContent>
+      </Card>
+
+      <Card className="mt-6">
+        <CardHeader>
+            <CardTitle>Feedback</CardTitle>
+            <CardDescription>
+                Have a suggestion or found a bug? We'd love to hear from you.
+            </CardDescription>
+        </CardHeader>
+        <CardContent>
+            <FeedbackDialog />
         </CardContent>
       </Card>
 
