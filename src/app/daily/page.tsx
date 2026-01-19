@@ -69,20 +69,22 @@ const QuestionOfTheDay = ({ onCorrectAnswer }: { onCorrectAnswer: () => void }) 
 
         const todayKey = getTodayKey();
         
+        const updates: any = {};
+
         let dailyProgressUpdate: Partial<DailyProgress> = {
             qotdCompleted: true,
             qotdAnswer: answer,
         };
-
-        const updates: any = {};
-        if (!user.answeredQuestionIds?.includes(question.id)) {
-            updates.questionsAnswered = (user.questionsAnswered || 0) + 1;
-            updates.answeredQuestionIds = [...(user.answeredQuestionIds || []), question.id];
-        }
-
+        
         if (correct) {
-            dailyProgressUpdate.pointsEarned = (user.dailyProgress[todayKey]?.pointsEarned || 0) + 5;
+            dailyProgressUpdate.pointsEarned = (user.dailyProgress?.[todayKey]?.pointsEarned || 0) + 5;
             updates.points = (user.points || 0) + 5;
+            
+            if (!user.answeredQuestionIds?.includes(question.id)) {
+                updates.questionsAnswered = (user.questionsAnswered || 0) + 1;
+                updates.answeredQuestionIds = [...(user.answeredQuestionIds || []), question.id];
+            }
+
             onCorrectAnswer();
             toast({ title: "Correct!", description: "You earned 5 points!", className: "bg-green-100 border-green-300" });
         } else {
@@ -92,7 +94,7 @@ const QuestionOfTheDay = ({ onCorrectAnswer }: { onCorrectAnswer: () => void }) 
         updates.dailyProgress = {
             ...user.dailyProgress,
             [todayKey]: {
-                ...user.dailyProgress[todayKey],
+                ...(user.dailyProgress?.[todayKey] || {}),
                 ...dailyProgressUpdate,
             }
         };

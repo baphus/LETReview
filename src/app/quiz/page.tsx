@@ -192,7 +192,7 @@ export default function QuizPage() {
   };
   
   const handleAnswer = (correct: boolean, answer: string) => {
-    if (user && !user.answeredQuestionIds?.includes(currentQuestion.id)) {
+    if (correct && user && !user.answeredQuestionIds?.includes(currentQuestion.id)) {
         updateUser({ 
             questionsAnswered: (user.questionsAnswered || 0) + 1,
             answeredQuestionIds: [...(user.answeredQuestionIds || []), currentQuestion.id]

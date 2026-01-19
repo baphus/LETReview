@@ -340,7 +340,7 @@ function QuestionsPageContent() {
   }, [isChallenge, questions.length, passingScore, challengeDifficulty, challengeCategory, user, updateUser, toast, topicId]);
 
   const handleAnswer = (correct: boolean, answer: string) => {
-    if (user && !user.answeredQuestionIds?.includes(currentQuestion.id)) {
+    if (correct && user && !user.answeredQuestionIds?.includes(currentQuestion.id)) {
         updateUser({ 
             questionsAnswered: (user.questionsAnswered || 0) + 1,
             answeredQuestionIds: [...(user.answeredQuestionIds || []), currentQuestion.id]
