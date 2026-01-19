@@ -244,37 +244,7 @@ export default function DailyPage() {
   }
 
   return (
-    <div className="container mx-auto p-4 max-w-2xl">
-      <header className="flex items-center gap-2 mb-6">
-        <CalendarDays className="h-8 w-8 text-primary" />
-        <h1 className="text-3xl font-bold font-headline">Daily Activities</h1>
-      </header>
-
-      <div className="grid grid-cols-2 gap-4 mb-6 text-center">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center justify-center gap-2 text-lg text-destructive">
-              <Flame className="text-destructive" />
-              <span>Streak</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">{user.streak} Days</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center justify-center gap-2 text-lg">
-              <Gem className="text-accent" />
-              <span>Points</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">{user.points}</p>
-          </CardContent>
-        </Card>
-      </div>
-
+    <div className="container mx-auto max-w-2xl">
       <QuestionOfTheDay onCorrectAnswer={() => {}} />
 
       {challengeCompletedToday && (

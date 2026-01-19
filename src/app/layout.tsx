@@ -15,6 +15,7 @@ import {
   SidebarInset,
   SidebarProvider,
 } from "@/components/ui/sidebar";
+import { AppHeader } from "@/components/AppHeader";
 import { AppSidebar } from "@/components/AppSidebar";
 import SplashScreen from "@/components/SplashScreen";
 import { FirebaseClientProvider } from "@/firebase/client-provider";
@@ -122,8 +123,9 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
               <AppSidebar />
             </SidebarContent>
           </Sidebar>
-          <SidebarInset>
-            <main className="flex-1 overflow-y-auto pb-20 md:pb-4">
+          <SidebarInset className="flex flex-col">
+            <AppHeader />
+            <main className="flex-1 overflow-y-auto p-4 sm:p-6 pb-20 md:pb-6">
               {children}
             </main>
             <OnboardingDialog open={showOnboarding} onOpenChange={setShowOnboarding} />

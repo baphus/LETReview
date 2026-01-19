@@ -198,7 +198,7 @@ export default function ProfilePage() {
 
   if (firebaseUser?.isAnonymous) {
       return (
-        <div className="container mx-auto p-4 max-w-2xl h-full flex flex-col justify-center gap-4">
+        <div className="container mx-auto max-w-2xl h-full flex flex-col justify-center gap-4">
              <Alert variant="destructive">
               <AlertTriangle className="h-4 w-4" />
               <AlertTitle>Guest Mode</AlertTitle>
@@ -225,11 +225,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="container mx-auto p-4 max-w-2xl">
-      <header className="flex items-center gap-4 mb-6">
-        <h1 className="text-2xl font-bold font-headline">Profile & Settings</h1>
-      </header>
-      
+    <div className="container mx-auto max-w-2xl">
       <Card>
         <CardHeader>
             <CardTitle>Edit Profile</CardTitle>
@@ -469,3 +465,4 @@ export default function ProfilePage() {
     
 
     
+

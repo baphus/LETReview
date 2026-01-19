@@ -272,7 +272,7 @@ export default function QuizPage() {
   }, [currentQuestion, challengeAnswers]);
   
   return (
-    <div className="container mx-auto p-4 max-w-2xl">
+    <div className="container mx-auto max-w-2xl">
        <Dialog open={showResults} onOpenChange={handleDialogClose}>
         <DialogContent className="flex flex-col h-[90dvh] max-h-[600px]">
           <DialogHeader className="items-center text-center">
@@ -319,14 +319,7 @@ export default function QuizPage() {
       </Dialog>
       
         <>
-            <header className="flex flex-col gap-4 mb-6">
-                <div className="flex items-center gap-2">
-                <Lightbulb className="h-8 w-8 text-primary" />
-                <h1 className="text-3xl font-bold font-headline">Quiz Mode</h1>
-                </div>
-            </header>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center mb-6">
                 <Select value={category} onValueChange={(value) => setCategory(value as "gened" | "profed" | "majorship")}>
                     <SelectTrigger>
                         <SelectValue placeholder="Select a category" />

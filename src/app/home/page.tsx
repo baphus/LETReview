@@ -215,67 +215,15 @@ export default function HomePage() {
   }
 
   return (
-    <div className="container mx-auto p-4 max-w-4xl">
+    <div className="container mx-auto max-w-4xl">
       <DayDetailDialog
         date={selectedDate}
         onClose={() => setSelectedDate(null)}
         userProgress={selectedDate ? user.dailyProgress[format(selectedDate, 'yyyy-MM-dd')] : undefined}
       />
-      <header className="flex justify-between items-center mb-6">
-        <div>
-            <h1 className="text-3xl font-bold font-headline">Home</h1>
-            <p className="text-muted-foreground">Welcome back, {user.name}!</p>
-        </div>
-         <Link href="/profile">
-            <Avatar className="h-14 w-14 border-2 border-primary">
-                <AvatarImage src={user.avatarUrl} alt={user.name} />
-                <AvatarFallback>
-                    <User className="h-6 w-6" />
-                </AvatarFallback>
-            </Avatar>
-        </Link>
-      </header>
-
-      {user.examDate && <Countdown examDate={new Date(user.examDate)} />}
+      <p className="text-muted-foreground mb-6">Welcome back, {user.name}!</p>
       
-      <section className="my-6">
-        <div className="grid grid-cols-2 gap-4">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Card className="bg-destructive/10 border-destructive">
-                  <CardHeader className="items-center pb-2">
-                      <CardTitle className="text-destructive">
-                          <Flame className="h-8 w-8" />
-                      </CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-center">
-                      <div className="text-4xl font-bold">{user.streak}</div>
-                  </CardContent>
-              </Card>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Daily Streak</p>
-            </TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Card className="bg-accent/10 border-accent">
-                  <CardHeader className="items-center pb-2">
-                      <CardTitle className="text-accent">
-                          <Gem className="h-8 w-8" />
-                      </CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-center">
-                      <div className="text-4xl font-bold">{user.points}</div>
-                  </CardContent>
-              </Card>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Total Points</p>
-            </TooltipContent>
-          </Tooltip>
-        </div>
-      </section>
+      {user.examDate && <Countdown examDate={new Date(user.examDate)} />}
 
       {!isStreakSecuredToday && (
          <Card className="mb-6 bg-blue-50 border-blue-200">
