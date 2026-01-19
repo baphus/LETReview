@@ -397,7 +397,7 @@ export default function ProfilePage() {
                             height={80}
                             className={cn(
                                 "rounded-full bg-muted p-2",
-                                isUnlocked && "animate-bob"
+                                isUnlocked ? "animate-bob" : "grayscale opacity-50 blur-sm"
                             )}
                             data-ai-hint={pet.hint}
                         />
@@ -452,5 +452,7 @@ export default function ProfilePage() {
     </div>
   );
 }
+
+    
 
     
