@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -236,6 +235,33 @@ export default function HomePage() {
 
       {user.examDate && <Countdown examDate={new Date(user.examDate)} />}
       
+      <section className="my-6">
+        <div className="grid grid-cols-2 gap-4">
+            <Card className="bg-destructive/10 border-destructive">
+                <CardHeader className="items-center pb-2">
+                    <CardTitle className="text-destructive">
+                        <Flame className="h-8 w-8" />
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="text-center">
+                    <div className="text-4xl font-bold">{user.streak}</div>
+                    <p className="text-xs text-muted-foreground">Day Streak</p>
+                </CardContent>
+            </Card>
+            <Card className="bg-accent/10 border-accent">
+                <CardHeader className="items-center pb-2">
+                    <CardTitle className="text-accent">
+                        <Gem className="h-8 w-8" />
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="text-center">
+                    <div className="text-4xl font-bold">{user.points}</div>
+                    <p className="text-xs text-muted-foreground">Total Points</p>
+                </CardContent>
+            </Card>
+        </div>
+      </section>
+
       {!isStreakSecuredToday && (
          <Card className="mb-6 bg-blue-50 border-blue-200">
           <CardHeader>
@@ -318,26 +344,6 @@ export default function HomePage() {
 
       <section>
         <h2 className="text-xl font-bold font-headline mb-4">Your Stats</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <Card className="bg-destructive/10 border-destructive">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-base font-bold text-destructive">Daily Streak</CardTitle>
-                <Flame className="h-5 w-5 text-destructive" />
-                </CardHeader>
-                <CardContent>
-                <div className="text-3xl font-bold">{user.streak} days</div>
-                </CardContent>
-            </Card>
-            <Card className="bg-accent/10 border-accent">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-base font-bold text-accent">Total Points</CardTitle>
-                <Gem className="h-5 w-5 text-accent" />
-                </CardHeader>
-                <CardContent>
-                <div className="text-3xl font-bold">{user.points}</div>
-                </CardContent>
-            </Card>
-        </div>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -389,5 +395,3 @@ export default function HomePage() {
     </div>
   );
 }
-
-    
