@@ -5,10 +5,9 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { CalendarDays, Flame, Gem, Shield, Star, Lock, RefreshCcw, HelpCircle, CheckCircle, XCircle } from "lucide-react";
-import { pets, getQuestionOfTheDay } from "@/lib/data";
+import { CalendarDays, Flame, Gem, Star, RefreshCcw, CheckCircle, XCircle } from "lucide-react";
+import { getQuestionOfTheDay } from "@/lib/data";
 import type { QuizQuestion, DailyProgress } from "@/lib/types";
-import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
@@ -22,83 +21,108 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { startOfDay, isBefore, startOfYesterday, format } from 'date-fns';
+import { useUser } from "@/firebase/auth/use-user";
+import { Skeleton } from "@/components/ui/skeleton";
 
-
-interface UserStats {
-  streak: number;
-  highestStreak: number;
-  points: number;
-  lastChallengeDate?: string;
-  petsUnlocked: number;
-  completedChallenges: string[];
-  dailyProgress: Record<string, DailyProgress>;
-}
-
-// Function to get local date string in YYYY-MM-DD format
 const getTodayKey = () => format(new Date(), 'yyyy-MM-dd');
 
 const QuestionOfTheDay = ({ onCorrectAnswer }: { onCorrectAnswer: () => void }) => {
     const { toast } = useToast();
+    const { user, updateUser } = useUser();
     const [question, setQuestion] = useState<QuizQuestion | null>(null);
     const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
     const [isAnswered, setIsAnswered] = useState(false);
     const [isCorrect, setIsCorrect] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
     
     useEffect(() => {
-        const qotd = getQuestionOfTheDay();
-        setQuestion(qotd);
-        const savedUser = localStorage.getItem("userProfile");
-        if(savedUser){
-            const user = JSON.parse(savedUser);
-            const todayKey = getTodayKey();
-            const todaysProgress = user.dailyProgress?.[todayKey];
+        setIsLoading(true);
+        getQuestionOfTheDay().then(qotd => {
+            setQuestion(qotd);
+            if(user){
+                const todayKey = getTodayKey();
+                const todaysProgress = user.dailyProgress?.[todayKey];
 
-            if(todaysProgress?.qotdCompleted){
-                setIsAnswered(true);
-                const previousAnswer = todaysProgress.qotdAnswer;
-                if (previousAnswer) {
-                    setSelectedAnswer(previousAnswer);
-                    setIsCorrect(previousAnswer === qotd.answer);
-                } else {
-                    // Fallback for older data structure
-                    setSelectedAnswer(qotd.answer);
-                    setIsCorrect(true);
+                if(todaysProgress?.qotdCompleted){
+                    setIsAnswered(true);
+                    const previousAnswer = todaysProgress.qotdAnswer;
+                    if (previousAnswer) {
+                        setSelectedAnswer(previousAnswer);
+                        setIsCorrect(previousAnswer === qotd.correctAnswer);
+                    }
                 }
             }
-        }
-    }, []);
+            setIsLoading(false);
+        });
+    }, [user]);
 
-    const handleAnswer = (answer: string) => {
-        if (isAnswered) return;
+    const handleAnswer = async (answer: string) => {
+        if (isAnswered || !user || !question) return;
 
-        const correct = answer === question?.answer;
+        const correct = answer === question.correctAnswer;
         setSelectedAnswer(answer);
         setIsCorrect(correct);
         setIsAnswered(true);
 
-        const savedUser = localStorage.getItem("userProfile");
-        if (savedUser) {
-            let user = JSON.parse(savedUser);
-            const todayKey = getTodayKey();
+        const todayKey = getTodayKey();
+        
+        const updates: any = {};
 
-            if (!user.dailyProgress) user.dailyProgress = {};
-            if (!user.dailyProgress[todayKey]) user.dailyProgress[todayKey] = { pointsEarned: 0, pomodorosCompleted: 0, challengesCompleted: [], qotdCompleted: false };
+        let dailyProgressUpdate: Partial<DailyProgress> = {
+            qotdCompleted: true,
+            qotdAnswer: answer,
+        };
+        
+        if (correct) {
+            dailyProgressUpdate.pointsEarned = (user.dailyProgress?.[todayKey]?.pointsEarned || 0) + 5;
+            updates.points = (user.points || 0) + 5;
             
-            user.dailyProgress[todayKey].qotdCompleted = true;
-            user.dailyProgress[todayKey].qotdAnswer = answer;
-
-            if (correct) {
-                onCorrectAnswer(); // This updates the state in the parent component
-                toast({ title: "Correct!", description: "You earned 5 points!", className: "bg-green-100 border-green-300" });
-            } else {
-                 toast({ variant: "destructive", title: "Incorrect", description: "Better luck tomorrow!" });
+            if (!user.answeredQuestionIds?.includes(question.id)) {
+                updates.questionsAnswered = (user.questionsAnswered || 0) + 1;
+                updates.answeredQuestionIds = [...(user.answeredQuestionIds || []), question.id];
+                dailyProgressUpdate.questionsAnswered = (user.dailyProgress?.[todayKey]?.questionsAnswered || 0) + 1;
             }
-            localStorage.setItem("userProfile", JSON.stringify(user));
+
+            onCorrectAnswer();
+            toast({ title: "Correct!", description: "You earned 5 points!", className: "bg-green-100 border-green-300" });
+        } else {
+            toast({ variant: "destructive", title: "Incorrect", description: "Better luck tomorrow!" });
         }
+
+        updates.dailyProgress = {
+            ...user.dailyProgress,
+            [todayKey]: {
+                ...(user.dailyProgress?.[todayKey] || {}),
+                ...dailyProgressUpdate,
+            }
+        };
+
+        updateUser(updates);
     };
+
+    if (isLoading) {
+        return (
+            <Card className="mb-6">
+                <CardHeader>
+                    <CardTitle className="font-headline text-2xl">Question of the Day</CardTitle>
+                </CardHeader>
+                <CardContent>
+                     <div className="space-y-4">
+                        <Skeleton className="h-6 w-3/4" />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <Skeleton className="h-12 w-full" />
+                            <Skeleton className="h-12 w-full" />
+                            <Skeleton className="h-12 w-full" />
+                            <Skeleton className="h-12 w-full" />
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+        )
+    }
 
     if (!question) return null;
 
@@ -110,7 +134,7 @@ const QuestionOfTheDay = ({ onCorrectAnswer }: { onCorrectAnswer: () => void }) 
             </CardHeader>
             <CardContent className="space-y-2">
                  {question.choices.map((choice, index) => {
-                    const isTheCorrectAnswer = choice === question.answer;
+                    const isTheCorrectAnswer = choice === question.correctAnswer;
                     const isSelected = choice === selectedAnswer;
 
                     return (
@@ -120,7 +144,7 @@ const QuestionOfTheDay = ({ onCorrectAnswer }: { onCorrectAnswer: () => void }) 
                             onClick={() => handleAnswer(choice)}
                             disabled={isAnswered}
                             className={cn(
-                                "h-auto whitespace-normal justify-start p-4 w-full text-left",
+                                "h-auto whitespace-normal justify-start p-4 w-full text-left rounded-lg",
                                 isAnswered && isTheCorrectAnswer && "bg-green-100 border-green-300 hover:bg-green-100 text-green-800",
                                 isAnswered && isSelected && !isTheCorrectAnswer && "bg-red-100 border-red-300 hover:bg-red-100 text-red-800",
                                 isAnswered && !isSelected && !isTheCorrectAnswer && "opacity-60"
@@ -148,112 +172,62 @@ const QuestionOfTheDay = ({ onCorrectAnswer }: { onCorrectAnswer: () => void }) 
 export default function DailyPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [userStats, setUserStats] = useState<UserStats>({
-    streak: 0,
-    highestStreak: 0,
-    points: 0,
-    petsUnlocked: 0,
-    completedChallenges: [],
-    dailyProgress: {},
-  });
+  const { user, updateUser } = useUser();
+
   const [challengeCompletedToday, setChallengeCompletedToday] = useState(false);
   const [streakBroken, setStreakBroken] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<"gen_education" | "professional">("gen_education");
+  const [selectedCategory, setSelectedCategory] = useState<'gened' | 'profed' | 'majorship'>("gened");
   const todayKey = getTodayKey();
 
-  const loadUserStats = useCallback(() => {
-    const savedUser = localStorage.getItem("userProfile");
-    if (savedUser) {
-      const parsedUser = JSON.parse(savedUser);
-
-      const isCompletedToday = (parsedUser.dailyProgress?.[todayKey]?.challengesCompleted?.length || 0) > 0;
-      setChallengeCompletedToday(isCompletedToday);
-      
-      const lastChallengeDateString = parsedUser.lastChallengeDate;
-      if (lastChallengeDateString) {
-          const lastChallengeDate = startOfDay(new Date(lastChallengeDateString));
-          const yesterday = startOfYesterday();
-
-          if (parsedUser.streak > 0 && isBefore(lastChallengeDate, yesterday)) {
-            setStreakBroken(true);
-            parsedUser.streak = 0;
-            localStorage.setItem("userProfile", JSON.stringify(parsedUser));
-          } else {
-            setStreakBroken(false);
-          }
-      }
-      
-      const todaysChallenges = parsedUser.dailyProgress?.[todayKey]?.challengesCompleted || [];
-
-      setUserStats({
-        streak: parsedUser.streak || 0,
-        highestStreak: parsedUser.highestStreak || 0,
-        points: parsedUser.points || 0,
-        lastChallengeDate: parsedUser.lastChallengeDate,
-        petsUnlocked: parsedUser.petsUnlocked || 0,
-        completedChallenges: todaysChallenges,
-        dailyProgress: parsedUser.dailyProgress || {},
-      });
-    }
-  }, [todayKey]);
-
   useEffect(() => {
-    loadUserStats();
-    // This will run when the component mounts and also when the user navigates back to this page.
-    const handleFocus = () => {
-      loadUserStats();
-    };
-    window.addEventListener('focus', handleFocus);
-    window.addEventListener('storage', handleFocus);
-    return () => {
-      window.removeEventListener('focus', handleFocus);
-       window.removeEventListener('storage', handleFocus);
-    };
-  }, [loadUserStats]);
+    if (user) {
+        const todaysChallenges = user.dailyProgress?.[todayKey]?.challengesCompleted || [];
+        setChallengeCompletedToday(todaysChallenges.length > 0);
+        
+        const lastChallengeDateString = user.lastChallengeDate;
+        if (lastChallengeDateString) {
+            const lastChallengeDate = startOfDay(new Date(lastChallengeDateString));
+            const yesterday = startOfYesterday();
+
+            if (user.streak > 0 && isBefore(lastChallengeDate, yesterday)) {
+                setStreakBroken(true);
+                updateUser({ streak: 0 });
+            } else {
+                setStreakBroken(false);
+            }
+        }
+    }
+  }, [user, todayKey, updateUser]);
+
 
   const handleStartChallenge = (difficulty: 'easy' | 'medium' | 'hard', count: number) => {
-    router.push(`/review?challenge=true&difficulty=${difficulty}&count=${count}&category=${selectedCategory}`);
+    router.push(`/reviewer/questions?challenge=true&difficulty=${difficulty}&count=${count}&category=${selectedCategory}`);
   };
   
-  const restoreStreakCost = Math.min(250, (userStats.highestStreak || 0) * 10);
+  const restoreStreakCost = Math.min(250, (user?.highestStreak || 0) * 10);
 
-  const handleRestoreStreak = () => {
-     if (userStats.points >= restoreStreakCost) {
-      const savedUser = localStorage.getItem("userProfile");
-      if (savedUser) {
-        const user = JSON.parse(savedUser);
-        user.points -= restoreStreakCost;
-        user.streak = user.highestStreak;
-        localStorage.setItem("userProfile", JSON.stringify(user));
+  const handleRestoreStreak = async () => {
+     if (user && user.points >= restoreStreakCost) {
+        updateUser({
+            points: user.points - restoreStreakCost,
+            streak: user.highestStreak
+        });
         setStreakBroken(false);
-        setUserStats(prev => ({ ...prev, points: user.points, streak: user.streak }));
         toast({
           title: "Streak Restored!",
           description: `You spent ${restoreStreakCost} points.`,
           className: "bg-green-100 border-green-300"
         });
-      }
     } else {
       toast({ variant: "destructive", title: "Not enough points!", description: `You need ${restoreStreakCost} points to restore your streak.`});
     }
   };
-
-  const handleQotdCorrect = () => {
-    const savedUser = localStorage.getItem("userProfile");
-    if (savedUser) {
-        const user = JSON.parse(savedUser);
-        user.points = (user.points || 0) + 5;
-        
-        const todayKey = getTodayKey();
-        if (!user.dailyProgress) user.dailyProgress = {};
-        if (!user.dailyProgress[todayKey]) user.dailyProgress[todayKey] = { pointsEarned: 0, pomodorosCompleted: 0, challengesCompleted: [], qotdCompleted: false };
-        user.dailyProgress[todayKey].pointsEarned = (user.dailyProgress[todayKey].pointsEarned || 0) + 5;
-
-        localStorage.setItem("userProfile", JSON.stringify(user));
-        setUserStats(prev => ({ ...prev, points: user.points }));
-    }
-  };
-
+  
+  if (!user) {
+      return null; // Or a loading spinner
+  }
+  
+  const todaysChallenges = user.dailyProgress?.[todayKey]?.challengesCompleted || [];
 
   const challenges = [
     { difficulty: 'easy', count: 5, points: 25, color: 'green' },
@@ -261,39 +235,17 @@ export default function DailyPage() {
     { difficulty: 'hard', count: 15, points: 150, color: 'red' },
   ];
 
+  const getCategoryName = (category: 'gened' | 'profed' | 'majorship') => {
+      switch (category) {
+          case 'gened': return 'General Education';
+          case 'profed': return 'Professional Education';
+          case 'majorship': return 'Majorship';
+      }
+  }
+
   return (
-    <div className="container mx-auto p-4 max-w-2xl">
-      <header className="flex items-center gap-2 mb-6">
-        <CalendarDays className="h-8 w-8 text-primary" />
-        <h1 className="text-3xl font-bold font-headline">Daily Activities</h1>
-      </header>
-
-      <div className="grid grid-cols-2 gap-4 mb-6 text-center">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center justify-center gap-2 text-lg text-destructive">
-              <Flame className="text-destructive" />
-              <span>Streak</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">{userStats.streak} Days</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center justify-center gap-2 text-lg">
-              <Gem className="text-accent" />
-              <span>Points</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">{userStats.points}</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <QuestionOfTheDay onCorrectAnswer={handleQotdCorrect} />
+    <div className="container mx-auto max-w-2xl">
+      <QuestionOfTheDay onCorrectAnswer={() => {}} />
 
       {challengeCompletedToday && (
          <Card className="mb-6 bg-green-50 border-green-200">
@@ -313,13 +265,13 @@ export default function DailyPage() {
               Oh no! You lost your streak.
             </CardTitle>
             <CardDescription className="text-center text-amber-600">
-              Restore your {userStats.highestStreak}-day streak for {restoreStreakCost} points or start a new challenge.
+              Restore your {user.highestStreak}-day streak for {restoreStreakCost} points or start a new challenge.
             </CardDescription>
           </CardHeader>
           <CardFooter>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button className="w-full" disabled={userStats.points < restoreStreakCost}>
+                <Button className="w-full" disabled={user.points < restoreStreakCost}>
                     <RefreshCcw className="mr-2 h-4 w-4" />
                     Restore Streak ({restoreStreakCost} points)
                 </Button>
@@ -328,7 +280,7 @@ export default function DailyPage() {
                   <AlertDialogHeader>
                     <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                     <AlertDialogDescription>
-                        This will cost {restoreStreakCost} points and restore your streak to {userStats.highestStreak} days.
+                        This will cost {restoreStreakCost} points and restore your streak to {user.highestStreak} days.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
@@ -344,26 +296,28 @@ export default function DailyPage() {
       <section>
         <div className="flex flex-col items-center gap-4 mb-4">
             <h2 className="text-2xl font-bold font-headline">Daily Challenges</h2>
-             <Tabs value={selectedCategory} onValueChange={(value) => {
-                    setSelectedCategory(value as "gen_education" | "professional");
-                }}>
-                <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="gen_education">General Education</TabsTrigger>
-                    <TabsTrigger value="professional">Professional Education</TabsTrigger>
-                </TabsList>
-            </Tabs>
+             <Select value={selectedCategory} onValueChange={(value) => setSelectedCategory(value as "gened" | "profed" | "majorship")}>
+                <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="gened">General Education</SelectItem>
+                    <SelectItem value="profed">Professional Education</SelectItem>
+                    <SelectItem value="majorship">Majorship</SelectItem>
+                </SelectContent>
+            </Select>
         </div>
         <div className="space-y-4">
           {challenges.map(challenge => {
              const challengeId = `${challenge.difficulty}-${selectedCategory}`;
-             const isCompleted = userStats.completedChallenges.includes(challengeId);
+             const isCompleted = todaysChallenges.includes(challengeId);
             return (
                 <Card key={challenge.difficulty} className={cn(isCompleted && "bg-muted/50", `border-${challenge.color}-200`)}>
                   <CardHeader>
                     <div className="flex justify-between items-start">
                         <div>
                             <CardTitle className="font-headline capitalize">{challenge.difficulty} Challenge</CardTitle>
-                            <CardDescription>Complete a set of {challenge.count} {selectedCategory === 'gen_education' ? 'General' : 'Professional'} Education questions.</CardDescription>
+                            <CardDescription>Complete a set of {challenge.count} {getCategoryName(selectedCategory)} questions.</CardDescription>
                         </div>
                         {isCompleted && <Badge variant="secondary">Completed</Badge>}
                     </div>
@@ -385,7 +339,3 @@ export default function DailyPage() {
     </div>
   );
 }
-
-    
-
-    

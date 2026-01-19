@@ -1,501 +1,303 @@
-
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { User, Flame, Gem, Star, Award, Shield, Edit, Check, HelpCircle, Lock, CalendarCheck2, CheckCircle, Lightbulb, TrendingUp } from "lucide-react";
+import { User, Flame, Edit, Check, Lock, Lightbulb, HelpCircle, X, BookOpen, Brain, Heart, CheckCircle } from "lucide-react";
 import Image from "next/image";
-import { pets as streakPets, getQuestionOfTheDay, achievementPets, rarePets } from "@/lib/data";
-import type { QuizQuestion, DailyProgress, PetProfile } from "@/lib/types";
+import { getQuestionOfTheDay, streakPets, achievementPets, rarePets } from "@/lib/data";
+import type { QuizQuestion, Reviewer, Topic, PetProfile, Subject } from "@/lib/types";
 import { useEffect, useState, useMemo, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import Countdown from "@/components/Countdown";
-import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Calendar } from "@/components/ui/calendar";
-import { addDays, format, isBefore, startOfYesterday, startOfDay, isSameDay } from "date-fns";
+import { format, isToday, isFuture } from "date-fns";
 import { DayDetailDialog } from "@/components/DayDetailDialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useUser } from "@/firebase/auth/use-user";
+import { ActivityCalendar } from "@/components/ActivityCalendar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { collection, query, where } from "firebase/firestore";
+import { Skeleton } from "@/components/ui/skeleton";
 
-interface UserProfile {
-    name: string;
-    avatarUrl: string;
-    examDate?: string;
-    points: number;
-    streak: number;
-    highestStreak: number;
-    highestQuizStreak: number;
-    completedSessions: number;
-    petNames: Record<string, string>;
-    unlockedPets: string[];
-    dailyProgress: Record<string, DailyProgress>;
-    lastLogin: string;
-    lastChallengeDate?: string;
-}
-
-const allPets: PetProfile[] = [
-    ...streakPets,
-    ...achievementPets,
-    ...rarePets
-];
 
 const getTodayKey = () => format(new Date(), 'yyyy-MM-dd');
 
+const motivationalQuotes = [
+  "Believe you can and you're halfway there.",
+  "The secret of getting ahead is getting started.",
+  "The expert in anything was once a beginner.",
+  "Don't watch the clock; do what it does. Keep going.",
+  "Success is not final, failure is not fatal: it is the courage to continue that counts.",
+  "Your only limit is your mind.",
+  "Strive for progress, not perfection.",
+  "Every accomplishment starts with the decision to try.",
+  "The future depends on what you do today.",
+  "A little progress each day adds up to big results.",
+  "Consistency is the key to success.",
+];
+
 export default function HomePage() {
-  const router = useRouter();
-  const { toast } = useToast();
-  const isMobile = useIsMobile();
+  const { user } = useUser();
+  const firestore = useFirestore();
   
-  const [user, setUser] = useState<UserProfile | null>(null);
-  const [editingPet, setEditingPet] = useState<string | null>(null);
-  const [newPetName, setNewPetName] = useState("");
-  const [questionOfTheDay, setQuestionOfTheDay] = useState<QuizQuestion | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  
-  const todayKey = useMemo(() => getTodayKey(), []);
-  
-  const checkAchievements = useCallback((user: UserProfile): UserProfile => {
-    let updatedUser = { ...user };
-    let statsUpdated = false;
+  const [questionOfTheDay, setQuestionOfTheDay] = useState<QuizQuestion | null>(null);
+  const [view, setView] = useState<'week' | 'month'>('week');
+  const [showLegend, setShowLegend] = useState(false);
 
-    if (user.streak > (user.highestStreak || 0)) {
-        updatedUser.highestStreak = user.streak;
-        statsUpdated = true;
-    }
-    
-    const pomodoroState = JSON.parse(localStorage.getItem("pomodoroState") || "{}");
-    if (pomodoroState.highestQuizStreak > (user.highestQuizStreak || 0)) {
-        updatedUser.highestQuizStreak = pomodoroState.highestQuizStreak;
-        statsUpdated = true;
-    }
+  const [featuredArticle, setFeaturedArticle] = useState<Reviewer | null>(null);
+  const [randomTopic, setRandomTopic] = useState<Topic | null>(null);
+  const [companion, setCompanion] = useState<PetProfile | null>(null);
+  const [motivationalQuote, setMotivationalQuote] = useState('');
 
-    achievementPets.forEach(pet => {
-      let isAlreadyUnlocked = updatedUser.unlockedPets.includes(pet.name);
-      if (isAlreadyUnlocked) return;
-
-      let isUnlockedNow = false;
-      if (pet.unlock_criteria.includes('Pomodoro')) {
-        isUnlockedNow = (updatedUser.completedSessions || 0) >= (pet.unlock_value || 0);
-      } else if (pet.unlock_criteria.includes('quiz streak')) {
-        isUnlockedNow = (updatedUser.highestQuizStreak || 0) >= (pet.unlock_value || 0);
-      }
-
-      if (isUnlockedNow) {
-        updatedUser.unlockedPets = [...new Set([...updatedUser.unlockedPets, pet.name])];
-        statsUpdated = true;
-        toast({
-          title: "New Pet Unlocked!",
-          description: `You've unlocked ${pet.name} for your achievements!`,
-          className: "bg-green-100 border-green-300"
-        });
-      }
-    });
-
-    if (statsUpdated) {
-      localStorage.setItem("userProfile", JSON.stringify(updatedUser));
-    }
-    return updatedUser;
-  }, [toast]);
-
-
-  const loadUser = useCallback(() => {
-    const savedUser = localStorage.getItem("userProfile");
-    if (savedUser) {
-        let parsedUser: UserProfile = JSON.parse(savedUser);
-
-        if (!parsedUser.petNames) parsedUser.petNames = {};
-        if (!parsedUser.unlockedPets) parsedUser.unlockedPets = [];
-        if (!parsedUser.dailyProgress) parsedUser.dailyProgress = {};
-        if (!parsedUser.highestQuizStreak) parsedUser.highestQuizStreak = 0;
-        
-        const lastLoginDate = parsedUser.lastLogin ? startOfDay(new Date(parsedUser.lastLogin)) : startOfDay(new Date());
-        const today = startOfDay(new Date());
-
-        if (isBefore(lastLoginDate, today)) {
-            const yesterday = startOfYesterday();
-            const lastChallengeDate = parsedUser.lastChallengeDate ? startOfDay(new Date(parsedUser.lastChallengeDate)) : null;
-
-            if (parsedUser.streak > 0 && lastChallengeDate && isBefore(lastChallengeDate, yesterday)) {
-                 toast({
-                    variant: 'destructive',
-                    title: 'Streak Lost!',
-                    description: `You missed a day and lost your ${parsedUser.streak}-day streak.`,
-                });
-                parsedUser.streak = 0;
-            }
-        }
-        
-        parsedUser.lastLogin = todayKey;
-
-        const userWithAchievements = checkAchievements(parsedUser);
-        localStorage.setItem("userProfile", JSON.stringify(userWithAchievements));
-        setUser(userWithAchievements);
-    } else {
-        router.push('/login');
-    }
-  }, [router, todayKey, toast, checkAchievements]);
-
+  const { data: articles, isLoading: isLoadingArticles } = useCollection<Reviewer>(useMemoFirebase(() => firestore ? query(collection(firestore, 'reviewers'), where('status', '==', 'published')) : null, [firestore]));
+  const { data: topics, isLoading: isLoadingTopics } = useCollection<Topic>(useMemoFirebase(() => firestore ? collection(firestore, 'topics') : null, [firestore]));
+  const { data: subjects, isLoading: isLoadingSubjects } = useCollection<Subject>(useMemoFirebase(() => firestore ? collection(firestore, 'subjects') : null, [firestore]));
+  const allPets: PetProfile[] = useMemo(() => [...streakPets, ...achievementPets, ...rarePets], []);
 
   useEffect(() => {
-    loadUser();
-    setQuestionOfTheDay(getQuestionOfTheDay());
-    
-    const handleFocus = () => loadUser();
-    window.addEventListener('focus', handleFocus);
-    window.addEventListener('storage', handleFocus);
+    if (articles && articles.length > 0 && !featuredArticle) {
+      setFeaturedArticle(articles[Math.floor(Math.random() * articles.length)]);
+    }
+  }, [articles, featuredArticle]);
 
-    return () => {
-      window.removeEventListener('focus', handleFocus);
-      window.removeEventListener('storage', handleFocus);
-    };
-  }, [loadUser]);
-  
-  const qotdCompletedDays = useMemo(() => {
-    if (!user?.dailyProgress) return [];
-    return Object.entries(user.dailyProgress).reduce((acc, [dateStr, progress]) => {
-      if (progress.qotdCompleted) {
-        // When parsing yyyy-mm-dd, it's treated as UTC. We need to account for timezone offset.
-        const [year, month, day] = dateStr.split('-').map(Number);
-        const date = new Date(year, month - 1, day);
-        acc.push(date);
+  useEffect(() => {
+    if (topics && topics.length > 0 && !randomTopic) {
+      setRandomTopic(topics[Math.floor(Math.random() * topics.length)]);
+    }
+  }, [topics, randomTopic]);
+
+  useEffect(() => {
+    if (user) {
+      let petToShow: PetProfile | undefined;
+      // 1. Check for active pet
+      if (user.activePet) {
+        petToShow = allPets.find(p => p.name === user.activePet);
       }
-      return acc;
-    }, [] as Date[]);
-  }, [user?.dailyProgress]);
+      // 2. If no active pet, find a random unlocked one
+      else {
+        const unlockedPets = allPets.filter(pet => {
+            if (!pet.unlock_criteria) return false;
+            if (pet.unlock_criteria.includes('streak') && !pet.unlock_criteria.includes('quiz')) {
+                return (user.highestStreak || 0) >= pet.streak_req;
+            } else if (pet.unlock_criteria.includes('Purchase')) {
+                return user.unlockedPets?.includes(pet.name);
+            } else if (pet.unlock_criteria.includes('Pomodoro')) {
+                return (user.completedSessions || 0) >= (pet.unlock_value || 0);
+            } else if (pet.unlock_criteria.includes('quiz streak')) {
+                return (user.highestQuizStreak || 0) >= (pet.unlock_value || 0);
+            }
+            return false;
+        });
 
-  const streakDays = useMemo(() => {
-    if (!user) return [];
-    // Start from today if streak is secured, otherwise yesterday
-    const startDate = user.lastChallengeDate === todayKey ? startOfDay(new Date()) : startOfYesterday();
-    return Array.from({ length: user.streak || 0 }, (_, i) => addDays(startDate, -i));
-}, [user, todayKey]);
+        if (unlockedPets.length > 0) {
+          petToShow = unlockedPets[Math.floor(Math.random() * unlockedPets.length)];
+        }
+      }
+      
+      // 3. Fallback to Rocky
+      if (!petToShow) {
+        petToShow = allPets.find(p => p.name === 'Rocky');
+      }
+
+      setCompanion(petToShow || null);
+    }
+  }, [user, allPets]);
+
+  useEffect(() => {
+    // This will run only on the client-side to avoid hydration mismatch
+    setMotivationalQuote(motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)]);
+  }, []);
+  
+  const todayKey = useMemo(() => getTodayKey(), []);
+
+  useEffect(() => {
+    getQuestionOfTheDay().then(setQuestionOfTheDay);
+  }, []);
   
   const isStreakSecuredToday = useMemo(() => {
     if (!user) return false;
     return (user.dailyProgress?.[todayKey]?.challengesCompleted?.length || 0) > 0;
   }, [user, todayKey]);
-  
-  const unlockedPetsCount = useMemo(() => {
-    if (!user) return 0;
-    return allPets.filter(pet => {
-      if (!pet.unlock_criteria) return false;
-      if (pet.unlock_criteria.includes('streak') && !pet.unlock_criteria.includes('quiz')) {
-        return (user.highestStreak || 0) >= pet.streak_req;
-      } else if (pet.unlock_criteria.includes('Purchase')) {
-        return user.unlockedPets.includes(pet.name);
-      } else if (pet.unlock_criteria.includes('Pomodoro')) {
-        return (user.completedSessions || 0) >= (pet.unlock_value || 0);
-      } else if (pet.unlock_criteria.includes('quiz streak')) {
-        return (user.highestQuizStreak || 0) >= (pet.unlock_value || 0);
-      }
-      return false;
-    }).length;
-  }, [user]);
-
-  const todaysProgress = user?.dailyProgress?.[todayKey] || { pointsEarned: 0, pomodorosCompleted: 0, qotdCompleted: false };
-
-  const handlePetNameEdit = (originalName: string) => {
-    if (!user) return;
-    setEditingPet(originalName);
-    setNewPetName(user.petNames[originalName] || originalName);
-  };
-  
-  const handlePetNameSave = (originalName: string) => {
-    if (user && newPetName.trim()) {
-        const updatedPetNames = { ...user.petNames, [originalName]: newPetName.trim() };
-        const updatedUser = { ...user, petNames: updatedPetNames };
-        localStorage.setItem("userProfile", JSON.stringify(updatedUser));
-        setUser(updatedUser);
-        setEditingPet(null);
-        toast({
-          title: "Pet renamed!",
-          description: `Your pet is now named ${newPetName.trim()}.`,
-          className: "bg-green-100 border-green-300"
-        });
-    }
-  }
 
   const handleDayClick = (day: Date) => {
-    // Prevent opening dialog for today's date
-    if (isSameDay(day, startOfDay(new Date()))) {
-      return;
-    }
-    if (isBefore(day, startOfDay(new Date()))) {
+    if (isToday(day) || !isFuture(day)) {
       setSelectedDate(day);
     }
   };
   
   if (!user) {
-    return null;
-  }
-  
-  const PetDisplay = ({ pet }: { pet: PetProfile }) => {
-    let isUnlocked = false;
-
-    if (pet.unlock_criteria.includes('streak') && !pet.unlock_criteria.includes('quiz')) {
-        isUnlocked = (user.highestStreak || 0) >= pet.streak_req;
-    } else if (pet.unlock_criteria.includes('Purchase')) {
-        isUnlocked = user.unlockedPets.includes(pet.name);
-    } else if (pet.unlock_criteria.includes('Pomodoro')) {
-        isUnlocked = (user.completedSessions || 0) >= (pet.unlock_value || 0);
-    } else if (pet.unlock_criteria.includes('quiz streak')) {
-        isUnlocked = (user.highestQuizStreak || 0) >= (pet.unlock_value || 0);
-    }
-
-    return (
-       <div key={pet.name} className="flex flex-col items-center text-center">
-        <div className="relative">
-          <Image
-            src={pet.image}
-            alt={pet.name}
-            width={80}
-            height={80}
-            className={cn(
-                "rounded-full bg-muted p-2",
-                isUnlocked ? "animate-bob" : "grayscale opacity-50 blur-sm"
-            )}
-            data-ai-hint={pet.hint}
-          />
-          {!isUnlocked && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
-              <Lock className="h-6 w-6 text-white" />
-            </div>
-          )}
-        </div>
-
-            {isUnlocked ? (
-               editingPet === pet.name ? (
-                <div className="flex items-center gap-1 mt-1">
-                  <Input
-                    value={newPetName}
-                    onChange={(e) => setNewPetName(e.target.value)}
-                    className="text-sm h-7 w-20"
-                    onKeyDown={(e) => e.key === 'Enter' && handlePetNameSave(pet.name)}
-                  />
-                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handlePetNameSave(pet.name)}>
-                    <Check className="h-4 w-4 text-green-500" />
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex items-center justify-center gap-1 mt-1">
-                  <p className="text-sm font-medium">{user.petNames[pet.name] || pet.name}</p>
-                  <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handlePetNameEdit(pet.name)}>
-                    <Edit className="h-3 w-3" />
-                  </Button>
-                </div>
-              )
-            ) : (
-                <p className="text-sm font-medium mt-1">???</p>
-            )}
-             <Badge variant="secondary" className="mt-1 text-center text-wrap h-auto">
-                {pet.unlock_criteria}
-            </Badge>
-          </div>
-    )
+    return null; // Or show loading spinner
   }
 
   return (
-    <div className="container mx-auto p-4 max-w-4xl">
-      <DayDetailDialog
-        date={selectedDate}
-        onClose={() => setSelectedDate(null)}
-        userProgress={selectedDate ? user.dailyProgress[format(selectedDate, 'yyyy-MM-dd')] : undefined}
-      />
-      <header className="flex justify-between items-center mb-6">
-        <div>
-            <h1 className="text-3xl font-bold font-headline">Home</h1>
-            <p className="text-muted-foreground">Welcome back, {user.name}!</p>
-        </div>
-         <Link href="/profile">
-            <Avatar className="h-14 w-14 border-2 border-primary">
-                <AvatarImage src={user.avatarUrl} alt={user.name} />
-                <AvatarFallback>
-                    <User className="h-6 w-6" />
-                </AvatarFallback>
-            </Avatar>
-        </Link>
-      </header>
+    <>
+      <div className="container mx-auto max-w-4xl">
+        <DayDetailDialog
+          date={selectedDate}
+          onClose={() => setSelectedDate(null)}
+          userProgress={selectedDate ? user.dailyProgress[format(selectedDate, 'yyyy-MM-dd')] : undefined}
+        />
+        <p className="text-muted-foreground mb-6">Welcome back, {user.name}!</p>
+        
+        {user.examDate && <Countdown examDate={new Date(user.examDate)} />}
 
-      {user.examDate && <Countdown examDate={new Date(user.examDate)} />}
-      
-      {!isStreakSecuredToday && (
-         <Card className="mb-6 bg-blue-50 border-blue-200">
-          <CardHeader>
-            <CardTitle className="text-center text-blue-800 font-headline flex items-center justify-center gap-2">
-                <Flame className="h-6 w-6"/> Secure Your Streak!
-            </CardTitle>
-            <CardDescription className="text-center text-blue-600">You haven't completed a daily challenge yet. Finish one to maintain your streak.</CardDescription>
-          </CardHeader>
-          <CardFooter>
-            <Link href="/daily" className="w-full">
-                <Button className="w-full">Go to Daily Challenges</Button>
-            </Link>
-          </CardFooter>
-        </Card>
-      )}
+        {!isStreakSecuredToday && (
+           <Card className="mb-6 bg-blue-50 border-blue-200">
+            <CardHeader>
+              <CardTitle className="text-center text-blue-800 font-headline flex items-center justify-center gap-2">
+                  <Flame className="h-6 w-6"/> Secure Your Streak!
+              </CardTitle>
+              <CardDescription className="text-center text-blue-600">You haven't completed a daily challenge yet. Finish one to maintain your streak.</CardDescription>
+            </CardHeader>
+            <CardFooter>
+              <Link href="/daily" className="w-full">
+                  <Button className="w-full">Go to Daily Challenges</Button>
+              </Link>
+            </CardFooter>
+          </Card>
+        )}
 
-       <section className="mb-6">
-        <h2 className="text-xl font-bold font-headline mb-4">Today's Progress</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-             <Card>
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">Points Earned Today</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-2xl font-bold flex items-center gap-2"><Gem className="h-5 w-5 text-accent" />{todaysProgress.pointsEarned || 0}</p>
-                </CardContent>
-             </Card>
-             <Card>
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">Pomodoros Today</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-2xl font-bold flex items-center gap-2"><Award className="h-5 w-5 text-muted-foreground" />{todaysProgress.pomodorosCompleted || 0}</p>
-                </CardContent>
-             </Card>
-             <Card>
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">QOTD</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    {todaysProgress.qotdCompleted ? (
-                        <Badge variant="secondary" className="text-green-600 border-green-300">
-                            <CheckCircle className="h-4 w-4 mr-1"/> Answered
-                        </Badge>
-                    ) : (
-                        <Badge variant="outline">
-                            <HelpCircle className="h-4 w-4 mr-1"/> Pending
-                        </Badge>
-                    )}
-                </CardContent>
-             </Card>
-        </div>
-       </section>
+          <section className="mb-6">
+              <h2 className="text-xl font-bold font-headline mb-4">Question of the Day</h2>
+              {questionOfTheDay ? (
+                  <Card>
+                      <CardHeader>
+                          <CardTitle className="flex items-center justify-between">
+                              <span className="text-lg">{questionOfTheDay.question}</span>
+                          </CardTitle>
+                          
+                      </CardHeader>
+                      {!user.dailyProgress?.[todayKey]?.qotdCompleted && (
+                          <CardFooter>
+                              <Link href="/daily" className="w-full">
+                                  <Button className="w-full">
+                                      <Lightbulb className="mr-2 h-4 w-4" />
+                                      Answer Now
+                                  </Button>
+                              </Link>
+                          </CardFooter>
+                      )}
+                  </Card>
+              ) : (<Card><CardContent><p>Loading question...</p></CardContent></Card>)}
+          </section>
 
-        <section className="mb-6">
-            <h2 className="text-xl font-bold font-headline mb-4">Question of the Day</h2>
-            {questionOfTheDay && (
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center justify-between">
-                            <span className="text-lg">{questionOfTheDay.question}</span>
-                        </CardTitle>
-                        
-                    </CardHeader>
-                    {!todaysProgress.qotdCompleted && (
+          <section className="my-6">
+            <h2 className="text-xl font-bold font-headline mb-4">For You</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {isLoadingArticles || isLoadingSubjects ? <Skeleton className="h-56 w-full" /> : featuredArticle && subjects && (
+                    <Card className="flex flex-col">
+                        <CardHeader>
+                            <CardTitle className="font-headline text-lg flex items-center gap-2"><BookOpen/> Featured Reviewer</CardTitle>
+                            <Badge variant="secondary" className="capitalize w-fit" style={{ backgroundColor: subjects.find(s => s.id === featuredArticle.subjectId)?.color || '#6c757d', color: 'white' }}>
+                                {subjects.find(s => s.id === featuredArticle.subjectId)?.name || 'General'}
+                            </Badge>
+                        </CardHeader>
+                        <CardContent className="flex-grow">
+                            <h3 className="font-semibold">{featuredArticle.title}</h3>
+                            <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{featuredArticle.excerpt}</p>
+                        </CardContent>
                         <CardFooter>
-                            <Link href="/daily" className="w-full">
-                                <Button className="w-full">
-                                    <Lightbulb className="mr-2 h-4 w-4" />
-                                    Answer Now
-                                </Button>
+                            <Link href={`/reviewer/review/${featuredArticle.slug}`} passHref className="w-full">
+                                <Button className="w-full">Start Reading</Button>
                             </Link>
                         </CardFooter>
-                    )}
-                </Card>
-            )}
+                    </Card>
+                )}
+
+                {isLoadingTopics ? <Skeleton className="h-56 w-full" /> : randomTopic && (
+                    <Card className="flex flex-col">
+                        <CardHeader>
+                            <CardTitle className="font-headline text-lg flex items-center gap-2"><Brain/> Practice Quiz</CardTitle>
+                            <CardDescription>Test your knowledge on a random topic.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex-grow">
+                            <div className="bg-muted p-4 rounded-lg text-center">
+                                <p className="font-semibold text-lg">{randomTopic.name}</p>
+                            </div>
+                        </CardContent>
+                        <CardFooter>
+                            <Link href={`/reviewer/questions?topic=${randomTopic.id}`} passHref className="w-full">
+                                <Button className="w-full">Take Quiz</Button>
+                            </Link>
+                        </CardFooter>
+                    </Card>
+                )}
+            </div>
         </section>
 
-      <Separator className="my-6" />
+        {companion && motivationalQuote && (
+            <section className="my-6">
+                <Card className="bg-accent/10 border-accent/20">
+                    <CardHeader className="flex flex-row items-center gap-4">
+                        <Image src={companion.image} alt={companion.name} width={80} height={80} className="bg-background rounded-full p-2 animate-bob" data-ai-hint={companion.hint} />
+                        <div>
+                            <CardTitle className="font-headline">{user.petNames[companion.name] || companion.name} says...</CardTitle>
+                            <CardDescription className="text-foreground/80 italic">"{motivationalQuote}"</CardDescription>
+                            <Link href="/profile#pet-collection" passHref>
+                                <Button variant="link" className="p-0 h-auto mt-1">Change Companion</Button>
+                            </Link>
+                        </div>
+                    </CardHeader>
+                </Card>
+            </section>
+        )}
 
-      <section>
-        <h2 className="text-xl font-bold font-headline mb-4">Your Stats</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card className="col-span-2 md:col-span-2 bg-destructive/10 border-destructive">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-base font-bold text-destructive">Daily Streak</CardTitle>
-                <Flame className="h-5 w-5 text-destructive" />
-                </CardHeader>
-                <CardContent>
-                <div className="text-3xl font-bold">{user.streak} days</div>
-                </CardContent>
-            </Card>
-            <Card className="col-span-2 md:col-span-2 bg-accent/10 border-accent">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-base font-bold text-accent">Total Points</CardTitle>
-                <Gem className="h-5 w-5 text-accent" />
-                </CardHeader>
-                <CardContent>
-                <div className="text-3xl font-bold">{user.points}</div>
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Highest Daily Streak</CardTitle>
-                <Shield className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                <div className="text-2xl font-bold">{user.highestStreak}</div>
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Highest Quiz Streak</CardTitle>
-                <Award className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                <div className="text-2xl font-bold">{user.highestQuizStreak}</div>
-                </CardContent>
-            </Card>
-        </div>
-      </section>
+        <Separator className="my-6" />
+      </div>
 
        <section className="mt-8">
-        <h2 className="text-xl font-bold font-headline mb-4">Activity Calendar</h2>
-        <Card>
-            <CardHeader>
-                <CardDescription>Your current streak is marked with a flame (🔥) and completed Questions of the Day are marked with a check (✅). Click a past day to see details.</CardDescription>
-            </CardHeader>
-            <CardContent className="flex justify-center">
-               <Calendar
-                    mode="multiple"
-                    onDayClick={handleDayClick}
-                    disabled={{ after: new Date() }}
-                    className="rounded-md border"
-                    modifiers={{
-                       streak: streakDays,
-                       qotd_completed: qotdCompletedDays
-                    }}
-                    modifiersClassNames={{
-                        streak: 'day-streak',
-                        qotd_completed: 'day-qotd-completed',
-                    }}
-                />
-            </CardContent>
-        </Card>
-       </section>
-
-      <section className="mt-8">
-        <h2 className="text-xl font-bold font-headline mb-4">Pet Collection ({unlockedPetsCount}/{allPets.length})</h2>
-        <Card>
-          <CardContent className="p-4">
-            <TooltipProvider>
-            <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
-              {allPets.map((pet) => (
-                <PetDisplay key={pet.name} pet={pet} />
-              ))}
+        <div className="md:container md:mx-auto md:max-w-4xl">
+            <div className="flex items-center justify-between mb-4 px-4 md:px-0">
+                <h2 className="text-xl font-bold font-headline">Activity Calendar</h2>
+                 <div className="flex items-center gap-2">
+                    {!showLegend && (
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowLegend(true)}>
+                                <HelpCircle className="h-4 w-4"/>
+                                <span className="sr-only">Show Legend</span>
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Show Legend</TooltipContent>
+                    </Tooltip>
+                    )}
+                    <Select value={view} onValueChange={(v) => setView(v as 'week' | 'month')}>
+                        <SelectTrigger className="w-auto h-9">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="week">Week</SelectItem>
+                            <SelectItem value="month">Month</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
-            </TooltipProvider>
-          </CardContent>
-        </Card>
-      </section>
-    </div>
+             {showLegend && (
+                <Alert className="mb-4 mx-4 md:mx-0">
+                    <AlertDescription className="flex items-center justify-between text-sm">
+                    <span className="flex items-center gap-1.5 flex-wrap">
+                        Streak days are marked with <Flame className="h-4 w-4 text-destructive inline-block" />, and completed Questions of the Day with a <CheckCircle className="h-4 w-4 text-green-500 inline-block" />. Click a day for details.
+                    </span>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => setShowLegend(false)}>
+                        <X className="h-4 w-4 text-muted-foreground"/>
+                        <span className="sr-only">Hide Legend</span>
+                    </Button>
+                    </AlertDescription>
+                </Alert>
+            )}
+        </div>
+        <div className="md:container md:mx-auto md:max-w-4xl">
+            <ActivityCalendar dailyProgress={user.dailyProgress} onDayClick={handleDayClick} view={view} />
+        </div>
+       </section>
+    </>
   );
 }

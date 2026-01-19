@@ -1,0 +1,244 @@
+
+{
+  "entities": {
+    "Reviewer": {
+      "title": "Reviewer",
+      "description": "Represents a single review article or content piece.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "slug": { "type": "string" },
+        "excerpt": { "type": "string" },
+        "content": { "type": "string", "description": "Markdown content of the article." },
+        "contentFormat": { "type": "string", "enum": ["markdown"] },
+        "category": { "type": "string", "enum": ["gened", "profed", "majorship"] },
+        "subjectId": { "type": "string" },
+        "topicIds": { "type": "array", "items": { "type": "string" } },
+        "difficulty": { "type": "string", "enum": ["easy", "medium", "hard"] },
+        "reviewerType": { "type": "string", "enum": ["article", "video", "mixed"] },
+        "estimatedTime": { "type": "number", "description": "Estimated time in minutes." },
+        "status": { "type": "string", "enum": ["draft", "published", "archived"] },
+        "orderIndex": { "type": "number" },
+        "createdBy": { "type": "string" },
+        "publishedAt": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "slug", "content", "subjectId", "difficulty", "reviewerType", "status", "category"]
+    },
+    "Subject": {
+      "title": "Subject",
+      "description": "A subject within a category (e.g., Educational Psychology within Professional Education).",
+      "type": "object",
+      "properties": {
+        "categoryId": { "type": "string", "enum": ["gened", "profed", "majorship"] },
+        "name": { "type": "string" },
+        "slug": { "type": "string" },
+        "color": { "type": "string" },
+        "orderIndex": { "type": "number" }
+      },
+      "required": ["categoryId", "name", "slug"]
+    },
+    "Topic": {
+      "title": "Topic",
+      "description": "A sub-category within a subject.",
+      "type": "object",
+      "properties": {
+        "subjectId": { "type": "string" },
+        "name": { "type": "string" },
+        "slug": { "type": "string" }
+      },
+      "required": ["subjectId", "name", "slug"]
+    },
+    "Question": {
+        "title": "Question",
+        "description": "Represents a single practice question.",
+        "type": "object",
+        "properties": {
+          "id": { "type": "string"},
+          "category": { "type": "string", "enum": ["gened", "profed", "majorship"] },
+          "subjectId": { "type": "string" },
+          "topicIds": { "type": "array", "items": { "type": "string" } },
+          "difficulty": { "type": "string", "enum": ["easy", "medium", "hard"] },
+          "type": { "type": "string", "enum": ["multiple_choice"] },
+          "question": { "type": "string" },
+          "choices": { "type": "array", "items": { "type": "string" } },
+          "correctAnswer": { "type": "string" },
+          "explanation": { "type": "string" },
+          "reviewerIds": { "type": "array", "items": { "type": "string" } }
+        },
+        "required": ["id", "difficulty", "type", "question", "choices", "correctAnswer", "category"]
+    },
+     "ReviewerProgress": {
+      "title": "Reviewer Progress",
+      "description": "Tracks a user's progress on a specific reviewer article.",
+      "type": "object",
+      "properties": {
+        "status": { "type": "string", "enum": ["not_started", "in_progress", "completed"] },
+        "progressPercent": { "type": "number" },
+        "lastReadPosition": { "type": "number" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["status", "updatedAt"]
+    },
+    "ReviewerBookmark": {
+      "title": "Reviewer Bookmark",
+      "description": "Marks a reviewer article as bookmarked by a user.",
+      "type": "object",
+      "properties": {
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["createdAt"]
+    },
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Stores user profile and progress data.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "avatarUrl": { "type": "string", "format": "uri" },
+        "email": { "type": "string", "format": "email" },
+        "examDate": { "type": "string", "format": "date-time" },
+        "points": { "type": "number" },
+        "streak": { "type": "number" },
+        "highestStreak": { "type": "number" },
+        "highestQuizStreak": { "type": "number" },
+        "completedSessions": { "type": "number" },
+        "unlockedThemes": { "type": "array", "items": { "type": "string" } },
+        "unlockedPets": { "type": "array", "items": { "type": "string" } },
+        "activeTheme": { "type": "string" },
+        "petNames": { "type": "object", "additionalProperties": { "type": "string" } },
+        "dailyProgress": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/backend/entities/DailyProgress" }
+        },
+        "lastLogin": { "type": "string", "format": "date" },
+        "lastChallengeDate": { "type": "string", "format": "date" },
+        "passingScore": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "questionsAnswered": { "type": "number" },
+        "answeredQuestionIds": { "type": "array", "items": { "type": "string" } },
+        "quizProgress": {
+          "type": "object",
+          "description": "Tracks user's quiz performance per topic.",
+          "additionalProperties": { "$ref": "#/backend/entities/TopicQuizProgress" }
+        },
+        "hasCompletedOnboarding": { "type": "boolean", "description": "Whether the user has completed the initial onboarding flow." }
+      }
+    },
+    "DailyProgress": {
+        "title": "Daily Progress",
+        "description": "Tracks a user's progress for a single day.",
+        "type": "object",
+        "properties": {
+            "qotdCompleted": { "type": "boolean" },
+            "qotdAnswer": { "type": "string" },
+            "challengesCompleted": { "type": "array", "items": { "type": "string" } },
+            "pomodorosCompleted": { "type": "number" },
+            "pointsEarned": { "type": "number" }
+        }
+    },
+    "TopicQuizProgress": {
+        "title": "Topic Quiz Progress",
+        "description": "Tracks a user's quiz scores for a specific topic.",
+        "type": "object",
+        "properties": {
+            "scores": { "type": "array", "items": { "type": "number" } },
+            "highestScore": { "type": "number" },
+            "averageScore": { "type": "number" }
+        }
+    },
+    "User": {
+        "$ref": "#/backend/entities/UserProfile"
+    },
+    "Feedback": {
+      "title": "Feedback",
+      "description": "Represents user-submitted feedback.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "feedbackText": { "type": "string" },
+        "pageUrl": { "type": "string" },
+        "type": { "type": "string", "enum": ["bug", "feature", "general"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "userName", "feedbackText", "type", "createdAt"]
+    }
+  },
+  "auth": {
+    "providers": [
+      "google.com",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": { "$ref": "#/backend/entities/UserProfile" },
+          "description": "Stores user profile data."
+        }
+      },
+      {
+        "path": "/users/{userId}/reviewerProgress/{reviewerId}",
+        "definition": {
+            "entityName": "ReviewerProgress",
+            "schema": { "$ref": "#/backend/entities/ReviewerProgress" },
+            "description": "Tracks user progress for each reviewer article."
+        }
+      },
+      {
+        "path": "/users/{userId}/reviewerBookmarks/{reviewerId}",
+        "definition": {
+            "entityName": "ReviewerBookmark",
+            "schema": { "$ref": "#/backend/entities/ReviewerBookmark" },
+            "description": "Stores user bookmarks for reviewer articles."
+        }
+      },
+      {
+        "path": "/reviewers/{reviewerId}",
+        "definition": {
+          "entityName": "Reviewer",
+          "schema": { "$ref": "#/backend/entities/Reviewer" },
+          "description": "Stores all review articles. Publicly readable."
+        }
+      },
+      {
+        "path": "/subjects/{subjectId}",
+        "definition": {
+          "entityName": "Subject",
+          "schema": { "$ref": "#/backend/entities/Subject" },
+          "description": "Stores all subjects. Publicly readable."
+        }
+      },
+      {
+        "path": "/topics/{topicId}",
+        "definition": {
+          "entityName": "Topic",
+          "schema": { "$ref": "#/backend/entities/Topic" },
+          "description": "Stores all topics. Publicly readable."
+        }
+      },
+       {
+        "path": "/questions/{questionId}",
+        "definition": {
+          "entityName": "Question",
+          "schema": { "$ref": "#/backend/entities/Question" },
+          "description": "Stores all practice questions as individual documents."
+        }
+      },
+      {
+        "path": "/feedback/{feedbackId}",
+        "definition": {
+          "entityName": "Feedback",
+          "schema": { "$ref": "#/backend/entities/Feedback" },
+          "description": "Stores user-submitted feedback."
+        }
+      }
+    ]
+  }
+}

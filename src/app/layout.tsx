@@ -2,11 +2,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import type { Metadata } from "next";
+import { usePathname } from "next/navigation";
 import { Inter, Space_Grotesk } from "next/font/google";
 import "./globals.css";
-import BottomNav from "@/components/BottomNav";
 import { Toaster } from "@/components/ui/toaster";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TimerProvider } from "@/hooks/use-timer";
@@ -15,10 +13,14 @@ import {
   SidebarContent,
   SidebarInset,
   SidebarProvider,
-  SidebarTrigger,
 } from "@/components/ui/sidebar";
+import { AppHeader } from "@/components/AppHeader";
 import { AppSidebar } from "@/components/AppSidebar";
 import SplashScreen from "@/components/SplashScreen";
+import { FirebaseClientProvider } from "@/firebase/client-provider";
+import { useUser } from "@/firebase/auth/use-user";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { OnboardingDialog } from "@/components/OnboardingDialog";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const spaceGrotesk = Space_Grotesk({
@@ -27,61 +29,51 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 function RootLayoutContent({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
   const pathname = usePathname();
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const { user, isLoading, activeTheme, firebaseUser } = useUser();
   const [isShowingSplash, setIsShowingSplash] = useState(pathname === "/");
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
     if (pathname === '/') {
-        setIsShowingSplash(true);
-         const splashShown = sessionStorage.getItem("splashShown");
-        if (splashShown) {
-            setIsShowingSplash(false);
-        } else {
-            setTimeout(() => {
-                setIsShowingSplash(false);
-                sessionStorage.setItem("splashShown", "true");
-            }, 3000); 
-        }
-    } else {
+      setIsShowingSplash(true);
+      const splashShown = typeof window !== 'undefined' ? sessionStorage.getItem("splashShown") : null;
+      if (splashShown) {
         setIsShowingSplash(false);
+      } else {
+        setTimeout(() => {
+          setIsShowingSplash(false);
+          if(typeof window !== 'undefined') {
+            sessionStorage.setItem("splashShown", "true");
+          }
+        }, 3000);
+      }
+    } else {
+      setIsShowingSplash(false);
     }
   }, [pathname]);
 
-   const applyActiveTheme = () => {
-        const savedUser = localStorage.getItem("userProfile");
-        if (savedUser) {
-            const user = JSON.parse(savedUser);
-            if (user.activeTheme && user.activeTheme !== 'default') {
-                document.documentElement.classList.add(user.activeTheme);
-            }
-        }
-    };
 
   useEffect(() => {
-    if (isShowingSplash) return;
-
-    applyActiveTheme();
-    const userProfile = localStorage.getItem("userProfile");
-    const isAuthPage = pathname === "/login" || pathname === "/";
-    
-    if (!userProfile && !isAuthPage) {
-      router.replace("/login");
-    } else if (userProfile && isAuthPage) {
-      router.replace("/home");
-    } else {
-      setIsCheckingAuth(false);
+    document.documentElement.classList.remove('mint', 'sunset', 'rose');
+    if (activeTheme && activeTheme !== 'default') {
+      document.documentElement.classList.add(activeTheme);
     }
-  }, [pathname, router, isShowingSplash]);
+  }, [activeTheme]);
+
+  useEffect(() => {
+    if (user && !isLoading && firebaseUser && !firebaseUser.isAnonymous && !user.hasCompletedOnboarding) {
+        setShowOnboarding(true);
+    }
+  }, [user, isLoading, firebaseUser]);
 
   if (isShowingSplash && pathname === "/") {
     return <SplashScreen />;
   }
-  
-  const isAppPage = !['/', '/login'].includes(pathname);
 
-  if (isCheckingAuth && isAppPage) {
+  const isAppPage = pathname !== '/';
+
+  if (isLoading && isAppPage && !user) {
     return (
       <div className="flex flex-col h-dvh">
         <main className="flex-1 overflow-y-auto p-4">
@@ -104,26 +96,42 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
       </TimerProvider>
     );
   }
+  
+  // This is handled by the useUser hook redirecting
+  if (isAppPage && !user) {
+    return (
+       <div className="flex flex-col h-dvh">
+        <main className="flex-1 overflow-y-auto p-4">
+          <div className="flex items-center gap-2 mb-6">
+            <Skeleton className="h-8 w-8" />
+            <Skeleton className="h-8 w-48" />
+          </div>
+          <Skeleton className="h-64 w-full" />
+        </main>
+        <Skeleton className="h-16 w-full" />
+      </div>
+    );
+  }
 
   return (
     <TimerProvider>
-      <SidebarProvider>
-        <Sidebar>
-          <SidebarContent>
-            <AppSidebar />
-          </SidebarContent>
-        </Sidebar>
-        <SidebarInset>
-          <header className="p-2 border-b md:hidden">
-            {/* The sidebar trigger is removed from here for mobile view */}
-          </header>
-          <main className="flex-1 overflow-y-auto pb-20 md:pb-4">
-            {children}
-          </main>
-          <BottomNav />
-          <Toaster />
-        </SidebarInset>
-      </SidebarProvider>
+      <TooltipProvider delayDuration={0}>
+        <SidebarProvider>
+          <Sidebar>
+            <SidebarContent>
+              <AppSidebar />
+            </SidebarContent>
+          </Sidebar>
+          <SidebarInset className="flex flex-col">
+            <AppHeader />
+            <main className="flex-1 overflow-y-auto p-4 sm:p-6">
+              {children}
+            </main>
+            <OnboardingDialog open={showOnboarding} onOpenChange={setShowOnboarding} />
+            <Toaster />
+          </SidebarInset>
+        </SidebarProvider>
+      </TooltipProvider>
     </TimerProvider>
   );
 }
@@ -156,7 +164,11 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${spaceGrotesk.variable} font-body antialiased flex flex-col h-dvh bg-background`}
       >
-        <RootLayoutContent>{children}</RootLayoutContent>
+        <FirebaseClientProvider>
+          <TooltipProvider>
+            <RootLayoutContent>{children}</RootLayoutContent>
+          </TooltipProvider>
+        </FirebaseClientProvider>
       </body>
     </html>
   );

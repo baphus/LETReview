@@ -25,6 +25,7 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 231 48% 48%;
     --dark-background: 222.2 84% 4.9%;
+    --radius: 0.75rem;
   }
 
   .dark {
@@ -47,6 +48,7 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 231 48% 48%;
+    --radius: 0.75rem;
   }
 
   .mint {
@@ -139,33 +141,4 @@
   .animation-delay-400 {
     animation-delay: 400ms;
   }
-}
-
-.day-selected {
-    background-color: hsl(var(--accent)) !important;
-    color: hsl(var(--accent-foreground)) !important;
-}
-
-.day-streak::after,
-.day-qotd_completed::before {
-  position: absolute;
-  font-size: 0.6rem;
-  line-height: 1;
-}
-
-.day-streak::after {
-  content: '🔥';
-  top: 2px;
-  right: 2px;
-}
-
-.day-qotd_completed::before {
-  content: '✅';
-  top: 2px;
-  right: 2px;
-}
-
-.day-streak.day-qotd_completed::before {
-  top: auto;
-  bottom: 2px;
 }

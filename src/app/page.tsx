@@ -2,35 +2,37 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BookOpen, CalendarDays, Clock, Award, ChevronRight, Star, Check } from "lucide-react";
 import Image from 'next/image';
 import LandingHeader from "@/components/LandingHeader";
 import LandingFooter from "@/components/LandingFooter";
+import { useUser } from "@/firebase/auth/use-user";
 
 const features = [
   {
     icon: <BookOpen className="w-8 h-8 text-primary" />,
-    title: "Comprehensive Reviewer",
-    description: "Tackle thousands of questions in both Study and Flashcard modes.",
+    title: "Reviewer & Practice Quiz",
+    description: "Master concepts with in-depth articles and test your knowledge with thousands of practice questions.",
     benefits: [
-        "Master General and Professional Education topics.",
-        "Choose between study and flashcard modes.",
-        "Learn at your own pace."
+        "Study detailed articles on GENED & PROFED.",
+        "Take practice quizzes by topic or category.",
+        "Track your quiz performance over time."
     ],
-    link: "/review",
+    link: "/reviewer/review",
     image: "/images/landing/feature-reviewer.png",
     image_hint: "studying app",
   },
   {
     icon: <CalendarDays className="w-8 h-8 text-primary" />,
-    title: "Daily Challenges",
-    description: "Keep your skills sharp with daily questions and challenges.",
+    title: "Daily Challenges & Streaks",
+    description: "Stay consistent and motivated with daily questions and challenges to build your study habit.",
     benefits: [
-        "Earn points for completing challenges.",
-        "Build your study streak.",
-        "Climb the leaderboard."
+        "Answer the Question of the Day for bonus points.",
+        "Complete challenges to build and maintain your streak.",
+        "Visualize your progress with the activity calendar."
     ],
     link: "/daily",
     image: "/images/landing/feature-challenges.png",
@@ -38,12 +40,12 @@ const features = [
   },
   {
     icon: <Clock className="w-8 h-8 text-primary" />,
-    title: "Pomodoro Timer",
-    description: "Boost your productivity with a built-in Pomodoro timer.",
+    title: "Productivity Timer",
+    description: "Enhance your focus and manage your study time effectively with the built-in Pomodoro timer.",
     benefits: [
-        "Stay focused during study sessions.",
-        "Take effective breaks.",
-        "Earn bonus points with mini-quizzes."
+        "Manage work and break periods using the Pomodoro technique.",
+        "Earn extra points by answering quick questions during focus sessions.",
+        "Build your quiz streak to unlock special rewards."
     ],
     link: "/timer",
     image: "/images/landing/feature-timer.png",
@@ -51,12 +53,12 @@ const features = [
   },
   {
     icon: <Award className="w-8 h-8 text-primary" />,
-    title: "Gamified Progress",
-    description: "Stay motivated by earning points and unlocking rewards.",
+    title: "Gamified Dashboard",
+    description: "Track your progress, unlock cute pets, and customize your app to make studying more fun.",
     benefits: [
-        "Unlock cute pets as you build your streak.",
-        "Customize your app theme.",
-        "Make studying fun and engaging."
+        "Keep your core stats (streak, points) always in view.",
+        "Unlock companion pets by maintaining streaks and completing achievements.",
+        "Personalize your experience with custom themes."
     ],
     link: "/home",
     image: "/images/landing/feature-progress.png",
@@ -64,7 +66,12 @@ const features = [
   }
 ];
 
+
 export default function LandingPage() {
+  const { user, firebaseUser, linkGoogleAccount } = useUser();
+  const router = useRouter();
+  const isAnonymous = firebaseUser?.isAnonymous;
+
   return (
     <div className="flex flex-col min-h-screen bg-background font-body">
       <LandingHeader />
@@ -82,13 +89,16 @@ export default function LandingPage() {
                   Your personalized and gamified review partner for the Licensure Examination for Teachers. Study smarter, not harder.
                 </p>
               </div>
-              <div>
-                <Link href="/login">
-                  <Button size="lg">
-                    Get Started for Free
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                 <Button size="lg" onClick={() => user && !isAnonymous ? router.push('/home') : linkGoogleAccount()}>
+                    {user && !isAnonymous ? "Go to Dashboard" : "Get Started for Free"}
                     <ChevronRight className="w-5 h-5 ml-2" />
                   </Button>
-                </Link>
+                  {(!user || isAnonymous) && (
+                    <Button size="lg" variant="outline" onClick={() => router.push('/home')}>
+                        Try as a Guest
+                    </Button>
+                  )}
               </div>
               <div className="w-full max-w-4xl mt-8">
                  <Image 
@@ -154,7 +164,7 @@ export default function LandingPage() {
             <div className="mx-auto w-full max-w-sm space-y-2">
               <Card>
                 <CardContent className="p-6">
-                  <div className="flex items-center mb-2">
+                  <div className="flex items-center justify-center mb-2">
                     <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
                     <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
                     <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
@@ -179,11 +189,16 @@ export default function LandingPage() {
             <p className="max-w-[600px] mx-auto text-muted-foreground md:text-xl mb-6">
               Sign up today and take the first step towards becoming a Licensed Professional Teacher.
             </p>
-            <Link href="/login">
-              <Button size="lg">
-                Claim Your Reviewer Access
-              </Button>
-            </Link>
+             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <Button size="lg" onClick={() => user && !isAnonymous ? router.push('/home') : linkGoogleAccount()}>
+                    {user && !isAnonymous ? "Go to Dashboard" : "Sign Up to Save Progress"}
+                </Button>
+                {(!user || isAnonymous) && (
+                    <Button size="lg" variant="outline" onClick={() => router.push('/home')}>
+                        Try as a Guest
+                    </Button>
+                )}
+            </div>
           </div>
         </section>
 

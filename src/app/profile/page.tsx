@@ -4,9 +4,8 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { User, LogOut, Settings, Edit, Check, Camera, Palette, Gem, Trophy, Clock, Flame, Award } from "lucide-react";
-import { useEffect, useState, useRef, ChangeEvent } from "react";
+import { User, LogOut, Camera, Palette, Gem, Trophy, Clock, Award, Check, Edit, UserPlus, AlertTriangle, MessageSquare, Flame, HelpCircle, Star, Lock, Heart } from "lucide-react";
+import { useEffect, useState, useRef, ChangeEvent, useMemo, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
@@ -15,24 +14,15 @@ import { DatePicker } from "@/components/ui/datepicker";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
-import { achievementPets, rarePets } from "@/lib/data";
+import { achievementPets, rarePets, streakPets } from "@/lib/data";
 import { Progress } from "@/components/ui/progress";
-
-
-interface UserProfile {
-    name: string;
-    avatarUrl: string;
-    examDate?: string;
-    passingScore?: number;
-    points: number;
-    streak: number;
-    highestStreak: number;
-    highestQuizStreak: number;
-    completedSessions: number;
-    unlockedThemes: string[];
-    unlockedPets: string[];
-    activeTheme: string;
-}
+import { useUser } from "@/firebase/auth/use-user";
+import { useAuth, useFirestore } from "@/firebase";
+import { doc, updateDoc } from "firebase/firestore";
+import { signOut } from "firebase/auth";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import type { PetProfile } from "@/lib/types";
 
 const themes = [
     { name: 'Default', value: 'default', cost: 0, colors: { primary: 'hsl(231 48% 48%)', accent: 'hsl(110 32% 48%)' } },
@@ -48,15 +38,15 @@ const allAchievements = [
     petReward: "Owlbert",
     icon: Clock,
     target: 10,
-    getValue: (user: UserProfile) => user.completedSessions || 0,
+    getValue: (user: any) => user.completedSessions || 0,
   },
   {
     name: "Pomodoro Pro",
     description: "Complete 50 Pomodoro sessions.",
     petReward: "Einstein",
-    icon: Clock,
+    icon: Award,
     target: 50,
-    getValue: (user: UserProfile) => user.completedSessions || 0,
+    getValue: (user: any) => user.completedSessions || 0,
   },
   {
     name: "Quiz Whiz",
@@ -64,7 +54,7 @@ const allAchievements = [
     petReward: "Sparky",
     icon: Award,
     target: 10,
-    getValue: (user: UserProfile) => user.highestQuizStreak || 0,
+    getValue: (user: any) => user.highestQuizStreak || 0,
   },
   {
     name: "Quiz Master",
@@ -72,54 +62,111 @@ const allAchievements = [
     petReward: "Bolt",
     icon: Award,
     target: 25,
-    getValue: (user: UserProfile) => user.highestQuizStreak || 0,
+    getValue: (user: any) => user.highestQuizStreak || 0,
   },
 ];
 
+const allPets: PetProfile[] = [
+    ...streakPets,
+    ...achievementPets,
+    ...rarePets
+];
 
 export default function ProfilePage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [user, setUser] = useState<UserProfile | null>(null);
+  const { user, firebaseUser, linkGoogleAccount, updateUser, isAdmin } = useUser();
+  const auth = useAuth();
+  
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [examDate, setExamDate] = useState<Date | undefined>(undefined);
   const [passingScore, setPassingScore] = useState(85);
+  
+  const [editingPet, setEditingPet] = useState<string | null>(null);
+  const [newPetName, setNewPetName] = useState("");
 
   useEffect(() => {
-    const savedUser = localStorage.getItem("userProfile");
-    if (savedUser) {
-      const parsedUser = JSON.parse(savedUser);
-       const fullUser = {
-            ...parsedUser,
-            unlockedThemes: parsedUser.unlockedThemes || ['default'],
-            unlockedPets: parsedUser.unlockedPets || [],
-            activeTheme: parsedUser.activeTheme || 'default',
-            highestQuizStreak: parsedUser.highestQuizStreak || 0,
-            completedSessions: parsedUser.completedSessions || 0,
-        };
-      setUser(fullUser);
-      setNewName(fullUser.name);
-      if (fullUser.examDate) {
-        setExamDate(new Date(fullUser.examDate));
+    if (user) {
+      setNewName(user.name);
+      if (user.examDate) {
+        setExamDate(new Date(user.examDate));
       }
-      setPassingScore(fullUser.passingScore || 85);
-      applyTheme(fullUser.activeTheme);
-    } else {
-        router.push('/login');
+      setPassingScore(user.passingScore || 85);
+      applyTheme(user.activeTheme || 'default');
     }
-  }, [router]);
+  }, [user]);
 
-  const saveUser = (updatedUser: UserProfile) => {
-    localStorage.setItem("userProfile", JSON.stringify(updatedUser));
-    setUser(updatedUser);
-  };
-  
-  const handleNameSave = () => {
+  const checkAchievements = useCallback(async () => {
+    if (!user) return;
+
+    let updatedUser: Partial<typeof user> = {};
+    let statsUpdated = false;
+
+    if (user.streak > (user.highestStreak || 0)) {
+        updatedUser.highestStreak = user.streak;
+        statsUpdated = true;
+    }
+    
+    let newPetsUnlocked: string[] = [];
+    achievementPets.forEach(pet => {
+      let isAlreadyUnlocked = user.unlockedPets.includes(pet.name);
+      if (isAlreadyUnlocked) return;
+
+      let isUnlockedNow = false;
+      if (pet.unlock_criteria.includes('Pomodoro')) {
+        isUnlockedNow = (user.completedSessions || 0) >= (pet.unlock_value || 0);
+      } else if (pet.unlock_criteria.includes('quiz streak')) {
+        isUnlockedNow = (user.highestQuizStreak || 0) >= (pet.unlock_value || 0);
+      }
+
+      if (isUnlockedNow) {
+        newPetsUnlocked.push(pet.name);
+        statsUpdated = true;
+        toast({
+          title: "New Pet Unlocked!",
+          description: `You've unlocked ${pet.name} for your achievements!`,
+          className: "bg-green-100 border-green-300"
+        });
+      }
+    });
+
+    if (newPetsUnlocked.length > 0) {
+      updatedUser.unlockedPets = [...new Set([...user.unlockedPets, ...newPetsUnlocked])];
+    }
+
+    if (statsUpdated) {
+        updateUser(updatedUser);
+    }
+  }, [user, toast, updateUser]);
+
+  useEffect(() => {
+    if (user) {
+        checkAchievements();
+    }
+  }, [user, checkAchievements]);
+
+  const unlockedPetsCount = useMemo(() => {
+    if (!user) return 0;
+    return allPets.filter(pet => {
+      if (!pet.unlock_criteria) return false;
+      if (pet.unlock_criteria.includes('streak') && !pet.unlock_criteria.includes('quiz')) {
+        return (user.highestStreak || 0) >= pet.streak_req;
+      } else if (pet.unlock_criteria.includes('Purchase')) {
+        return user.unlockedPets.includes(pet.name);
+      } else if (pet.unlock_criteria.includes('Pomodoro')) {
+        return (user.completedSessions || 0) >= (pet.unlock_value || 0);
+      } else if (pet.unlock_criteria.includes('quiz streak')) {
+        return (user.highestQuizStreak || 0) >= (pet.unlock_value || 0);
+      }
+      return false;
+    }).length;
+  }, [user]);
+
+  const handleNameSave = async () => {
     if (user && newName.trim()) {
-        const updatedUser = { ...user, name: newName.trim() };
-        saveUser(updatedUser);
+        updateUser({ name: newName.trim() });
         setEditingName(false);
         toast({
           title: "Success",
@@ -128,15 +175,33 @@ export default function ProfilePage() {
         });
     }
   };
+  
+  const handlePetNameEdit = (originalName: string) => {
+    if (!user) return;
+    setEditingPet(originalName);
+    setNewPetName(user.petNames[originalName] || originalName);
+  };
+  
+  const handlePetNameSave = async (originalName: string) => {
+    if (user && newPetName.trim()) {
+        updateUser({
+            petNames: { ...user.petNames, [originalName]: newPetName.trim() }
+        });
+        setEditingPet(null);
+        toast({
+          title: "Pet renamed!",
+          description: `Your pet is now named ${newPetName.trim()}.`,
+          className: "bg-green-100 border-green-300"
+        });
+    }
+  }
 
-  const handleSettingsSave = () => {
+  const handleSettingsSave = async () => {
      if (user) {
-        const updatedUser = { 
-            ...user, 
+        updateUser({
             examDate: examDate ? examDate.toISOString() : undefined,
             passingScore: passingScore,
-        };
-        saveUser(updatedUser);
+        });
         toast({
           title: "Success",
           description: "Your settings have been saved.",
@@ -145,17 +210,18 @@ export default function ProfilePage() {
     }
   }
 
-  const handleResetData = () => {
-      localStorage.clear();
-      document.documentElement.classList.remove('mint', 'sunset', 'rose');
-      router.push('/');
+  const handleLogout = async () => {
+      if(auth) {
+        await signOut(auth);
+        router.push('/');
+      }
   };
 
   const handleAvatarClick = () => {
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && user) {
       if (file.size > 2 * 1024 * 1024) { // 2MB limit
@@ -168,10 +234,9 @@ export default function ProfilePage() {
       }
 
       const reader = new FileReader();
-      reader.onload = (event) => {
+      reader.onload = async (event) => {
         const avatarUrl = event.target?.result as string;
-        const updatedUser = { ...user, avatarUrl };
-        saveUser(updatedUser);
+        updateUser({ avatarUrl });
       };
       reader.readAsDataURL(file);
     }
@@ -184,24 +249,21 @@ export default function ProfilePage() {
     }
   }
 
-  const handleThemeAction = (themeValue: string, cost: number) => {
+  const handleThemeAction = async (themeValue: string, cost: number) => {
     if (!user) return;
     
-    // If theme is unlocked, activate it
     if (user.unlockedThemes.includes(themeValue)) {
-        const updatedUser = { ...user, activeTheme: themeValue };
-        saveUser(updatedUser);
+        updateUser({ activeTheme: themeValue });
         applyTheme(themeValue);
         toast({ title: "Theme Activated!", className: "bg-green-100 border-green-300"});
-    } else { // If theme is locked, try to buy it
+    } else {
         if (user.points >= cost) {
-            const updatedUser = { 
-                ...user, 
-                points: user.points - cost, 
+             const currentPoints = user.points;
+             updateUser({
+                points: currentPoints - cost,
                 unlockedThemes: [...user.unlockedThemes, themeValue],
                 activeTheme: themeValue
-            };
-            saveUser(updatedUser);
+            });
             applyTheme(themeValue);
             toast({ title: "Theme Unlocked!", description: `You spent ${cost} points.`, className: "bg-green-100 border-green-300"});
         } else {
@@ -210,31 +272,150 @@ export default function ProfilePage() {
     }
   }
 
-  const handlePetPurchase = (petName: string, cost: number) => {
+  const handlePetPurchase = async (petName: string, cost: number) => {
      if (!user) return;
       if (user.points >= cost) {
-        const updatedUser = {
-            ...user,
-            points: user.points - cost,
+        const currentPoints = user.points;
+        updateUser({
+            points: currentPoints - cost,
             unlockedPets: [...new Set([...user.unlockedPets, petName])],
-        };
-        saveUser(updatedUser);
+        });
         toast({ title: "Pet Unlocked!", description: `You spent ${cost} points to get ${petName}!`, className: "bg-green-100 border-green-300"});
       } else {
         toast({ variant: "destructive", title: "Not enough points!"});
       }
   }
 
+  const handleSetActivePet = (petName: string) => {
+    if (!user) return;
+    updateUser({ activePet: petName });
+    toast({
+      title: 'Companion Set!',
+      description: `${user.petNames[petName] || petName} is now your active companion.`,
+      className: 'bg-green-100 border-green-300'
+    });
+  }
+
+
   if (!user) {
     return null; // Or a loading spinner
   }
 
+  const PetDisplay = ({ pet }: { pet: PetProfile }) => {
+    let isUnlocked = false;
+
+    if (pet.unlock_criteria.includes('streak') && !pet.unlock_criteria.includes('quiz')) {
+        isUnlocked = (user.highestStreak || 0) >= pet.streak_req;
+    } else if (pet.unlock_criteria.includes('Purchase')) {
+        isUnlocked = user.unlockedPets.includes(pet.name);
+    } else if (pet.unlock_criteria.includes('Pomodoro')) {
+        isUnlocked = (user.completedSessions || 0) >= (pet.unlock_value || 0);
+    } else if (pet.unlock_criteria.includes('quiz streak')) {
+        isUnlocked = (user.highestQuizStreak || 0) >= (pet.unlock_value || 0);
+    }
+
+    const isActivePet = user?.activePet === pet.name || (!user?.activePet && pet.name === 'Rocky');
+
+    return (
+       <div key={pet.name} className={cn(
+           "flex flex-col items-center text-center p-4 rounded-lg border-2 transition-all",
+           isActivePet ? "border-primary bg-primary/5" : "border-transparent"
+        )}>
+        <div className="relative">
+          <Image
+            src={pet.image}
+            alt={pet.name}
+            width={80}
+            height={80}
+            className={cn(
+                "rounded-full bg-muted p-2",
+                isUnlocked ? "animate-bob" : "grayscale opacity-50 blur-sm"
+            )}
+            data-ai-hint={pet.hint}
+          />
+          {!isUnlocked && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
+              <Lock className="h-6 w-6 text-white" />
+            </div>
+          )}
+        </div>
+
+            {isUnlocked ? (
+               editingPet === pet.name ? (
+                <div className="flex items-center gap-1 mt-1">
+                  <Input
+                    value={newPetName}
+                    onChange={(e) => setNewPetName(e.target.value)}
+                    className="text-sm h-7 w-20"
+                    onKeyDown={(e) => e.key === 'Enter' && handlePetNameSave(pet.name)}
+                  />
+                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handlePetNameSave(pet.name)}>
+                    <Check className="h-4 w-4 text-green-500" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center gap-1 mt-1">
+                  <p className="text-sm font-medium">{user.petNames[pet.name] || pet.name}</p>
+                  <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handlePetNameEdit(pet.name)}>
+                    <Edit className="h-3 w-3" />
+                  </Button>
+                </div>
+              )
+            ) : (
+                <p className="text-sm font-medium mt-1">???</p>
+            )}
+             <Badge variant="secondary" className="mt-1 text-center text-wrap h-auto">
+                {pet.unlock_criteria}
+            </Badge>
+            {isUnlocked && (
+                <Button 
+                    variant={isActivePet ? "secondary" : "outline"} 
+                    size="sm" 
+                    className="mt-2 w-full"
+                    onClick={() => handleSetActivePet(pet.name)}
+                    disabled={isActivePet}
+                >
+                    {isActivePet ? (
+                        <><Heart className="mr-2 h-4 w-4 fill-current text-destructive" /> Active</>
+                    ) : (
+                        "Set Active"
+                    )}
+                </Button>
+            )}
+          </div>
+    )
+  }
+
+  if (firebaseUser?.isAnonymous) {
+      return (
+        <div className="container mx-auto max-w-2xl h-full flex flex-col justify-center gap-4">
+             <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Guest Mode</AlertTitle>
+              <AlertDescription>
+                Your progress is saved locally on this device only. Sign in to sync your data across devices.
+              </AlertDescription>
+            </Alert>
+            <Card className="w-full">
+                <CardHeader>
+                    <CardTitle className="text-center font-headline text-2xl">Save Your Progress</CardTitle>
+                    <CardDescription className="text-center">
+                        Sign in with Google to save your points, pets, and streaks. Don't lose your hard work!
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Button className="w-full" onClick={linkGoogleAccount}>
+                        <UserPlus className="mr-2 h-4 w-4" />
+                        Sign In with Google
+                    </Button>
+                </CardContent>
+            </Card>
+        </div>
+      )
+  }
+
   return (
-    <div className="container mx-auto p-4 max-w-2xl">
-      <header className="flex items-center gap-4 mb-6">
-        <h1 className="text-2xl font-bold font-headline">Profile & Settings</h1>
-      </header>
-      
+    <div className="container mx-auto max-w-2xl">
       <Card>
         <CardHeader>
             <CardTitle>Edit Profile</CardTitle>
@@ -282,6 +463,45 @@ export default function ProfilePage() {
                 </div>
             </div>
             
+        </CardContent>
+      </Card>
+      
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>Your Statistics</CardTitle>
+          <CardDescription>A summary of your review journey so far.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="flex flex-col items-center justify-center p-4 bg-muted/50 rounded-lg">
+            <Flame className="h-8 w-8 text-destructive mb-2" />
+            <p className="text-2xl font-bold">{user.streak}</p>
+            <p className="text-sm text-muted-foreground">Current Streak</p>
+          </div>
+           <div className="flex flex-col items-center justify-center p-4 bg-muted/50 rounded-lg">
+            <Gem className="h-8 w-8 text-accent mb-2" />
+            <p className="text-2xl font-bold">{user.points}</p>
+            <p className="text-sm text-muted-foreground">Total Points</p>
+          </div>
+          <div className="flex flex-col items-center justify-center p-4 bg-muted/50 rounded-lg">
+            <HelpCircle className="h-8 w-8 text-primary mb-2" />
+            <p className="text-2xl font-bold">{user.questionsAnswered || 0}</p>
+            <p className="text-sm text-muted-foreground">Questions Answered</p>
+          </div>
+           <div className="flex flex-col items-center justify-center p-4 bg-muted/50 rounded-lg">
+            <Trophy className="h-8 w-8 text-accent mb-2" />
+            <p className="text-2xl font-bold">{user.highestStreak}</p>
+            <p className="text-sm text-muted-foreground">Highest Streak</p>
+          </div>
+          <div className="flex flex-col items-center justify-center p-4 bg-muted/50 rounded-lg">
+            <Clock className="h-8 w-8 text-primary mb-2" />
+            <p className="text-2xl font-bold">{user.completedSessions || 0}</p>
+            <p className="text-sm text-muted-foreground">Pomodoros</p>
+          </div>
+          <div className="flex flex-col items-center justify-center p-4 bg-muted/50 rounded-lg">
+            <Star className="h-8 w-8 text-accent mb-2" />
+            <p className="text-2xl font-bold">{user.highestQuizStreak || 0}</p>
+            <p className="text-sm text-muted-foreground">Highest Quiz Streak</p>
+          </div>
         </CardContent>
       </Card>
 
@@ -386,6 +606,19 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
       
+      <section className="mt-8" id="pet-collection">
+        <h2 className="text-xl font-bold font-headline mb-4">Pet Collection ({unlockedPetsCount}/{allPets.length})</h2>
+        <Card>
+          <CardContent className="p-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {allPets.map((pet) => (
+                <PetDisplay key={pet.name} pet={pet} />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+      
       <Card className="mt-6">
         <CardHeader>
             <CardTitle>Pet Store</CardTitle>
@@ -403,7 +636,7 @@ export default function ProfilePage() {
                             height={80}
                             className={cn(
                                 "rounded-full bg-muted p-2",
-                                isUnlocked && "animate-bob"
+                                isUnlocked ? "animate-bob" : "grayscale opacity-50 blur-sm"
                             )}
                             data-ai-hint={pet.hint}
                         />
@@ -426,7 +659,6 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
 
-
       <Card className="mt-6">
         <CardHeader>
           <CardTitle>About LETReview</CardTitle>
@@ -436,7 +668,7 @@ export default function ProfilePage() {
             This app is a review companion designed to help aspiring educators prepare for the Licensure Examination for Teachers (LET) in the Philippines.
           </p>
           <br />
-          <p className="text-sm text-muted-foreground italic">
+           <p className="text-sm text-muted-foreground italic">
             This app is lovingly dedicated to my girlfriend, Yve, an aspiring teacher who inspired this project.
           </p>
         </CardContent>
@@ -446,15 +678,16 @@ export default function ProfilePage() {
         <CardHeader>
             <CardTitle className="text-destructive">Danger Zone</CardTitle>
         </CardHeader>
-        <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">This action is irreversible. All your progress, points, and pets will be permanently deleted.</p>
-            <Button variant="destructive" className="w-full" onClick={handleResetData}>
-                <LogOut className="mr-2 h-4 w-4" />
-                Reset All Data
-            </Button>
+        <CardContent className="flex flex-col gap-4">
+            <div>
+                <p className="text-sm text-muted-foreground mb-2">Log out of your account.</p>
+                <Button variant="destructive" className="w-full" onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
+                </Button>
+            </div>
         </CardContent>
       </Card>
     </div>
   );
 }
-

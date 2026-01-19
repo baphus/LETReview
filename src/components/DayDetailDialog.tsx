@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { getQuestionForDate } from '@/lib/data';
 import type { DailyProgress, QuizQuestion } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle, Gem, BookOpen, Clock } from 'lucide-react';
+import { CheckCircle, Gem, BookOpen, Clock, HelpCircle } from 'lucide-react';
 
 interface DayDetailDialogProps {
   date: Date | null;
@@ -18,10 +18,15 @@ interface DayDetailDialogProps {
 
 export function DayDetailDialog({ date, onClose, userProgress }: DayDetailDialogProps) {
   const [question, setQuestion] = useState<QuizQuestion | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (date) {
-      setQuestion(getQuestionForDate(date));
+      setIsLoading(true);
+      getQuestionForDate(date).then(q => {
+          setQuestion(q);
+          setIsLoading(false);
+      });
     }
   }, [date]);
 
@@ -60,9 +65,18 @@ export function DayDetailDialog({ date, onClose, userProgress }: DayDetailDialog
                 <div className="text-2xl font-bold">{userProgress?.pomodorosCompleted || 0}</div>
               </CardContent>
             </Card>
-             <Card className="col-span-2">
+            <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Challenges Completed</CardTitle>
+                <CardTitle className="text-sm font-medium">Questions Answered</CardTitle>
+                <HelpCircle className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{userProgress?.questionsAnswered || 0}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Challenges</CardTitle>
                 <BookOpen className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -71,7 +85,9 @@ export function DayDetailDialog({ date, onClose, userProgress }: DayDetailDialog
             </Card>
           </div>
 
-          {question && (
+          {isLoading ? (
+            <p>Loading question details...</p>
+          ) : question && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex justify-between items-center">
@@ -85,12 +101,12 @@ export function DayDetailDialog({ date, onClose, userProgress }: DayDetailDialog
               </CardHeader>
               <CardContent>
                 <p className="text-sm font-semibold">{question.question}</p>
-                <p className="text-sm text-muted-foreground mt-2">Correct Answer: <span className="font-bold">{question.answer}</span></p>
+                <p className="text-sm text-muted-foreground mt-2">Correct Answer: <span className="font-bold">{question.correctAnswer}</span></p>
               </CardContent>
             </Card>
           )}
 
-          {!userProgress && !question && (
+          {!userProgress && !question && !isLoading && (
              <p className="text-center text-muted-foreground">No activity recorded for this day.</p>
           )}
 
@@ -102,5 +118,3 @@ export function DayDetailDialog({ date, onClose, userProgress }: DayDetailDialog
     </Dialog>
   );
 }
-
-    

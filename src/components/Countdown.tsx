@@ -26,7 +26,7 @@ const calculateTimeLeft = (examDate: Date): CountdownTime | null => {
 const StaticCard = ({ value, label }: { value: string, label: string }) => {
   return (
     <div className="flex flex-col items-center">
-      <div className="p-2 rounded-lg bg-primary text-primary-foreground">
+      <div className="p-2 rounded-lg bg-accent text-accent-foreground">
         <span className="text-3xl md:text-5xl font-mono font-bold">{value}</span>
       </div>
       <span className="text-xs font-sans text-muted-foreground mt-1">{label}</span>
@@ -51,7 +51,7 @@ const Countdown = ({ examDate }: { examDate: Date }) => {
 
   if (!timeLeft) {
     return (
-        <div className="text-center p-4 rounded-lg bg-primary text-primary-foreground mb-6">
+        <div className="text-center p-4 rounded-lg bg-accent text-accent-foreground mb-6">
             <h2 className="text-xl font-bold font-headline">Good luck on your exam!</h2>
         </div>
     );
@@ -62,11 +62,11 @@ const Countdown = ({ examDate }: { examDate: Date }) => {
         <h2 className="text-lg font-bold font-headline mb-4">Countdown to Your Exam</h2>
         <div className="flex justify-center items-start gap-2 md:gap-4">
             <StaticCard value={String(timeLeft.days).padStart(2, '0')} label="Days" />
-            <span className="text-3xl md:text-5xl font-mono font-bold text-primary pt-1">:</span>
+            <span className="text-3xl md:text-5xl font-mono font-bold text-accent pt-1">:</span>
             <StaticCard value={String(timeLeft.hours).padStart(2, '0')} label="Hours" />
-            <span className="text-3xl md:text-5xl font-mono font-bold text-primary pt-1">:</span>
+            <span className="text-3xl md:text-5xl font-mono font-bold text-accent pt-1">:</span>
             <StaticCard value={String(timeLeft.minutes).padStart(2, '0')} label="Minutes" />
-            <span className="text-3xl md:text-5xl font-mono font-bold text-primary pt-1">:</span>
+            <span className="text-3xl md:text-5xl font-mono font-bold text-accent pt-1">:</span>
             <StaticCard value={String(timeLeft.seconds).padStart(2, '0')} label="Seconds" />
         </div>
     </div>

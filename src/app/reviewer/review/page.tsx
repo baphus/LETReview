@@ -1,0 +1,182 @@
+"use client";
+
+import { useState, useMemo } from 'react';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Clock, Book, Video, Brain, Bookmark, PlusCircle } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, where, orderBy } from 'firebase/firestore';
+import type { Reviewer as ReviewArticle, Subject } from '@/lib/types';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useUser } from '@/firebase/auth/use-user';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
+const articleTypeIcons = {
+  "article": <Book className="h-4 w-4" />,
+  "video": <Video className="h-4 w-4" />,
+  "mixed": <Brain className="h-4 w-4" />,
+};
+
+const ReviewCardSkeleton = () => (
+    <Card className="flex flex-col">
+        <CardHeader>
+            <div className="flex justify-between items-start">
+                <Skeleton className="h-6 w-20" />
+                <Skeleton className="h-6 w-16" />
+            </div>
+            <Skeleton className="h-7 w-3/4 mt-2" />
+            <Skeleton className="h-4 w-full mt-1" />
+            <Skeleton className="h-4 w-5/6" />
+        </CardHeader>
+        <CardContent className="flex-grow">
+            <Skeleton className="h-5 w-1/2" />
+        </CardContent>
+        <CardFooter className="flex justify-between">
+            <Skeleton className="h-10 w-10" />
+            <Skeleton className="h-10 w-28" />
+        </CardFooter>
+    </Card>
+);
+
+export default function ReviewPage() {
+    const [categoryId, setCategoryId] = useState<'gened' | 'profed' | 'majorship'>('profed');
+    const [subjectId, setSubjectId] = useState<'all' | string>('all');
+    const firestore = useFirestore();
+    const { isAdmin } = useUser();
+
+    const articlesQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        let q = query(
+            collection(firestore, 'reviewers'),
+            where('status', '==', 'published'),
+            where('category', '==', categoryId)
+        );
+
+        if (subjectId !== 'all') {
+            q = query(q, where('subjectId', '==', subjectId));
+        }
+        
+        return q;
+    }, [firestore, categoryId, subjectId]);
+    
+    const subjectsQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return query(collection(firestore, 'subjects'), orderBy('orderIndex'));
+    }, [firestore]);
+
+    const { data: articles, isLoading: isLoadingArticles } = useCollection<ReviewArticle>(articlesQuery);
+    const { data: subjects, isLoading: isLoadingSubjects } = useCollection<Subject>(subjectsQuery);
+
+    const filteredSubjects = useMemo(() => {
+        if (!subjects) return [];
+        return subjects.filter(s => s.categoryId === categoryId);
+    }, [subjects, categoryId]);
+
+    const sortedArticles = useMemo(() => {
+        if (!articles) return [];
+        // Perform client-side sorting
+        return [...articles].sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0));
+    }, [articles]);
+
+    return (
+        <div>
+            <div className="flex flex-col gap-4 mb-6">
+                <Tabs value={categoryId} onValueChange={(value) => {
+                    setCategoryId(value as 'gened' | 'profed' | 'majorship');
+                    setSubjectId('all');
+                }}>
+                    <TabsList className="grid w-full grid-cols-3">
+                        <TabsTrigger value="gened">General Ed</TabsTrigger>
+                        <TabsTrigger value="profed">Professional Ed</TabsTrigger>
+                        <TabsTrigger value="majorship">Majorship</TabsTrigger>
+                    </TabsList>
+                </Tabs>
+                <div className="flex flex-col sm:flex-row gap-4 items-center">
+                    <Select value={subjectId} onValueChange={(value) => setSubjectId(value)}>
+                        <SelectTrigger className="w-full sm:w-auto">
+                            <SelectValue placeholder="Filter by subject" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Subjects</SelectItem>
+                            {isLoadingSubjects ? (
+                                <SelectItem value="loading" disabled>Loading...</SelectItem>
+                            ) : (
+                                filteredSubjects.map(subject => (
+                                    <SelectItem key={subject.id} value={subject.id}>{subject.name}</SelectItem>
+                                ))
+                            )}
+                        </SelectContent>
+                    </Select>
+                    {isAdmin && (
+                        <Link href="/reviewer/review/new" passHref className="w-full sm:w-auto sm:ml-auto">
+                            <Button className="w-full justify-center">
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                New Article
+                            </Button>
+                        </Link>
+                    )}
+                </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {isLoadingArticles && Array.from({ length: 3 }).map((_, i) => <ReviewCardSkeleton key={i} />)}
+                
+                {!isLoadingArticles && sortedArticles.map(article => (
+                    <Card key={article.slug} className="flex flex-col">
+                        <CardHeader>
+                            <div className="flex justify-between items-start">
+                                <Badge variant="secondary" className="capitalize mb-2" style={{ backgroundColor: subjects?.find(s => s.id === article.subjectId)?.color || '#6c757d', color: 'white' }}>
+                                    {subjects?.find(s => s.id === article.subjectId)?.name || article.subjectId}
+                                </Badge>
+                                 <Badge
+                                    className={cn(
+                                        "capitalize",
+                                        article.difficulty === 'easy' && 'bg-green-100 text-green-800',
+                                        article.difficulty === 'medium' && 'bg-yellow-100 text-yellow-800',
+                                        article.difficulty === 'hard' && 'bg-red-100 text-red-800'
+                                    )}
+                                >
+                                    {article.difficulty}
+                                </Badge>
+                            </div>
+                            <CardTitle className="font-headline text-xl">{article.title}</CardTitle>
+                            <CardDescription>{article.excerpt}</CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex-grow">
+                             <div className="flex items-center text-sm text-muted-foreground gap-4">
+                                <div className="flex items-center gap-1">
+                                    {articleTypeIcons[article.reviewerType as keyof typeof articleTypeIcons]}
+                                    <span className="capitalize">{article.reviewerType}</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    <Clock className="h-4 w-4" />
+                                    <span>{article.estimatedTime} min read</span>
+                                </div>
+                            </div>
+                        </CardContent>
+                        <CardFooter className="flex justify-between">
+                            <Button variant="ghost" size="icon">
+                                <Bookmark className="h-5 w-5" />
+                            </Button>
+                            <Link href={`/reviewer/review/${article.slug}`} passHref>
+                                <Button>Start Review</Button>
+                            </Link>
+                        </CardFooter>
+                    </Card>
+                ))}
+            </div>
+
+            {!isLoadingArticles && sortedArticles.length === 0 && (
+                <div className="col-span-full text-center py-10">
+                    <p className="text-muted-foreground">No review articles found for this category.</p>
+                </div>
+            )}
+             <div className="text-center py-10 mt-8 border-t">
+                <p className="text-muted-foreground">More reviewers coming soon.</p>
+            </div>
+        </div>
+    );
+}

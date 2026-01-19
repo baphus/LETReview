@@ -1,56 +1,68 @@
 
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Clock, Coffee, Play, Pause, RotateCcw, Award, Zap, Sparkles, XCircle, ArrowRight, Gem, Bell, Flame } from "lucide-react";
+import { Clock, Coffee, Play, Pause, RotateCcw, Award, Gem, Bell, Flame, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTimer } from "@/hooks/use-timer";
-import { sampleQuestions } from "@/lib/data";
-import type { QuizQuestion } from "@/lib/types";
+import { getQuestions } from "@/lib/data";
+import type { QuizQuestion, UserProfile, DailyProgress } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useUser } from "@/firebase/auth/use-user";
+import { format } from "date-fns";
 
+const getTodayKey = () => format(new Date(), 'yyyy-MM-dd');
 
-const MiniQuiz = ({ onCorrectAnswer, onIncorrectAnswer, onStreak }: { onCorrectAnswer: (points: number) => void, onIncorrectAnswer: () => void, onStreak: () => void }) => {
+const MiniQuiz = ({ onCorrectAnswer, onIncorrectAnswer, onStreak }: { onCorrectAnswer: (points: number, questionId: string) => void, onIncorrectAnswer: () => void, onStreak: () => void }) => {
     const [question, setQuestion] = useState<QuizQuestion | null>(null);
     const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
     const [isAnswered, setIsAnswered] = useState(false);
     const [isCorrect, setIsCorrect] = useState(false);
-    const { quizStreak } = useTimer();
+    const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
+    const [questionIndex, setQuestionIndex] = useState(0);
+
+    useEffect(() => {
+        getQuestions({ difficulty: 'easy', shuffle: true, limit: 10 }).then(setQuizQuestions);
+    }, []);
 
     const getNewQuestion = useCallback(() => {
-        const allQuestions = [...sampleQuestions];
-        const randomIndex = Math.floor(Math.random() * allQuestions.length);
-        const newQuestion = { ...allQuestions[randomIndex] };
+        if (quizQuestions.length === 0) return;
+        
+        const nextIndex = (questionIndex + 1) % quizQuestions.length;
+        setQuestionIndex(nextIndex);
+        
+        const newQuestion = { ...quizQuestions[nextIndex] };
         newQuestion.choices = [...newQuestion.choices].sort(() => Math.random() - 0.5);
         setQuestion(newQuestion);
         setSelectedAnswer(null);
         setIsAnswered(false);
         setIsCorrect(false);
-    }, []);
+    }, [quizQuestions, questionIndex]);
 
     useEffect(() => {
-        getNewQuestion();
-    }, [getNewQuestion]);
+        if (quizQuestions.length > 0) {
+            getNewQuestion();
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [quizQuestions]);
 
     const handleAnswer = (answer: string) => {
-        if (isAnswered) return;
+        if (isAnswered || !question) return;
 
-        const correct = answer === question?.answer;
+        const correct = answer === question.correctAnswer;
         setSelectedAnswer(answer);
         setIsCorrect(correct);
         setIsAnswered(true);
 
         if (correct) {
-            const { quizStreak } = useTimer.getState();
-            const pointsGained = 1 * (quizStreak + 1);
-            onCorrectAnswer(pointsGained);
+            const currentStreak = useTimer.getState().quizStreak;
+            const pointsGained = 1 * (currentStreak + 1);
+            onCorrectAnswer(pointsGained, question.id);
             onStreak();
-            setTimeout(() => {
-                getNewQuestion();
-            }, 1200); 
+            setTimeout(getNewQuestion, 1200); 
         } else {
             onIncorrectAnswer();
         }
@@ -67,7 +79,7 @@ const MiniQuiz = ({ onCorrectAnswer, onIncorrectAnswer, onStreak }: { onCorrectA
                 <p className="text-center font-semibold">{question.question}</p>
                 <div className="grid grid-cols-1 gap-2">
                     {question.choices.map((choice, index) => {
-                        const isTheCorrectAnswer = choice === question.answer;
+                        const isTheCorrectAnswer = choice === question.correctAnswer;
                         const isSelected = choice === selectedAnswer;
 
                         return (
@@ -122,7 +134,7 @@ export default function TimerPage() {
     timerEnded
   } = useTimer();
   
-  const { toast } = useToast();
+  const { user, updateUser } = useUser();
   const [showCombo, setShowCombo] = useState(false);
   const [showPoints, setShowPoints] = useState<{ show: boolean, points: number }>({ show: false, points: 0 });
 
@@ -137,26 +149,54 @@ export default function TimerPage() {
   }, [time, mode, FOCUS_TIME, SHORT_BREAK_TIME, LONG_BREAK_TIME]);
 
   
-  const handleCorrectAnswer = (points: number) => {
-    handleCorrectQuizAnswer(points);
+  const handleCorrectAnswer = useCallback(async (points: number, questionId: string) => {
+    handleCorrectQuizAnswer(); // This updates the local timer state
+    
+    if (user) {
+      const todayKey = getTodayKey();
+      const dailyProgress = user.dailyProgress?.[todayKey] || {};
+      
+      const newStreak = (quizStreak || 0) + 1;
+      const newHighestStreak = Math.max(highestQuizStreak || 0, newStreak);
+      
+      let updates: Partial<UserProfile> = {
+        points: (user.points || 0) + points,
+      };
+
+      let dailyProgressUpdate: Partial<DailyProgress> = {
+        pointsEarned: (dailyProgress.pointsEarned || 0) + points,
+      };
+
+      if (newHighestStreak > (user.highestQuizStreak || 0)) {
+        updates.highestQuizStreak = newHighestStreak;
+      }
+      
+      if (!user.answeredQuestionIds?.includes(questionId)) {
+          updates.questionsAnswered = (user.questionsAnswered || 0) + 1;
+          updates.answeredQuestionIds = [...(user.answeredQuestionIds || []), questionId];
+          dailyProgressUpdate.questionsAnswered = (dailyProgress.questionsAnswered || 0) + 1;
+      }
+
+      updates.dailyProgress = {
+          ...user.dailyProgress,
+          [todayKey]: {
+              ...dailyProgress,
+              ...dailyProgressUpdate
+          }
+      };
+
+      updateUser(updates);
+    }
+    
     setShowPoints({ show: true, points: points });
-    setTimeout(() => {
-        setShowPoints({ show: false, points: 0 });
-    }, 1500);
-  };
-  
-   const handleIncorrectAnswer = () => {
-    handleIncorrectQuizAnswer();
-  };
+    setTimeout(() => setShowPoints({ show: false, points: 0 }), 1500);
+  }, [user, quizStreak, highestQuizStreak, updateUser, handleCorrectQuizAnswer]);
   
   const handleStreak = () => {
-    // quizStreak from useTimer is not updated immediately, so we get it from the store
     const currentStreak = useTimer.getState().quizStreak;
-    if (currentStreak > 1) { // Only show combo after the first correct answer in a streak
+    if (currentStreak > 1) {
       setShowCombo(true);
-      setTimeout(() => {
-        setShowCombo(false);
-      }, 1500); // Duration of the animation
+      setTimeout(() => setShowCombo(false), 1500);
     }
   }
 
@@ -166,7 +206,6 @@ export default function TimerPage() {
   
   const handleStartNextSession = (nextMode: "shortBreak" | "longBreak") => {
     setMode(nextMode);
-    // Add a slight delay to allow the mode to update before starting the timer
     setTimeout(() => toggleTimer(), 100); 
   }
 
@@ -184,12 +223,7 @@ export default function TimerPage() {
 
 
   return (
-    <div className="container mx-auto p-4 max-w-2xl flex flex-col">
-      <header className="flex items-center gap-2 mb-6">
-        <Clock className="h-8 w-8 text-primary" />
-        <h1 className="text-3xl font-bold font-headline">Pomodoro Timer</h1>
-      </header>
-
+    <div className="container mx-auto max-w-2xl flex flex-col">
        <div className="flex justify-center mb-6">
           <Tabs 
             value={mode} 
@@ -266,7 +300,7 @@ export default function TimerPage() {
             <div className="relative">
                 <MiniQuiz 
                     onCorrectAnswer={handleCorrectAnswer} 
-                    onIncorrectAnswer={handleIncorrectAnswer} 
+                    onIncorrectAnswer={handleIncorrectQuizAnswer} 
                     onStreak={handleStreak}
                 />
                  {showCombo && useTimer.getState().quizStreak > 1 && (

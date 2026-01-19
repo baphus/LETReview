@@ -12,17 +12,21 @@ import {
   Trophy,
   Shuffle,
   Lightbulb,
+  PlusCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { sampleQuestions } from "@/lib/data";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getQuestions } from "@/lib/data";
 import type { QuizQuestion } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useUser } from "@/firebase/auth/use-user";
+import Link from 'next/link';
 
 
 const QuizCard: FC<{ 
@@ -35,7 +39,7 @@ const QuizCard: FC<{
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(userAnswer || null);
 
   const handleAnswerClick = (answer: string) => {
-    const correct = answer === question.answer;
+    const correct = answer === question.correctAnswer;
     setSelectedAnswer(answer);
     onAnswer(correct, answer);
   };
@@ -54,7 +58,7 @@ const QuizCard: FC<{
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {question.choices.map((choice, index) => {
                 const isSelected = selectedAnswer === choice;
-                const isTheCorrectAnswer = choice === question.answer;
+                const isTheCorrectAnswer = choice === question.correctAnswer;
                 
                 let isDisabled = false;
                 if (!isChallenge && hasAnswered) {
@@ -78,7 +82,7 @@ const QuizCard: FC<{
                         key={`${choice}-${index}`}
                         onClick={() => !isDisabled && handleAnswerClick(choice)}
                         className={cn(
-                            "p-4 transition-all",
+                            "p-4 transition-all rounded-lg",
                             isChallenge ? getChallengeClass() : getNonChallengeClass(),
                             isDisabled ? "cursor-not-allowed" : "cursor-pointer"
                         )}
@@ -92,7 +96,7 @@ const QuizCard: FC<{
                 )
             })}
         </div>
-        {!isChallenge && hasAnswered && selectedAnswer !== question.answer && question.explanation && (
+        {!isChallenge && hasAnswered && selectedAnswer !== question.correctAnswer && question.explanation && (
            <p className="text-sm text-muted-foreground mt-4 p-2 bg-muted rounded-md">{question.explanation}</p>
         )}
       </CardContent>
@@ -102,39 +106,59 @@ const QuizCard: FC<{
 
 
 interface ChallengeAnswer {
-    questionId: number;
+    questionId: string;
     userAnswer: string;
     correctAnswer: string;
     isCorrect: boolean;
     question: string;
 }
 
+const QuestionSkeleton = () => (
+    <Card className="w-full min-h-80 shadow-lg relative p-6">
+      <CardHeader className="p-0 mb-4">
+        <Skeleton className="h-8 w-3/4" />
+      </CardHeader>
+      <CardContent className="p-0">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+        </div>
+      </CardContent>
+    </Card>
+)
+
 export default function QuizPage() {
   const router = useRouter();
+  const { user, isAdmin, updateUser } = useUser();
 
-  const [category, setCategory] = useState<"gen_education" | "professional">("gen_education");
+  const [category, setCategory] = useState<'gened' | 'profed' | 'majorship'>("gened");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [quizScore, setQuizScore] = useState(0);
   const [showResults, setShowResults] = useState(false);
   const [answeredCurrent, setAnsweredCurrent] = useState(false);
   const [challengeAnswers, setChallengeAnswers] = useState<ChallengeAnswer[]>([]);
   const [isShuffled, setIsShuffled] = useState(false);
+  const [questions, setQuestions] = useState<QuizQuestion[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
   const { toast } = useToast();
 
-  const questions = useMemo(() => {
-    let baseQuestions = sampleQuestions
-      .filter((q) => q.category === category);
-
-    if(isShuffled) {
-        return [...baseQuestions].sort(() => Math.random() - 0.5)
-            .map(q => ({ ...q, choices: [...q.choices].sort(() => Math.random() - 0.5) }));
-    }
-    
-    return baseQuestions
-      .map(q => ({ ...q, choices: [...q.choices].sort(() => Math.random() - 0.5) }));
-
+  const fetchAndSetQuestions = useCallback(async () => {
+    setIsLoading(true);
+    const fetchedQuestions = await getQuestions({
+        category,
+        shuffle: isShuffled,
+    });
+    setQuestions(fetchedQuestions);
+    setIsLoading(false);
   }, [category, isShuffled]);
+
+  useEffect(() => {
+    fetchAndSetQuestions();
+  }, [fetchAndSetQuestions]);
+
 
   const resetQuizState = useCallback(() => {
     setCurrentIndex(0);
@@ -142,7 +166,8 @@ export default function QuizPage() {
     setShowResults(false);
     setChallengeAnswers([]);
     setAnsweredCurrent(false);
-  }, []);
+    fetchAndSetQuestions();
+  }, [fetchAndSetQuestions]);
 
 
   const currentQuestion = questions[currentIndex];
@@ -167,6 +192,13 @@ export default function QuizPage() {
   };
   
   const handleAnswer = (correct: boolean, answer: string) => {
+    if (correct && user && !user.answeredQuestionIds?.includes(currentQuestion.id)) {
+        updateUser({ 
+            questionsAnswered: (user.questionsAnswered || 0) + 1,
+            answeredQuestionIds: [...(user.answeredQuestionIds || []), currentQuestion.id]
+        });
+    }
+
     const newAnswers = [...challengeAnswers];
     const existingAnswerIndex = newAnswers.findIndex(a => a.questionId === currentQuestion.id);
     
@@ -180,7 +212,7 @@ export default function QuizPage() {
         newAnswers.push({
             questionId: currentQuestion.id,
             userAnswer: answer,
-            correctAnswer: currentQuestion.answer,
+            correctAnswer: currentQuestion.correctAnswer,
             isCorrect: correct,
             question: currentQuestion.question,
         });
@@ -212,7 +244,8 @@ export default function QuizPage() {
   const handleShuffleToggle = () => {
     setIsShuffled(prev => !prev);
     setCurrentIndex(0);
-    resetQuizState();
+    setChallengeAnswers([]);
+    setAnsweredCurrent(false);
     toast({
         title: isShuffled ? "Shuffle Off" : "Shuffle On",
         description: isShuffled ? "Questions are now in order." : "Questions have been shuffled.",
@@ -222,9 +255,10 @@ export default function QuizPage() {
   useEffect(() => {
     resetQuizState();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category, isShuffled]);
+  }, [category]);
   
   useEffect(() => {
+    if(!currentQuestion) return;
     setAnsweredCurrent(
         challengeAnswers.some(a => a.questionId === currentQuestion?.id)
     );
@@ -236,9 +270,9 @@ export default function QuizPage() {
     if (!currentQuestion) return null;
     return challengeAnswers.find(a => a.questionId === currentQuestion.id)?.userAnswer;
   }, [currentQuestion, challengeAnswers]);
-
+  
   return (
-    <div className="container mx-auto p-4 max-w-2xl">
+    <div className="container mx-auto max-w-2xl">
        <Dialog open={showResults} onOpenChange={handleDialogClose}>
         <DialogContent className="flex flex-col h-[90dvh] max-h-[600px]">
           <DialogHeader className="items-center text-center">
@@ -249,59 +283,55 @@ export default function QuizPage() {
             </DialogDescription>
           </DialogHeader>
           
-          <div className="flex-1 min-h-0 flex flex-col">
-              <ScrollArea className="flex-1 -mr-6 pr-6">
-                  <div className="space-y-4">
-                      {challengeAnswers.map(answer => (
-                          <div key={answer.questionId} className="text-sm p-3 rounded-md bg-muted">
-                              <p className="font-semibold mb-1">{answer.question}</p>
-                              {answer.isCorrect ? (
-                                  <div className="flex items-center gap-2 text-green-600">
-                                      <CheckCircle className="h-4 w-4 shrink-0" /> 
+          <ScrollArea className="flex-1 -mr-6 pr-6">
+              <div className="space-y-4">
+                  {challengeAnswers.map(answer => (
+                      <div key={answer.questionId} className="text-sm p-3 rounded-lg bg-muted">
+                          <p className="font-semibold mb-1">{answer.question}</p>
+                          {answer.isCorrect ? (
+                              <div className="flex items-center gap-2 text-green-600">
+                                  <CheckCircle className="h-4 w-4 shrink-0" /> 
+                                  <span>Your answer: {answer.userAnswer}</span>
+                              </div>
+                          ) : (
+                              <div className="space-y-1">
+                                  <div className="flex items-center gap-2 text-red-600">
+                                      <XCircle className="h-4 w-4 shrink-0" />
                                       <span>Your answer: {answer.userAnswer}</span>
                                   </div>
-                              ) : (
-                                  <div className="space-y-1">
-                                      <div className="flex items-center gap-2 text-red-600">
-                                          <XCircle className="h-4 w-4 shrink-0" />
-                                          <span>Your answer: {answer.userAnswer}</span>
-                                      </div>
-                                          <div className="flex items-center gap-2 text-green-600 pl-6">
-                                          <span>Correct answer: {answer.correctAnswer}</span>
-                                      </div>
+                                      <div className="flex items-center gap-2 text-green-600 pl-6">
+                                      <span>Correct answer: {answer.correctAnswer}</span>
                                   </div>
-                              )}
-                          </div>
-                      ))}
-                  </div>
-              </ScrollArea>
-          </div>
+                              </div>
+                          )}
+                      </div>
+                  ))}
+              </div>
+          </ScrollArea>
 
           <DialogFooter className="mt-4 pt-4 border-t">
-            <Button onClick={handleDialogClose} className="w-full">Try Again</Button>
+            <Button onClick={handleDialogClose} className="w-full">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Go Back
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
       
         <>
-            <header className="flex flex-col gap-4 mb-6">
-                <div className="flex items-center gap-2">
-                <Lightbulb className="h-8 w-8 text-primary" />
-                <h1 className="text-3xl font-bold font-headline">Quiz Mode</h1>
-                </div>
-            </header>
-            
-            <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
-                <Tabs value={category} onValueChange={(value) => {
-                    setCategory(value as "gen_education" | "professional");
-                }}>
-                <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="gen_education">General Education</TabsTrigger>
-                    <TabsTrigger value="professional">Professional Education</TabsTrigger>
-                </TabsList>
-                </Tabs>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center mb-6">
+                <Select value={category} onValueChange={(value) => setCategory(value as "gened" | "profed" | "majorship")}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select a category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="gened">General Education</SelectItem>
+                        <SelectItem value="profed">Professional Education</SelectItem>
+                        <SelectItem value="majorship">Majorship</SelectItem>
+                    </SelectContent>
+                </Select>
 
-                <div className="flex gap-2 w-full sm:w-auto">
+                <div className="flex justify-end gap-2 w-full">
                      <Button 
                         variant={isShuffled ? "default" : "outline"} 
                         size="icon" 
@@ -311,12 +341,21 @@ export default function QuizPage() {
                      >
                         <Shuffle className="h-4 w-4" />
                     </Button>
+                    {isAdmin && (
+                        <Link href="/reviewer/questions/new" passHref>
+                            <Button variant="outline" size="icon" className="shrink-0" aria-label="Add new question">
+                                <PlusCircle className="h-4 w-4" />
+                            </Button>
+                        </Link>
+                    )}
                 </div>
             </div>
         </>
 
       <div className="my-6">
-        {questions.length > 0 && currentQuestion ? (
+        {isLoading ? (
+          <QuestionSkeleton />
+        ) : questions.length > 0 && currentQuestion ? (
           <>
             <QuizCard 
                 question={currentQuestion} 

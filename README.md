@@ -48,6 +48,7 @@ This project is built with a modern, robust, and scalable tech stack:
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/)
 - **UI Components**: [ShadCN/UI](https://ui.shadcn.com/)
 - **Icons**: [Lucide React](https://lucide.dev/)
+- **Backend**: [Firebase](https://firebase.google.com/) (Authentication and Firestore)
 
 ## 🚀 Getting Started
 

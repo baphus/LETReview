@@ -10,7 +10,7 @@ import { Badge } from "./ui/badge";
 
 const navItems = [
   { href: "/home", label: "Home", icon: Home },
-  { href: "/review", label: "Review", icon: BookOpen },
+  { href: "/reviewer/review", label: "Reviewer", icon: BookOpen },
   { href: "/quiz", label: "Quiz", icon: Lightbulb },
   { href: "/daily", label: "Daily", icon: CalendarDays },
   { href: "/timer", label: "Timer", icon: Clock },
@@ -40,13 +40,13 @@ export default function BottomNav() {
       <div className="flex justify-around items-center h-16">
         {navItems.map(({ href, label, icon: Icon }) => {
           let isActivePath = false;
-          // The /daily link is active on the /daily page OR on the /review page if it's a challenge
+          // The /daily link is active on the /daily page OR on the /reviewer/questions page if it's a challenge
           if (href === '/daily') {
-            isActivePath = pathname.startsWith('/daily') || (pathname.startsWith('/review') && isChallenge);
+            isActivePath = pathname.startsWith('/daily') || (pathname.startsWith('/reviewer/questions') && isChallenge);
           } 
-          // The /review link is active on the /review page ONLY if it's NOT a challenge
-          else if (href === '/review') {
-            isActivePath = pathname.startsWith('/review') && !isChallenge;
+          // The /reviewer link is active on the /reviewer pages ONLY if it's NOT a challenge
+          else if (href.startsWith('/reviewer')) {
+            isActivePath = pathname.startsWith('/reviewer') && !isChallenge;
           } 
           // For all other links, use the default startsWith logic
           else {

@@ -1,0 +1,37 @@
+
+[
+  {
+    "id": "cognitive-development-theories",
+    "title": "Key Theories of Cognitive Development",
+    "slug": "cognitive-development-theories",
+    "category": "profed",
+    "excerpt": "An overview of the major theories of cognitive development, focusing on the works of Piaget, Vygotsky, and the Information Processing model.",
+    "content": "# Key Theories of Cognitive Development\n\nCognitive development is a field of study in neuroscience and psychology focusing on a child's development in terms of information processing, conceptual resources, perceptual skill, language learning, and other aspects of the developed adult brain and cognitive psychology.\n\n---\n\n## 1. Piaget's Stage Theory\n\nJean Piaget, a Swiss psychologist, proposed a theory of cognitive development that unfolds in four distinct stages.\n\n### Key Concepts\n- **Schemas**: Basic building blocks of intelligent behavior – a way of organizing knowledge.\n- **Assimilation**: Using an existing schema to deal with a new object or situation.\n- **Accommodation**: This happens when the existing schema (knowledge) does not work, and needs to be changed to deal with a new object or situation.\n- **Equilibration**: The force which moves development along.\n\n### The Stages\n1.  **Sensorimotor Stage (Birth-2 years)**: The infant knows the world through their movements and sensations.\n2.  **Preoperational Stage (2-7 years)**: Children begin to think symbolically and learn to use words and pictures to represent objects.\n3.  **Concrete Operational Stage (7-11 years)**: Children begin to think logically about concrete events.\n4.  **Formal Operational Stage (11+ years)**: The adolescent or young adult begins to think abstractly and reason about hypothetical problems.\n\n> Piaget's theory has been highly influential, but critics point out that it may underestimate children's abilities and ignore cultural factors.\n\n## 2. Vygotsky's Sociocultural Theory\n\nLev Vygotsky, a Russian psychologist, emphasized the fundamental role of social interaction in the development of cognition.\n\n### Key Concepts\n- **More Knowledgeable Other (MKO)**: Anyone who has a better understanding or a higher ability level than the learner, with respect to a particular task, process, or concept.\n- **Zone of Proximal Development (ZPD)**: The space between what a learner can do without assistance and what a learner can do with adult guidance or in collaboration with more capable peers.\n- **Scaffolding**: The support given during the learning process which is tailored to the needs of the student with the intention of helping the student achieve his/her learning goals.\n\n## 3. Information Processing Theory\n\nThis approach sees the human mind as a computer-like system that processes information through a series of stages.\n\n- **Sensory Register**: Receives information from the senses.\n- **Short-Term/Working Memory**: Holds information temporarily for processing.\n- **Long-Term Memory**: Stores information for an extended period.\n\n---\n\n### Summary\n\n| Theory | Main Idea | Key Terms |\n| :--- | :--- | :--- |\n| **Piaget** | Development happens in distinct stages. | Schema, Assimilation, Accommodation |\n| **Vygotsky** | Social interaction is key to development. | ZPD, MKO, Scaffolding |\n| **Info-Processing**| Mind is like a computer. | Sensory Register, Working Memory |",
+    "contentFormat": "markdown",
+    "subjectId": "educational-psychology",
+    "topicIds": ["cognitive-development"],
+    "difficulty": "medium",
+    "reviewerType": "article",
+    "estimatedTime": 25,
+    "status": "published",
+    "orderIndex": 0,
+    "publishedAt": "2024-01-01T12:00:00Z"
+  },
+  {
+    "id": "profed-foundations-notes",
+    "title": "Foundations of Education Notes",
+    "slug": "foundations-of-education-notes",
+    "category": "profed",
+    "excerpt": "A compilation of notes on educational philosophies (Isms) and the legal bases of Philippine education (Republic Acts).",
+    "content": "# Foundations of Education Notes\n\nThis is a compilation of notes from Franklin - Online LET, CSE, IELTS & Celpip Private Tutorial.\n\n---\n\n## Isms in Education\n\n*   **NATURALISM**: Only nature exists; nature is better than civilization.\n*   **IDEALISM**: Focuses on spiritual, values, morals; uses the Socratic method.\n*   **REALISM**: The natural world is real, values are natural and absolute.\n*   **PRAGMATISM/EXPERIMENTALISM**: Practical, problem-solving, knowledge is what works.\n*   **ESSENTIALISM**: Focus on 3Rs (now 4Rs), essential knowledge and skills.\n*   **PROGRESSIVISM**: Focus on the process of development, child's needs and interests.\n*   **EXISTENTIALISM**: Knowledge is subjective, man shapes his being.\n*   **PERENNIALISM**: Education that lasts for centuries, knowledge is eternally valid.\n*   **SOCIAL RECONSTRUCTIVISM**: Aims for a better society, community-based learning.\n*   **BEHAVIORISM**: Learning is a change in behavior (stimulus-response).\n*   **EMPIRICISM**: Knowledge comes through the five senses.\n*   **STRUCTURALISM**: Focus on complex mental experiences like images and feelings.\n*   **FUNCTIONALISM**: Focus on motivation, thinking, and learning.\n*   **PURPOSIVISM**: Individual hormones are responsible for the motive to strive towards objectives.\n*   **PHILOSOPHICAL ANALYSIS**: Reality is what is verifiable; truth corresponds to reality.\n\n---\n\n## Republic Acts in Education\n\n*   **RA 9155**: Governance of Basic Education Act of 2001\n*   **RA 6728**: GASTPE (Government Assistance to Students and Teachers in Private Education)\n*   **RA 7722**: Creating CHED (Commission on Higher Education)\n*   **RA 7784**: Centers of Excellence Act\n*   **RA 7796**: Creating TESDA (Technical Education and Skills Development Authority)\n*   **RA 6655**: Free Public Secondary Education Act of 1988\n*   **RA 10533**: Enhance Basic Education Act of 2013 (K-12 Program)\n*   **RA 10627**: Anti-Bullying Act of 2013\n*   **RA 7877**: Anti-Sexual Harassment Act of 1995\n*   **RA 9163**: NSTP (National Service Training Program) Act of 2001",
+    "contentFormat": "markdown",
+    "subjectId": "the-teaching-profession",
+    "topicIds": ["educational-philosophies", "legal-bases-of-education"],
+    "difficulty": "medium",
+    "reviewerType": "article",
+    "estimatedTime": 45,
+    "status": "published",
+    "orderIndex": 2,
+    "publishedAt": "2024-05-22T12:00:00Z"
+  }
+]

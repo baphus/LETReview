@@ -1,0 +1,27 @@
+
+[
+  {
+    "id": "educational-psychology",
+    "categoryId": "profed",
+    "name": "Educational Psychology",
+    "slug": "educational-psychology",
+    "color": "#3F51B5",
+    "orderIndex": 0
+  },
+  {
+    "id": "general-education-concepts",
+    "categoryId": "gened",
+    "name": "General Education Concepts",
+    "slug": "general-education-concepts",
+    "color": "#4CAF50",
+    "orderIndex": 1
+  },
+  {
+    "id": "the-teaching-profession",
+    "categoryId": "profed",
+    "name": "The Teaching Profession",
+    "slug": "the-teaching-profession",
+    "color": "#FFC107",
+    "orderIndex": 2
+  }
+]
