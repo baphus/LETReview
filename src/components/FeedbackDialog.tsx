@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -83,7 +82,6 @@ export function FeedbackDialog() {
           requestResourceData: feedbackData,
         });
         errorEmitter.emit('permission-error', permissionError);
-        console.error("Error submitting feedback:", error);
       })
       .finally(() => {
         setIsSubmitting(false);
