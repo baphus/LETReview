@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { User, Flame, Edit, Check, Lock, Lightbulb, HelpCircle, X, BookOpen, Brain, Heart } from "lucide-react";
+import { User, Flame, Edit, Check, Lock, Lightbulb, HelpCircle, X, BookOpen, Brain, Heart, CheckCircle } from "lucide-react";
 import Image from "next/image";
 import { getQuestionOfTheDay, streakPets, achievementPets, rarePets } from "@/lib/data";
 import type { QuizQuestion, Reviewer, Topic, PetProfile, Subject } from "@/lib/types";
@@ -50,7 +50,7 @@ export default function HomePage() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [questionOfTheDay, setQuestionOfTheDay] = useState<QuizQuestion | null>(null);
   const [view, setView] = useState<'week' | 'month'>('week');
-  const [showLegend, setShowLegend] = useState(true);
+  const [showLegend, setShowLegend] = useState(false);
 
   const [featuredArticle, setFeaturedArticle] = useState<Reviewer | null>(null);
   const [randomTopic, setRandomTopic] = useState<Topic | null>(null);
@@ -128,7 +128,7 @@ export default function HomePage() {
   }, [user, todayKey]);
 
   const handleDayClick = (day: Date) => {
-    if (!isFuture(day)) {
+    if (isToday(day) || !isFuture(day)) {
       setSelectedDate(day);
     }
   };
@@ -283,7 +283,9 @@ export default function HomePage() {
              {showLegend && (
                 <Alert className="mb-4 mx-4 md:mx-0">
                     <AlertDescription className="flex items-center justify-between text-sm">
-                    <span>Your current streak is marked with a flame (🔥) and completed Questions of the Day are marked with a check (✅). Click a past day to see details.</span>
+                    <span className="flex items-center gap-1.5 flex-wrap">
+                        Streak days are marked with <Flame className="h-4 w-4 text-destructive inline-block" />, and completed Questions of the Day with a <CheckCircle className="h-4 w-4 text-green-500 inline-block" />. Click a day for details.
+                    </span>
                     <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => setShowLegend(false)}>
                         <X className="h-4 w-4 text-muted-foreground"/>
                         <span className="sr-only">Hide Legend</span>
