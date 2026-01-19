@@ -45,7 +45,7 @@ export default function ReviewArticlePage() {
     const params = useParams();
     const slug = params.slug as string;
     const firestore = useFirestore();
-    const { user, isAdmin } = useUser();
+    const { user, isAdmin, firebaseUser } = useUser();
     const { toast } = useToast();
 
     const articleQuery = useMemoFirebase(() => {
@@ -57,11 +57,11 @@ export default function ReviewArticlePage() {
     const article = articles?.[0];
 
     const handleMarkAsComplete = () => {
-        if (!user || !firestore || !article) {
+        if (!user || !firestore || !article || firebaseUser?.isAnonymous) {
             toast({
                 variant: 'destructive',
-                title: 'Error',
-                description: 'You must be logged in to save progress.',
+                title: 'Sign In Required',
+                description: 'You must be signed in to save progress.',
             });
             return;
         }
@@ -74,6 +74,13 @@ export default function ReviewArticlePage() {
         };
 
         setDoc(progressRef, progressData, { merge: true })
+            .then(() => {
+                toast({
+                    title: "Progress Saved!",
+                    description: "You've marked this article as completed.",
+                    className: "bg-green-100 border-green-300",
+                });
+            })
             .catch(async (serverError) => {
                 console.error("Error marking as complete: ", serverError);
                 toast({
@@ -88,12 +95,6 @@ export default function ReviewArticlePage() {
                 });
                 errorEmitter.emit('permission-error', permissionError);
             });
-        
-        toast({
-            title: "Progress Saved!",
-            description: "You've marked this article as completed.",
-            className: "bg-green-100 border-green-300",
-        });
     };
 
     if (isLoading) {
@@ -148,18 +149,20 @@ export default function ReviewArticlePage() {
                         </Link>
                     </CardFooter>
                 </Card>
-                 <Card>
-                    <CardHeader>
-                        <CardTitle>Mark as Complete</CardTitle>
-                        <CardDescription>Keep track of your progress and move on.</CardDescription>
-                    </CardHeader>
-                    <CardFooter>
-                       <div className="w-full flex gap-2">
-                            <Button variant="secondary" className="flex-1" onClick={handleMarkAsComplete}>Mark as Completed</Button>
-                            {isAdmin && article && <AddQuestionDialog article={article} />}
-                       </div>
-                    </CardFooter>
-                </Card>
+                {firebaseUser && !firebaseUser.isAnonymous && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Mark as Complete</CardTitle>
+                            <CardDescription>Keep track of your progress and move on.</CardDescription>
+                        </CardHeader>
+                        <CardFooter>
+                        <div className="w-full flex gap-2">
+                                <Button variant="secondary" className="flex-1" onClick={handleMarkAsComplete}>Mark as Completed</Button>
+                                {isAdmin && article && <AddQuestionDialog article={article} />}
+                        </div>
+                        </CardFooter>
+                    </Card>
+                )}
             </div>
             
             <div className="markdown-content">
@@ -208,5 +211,3 @@ export default function ReviewArticlePage() {
         </article>
     );
 }
-
-
