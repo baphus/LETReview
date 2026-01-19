@@ -92,7 +92,7 @@ export function ActivityCalendar({ dailyProgress, onDayClick, view }: ActivityCa
                     <div
                       onClick={() => !isDayFuture && onDayClick(day)}
                       className={cn(
-                        "relative p-1.5 sm:p-2 border-b border-r flex flex-col justify-between transition-colors min-h-28 md:aspect-square",
+                        "relative p-1.5 sm:p-2 border-b border-r flex flex-col justify-between transition-colors h-28 md:h-auto md:aspect-square",
                         isDayFuture ? "bg-muted/10 cursor-not-allowed" : `hover:bg-primary/5 cursor-pointer`,
                         getHeatColor(points),
                         isDayToday && "ring-2 ring-primary ring-inset",
