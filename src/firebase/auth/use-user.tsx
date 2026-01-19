@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useAuth, useFirestore } from '@/firebase';
@@ -42,15 +41,16 @@ export const useUser = () => {
     const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     
-    // We use a ref to track if we are currently processing a redirect merge
-    // to prevent the snapshot listener from creating a duplicate/empty user.
-    const isMergingRef = useRef(false);
+    // This ref is used to prevent a race condition where the onSnapshot
+    // listener might create a default user profile before the redirect
+    // result has been processed.
+    const isProcessingRedirect = useRef(false);
 
     const router = useRouter();
     const auth = useAuth();
     const firestore = useFirestore();
 
-    // 1. Initialize Local User (Guest)
+    // 1. Initialize Local User (Guest) State
     useEffect(() => {
         if (typeof window !== 'undefined') {
             try {
@@ -79,95 +79,55 @@ export const useUser = () => {
         }
     }, []);
 
-    const clearLocalUser = useCallback(() => {
-        if (typeof window !== 'undefined') {
-            localStorage.removeItem('localUser');
-            const defaultUser = createDefaultUser();
-            setLocalUser(defaultUser);
-            localStorage.setItem('localUser', JSON.stringify(defaultUser));
-        }
-    }, []);
-
-    // 2. Handle Redirect Results (The Merge Logic)
-    // This must run independently of onAuthStateChanged to catch the return from Google
+    // 2. Handle Redirect Result
+    // This effect runs once on app load to check if the user is returning from a Google Sign-In.
     useEffect(() => {
-        if (!auth || !firestore) return;
-
-        const checkRedirect = async () => {
-            try {
-                const result = await getRedirectResult(auth);
-                
-                if (result && result.user) {
-                    isMergingRef.current = true; // Block snapshot creation
-                    const googleUser = result.user;
-                    const userRef = doc(firestore, "users", googleUser.uid);
-                    
-                    const { creationTime, lastSignInTime } = result.user.metadata;
-                    const isNewUser = creationTime === lastSignInTime;
-
-                    if (isNewUser) {
-                         const savedGuestUserRaw = localStorage.getItem('localUser');
-                         const guestUser = savedGuestUserRaw ? JSON.parse(savedGuestUserRaw) : null;
-                         
-                         if (guestUser) {
-                            const mergedData: UserProfile = {
-                                ...guestUser,
-                                uid: googleUser.uid,
-                                name: googleUser.displayName || guestUser.name,
-                                email: googleUser.email || '',
-                                avatarUrl: googleUser.photoURL || guestUser.avatarUrl,
-                                createdAt: serverTimestamp(),
-                                hasCompletedOnboarding: false,
-                            };
-                            
-                            await setDoc(userRef, mergedData, { merge: true });
-                            clearLocalUser();
-                            toast({
-                                title: "Account Synced!",
-                                description: "Your guest progress has been saved.",
-                                className: "bg-green-100 border-green-300",
-                            });
-                         }
-                    }
-                }
-            } catch (error) {
-                console.error("Redirect Error", error);
-            } finally {
-                isMergingRef.current = false; // Release the lock
-            }
-        };
-
-        checkRedirect();
-    }, [auth, firestore, clearLocalUser, toast]);
+        if (!auth) return;
+        
+        isProcessingRedirect.current = true;
+        getRedirectResult(auth)
+            .catch((error) => {
+                console.error("Error processing redirect result:", error);
+            })
+            .finally(() => {
+                // Allow the auth state listener to proceed
+                isProcessingRedirect.current = false;
+            });
+    }, [auth]);
 
 
-    // 3. Main Auth Listener
+    // 3. Main Auth State Listener
     useEffect(() => {
         if (!auth || !firestore) return;
 
         let unsubscribeSnapshot: () => void = () => {};
 
         const unsubscribeAuth = onAuthStateChanged(auth, async (userAuth) => {
-            unsubscribeSnapshot(); // Cleanup previous listener
+            unsubscribeSnapshot();
+
+            // Wait until the redirect check is complete before processing auth changes.
+            if (isProcessingRedirect.current) {
+                return;
+            }
 
             if (userAuth) {
                 setFirebaseUser(userAuth);
                 
                 if (userAuth.isAnonymous) {
+                    // User is a guest.
                     setFirestoreUser(null);
                     setIsLoading(false);
                 } else {
-                    // Real User
+                    // User is signed in with Google.
                     const userRef = doc(firestore, 'users', userAuth.uid);
                     
                     unsubscribeSnapshot = onSnapshot(userRef, (docSnap) => {
-                        // CRITICAL: If we are in the middle of a redirect merge, do not create a default user yet.
-                        if (isMergingRef.current) return;
-
                         if (docSnap.exists()) {
+                            // User profile exists, load it.
                             setFirestoreUser(docSnap.data() as UserProfile);
                             setIsLoading(false);
                         } else {
+                            // This is a new sign-in, create a fresh profile.
                             const newUserProfile: UserProfile = {
                                 uid: userAuth.uid,
                                 name: userAuth.displayName || 'New User',
@@ -192,7 +152,13 @@ export const useUser = () => {
                             };
 
                             setDoc(userRef, newUserProfile)
-                                .then(() => setFirestoreUser(newUserProfile))
+                                .then(() => {
+                                    setFirestoreUser(newUserProfile);
+                                    // Clear guest data upon successful sign-in.
+                                    if (typeof window !== 'undefined') {
+                                        localStorage.removeItem('localUser');
+                                    }
+                                })
                                 .catch((e) => console.error("Error creating profile", e))
                                 .finally(() => setIsLoading(false));
                         }
@@ -202,12 +168,11 @@ export const useUser = () => {
                     });
                 }
             } else {
-                // No User - Sign In Anonymously
+                // No user is signed in, start the anonymous sign-in process.
                 setFirebaseUser(null);
                 setFirestoreUser(null);
-                
                 signInAnonymously(auth).catch((err) => {
-                    console.error("Anon sign-in failed", err);
+                    console.error("Anonymous sign-in failed", err);
                     setIsLoading(false);
                 });
             }

@@ -18,14 +18,12 @@ const nextConfig: NextConfig = {
     ],
   },
   async rewrites() {
-    return {
-      fallback: [
-        {
-          source: '/__/:path*',
-          destination: 'https://letreview.firebaseapp.com/__/:path*',
-        },
-      ],
-    };
+    return [
+      {
+        source: '/__/:path*',
+        destination: 'https://letreview.firebaseapp.com/__/:path*',
+      },
+    ];
   },
 };
 
