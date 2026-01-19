@@ -1,7 +1,7 @@
-
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BookOpen, CalendarDays, Clock, Award, ChevronRight, Star, Check } from "lucide-react";
@@ -67,6 +67,7 @@ const features = [
 
 export default function LandingPage() {
   const { user, firebaseUser, linkGoogleAccount } = useUser();
+  const router = useRouter();
   const isAnonymous = firebaseUser?.isAnonymous;
 
   return (
@@ -86,11 +87,16 @@ export default function LandingPage() {
                   Your personalized and gamified review partner for the Licensure Examination for Teachers. Study smarter, not harder.
                 </p>
               </div>
-              <div>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                  <Button size="lg" onClick={() => user && !isAnonymous ? router.push('/home') : linkGoogleAccount()}>
                     {user && !isAnonymous ? "Go to Dashboard" : "Get Started for Free"}
                     <ChevronRight className="w-5 h-5 ml-2" />
                   </Button>
+                  {(!user || isAnonymous) && (
+                    <Button size="lg" variant="secondary" onClick={() => router.push('/home')}>
+                        Try as a Guest
+                    </Button>
+                  )}
               </div>
               <div className="w-full max-w-4xl mt-8">
                  <Image 
@@ -181,9 +187,16 @@ export default function LandingPage() {
             <p className="max-w-[600px] mx-auto text-muted-foreground md:text-xl mb-6">
               Sign up today and take the first step towards becoming a Licensed Professional Teacher.
             </p>
-             <Button size="lg" onClick={() => user && !isAnonymous ? router.push('/home') : linkGoogleAccount()}>
-                {user && !isAnonymous ? "Go to Dashboard" : "Sign Up to Save Progress"}
-              </Button>
+             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <Button size="lg" onClick={() => user && !isAnonymous ? router.push('/home') : linkGoogleAccount()}>
+                    {user && !isAnonymous ? "Go to Dashboard" : "Sign Up to Save Progress"}
+                </Button>
+                {(!user || isAnonymous) && (
+                    <Button size="lg" variant="secondary" onClick={() => router.push('/home')}>
+                        Try as a Guest
+                    </Button>
+                )}
+            </div>
           </div>
         </section>
 
