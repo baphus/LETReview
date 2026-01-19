@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -32,7 +33,7 @@ export function AppSidebar() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { time, isActive } = useTimer();
-  const { state: sidebarState } = useSidebar();
+  const { state: sidebarState, setOpenMobile } = useSidebar();
   const { user, firebaseUser, linkGoogleAccount } = useUser();
   const isAnonymous = firebaseUser?.isAnonymous;
 
@@ -87,7 +88,7 @@ export function AppSidebar() {
 
       return (
          <SidebarMenuItem>
-            <Link href={href} className="w-full">
+            <Link href={href} className="w-full" onClick={() => setOpenMobile(false)}>
                {sidebarState === "collapsed" ? (
                   <Tooltip>
                     <TooltipTrigger asChild>{button}</TooltipTrigger>
@@ -124,7 +125,7 @@ export function AppSidebar() {
                      <Tooltip>
                         <TooltipTrigger asChild>
                              <SidebarMenuButton
-                                onClick={() => linkGoogleAccount()}
+                                onClick={() => { linkGoogleAccount(); setOpenMobile(false); }}
                                 className="h-14"
                             >
                                 <div className="flex items-center gap-3">
@@ -145,7 +146,7 @@ export function AppSidebar() {
                          )}
                     </Tooltip>
                 ) : (
-                    <Link href="/profile" className="w-full">
+                    <Link href="/profile" className="w-full" onClick={() => setOpenMobile(false)}>
                        <Tooltip>
                             <TooltipTrigger asChild>
                                 <SidebarMenuButton

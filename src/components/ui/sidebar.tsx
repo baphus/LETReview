@@ -1,9 +1,10 @@
+
 "use client"
 
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { VariantProps, cva } from "class-variance-authority"
-import { PanelLeft } from "lucide-react"
+import { Menu } from "lucide-react"
 import * as SheetPrimitive from "@radix-ui/react-dialog"
 
 import { useIsMobile } from "@/hooks/use-mobile"
@@ -180,7 +181,7 @@ const Sidebar = React.forwardRef<
     if (isMobile) {
       return (
         <Sheet open={openMobile} onOpenChange={setOpenMobile}>
-            <SheetContent side="left" className="w-[--sidebar-width-mobile] p-0">
+            <SheetContent side="top" className="h-auto p-0">
                  <SheetTitle className="sr-only">Menu</SheetTitle>
                 {children}
             </SheetContent>
@@ -271,7 +272,7 @@ const SidebarTrigger = React.forwardRef<
       }}
       {...props}
     >
-      <PanelLeft />
+      <Menu />
       <span className="sr-only">Toggle Sidebar</span>
     </Button>
   )

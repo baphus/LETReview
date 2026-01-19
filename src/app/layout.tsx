@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Inter, Space_Grotesk } from "next/font/google";
 import "./globals.css";
-import BottomNav from "@/components/BottomNav";
 import { Toaster } from "@/components/ui/toaster";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TimerProvider } from "@/hooks/use-timer";
@@ -125,11 +124,10 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
           </Sidebar>
           <SidebarInset className="flex flex-col">
             <AppHeader />
-            <main className="flex-1 overflow-y-auto p-4 sm:p-6 pb-20 md:pb-6">
+            <main className="flex-1 overflow-y-auto p-4 sm:p-6">
               {children}
             </main>
             <OnboardingDialog open={showOnboarding} onOpenChange={setShowOnboarding} />
-            <BottomNav />
             <Toaster />
           </SidebarInset>
         </SidebarProvider>
