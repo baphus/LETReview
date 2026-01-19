@@ -1,11 +1,10 @@
-
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { User, Flame, Edit, Check, Lock, Lightbulb, HelpCircle, X, BookOpen, Brain } from "lucide-react";
+import { User, Flame, Edit, Check, Lock, Lightbulb, HelpCircle, X, BookOpen, Brain, Heart } from "lucide-react";
 import Image from "next/image";
 import { getQuestionOfTheDay, streakPets, achievementPets, rarePets } from "@/lib/data";
 import type { QuizQuestion, Reviewer, Topic, PetProfile, Subject } from "@/lib/types";
@@ -129,7 +128,7 @@ export default function HomePage() {
   }, [user, todayKey]);
 
   const handleDayClick = (day: Date) => {
-    if (!isToday(day) && !isFuture(day)) {
+    if (!isFuture(day)) {
       setSelectedDate(day);
     }
   };
@@ -255,8 +254,8 @@ export default function HomePage() {
       </div>
 
        <section className="mt-8">
-        <div className="container mx-auto max-w-4xl">
-            <div className="flex items-center justify-between mb-4">
+        <div className="md:container md:mx-auto md:max-w-4xl">
+            <div className="flex items-center justify-between mb-4 px-4 md:px-0">
                 <h2 className="text-xl font-bold font-headline">Activity Calendar</h2>
                  <div className="flex items-center gap-2">
                     {!showLegend && (
@@ -282,7 +281,7 @@ export default function HomePage() {
                 </div>
             </div>
              {showLegend && (
-                <Alert className="mb-4">
+                <Alert className="mb-4 mx-4 md:mx-0">
                     <AlertDescription className="flex items-center justify-between text-sm">
                     <span>Your current streak is marked with a flame (🔥) and completed Questions of the Day are marked with a check (✅). Click a past day to see details.</span>
                     <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => setShowLegend(false)}>
