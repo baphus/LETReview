@@ -8,7 +8,7 @@ import { Clock, Coffee, Play, Pause, RotateCcw, Award, Gem, Bell, Flame, ArrowRi
 import { useToast } from "@/hooks/use-toast";
 import { useTimer } from "@/hooks/use-timer";
 import { getQuestions } from "@/lib/data";
-import type { QuizQuestion } from "@/lib/types";
+import type { QuizQuestion, UserProfile, DailyProgress } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUser } from "@/firebase/auth/use-user";
@@ -154,19 +154,17 @@ export default function TimerPage() {
     
     if (user) {
       const todayKey = getTodayKey();
+      const dailyProgress = user.dailyProgress?.[todayKey] || {};
       
       const newStreak = (quizStreak || 0) + 1;
       const newHighestStreak = Math.max(highestQuizStreak || 0, newStreak);
       
-      let updates: any = {
+      let updates: Partial<UserProfile> = {
         points: (user.points || 0) + points,
-        dailyProgress: {
-            ...user.dailyProgress,
-            [todayKey]: {
-                ...user.dailyProgress[todayKey],
-                pointsEarned: (user.dailyProgress[todayKey]?.pointsEarned || 0) + points,
-            }
-        },
+      };
+
+      let dailyProgressUpdate: Partial<DailyProgress> = {
+        pointsEarned: (dailyProgress.pointsEarned || 0) + points,
       };
 
       if (newHighestStreak > (user.highestQuizStreak || 0)) {
@@ -176,7 +174,16 @@ export default function TimerPage() {
       if (!user.answeredQuestionIds?.includes(questionId)) {
           updates.questionsAnswered = (user.questionsAnswered || 0) + 1;
           updates.answeredQuestionIds = [...(user.answeredQuestionIds || []), questionId];
+          dailyProgressUpdate.questionsAnswered = (dailyProgress.questionsAnswered || 0) + 1;
       }
+
+      updates.dailyProgress = {
+          ...user.dailyProgress,
+          [todayKey]: {
+              ...dailyProgress,
+              ...dailyProgressUpdate
+          }
+      };
 
       updateUser(updates);
     }

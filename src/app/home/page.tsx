@@ -111,6 +111,17 @@ export default function HomePage() {
     }, [] as Date[]);
   }, [user?.dailyProgress]);
 
+  const questionsAnsweredDays = useMemo(() => {
+    if (!user?.dailyProgress) return [];
+    return Object.entries(user.dailyProgress).reduce((acc, [dateStr, progress]) => {
+      if ((progress.questionsAnswered || 0) > 0) {
+        const [year, month, day] = dateStr.split('-').map(Number);
+        acc.push(new Date(year, month - 1, day));
+      }
+      return acc;
+    }, [] as Date[]);
+  }, [user?.dailyProgress]);
+
   const streakDays = useMemo(() => {
     if (!user) return [];
     const startDate = user.lastChallengeDate === todayKey ? startOfDay(new Date()) : startOfDay(new Date(user.lastChallengeDate || new Date()));
@@ -426,11 +437,13 @@ export default function HomePage() {
                     className="rounded-md border"
                     modifiers={{
                        streak: streakDays,
-                       qotd_completed: qotdCompletedDays
+                       qotd_completed: qotdCompletedDays,
+                       questions_answered: questionsAnsweredDays,
                     }}
                     modifiersClassNames={{
                         streak: 'day-streak',
                         qotd_completed: 'day-qotd-completed',
+                        questions_answered: 'day-questions-answered'
                     }}
                 />
             </CardContent>

@@ -83,6 +83,7 @@ const QuestionOfTheDay = ({ onCorrectAnswer }: { onCorrectAnswer: () => void }) 
             if (!user.answeredQuestionIds?.includes(question.id)) {
                 updates.questionsAnswered = (user.questionsAnswered || 0) + 1;
                 updates.answeredQuestionIds = [...(user.answeredQuestionIds || []), question.id];
+                dailyProgressUpdate.questionsAnswered = (user.dailyProgress?.[todayKey]?.questionsAnswered || 0) + 1;
             }
 
             onCorrectAnswer();

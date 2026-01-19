@@ -341,9 +341,18 @@ function QuestionsPageContent() {
 
   const handleAnswer = (correct: boolean, answer: string) => {
     if (correct && user && !user.answeredQuestionIds?.includes(currentQuestion.id)) {
+        const todayKey = getTodayKey();
+        const dailyProgress = user.dailyProgress?.[todayKey] || {};
         updateUser({ 
             questionsAnswered: (user.questionsAnswered || 0) + 1,
-            answeredQuestionIds: [...(user.answeredQuestionIds || []), currentQuestion.id]
+            answeredQuestionIds: [...(user.answeredQuestionIds || []), currentQuestion.id],
+            dailyProgress: {
+                ...user.dailyProgress,
+                [todayKey]: {
+                    ...dailyProgress,
+                    questionsAnswered: (dailyProgress.questionsAnswered || 0) + 1,
+                }
+            }
         });
     }
 
@@ -717,5 +726,3 @@ export default function QuestionsPage() {
         </Suspense>
     )
 }
-
-    

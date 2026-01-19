@@ -84,6 +84,7 @@ export interface DailyProgress {
     challengesCompleted?: string[];
     pomodorosCompleted?: number;
     pointsEarned?: number;
+    questionsAnswered?: number;
 }
 
 export interface TopicQuizProgress {
