@@ -577,7 +577,7 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
       
-      <section className="mt-8">
+      <section className="mt-8" id="pet-collection">
         <h2 className="text-xl font-bold font-headline mb-4">Pet Collection ({unlockedPetsCount}/{allPets.length})</h2>
         <Card>
           <CardContent className="p-4">
@@ -674,7 +674,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-
-    
-
-    

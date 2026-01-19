@@ -5,10 +5,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { User, Flame, Edit, Check, Lock, Lightbulb, HelpCircle, X } from "lucide-react";
+import { User, Flame, Edit, Check, Lock, Lightbulb, HelpCircle, X, BookOpen, Brain } from "lucide-react";
 import Image from "next/image";
-import { getQuestionOfTheDay } from "@/lib/data";
-import type { QuizQuestion } from "@/lib/types";
+import { getQuestionOfTheDay, streakPets, achievementPets, rarePets } from "@/lib/data";
+import type { QuizQuestion, Reviewer, Topic, PetProfile, Subject } from "@/lib/types";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
@@ -23,17 +23,66 @@ import { ActivityCalendar } from "@/components/ActivityCalendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { collection, query, where } from "firebase/firestore";
+import { Skeleton } from "@/components/ui/skeleton";
 
 
 const getTodayKey = () => format(new Date(), 'yyyy-MM-dd');
 
 export default function HomePage() {
   const { user } = useUser();
+  const firestore = useFirestore();
   
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [questionOfTheDay, setQuestionOfTheDay] = useState<QuizQuestion | null>(null);
   const [view, setView] = useState<'week' | 'month'>('week');
   const [showLegend, setShowLegend] = useState(true);
+
+  const [featuredArticle, setFeaturedArticle] = useState<Reviewer | null>(null);
+  const [randomTopic, setRandomTopic] = useState<Topic | null>(null);
+  const [featuredPet, setFeaturedPet] = useState<PetProfile | null>(null);
+
+  const { data: articles, isLoading: isLoadingArticles } = useCollection<Reviewer>(useMemoFirebase(() => firestore ? query(collection(firestore, 'reviewers'), where('status', '==', 'published')) : null, [firestore]));
+  const { data: topics, isLoading: isLoadingTopics } = useCollection<Topic>(useMemoFirebase(() => firestore ? collection(firestore, 'topics') : null, [firestore]));
+  const { data: subjects, isLoading: isLoadingSubjects } = useCollection<Subject>(useMemoFirebase(() => firestore ? collection(firestore, 'subjects') : null, [firestore]));
+  const allPets: PetProfile[] = useMemo(() => [...streakPets, ...achievementPets, ...rarePets], []);
+
+  useEffect(() => {
+    if (articles && articles.length > 0 && !featuredArticle) {
+      setFeaturedArticle(articles[Math.floor(Math.random() * articles.length)]);
+    }
+  }, [articles, featuredArticle]);
+
+  useEffect(() => {
+    if (topics && topics.length > 0 && !randomTopic) {
+      setRandomTopic(topics[Math.floor(Math.random() * topics.length)]);
+    }
+  }, [topics, randomTopic]);
+
+  useEffect(() => {
+      if (user && !featuredPet) {
+          const unlockedPets = allPets.filter(pet => {
+              if (!pet.unlock_criteria) return false;
+              if (pet.unlock_criteria.includes('streak') && !pet.unlock_criteria.includes('quiz')) {
+                  return (user.highestStreak || 0) >= pet.streak_req;
+              } else if (pet.unlock_criteria.includes('Purchase')) {
+                  return user.unlockedPets?.includes(pet.name);
+              } else if (pet.unlock_criteria.includes('Pomodoro')) {
+                  return (user.completedSessions || 0) >= (pet.unlock_value || 0);
+              } else if (pet.unlock_criteria.includes('quiz streak')) {
+                  return (user.highestQuizStreak || 0) >= (pet.unlock_value || 0);
+              }
+              return false;
+          });
+
+          if (unlockedPets.length > 0) {
+              setFeaturedPet(unlockedPets[Math.floor(Math.random() * unlockedPets.length)]);
+          } else {
+              setFeaturedPet(allPets.find(p => p.name === 'Rocky') || null);
+          }
+      }
+  }, [user, allPets, featuredPet]);
   
   const todayKey = useMemo(() => getTodayKey(), []);
 
@@ -107,6 +156,67 @@ export default function HomePage() {
                   </Card>
               ) : (<Card><CardContent><p>Loading question...</p></CardContent></Card>)}
           </section>
+
+          <section className="my-6">
+            <h2 className="text-xl font-bold font-headline mb-4">For You</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {isLoadingArticles || isLoadingSubjects ? <Skeleton className="h-56 w-full" /> : featuredArticle && subjects && (
+                    <Card className="flex flex-col">
+                        <CardHeader>
+                            <CardTitle className="font-headline text-lg flex items-center gap-2"><BookOpen/> Featured Reviewer</CardTitle>
+                            <Badge variant="secondary" className="capitalize w-fit" style={{ backgroundColor: subjects.find(s => s.id === featuredArticle.subjectId)?.color || '#6c757d', color: 'white' }}>
+                                {subjects.find(s => s.id === featuredArticle.subjectId)?.name || 'General'}
+                            </Badge>
+                        </CardHeader>
+                        <CardContent className="flex-grow">
+                            <h3 className="font-semibold">{featuredArticle.title}</h3>
+                            <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{featuredArticle.excerpt}</p>
+                        </CardContent>
+                        <CardFooter>
+                            <Link href={`/reviewer/review/${featuredArticle.slug}`} passHref className="w-full">
+                                <Button className="w-full">Start Reading</Button>
+                            </Link>
+                        </CardFooter>
+                    </Card>
+                )}
+
+                {isLoadingTopics ? <Skeleton className="h-56 w-full" /> : randomTopic && (
+                    <Card className="flex flex-col">
+                        <CardHeader>
+                            <CardTitle className="font-headline text-lg flex items-center gap-2"><Brain/> Practice Quiz</CardTitle>
+                            <CardDescription>Test your knowledge on a random topic.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex-grow">
+                            <div className="bg-muted p-4 rounded-lg text-center">
+                                <p className="font-semibold text-lg">{randomTopic.name}</p>
+                            </div>
+                        </CardContent>
+                        <CardFooter>
+                            <Link href={`/reviewer/questions?topic=${randomTopic.id}`} passHref className="w-full">
+                                <Button className="w-full">Take Quiz</Button>
+                            </Link>
+                        </CardFooter>
+                    </Card>
+                )}
+            </div>
+        </section>
+
+        {featuredPet && (
+            <section className="my-6">
+                <Card className="bg-accent/10 border-accent/20">
+                    <CardHeader className="flex flex-row items-center gap-4">
+                        <Image src={featuredPet.image} alt={featuredPet.name} width={80} height={80} className="bg-background rounded-full p-2 animate-bob" data-ai-hint={featuredPet.hint} />
+                        <div>
+                            <CardTitle className="font-headline">Your Companion</CardTitle>
+                            <CardDescription className="text-foreground/80">{user.petNames[featuredPet.name] || featuredPet.name} is here to cheer you on!</CardDescription>
+                            <Link href="/profile#pet-collection" passHref>
+                                <Button variant="link" className="p-0 h-auto mt-1">View collection</Button>
+                            </Link>
+                        </div>
+                    </CardHeader>
+                </Card>
+            </section>
+        )}
 
         <Separator className="my-6" />
       </div>
