@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { User, Flame, Gem, Award, Shield, Edit, Check, Lock, CheckCircle, Lightbulb, HelpCircle } from "lucide-react";
+import { User, Flame, Gem, Award, Shield, Edit, Check, Lock, CheckCircle, Lightbulb, HelpCircle, X } from "lucide-react";
 import Image from "next/image";
 import { streakPets, getQuestionOfTheDay, achievementPets, rarePets } from "@/lib/data";
 import type { PetProfile, QuizQuestion } from "@/lib/types";
@@ -41,6 +41,7 @@ export default function HomePage() {
   const [newPetName, setNewPetName] = useState("");
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [questionOfTheDay, setQuestionOfTheDay] = useState<QuizQuestion | null>(null);
+  const [showCalendarHelp, setShowCalendarHelp] = useState(true);
   
   const todayKey = useMemo(() => getTodayKey(), []);
 
@@ -398,7 +399,24 @@ export default function HomePage() {
         <h2 className="text-xl font-bold font-headline mb-4">Activity Calendar</h2>
         <Card>
             <CardHeader>
-                <CardDescription>Your current streak is marked with a flame (🔥) and completed Questions of the Day are marked with a check (✅). Click a past day to see details.</CardDescription>
+              {showCalendarHelp ? (
+                <div className="flex justify-between items-start gap-4">
+                  <CardDescription>
+                    Your current streak is marked with a flame (🔥) and completed Questions of the Day are marked with a check (✅). Click a past day to see details.
+                  </CardDescription>
+                  <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0 -mt-1 -mr-2" onClick={() => setShowCalendarHelp(false)}>
+                    <X className="h-4 w-4" />
+                    <span className="sr-only">Hide help</span>
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex justify-end -my-2">
+                  <Button variant="link" size="sm" onClick={() => setShowCalendarHelp(true)}>
+                    <HelpCircle className="h-4 w-4 mr-2" />
+                    Show Calendar Legend
+                  </Button>
+                </div>
+              )}
             </CardHeader>
             <CardContent className="flex justify-center">
                <Calendar

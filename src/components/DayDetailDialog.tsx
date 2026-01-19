@@ -92,7 +92,7 @@ export function DayDetailDialog({ date, onClose, userProgress }: DayDetailDialog
               </CardHeader>
               <CardContent>
                 <p className="text-sm font-semibold">{question.question}</p>
-                <p className="text-sm text-muted-foreground mt-2">Correct Answer: <span className="font-bold">{question.answer}</span></p>
+                <p className="text-sm text-muted-foreground mt-2">Correct Answer: <span className="font-bold">{question.correctAnswer}</span></p>
               </CardContent>
             </Card>
           )}
@@ -109,5 +109,3 @@ export function DayDetailDialog({ date, onClose, userProgress }: DayDetailDialog
     </Dialog>
   );
 }
-
-    
