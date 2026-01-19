@@ -18,13 +18,18 @@ interface ActivityCalendarProps {
 
 type View = 'week' | 'month';
 
-const StatDisplay = ({ icon: Icon, value, label, colorClass, isZero }: { icon: React.ElementType, value: number, label: string, colorClass: string, isZero: boolean }) => (
-  <div className={cn("flex items-center gap-1.5", isZero && "opacity-30")}>
-    <Icon className={cn("h-4 w-4 shrink-0", colorClass)} />
-    <span className="text-sm font-semibold">{value}</span>
-    <span className="sr-only">{label}</span>
-  </div>
-);
+const StatDisplay = ({ icon: Icon, value, label, colorClass, isZero }: { icon: React.ElementType, value: number, label: string, colorClass: string, isZero: boolean }) => {
+  if (isZero) {
+    return null;
+  }
+  return (
+    <div className={cn("flex items-center gap-1.5")}>
+      <Icon className={cn("h-4 w-4 shrink-0", colorClass)} />
+      <span className="text-sm font-semibold">{value}</span>
+      <span className="sr-only">{label}</span>
+    </div>
+  );
+};
 
 export function ActivityCalendar({ dailyProgress, onDayClick }: ActivityCalendarProps) {
   const [view, setView] = useState<View>('week');
