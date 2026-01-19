@@ -93,7 +93,7 @@ export default function LandingPage() {
                     <ChevronRight className="w-5 h-5 ml-2" />
                   </Button>
                   {(!user || isAnonymous) && (
-                    <Button size="lg" variant="secondary" onClick={() => router.push('/home')}>
+                    <Button size="lg" variant="outline" onClick={() => router.push('/home')}>
                         Try as a Guest
                     </Button>
                   )}
@@ -192,7 +192,7 @@ export default function LandingPage() {
                     {user && !isAnonymous ? "Go to Dashboard" : "Sign Up to Save Progress"}
                 </Button>
                 {(!user || isAnonymous) && (
-                    <Button size="lg" variant="secondary" onClick={() => router.push('/home')}>
+                    <Button size="lg" variant="outline" onClick={() => router.push('/home')}>
                         Try as a Guest
                     </Button>
                 )}
