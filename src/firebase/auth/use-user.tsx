@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useAuth, useFirestore } from '@/firebase';
@@ -165,13 +166,16 @@ export const useUser = () => {
                     const userRef = doc(firestore, "users", googleUser.uid);
                     const userDoc = await getDoc(userRef);
 
-                    if (!userDoc.exists() && localUser) {
+                    const savedGuestUserRaw = localStorage.getItem('localUser');
+                    const guestUser = savedGuestUserRaw ? JSON.parse(savedGuestUserRaw) : null;
+
+                    if (!userDoc.exists() && guestUser) {
                         const mergedData: UserProfile = {
-                            ...localUser,
+                            ...guestUser,
                             uid: googleUser.uid,
-                            name: googleUser.displayName || localUser.name,
+                            name: googleUser.displayName || guestUser.name,
                             email: googleUser.email || '',
-                            avatarUrl: googleUser.photoURL || localUser.avatarUrl,
+                            avatarUrl: googleUser.photoURL || guestUser.avatarUrl,
                             createdAt: serverTimestamp(),
                             hasCompletedOnboarding: false,
                         };
@@ -185,10 +189,14 @@ export const useUser = () => {
                     }
                 } else {
                     // No redirect result, so it's a fresh visit. Sign in as a guest.
-                    signInAnonymously(auth).catch(err => {
-                        console.error("Anonymous sign-in failed:", err);
+                    if (!auth.currentUser) {
+                        signInAnonymously(auth).catch(err => {
+                            console.error("Anonymous sign-in failed:", err);
+                            setIsLoading(false);
+                        });
+                    } else {
                         setIsLoading(false);
-                    });
+                    }
                 }
             } catch (error) {
                 console.error("Error processing redirect result:", error);
@@ -202,7 +210,7 @@ export const useUser = () => {
         unsubscribeAuth();
         unsubscribeSnapshot();
     };
-  }, [auth, firestore, localUser, handleUserSnapshot, clearLocalUser, toast]);
+  }, [auth, firestore, handleUserSnapshot, clearLocalUser, toast]);
 
 
   const linkGoogleAccount = useCallback(async () => {
