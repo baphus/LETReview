@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -170,11 +169,14 @@ export default function ReviewPage() {
                 ))}
             </div>
 
-            {!isLoadingArticles && articles?.length === 0 && (
+            {!isLoadingArticles && sortedArticles.length === 0 && (
                 <div className="col-span-full text-center py-10">
                     <p className="text-muted-foreground">No review articles found for this category.</p>
                 </div>
             )}
+             <div className="text-center py-10 mt-8 border-t">
+                <p className="text-muted-foreground">More reviewers coming soon.</p>
+            </div>
         </div>
     );
 }

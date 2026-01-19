@@ -37,7 +37,7 @@ export function FeedbackDialog() {
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const firestore = useFirestore();
-  const { user } = useUser();
+  const { user, firebaseUser } = useUser();
   const pathname = usePathname();
   const { toast } = useToast();
 
@@ -50,8 +50,8 @@ export function FeedbackDialog() {
   });
 
   const onSubmit = async (data: FeedbackFormValues) => {
-    if (!firestore || !user || user.isAnonymous) {
-      toast({ variant: 'destructive', title: 'Authentication Error', description: 'You must be signed in to submit feedback.' });
+    if (!firestore || !firebaseUser) {
+      toast({ variant: 'destructive', title: 'Authentication Error', description: 'Could not submit feedback. Please try again later.' });
       return;
     }
     setIsSubmitting(true);
@@ -59,8 +59,8 @@ export function FeedbackDialog() {
     const feedbackCollection = collection(firestore, 'feedback');
     const feedbackData = {
       ...data,
-      userId: user.uid,
-      userName: user.name,
+      userId: firebaseUser.uid,
+      userName: user?.name || 'Anonymous User',
       pageUrl: pathname,
       createdAt: serverTimestamp(),
     };
