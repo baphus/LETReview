@@ -5,12 +5,12 @@ import { useParams } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, doc, setDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import type { Reviewer } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Clock, Tag, Brain, Book, Video } from 'lucide-react';
+import { Clock, Tag, Brain, Book, Video, Bookmark } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -19,6 +19,7 @@ import { AddQuestionDialog } from '@/components/AddQuestionDialog';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { useMemo } from 'react';
 
 const articleTypeIcons = {
   "article": <Book className="h-4 w-4" />,
@@ -55,6 +56,43 @@ export default function ReviewArticlePage() {
 
     const { data: articles, isLoading } = useCollection<Reviewer>(articleQuery);
     const article = articles?.[0];
+
+    const bookmarksQuery = useMemoFirebase(() => {
+        if (!firestore || !user || firebaseUser?.isAnonymous) return null;
+        return collection(firestore, `users/${user.uid}/reviewerBookmarks`);
+    }, [firestore, user, firebaseUser]);
+
+    const { data: bookmarks } = useCollection<{ createdAt: string }>(bookmarksQuery);
+    
+    const bookmarkedArticleIds = useMemo(() => {
+        return bookmarks ? new Set(bookmarks.map(b => b.id)) : new Set();
+    }, [bookmarks]);
+
+    const handleBookmarkToggle = async (articleId: string) => {
+        if (!user || !firestore || firebaseUser?.isAnonymous) {
+            toast({
+                variant: 'destructive',
+                title: 'Sign In Required',
+                description: 'You must be signed in to bookmark articles.',
+            });
+            return;
+        }
+
+        const bookmarkRef = doc(firestore, `users/${user.uid}/reviewerBookmarks`, articleId);
+        const isBookmarked = bookmarkedArticleIds.has(articleId);
+
+        try {
+            if (isBookmarked) {
+                await deleteDoc(bookmarkRef);
+                toast({ title: 'Bookmark Removed' });
+            } else {
+                await setDoc(bookmarkRef, { createdAt: serverTimestamp() });
+                toast({ title: 'Article Bookmarked', className: 'bg-green-100 border-green-300' });
+            }
+        } catch (error) {
+             toast({ variant: 'destructive', title: 'Error', description: 'Could not update bookmark.' });
+        }
+    };
 
     const handleMarkAsComplete = () => {
         if (!user || !firestore || !article || firebaseUser?.isAnonymous) {
@@ -104,6 +142,8 @@ export default function ReviewArticlePage() {
     if (!article) {
         return <div className="text-center">Article not found.</div>;
     }
+    
+    const isBookmarked = bookmarkedArticleIds.has(article.id);
 
     return (
         <article className="prose prose-quoteless prose-neutral dark:prose-invert max-w-none">
@@ -123,8 +163,8 @@ export default function ReviewArticlePage() {
                         {article.difficulty}
                     </Badge>
                 </div>
-                <h1 className="text-4xl font-extrabold tracking-tight font-headline text-foreground">{article.title}</h1>
-                <p className="text-lg text-muted-foreground mt-2">{article.excerpt}</p>
+                <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight font-headline text-foreground">{article.title}</h1>
+                <p className="text-base sm:text-lg text-muted-foreground mt-2">{article.excerpt}</p>
                  <div className="flex items-center text-sm text-muted-foreground gap-4 mt-4">
                     <div className="flex items-center gap-1.5">
                         {articleTypeIcons[article.reviewerType as keyof typeof articleTypeIcons]}
@@ -152,13 +192,16 @@ export default function ReviewArticlePage() {
                 {firebaseUser && !firebaseUser.isAnonymous && (
                     <Card>
                         <CardHeader>
-                            <CardTitle>Mark as Complete</CardTitle>
-                            <CardDescription>Keep track of your progress and move on.</CardDescription>
+                            <CardTitle>Track Your Progress</CardTitle>
+                            <CardDescription>Bookmark this article or mark it as complete.</CardDescription>
                         </CardHeader>
                         <CardFooter>
                         <div className="w-full flex gap-2">
                                 <Button variant="secondary" className="flex-1" onClick={handleMarkAsComplete}>Mark as Completed</Button>
                                 {isAdmin && article && <AddQuestionDialog article={article} />}
+                                <Button variant="ghost" size="icon" onClick={() => handleBookmarkToggle(article.id)}>
+                                    <Bookmark className={cn("h-5 w-5", isBookmarked && "fill-current text-primary")} />
+                                </Button>
                         </div>
                         </CardFooter>
                     </Card>
@@ -169,7 +212,7 @@ export default function ReviewArticlePage() {
                  <ReactMarkdown 
                     remarkPlugins={[remarkGfm]}
                     components={{
-                        h1: ({node, ...props}) => <h2 className="text-3xl font-bold font-headline mt-12 mb-4 border-b pb-2" {...props} />,
+                        h1: ({node, ...props}) => <h2 className="text-2xl sm:text-3xl font-bold font-headline mt-12 mb-4 border-b pb-2" {...props} />,
                         h2: ({node, ...props}) => <h3 className="text-2xl font-bold font-headline mt-10 mb-4" {...props} />,
                         h3: ({node, ...props}) => <h4 className="text-xl font-bold font-headline mt-8 mb-4" {...props} />,
                         p: ({node, ...props}) => <p className="leading-7 mb-4" {...props} />,
