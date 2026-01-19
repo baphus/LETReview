@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -5,7 +6,7 @@ import { add, sub, format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eac
 import { ChevronLeft, ChevronRight, Gem, Clock, HelpCircle, Award, CheckCircle, Flame, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import type { DailyProgress } from '@/lib/types';
@@ -81,12 +82,15 @@ export function ActivityCalendar({ dailyProgress, onDayClick }: ActivityCalendar
                 <TooltipContent>Show Legend</TooltipContent>
               </Tooltip>
             )}
-            <Tabs value={view} onValueChange={(v) => setView(v as View)} className="w-full sm:w-auto">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="week">Week</TabsTrigger>
-                <TabsTrigger value="month">Month</TabsTrigger>
-              </TabsList>
-            </Tabs>
+             <Select value={view} onValueChange={(v) => setView(v as View)}>
+                <SelectTrigger className="w-full sm:w-auto">
+                    <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="week">Week</SelectItem>
+                    <SelectItem value="month">Month</SelectItem>
+                </SelectContent>
+            </Select>
           </div>
         </div>
         {showLegend && (
@@ -104,8 +108,8 @@ export function ActivityCalendar({ dailyProgress, onDayClick }: ActivityCalendar
       <CardContent>
         <TooltipProvider>
           <div className="grid grid-cols-7 border-t border-l">
-            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-              <div key={day} className="text-center font-bold text-xs sm:text-sm p-2 border-b border-r text-muted-foreground">{day}</div>
+            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
+              <div key={i} className="text-center font-bold text-xs sm:text-sm p-2 border-b border-r text-muted-foreground">{day}</div>
             ))}
             {days.map(day => {
               const dayKey = format(day, 'yyyy-MM-dd');
@@ -126,7 +130,7 @@ export function ActivityCalendar({ dailyProgress, onDayClick }: ActivityCalendar
                     <div
                       onClick={() => !isDayFuture && onDayClick(day)}
                       className={cn(
-                        "relative p-1.5 sm:p-2 border-b border-r flex flex-col justify-between transition-colors min-h-24 sm:min-h-0 sm:aspect-square",
+                        "relative p-1.5 sm:p-2 border-b border-r flex flex-col justify-between transition-colors min-h-24 sm:aspect-square",
                         isDayFuture ? "bg-muted/10 cursor-not-allowed" : `hover:bg-primary/5 cursor-pointer`,
                         getHeatColor(points),
                         isDayToday && "ring-2 ring-primary ring-inset",

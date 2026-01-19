@@ -4,8 +4,8 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { User, LogOut, Camera, Palette, Gem, Trophy, Clock, Award, Check, Edit, UserPlus, AlertTriangle, MessageSquare, Flame, HelpCircle, Star } from "lucide-react";
-import { useEffect, useState, useRef, ChangeEvent } from "react";
+import { User, LogOut, Camera, Palette, Gem, Trophy, Clock, Award, Check, Edit, UserPlus, AlertTriangle, MessageSquare, Flame, HelpCircle, Star, Lock } from "lucide-react";
+import { useEffect, useState, useRef, ChangeEvent, useMemo, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
@@ -14,7 +14,7 @@ import { DatePicker } from "@/components/ui/datepicker";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
-import { achievementPets, rarePets } from "@/lib/data";
+import { achievementPets, rarePets, streakPets } from "@/lib/data";
 import { Progress } from "@/components/ui/progress";
 import { useUser } from "@/firebase/auth/use-user";
 import { useAuth, useFirestore } from "@/firebase";
@@ -22,6 +22,8 @@ import { doc, updateDoc } from "firebase/firestore";
 import { signOut } from "firebase/auth";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { FeedbackDialog } from "@/components/FeedbackDialog";
+import { Badge } from "@/components/ui/badge";
+import type { PetProfile } from "@/lib/types";
 
 const themes = [
     { name: 'Default', value: 'default', cost: 0, colors: { primary: 'hsl(231 48% 48%)', accent: 'hsl(110 32% 48%)' } },
@@ -65,6 +67,11 @@ const allAchievements = [
   },
 ];
 
+const allPets: PetProfile[] = [
+    ...streakPets,
+    ...achievementPets,
+    ...rarePets
+];
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -77,6 +84,9 @@ export default function ProfilePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [examDate, setExamDate] = useState<Date | undefined>(undefined);
   const [passingScore, setPassingScore] = useState(85);
+  
+  const [editingPet, setEditingPet] = useState<string | null>(null);
+  const [newPetName, setNewPetName] = useState("");
 
   useEffect(() => {
     if (user) {
@@ -87,6 +97,72 @@ export default function ProfilePage() {
       setPassingScore(user.passingScore || 85);
       applyTheme(user.activeTheme || 'default');
     }
+  }, [user]);
+
+  const checkAchievements = useCallback(async () => {
+    if (!user) return;
+
+    let updatedUser: Partial<typeof user> = {};
+    let statsUpdated = false;
+
+    if (user.streak > (user.highestStreak || 0)) {
+        updatedUser.highestStreak = user.streak;
+        statsUpdated = true;
+    }
+    
+    let newPetsUnlocked: string[] = [];
+    achievementPets.forEach(pet => {
+      let isAlreadyUnlocked = user.unlockedPets.includes(pet.name);
+      if (isAlreadyUnlocked) return;
+
+      let isUnlockedNow = false;
+      if (pet.unlock_criteria.includes('Pomodoro')) {
+        isUnlockedNow = (user.completedSessions || 0) >= (pet.unlock_value || 0);
+      } else if (pet.unlock_criteria.includes('quiz streak')) {
+        isUnlockedNow = (user.highestQuizStreak || 0) >= (pet.unlock_value || 0);
+      }
+
+      if (isUnlockedNow) {
+        newPetsUnlocked.push(pet.name);
+        statsUpdated = true;
+        toast({
+          title: "New Pet Unlocked!",
+          description: `You've unlocked ${pet.name} for your achievements!`,
+          className: "bg-green-100 border-green-300"
+        });
+      }
+    });
+
+    if (newPetsUnlocked.length > 0) {
+      updatedUser.unlockedPets = [...new Set([...user.unlockedPets, ...newPetsUnlocked])];
+    }
+
+    if (statsUpdated) {
+        updateUser(updatedUser);
+    }
+  }, [user, toast, updateUser]);
+
+  useEffect(() => {
+    if (user) {
+        checkAchievements();
+    }
+  }, [user, checkAchievements]);
+
+  const unlockedPetsCount = useMemo(() => {
+    if (!user) return 0;
+    return allPets.filter(pet => {
+      if (!pet.unlock_criteria) return false;
+      if (pet.unlock_criteria.includes('streak') && !pet.unlock_criteria.includes('quiz')) {
+        return (user.highestStreak || 0) >= pet.streak_req;
+      } else if (pet.unlock_criteria.includes('Purchase')) {
+        return user.unlockedPets.includes(pet.name);
+      } else if (pet.unlock_criteria.includes('Pomodoro')) {
+        return (user.completedSessions || 0) >= (pet.unlock_value || 0);
+      } else if (pet.unlock_criteria.includes('quiz streak')) {
+        return (user.highestQuizStreak || 0) >= (pet.unlock_value || 0);
+      }
+      return false;
+    }).length;
   }, [user]);
 
   const handleNameSave = async () => {
@@ -100,6 +176,26 @@ export default function ProfilePage() {
         });
     }
   };
+  
+  const handlePetNameEdit = (originalName: string) => {
+    if (!user) return;
+    setEditingPet(originalName);
+    setNewPetName(user.petNames[originalName] || originalName);
+  };
+  
+  const handlePetNameSave = async (originalName: string) => {
+    if (user && newPetName.trim()) {
+        updateUser({
+            [`petNames.${originalName}`]: newPetName.trim()
+        });
+        setEditingPet(null);
+        toast({
+          title: "Pet renamed!",
+          description: `Your pet is now named ${newPetName.trim()}.`,
+          className: "bg-green-100 border-green-300"
+        });
+    }
+  }
 
   const handleSettingsSave = async () => {
      if (user) {
@@ -194,6 +290,71 @@ export default function ProfilePage() {
 
   if (!user) {
     return null; // Or a loading spinner
+  }
+
+  const PetDisplay = ({ pet }: { pet: PetProfile }) => {
+    let isUnlocked = false;
+
+    if (pet.unlock_criteria.includes('streak') && !pet.unlock_criteria.includes('quiz')) {
+        isUnlocked = (user.highestStreak || 0) >= pet.streak_req;
+    } else if (pet.unlock_criteria.includes('Purchase')) {
+        isUnlocked = user.unlockedPets.includes(pet.name);
+    } else if (pet.unlock_criteria.includes('Pomodoro')) {
+        isUnlocked = (user.completedSessions || 0) >= (pet.unlock_value || 0);
+    } else if (pet.unlock_criteria.includes('quiz streak')) {
+        isUnlocked = (user.highestQuizStreak || 0) >= (pet.unlock_value || 0);
+    }
+
+    return (
+       <div key={pet.name} className="flex flex-col items-center text-center">
+        <div className="relative">
+          <Image
+            src={pet.image}
+            alt={pet.name}
+            width={80}
+            height={80}
+            className={cn(
+                "rounded-full bg-muted p-2",
+                isUnlocked ? "animate-bob" : "grayscale opacity-50 blur-sm"
+            )}
+            data-ai-hint={pet.hint}
+          />
+          {!isUnlocked && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
+              <Lock className="h-6 w-6 text-white" />
+            </div>
+          )}
+        </div>
+
+            {isUnlocked ? (
+               editingPet === pet.name ? (
+                <div className="flex items-center gap-1 mt-1">
+                  <Input
+                    value={newPetName}
+                    onChange={(e) => setNewPetName(e.target.value)}
+                    className="text-sm h-7 w-20"
+                    onKeyDown={(e) => e.key === 'Enter' && handlePetNameSave(pet.name)}
+                  />
+                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handlePetNameSave(pet.name)}>
+                    <Check className="h-4 w-4 text-green-500" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center gap-1 mt-1">
+                  <p className="text-sm font-medium">{user.petNames[pet.name] || pet.name}</p>
+                  <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handlePetNameEdit(pet.name)}>
+                    <Edit className="h-3 w-3" />
+                  </Button>
+                </div>
+              )
+            ) : (
+                <p className="text-sm font-medium mt-1">???</p>
+            )}
+             <Badge variant="secondary" className="mt-1 text-center text-wrap h-auto">
+                {pet.unlock_criteria}
+            </Badge>
+          </div>
+    )
   }
 
   if (firebaseUser?.isAnonymous) {
@@ -415,6 +576,19 @@ export default function ProfilePage() {
             })}
         </CardContent>
       </Card>
+      
+      <section className="mt-8">
+        <h2 className="text-xl font-bold font-headline mb-4">Pet Collection ({unlockedPetsCount}/{allPets.length})</h2>
+        <Card>
+          <CardContent className="p-4">
+            <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
+              {allPets.map((pet) => (
+                <PetDisplay key={pet.name} pet={pet} />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </section>
       
       <Card className="mt-6">
         <CardHeader>

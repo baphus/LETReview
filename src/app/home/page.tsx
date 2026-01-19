@@ -7,8 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Separator } from "@/components/ui/separator";
 import { User, Flame, Edit, Check, Lock, Lightbulb } from "lucide-react";
 import Image from "next/image";
-import { streakPets, getQuestionOfTheDay, achievementPets, rarePets } from "@/lib/data";
-import type { PetProfile, QuizQuestion } from "@/lib/types";
+import { getQuestionOfTheDay } from "@/lib/data";
+import type { QuizQuestion } from "@/lib/types";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
@@ -22,20 +22,11 @@ import { useUser } from "@/firebase/auth/use-user";
 import { ActivityCalendar } from "@/components/ActivityCalendar";
 
 
-const allPets: PetProfile[] = [
-    ...streakPets,
-    ...achievementPets,
-    ...rarePets
-];
-
 const getTodayKey = () => format(new Date(), 'yyyy-MM-dd');
 
 export default function HomePage() {
-  const { toast } = useToast();
-  const { user, updateUser } = useUser();
+  const { user } = useUser();
   
-  const [editingPet, setEditingPet] = useState<string | null>(null);
-  const [newPetName, setNewPetName] = useState("");
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [questionOfTheDay, setQuestionOfTheDay] = useState<QuizQuestion | null>(null);
   
@@ -44,99 +35,11 @@ export default function HomePage() {
   useEffect(() => {
     getQuestionOfTheDay().then(setQuestionOfTheDay);
   }, []);
-
-  const checkAchievements = useCallback(async () => {
-    if (!user) return;
-
-    let updatedUser: Partial<typeof user> = {};
-    let statsUpdated = false;
-
-    if (user.streak > (user.highestStreak || 0)) {
-        updatedUser.highestStreak = user.streak;
-        statsUpdated = true;
-    }
-    
-    let newPetsUnlocked: string[] = [];
-    achievementPets.forEach(pet => {
-      let isAlreadyUnlocked = user.unlockedPets.includes(pet.name);
-      if (isAlreadyUnlocked) return;
-
-      let isUnlockedNow = false;
-      if (pet.unlock_criteria.includes('Pomodoro')) {
-        isUnlockedNow = (user.completedSessions || 0) >= (pet.unlock_value || 0);
-      } else if (pet.unlock_criteria.includes('quiz streak')) {
-        isUnlockedNow = (user.highestQuizStreak || 0) >= (pet.unlock_value || 0);
-      }
-
-      if (isUnlockedNow) {
-        newPetsUnlocked.push(pet.name);
-        statsUpdated = true;
-        toast({
-          title: "New Pet Unlocked!",
-          description: `You've unlocked ${pet.name} for your achievements!`,
-          className: "bg-green-100 border-green-300"
-        });
-      }
-    });
-
-    if (newPetsUnlocked.length > 0) {
-      updatedUser.unlockedPets = [...new Set([...user.unlockedPets, ...newPetsUnlocked])];
-    }
-
-    if (statsUpdated) {
-        updateUser(updatedUser);
-    }
-  }, [user, toast, updateUser]);
-
-  useEffect(() => {
-    if (user) {
-        checkAchievements();
-    }
-  }, [user, checkAchievements]);
   
   const isStreakSecuredToday = useMemo(() => {
     if (!user) return false;
     return (user.dailyProgress?.[todayKey]?.challengesCompleted?.length || 0) > 0;
   }, [user, todayKey]);
-  
-  const unlockedPetsCount = useMemo(() => {
-    if (!user) return 0;
-    return allPets.filter(pet => {
-      if (!pet.unlock_criteria) return false;
-      if (pet.unlock_criteria.includes('streak') && !pet.unlock_criteria.includes('quiz')) {
-        return (user.highestStreak || 0) >= pet.streak_req;
-      } else if (pet.unlock_criteria.includes('Purchase')) {
-        return user.unlockedPets.includes(pet.name);
-      } else if (pet.unlock_criteria.includes('Pomodoro')) {
-        return (user.completedSessions || 0) >= (pet.unlock_value || 0);
-      } else if (pet.unlock_criteria.includes('quiz streak')) {
-        return (user.highestQuizStreak || 0) >= (pet.unlock_value || 0);
-      }
-      return false;
-    }).length;
-  }, [user]);
-
-  const todaysProgress = user?.dailyProgress?.[todayKey] || { pointsEarned: 0, pomodorosCompleted: 0, qotdCompleted: false, questionsAnswered: 0, challengesCompleted: [] };
-
-  const handlePetNameEdit = (originalName: string) => {
-    if (!user) return;
-    setEditingPet(originalName);
-    setNewPetName(user.petNames[originalName] || originalName);
-  };
-  
-  const handlePetNameSave = async (originalName: string) => {
-    if (user && newPetName.trim()) {
-        updateUser({
-            [`petNames.${originalName}`]: newPetName.trim()
-        });
-        setEditingPet(null);
-        toast({
-          title: "Pet renamed!",
-          description: `Your pet is now named ${newPetName.trim()}.`,
-          className: "bg-green-100 border-green-300"
-        });
-    }
-  }
 
   const handleDayClick = (day: Date) => {
     if (!isToday(day) && !isFuture(day)) {
@@ -146,71 +49,6 @@ export default function HomePage() {
   
   if (!user) {
     return null; // Or show loading spinner
-  }
-  
-  const PetDisplay = ({ pet }: { pet: PetProfile }) => {
-    let isUnlocked = false;
-
-    if (pet.unlock_criteria.includes('streak') && !pet.unlock_criteria.includes('quiz')) {
-        isUnlocked = (user.highestStreak || 0) >= pet.streak_req;
-    } else if (pet.unlock_criteria.includes('Purchase')) {
-        isUnlocked = user.unlockedPets.includes(pet.name);
-    } else if (pet.unlock_criteria.includes('Pomodoro')) {
-        isUnlocked = (user.completedSessions || 0) >= (pet.unlock_value || 0);
-    } else if (pet.unlock_criteria.includes('quiz streak')) {
-        isUnlocked = (user.highestQuizStreak || 0) >= (pet.unlock_value || 0);
-    }
-
-    return (
-       <div key={pet.name} className="flex flex-col items-center text-center">
-        <div className="relative">
-          <Image
-            src={pet.image}
-            alt={pet.name}
-            width={80}
-            height={80}
-            className={cn(
-                "rounded-full bg-muted p-2",
-                isUnlocked ? "animate-bob" : "grayscale opacity-50 blur-sm"
-            )}
-            data-ai-hint={pet.hint}
-          />
-          {!isUnlocked && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
-              <Lock className="h-6 w-6 text-white" />
-            </div>
-          )}
-        </div>
-
-            {isUnlocked ? (
-               editingPet === pet.name ? (
-                <div className="flex items-center gap-1 mt-1">
-                  <Input
-                    value={newPetName}
-                    onChange={(e) => setNewPetName(e.target.value)}
-                    className="text-sm h-7 w-20"
-                    onKeyDown={(e) => e.key === 'Enter' && handlePetNameSave(pet.name)}
-                  />
-                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handlePetNameSave(pet.name)}>
-                    <Check className="h-4 w-4 text-green-500" />
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex items-center justify-center gap-1 mt-1">
-                  <p className="text-sm font-medium">{user.petNames[pet.name] || pet.name}</p>
-                  <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handlePetNameEdit(pet.name)}>
-                    <Edit className="h-3 w-3" />
-                  </Button>
-                </div>
-              )
-            ) : (
-                <p className="text-sm font-medium mt-1">???</p>
-            )}
-             <Badge variant="secondary" className="mt-1 text-center text-wrap h-auto">
-                {pet.unlock_criteria}
-            </Badge>
-          </div>
-    )
   }
 
   return (
@@ -250,7 +88,7 @@ export default function HomePage() {
                         </CardTitle>
                         
                     </CardHeader>
-                    {!todaysProgress.qotdCompleted && (
+                    {!user.dailyProgress?.[todayKey]?.qotdCompleted && (
                         <CardFooter>
                             <Link href="/daily" className="w-full">
                                 <Button className="w-full">
@@ -271,18 +109,6 @@ export default function HomePage() {
         <ActivityCalendar dailyProgress={user.dailyProgress} onDayClick={handleDayClick} />
        </section>
 
-      <section className="mt-8">
-        <h2 className="text-xl font-bold font-headline mb-4">Pet Collection ({unlockedPetsCount}/{allPets.length})</h2>
-        <Card>
-          <CardContent className="p-4">
-            <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
-              {allPets.map((pet) => (
-                <PetDisplay key={pet.name} pet={pet} />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </section>
     </div>
   );
 }
