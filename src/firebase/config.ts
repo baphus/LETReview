@@ -1,8 +1,7 @@
 export const firebaseConfig = {
-  "projectId": "letreview",
-  "appId": "1:719794505288:web:8f4da0edb8335483b27a7d",
-  "apiKey": "AIzaSyDCLLr_g6MBdQbJvQ-puM8bXbI0L4icF3Q",
-  "authDomain": "studio--letreview.us-central1.hosted.app",
-  "measurementId": "",
-  "messagingSenderId": "719794505288"
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
 };
