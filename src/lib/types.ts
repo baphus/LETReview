@@ -107,6 +107,7 @@ export interface UserProfile {
     unlockedThemes: string[];
     unlockedPets: string[];
     activeTheme: string;
+    activePet?: string;
     petNames: Record<string, string>;
     dailyProgress: Record<string, DailyProgress>;
     lastLogin: string;

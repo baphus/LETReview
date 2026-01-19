@@ -4,7 +4,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { User, LogOut, Camera, Palette, Gem, Trophy, Clock, Award, Check, Edit, UserPlus, AlertTriangle, MessageSquare, Flame, HelpCircle, Star, Lock } from "lucide-react";
+import { User, LogOut, Camera, Palette, Gem, Trophy, Clock, Award, Check, Edit, UserPlus, AlertTriangle, MessageSquare, Flame, HelpCircle, Star, Lock, Heart } from "lucide-react";
 import { useEffect, useState, useRef, ChangeEvent, useMemo, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -287,6 +287,16 @@ export default function ProfilePage() {
       }
   }
 
+  const handleSetActivePet = (petName: string) => {
+    if (!user) return;
+    updateUser({ activePet: petName });
+    toast({
+      title: 'Companion Set!',
+      description: `${user.petNames[petName] || petName} is now your active companion.`,
+      className: 'bg-green-100 border-green-300'
+    });
+  }
+
 
   if (!user) {
     return null; // Or a loading spinner
@@ -305,8 +315,13 @@ export default function ProfilePage() {
         isUnlocked = (user.highestQuizStreak || 0) >= (pet.unlock_value || 0);
     }
 
+    const isActivePet = user?.activePet === pet.name || (!user?.activePet && pet.name === 'Rocky');
+
     return (
-       <div key={pet.name} className="flex flex-col items-center text-center">
+       <div key={pet.name} className={cn(
+           "flex flex-col items-center text-center p-4 rounded-lg border-2 transition-all",
+           isActivePet ? "border-primary bg-primary/5" : "border-transparent"
+        )}>
         <div className="relative">
           <Image
             src={pet.image}
@@ -353,6 +368,21 @@ export default function ProfilePage() {
              <Badge variant="secondary" className="mt-1 text-center text-wrap h-auto">
                 {pet.unlock_criteria}
             </Badge>
+            {isUnlocked && (
+                <Button 
+                    variant={isActivePet ? "secondary" : "outline"} 
+                    size="sm" 
+                    className="mt-2 w-full"
+                    onClick={() => handleSetActivePet(pet.name)}
+                    disabled={isActivePet}
+                >
+                    {isActivePet ? (
+                        <><Heart className="mr-2 h-4 w-4 fill-current text-destructive" /> Active</>
+                    ) : (
+                        "Set Active"
+                    )}
+                </Button>
+            )}
           </div>
     )
   }
@@ -581,7 +611,7 @@ export default function ProfilePage() {
         <h2 className="text-xl font-bold font-headline mb-4">Pet Collection ({unlockedPetsCount}/{allPets.length})</h2>
         <Card>
           <CardContent className="p-4">
-            <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {allPets.map((pet) => (
                 <PetDisplay key={pet.name} pet={pet} />
               ))}

@@ -30,6 +30,20 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 const getTodayKey = () => format(new Date(), 'yyyy-MM-dd');
 
+const motivationalQuotes = [
+  "Believe you can and you're halfway there.",
+  "The secret of getting ahead is getting started.",
+  "The expert in anything was once a beginner.",
+  "Don't watch the clock; do what it does. Keep going.",
+  "Success is not final, failure is not fatal: it is the courage to continue that counts.",
+  "Your only limit is your mind.",
+  "Strive for progress, not perfection.",
+  "Every accomplishment starts with the decision to try.",
+  "The future depends on what you do today.",
+  "A little progress each day adds up to big results.",
+  "Consistency is the key to success.",
+];
+
 export default function HomePage() {
   const { user } = useUser();
   const firestore = useFirestore();
@@ -41,7 +55,8 @@ export default function HomePage() {
 
   const [featuredArticle, setFeaturedArticle] = useState<Reviewer | null>(null);
   const [randomTopic, setRandomTopic] = useState<Topic | null>(null);
-  const [featuredPet, setFeaturedPet] = useState<PetProfile | null>(null);
+  const [companion, setCompanion] = useState<PetProfile | null>(null);
+  const [motivationalQuote, setMotivationalQuote] = useState('');
 
   const { data: articles, isLoading: isLoadingArticles } = useCollection<Reviewer>(useMemoFirebase(() => firestore ? query(collection(firestore, 'reviewers'), where('status', '==', 'published')) : null, [firestore]));
   const { data: topics, isLoading: isLoadingTopics } = useCollection<Topic>(useMemoFirebase(() => firestore ? collection(firestore, 'topics') : null, [firestore]));
@@ -61,28 +76,46 @@ export default function HomePage() {
   }, [topics, randomTopic]);
 
   useEffect(() => {
-      if (user && !featuredPet) {
-          const unlockedPets = allPets.filter(pet => {
-              if (!pet.unlock_criteria) return false;
-              if (pet.unlock_criteria.includes('streak') && !pet.unlock_criteria.includes('quiz')) {
-                  return (user.highestStreak || 0) >= pet.streak_req;
-              } else if (pet.unlock_criteria.includes('Purchase')) {
-                  return user.unlockedPets?.includes(pet.name);
-              } else if (pet.unlock_criteria.includes('Pomodoro')) {
-                  return (user.completedSessions || 0) >= (pet.unlock_value || 0);
-              } else if (pet.unlock_criteria.includes('quiz streak')) {
-                  return (user.highestQuizStreak || 0) >= (pet.unlock_value || 0);
-              }
-              return false;
-          });
-
-          if (unlockedPets.length > 0) {
-              setFeaturedPet(unlockedPets[Math.floor(Math.random() * unlockedPets.length)]);
-          } else {
-              setFeaturedPet(allPets.find(p => p.name === 'Rocky') || null);
-          }
+    if (user) {
+      let petToShow: PetProfile | undefined;
+      // 1. Check for active pet
+      if (user.activePet) {
+        petToShow = allPets.find(p => p.name === user.activePet);
       }
-  }, [user, allPets, featuredPet]);
+      // 2. If no active pet, find a random unlocked one
+      else {
+        const unlockedPets = allPets.filter(pet => {
+            if (!pet.unlock_criteria) return false;
+            if (pet.unlock_criteria.includes('streak') && !pet.unlock_criteria.includes('quiz')) {
+                return (user.highestStreak || 0) >= pet.streak_req;
+            } else if (pet.unlock_criteria.includes('Purchase')) {
+                return user.unlockedPets?.includes(pet.name);
+            } else if (pet.unlock_criteria.includes('Pomodoro')) {
+                return (user.completedSessions || 0) >= (pet.unlock_value || 0);
+            } else if (pet.unlock_criteria.includes('quiz streak')) {
+                return (user.highestQuizStreak || 0) >= (pet.unlock_value || 0);
+            }
+            return false;
+        });
+
+        if (unlockedPets.length > 0) {
+          petToShow = unlockedPets[Math.floor(Math.random() * unlockedPets.length)];
+        }
+      }
+      
+      // 3. Fallback to Rocky
+      if (!petToShow) {
+        petToShow = allPets.find(p => p.name === 'Rocky');
+      }
+
+      setCompanion(petToShow || null);
+    }
+  }, [user, allPets]);
+
+  useEffect(() => {
+    // This will run only on the client-side to avoid hydration mismatch
+    setMotivationalQuote(motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)]);
+  }, []);
   
   const todayKey = useMemo(() => getTodayKey(), []);
 
@@ -201,16 +234,16 @@ export default function HomePage() {
             </div>
         </section>
 
-        {featuredPet && (
+        {companion && motivationalQuote && (
             <section className="my-6">
                 <Card className="bg-accent/10 border-accent/20">
                     <CardHeader className="flex flex-row items-center gap-4">
-                        <Image src={featuredPet.image} alt={featuredPet.name} width={80} height={80} className="bg-background rounded-full p-2 animate-bob" data-ai-hint={featuredPet.hint} />
+                        <Image src={companion.image} alt={companion.name} width={80} height={80} className="bg-background rounded-full p-2 animate-bob" data-ai-hint={companion.hint} />
                         <div>
-                            <CardTitle className="font-headline">Your Companion</CardTitle>
-                            <CardDescription className="text-foreground/80">{user.petNames[featuredPet.name] || featuredPet.name} is here to cheer you on!</CardDescription>
+                            <CardTitle className="font-headline">{user.petNames[companion.name] || companion.name} says...</CardTitle>
+                            <CardDescription className="text-foreground/80 italic">"{motivationalQuote}"</CardDescription>
                             <Link href="/profile#pet-collection" passHref>
-                                <Button variant="link" className="p-0 h-auto mt-1">View collection</Button>
+                                <Button variant="link" className="p-0 h-auto mt-1">Change Companion</Button>
                             </Link>
                         </div>
                     </CardHeader>
