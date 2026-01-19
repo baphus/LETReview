@@ -1,9 +1,8 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
 import { add, sub, format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, isToday, isFuture } from 'date-fns';
-import { ChevronLeft, ChevronRight, Gem, Clock, HelpCircle, Award, CheckCircle, Flame, X, Question } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Gem, Clock, HelpCircle, Award, CheckCircle, Flame, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -75,7 +74,7 @@ export function ActivityCalendar({ dailyProgress, onDayClick }: ActivityCalendar
                <Tooltip>
                 <TooltipTrigger asChild>
                     <Button variant="ghost" size="icon" onClick={() => setShowLegend(true)}>
-                      <Question className="h-4 w-4"/>
+                      <HelpCircle className="h-4 w-4"/>
                       <span className="sr-only">Show Legend</span>
                     </Button>
                 </TooltipTrigger>
