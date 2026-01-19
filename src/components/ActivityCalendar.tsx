@@ -3,13 +3,14 @@
 
 import { useState, useMemo } from 'react';
 import { add, sub, format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, isToday, isFuture } from 'date-fns';
-import { ChevronLeft, ChevronRight, Gem, Clock, HelpCircle, Award, CheckCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Gem, Clock, HelpCircle, Award, CheckCircle, Flame, X, Question } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import type { DailyProgress } from '@/lib/types';
+import { Alert, AlertDescription } from './ui/alert';
 
 interface ActivityCalendarProps {
   dailyProgress: Record<string, DailyProgress>;
@@ -34,6 +35,7 @@ const StatDisplay = ({ icon: Icon, value, label, colorClass, isZero }: { icon: R
 export function ActivityCalendar({ dailyProgress, onDayClick }: ActivityCalendarProps) {
   const [view, setView] = useState<View>('week');
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [showLegend, setShowLegend] = useState(true);
 
   const dateManipulation = useMemo(() => ({
     unit: view === 'week' ? { weeks: 1 } : { months: 1 },
@@ -57,7 +59,6 @@ export function ActivityCalendar({ dailyProgress, onDayClick }: ActivityCalendar
   };
 
   const headerFormat = view === 'week' ? 'MMMM yyyy' : 'MMMM yyyy';
-  // For week view, show start and end of week.
   const weekHeader = `${format(startDate, 'MMM d')} - ${format(endDate, 'MMM d, yyyy')}`;
 
   return (
@@ -69,13 +70,37 @@ export function ActivityCalendar({ dailyProgress, onDayClick }: ActivityCalendar
             <h2 className="text-lg font-semibold text-center w-48">{view === 'week' ? weekHeader : format(currentDate, headerFormat)}</h2>
             <Button variant="outline" size="icon" onClick={handleNext}><ChevronRight className="h-4 w-4" /></Button>
           </div>
-          <Tabs value={view} onValueChange={(v) => setView(v as View)} className="w-full sm:w-auto">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="week">Week</TabsTrigger>
-              <TabsTrigger value="month">Month</TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <div className="flex items-center gap-2">
+             {!showLegend && (
+               <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" onClick={() => setShowLegend(true)}>
+                      <Question className="h-4 w-4"/>
+                      <span className="sr-only">Show Legend</span>
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent>Show Legend</TooltipContent>
+              </Tooltip>
+            )}
+            <Tabs value={view} onValueChange={(v) => setView(v as View)} className="w-full sm:w-auto">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="week">Week</TabsTrigger>
+                <TabsTrigger value="month">Month</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
         </div>
+        {showLegend && (
+            <Alert className="mt-4">
+                <AlertDescription className="flex items-center justify-between text-sm">
+                   <span>Your current streak is marked with a flame (🔥) and completed Questions of the Day are marked with a check (✅). Click a past day to see details.</span>
+                   <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => setShowLegend(false)}>
+                       <X className="h-4 w-4 text-muted-foreground"/>
+                       <span className="sr-only">Hide Legend</span>
+                   </Button>
+                </AlertDescription>
+            </Alert>
+        )}
       </CardHeader>
       <CardContent>
         <TooltipProvider>
@@ -91,6 +116,7 @@ export function ActivityCalendar({ dailyProgress, onDayClick }: ActivityCalendar
               const questions = progress.questionsAnswered || 0;
               const challenges = progress.challengesCompleted?.length || 0;
               const qotd = progress.qotdCompleted || false;
+              const isStreakDay = challenges > 0;
 
               const isDayToday = isToday(day);
               const isDayFuture = isFuture(day);
@@ -109,7 +135,10 @@ export function ActivityCalendar({ dailyProgress, onDayClick }: ActivityCalendar
                     >
                       <div className="flex justify-between items-start">
                         <span className={cn("font-bold text-xs sm:text-sm", isDayToday ? 'text-primary' : 'text-foreground')}>{format(day, 'd')}</span>
-                        {qotd && <CheckCircle className="h-4 w-4 text-green-500" />}
+                        <div className="flex items-center gap-1 z-10 relative">
+                            {isStreakDay && <Flame className="h-4 w-4 text-destructive" />}
+                            {qotd && <CheckCircle className="h-4 w-4 text-green-500" />}
+                        </div>
                       </div>
                       <div className="hidden sm:grid grid-cols-2 gap-1.5 mt-auto">
                         <StatDisplay icon={Gem} value={points} label="Points" colorClass="text-yellow-500" isZero={points === 0} />
@@ -127,6 +156,7 @@ export function ActivityCalendar({ dailyProgress, onDayClick }: ActivityCalendar
                   </TooltipTrigger>
                   <TooltipContent>
                     <p className="font-bold">{format(day, 'MMM d, yyyy')}</p>
+                    {isStreakDay && <p className="flex items-center gap-1"><Flame className="h-4 w-4 text-destructive" /> Streak Maintained</p>}
                     <p>{points} Points Earned</p>
                     <p>{pomodoros} Pomodoros Completed</p>
                     <p>{questions} Questions Answered</p>
