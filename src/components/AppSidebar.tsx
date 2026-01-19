@@ -109,7 +109,6 @@ export function AppSidebar() {
     <SidebarMenuButton
       onClick={() => {
         setIsFeedbackOpen(true);
-        setOpenMobile(false);
       }}
       className="justify-between h-12"
     >
