@@ -73,7 +73,7 @@ export default function LandingPage() {
   const isAnonymous = firebaseUser?.isAnonymous;
 
   return (
-    <div className="flex flex-col min-h-screen bg-background font-body">
+    <div className="flex flex-col min-h-screen bg-slate-900 font-body">
       <LandingHeader />
 
       <main className="flex-1">
@@ -208,3 +208,5 @@ export default function LandingPage() {
     </div>
   )
 }
+
+    
