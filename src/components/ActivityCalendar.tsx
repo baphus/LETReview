@@ -105,7 +105,7 @@ export function ActivityCalendar({ dailyProgress, onDayClick, view }: ActivityCa
                             {qotd && <CheckCircle className="h-4 w-4 text-green-500" />}
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-x-2 gap-y-1 mt-auto">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-2 gap-y-0.5 mt-auto">
                         <StatDisplay icon={Gem} value={points} label="Points" colorClass="text-yellow-500" isZero={points === 0} />
                         <StatDisplay icon={Clock} value={pomodoros} label="Pomodoros" colorClass="text-red-500" isZero={pomodoros === 0} />
                         <StatDisplay icon={HelpCircle} value={questions} label="Questions" colorClass="text-green-500" isZero={questions === 0} />
