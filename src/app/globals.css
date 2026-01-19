@@ -153,6 +153,7 @@
   position: absolute;
   font-size: 0.6rem;
   line-height: 1;
+  z-index: 1;
 }
 
 .day-streak::after {

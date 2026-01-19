@@ -14,7 +14,7 @@ import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import Countdown from "@/components/Countdown";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
@@ -410,10 +410,10 @@ export default function HomePage() {
                   </Button>
                 </div>
               ) : (
-                <div className="flex justify-end -my-2">
-                  <Button variant="link" size="sm" onClick={() => setShowCalendarHelp(true)}>
-                    <HelpCircle className="h-4 w-4 mr-2" />
-                    Show Calendar Legend
+                <div className="flex justify-end -my-2 -mr-2">
+                  <Button variant="ghost" size="icon" onClick={() => setShowCalendarHelp(true)}>
+                    <HelpCircle className="h-4 w-4" />
+                    <span className="sr-only">Show Calendar Legend</span>
                   </Button>
                 </div>
               )}
