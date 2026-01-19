@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, doc, setDoc, serverTimestamp, query, getDoc, writeBatch } from 'firebase/firestore';
+import { collection, doc, setDoc, serverTimestamp, query, getDoc, writeBatch, deleteDoc } from 'firebase/firestore';
 import { useUser } from '@/firebase/auth/use-user';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,9 +16,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import type { Subject, Topic, Reviewer, QuizQuestion } from '@/lib/types';
+import type { Subject, Topic, Reviewer } from '@/lib/types';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, Database, PlusCircle } from 'lucide-react';
+import { Loader2, Database, PlusCircle, Trash2 } from 'lucide-react';
 import reviewersSeed from '../../../../../docs/reviewers-seed.json';
 import subjectsSeed from '../../../../../docs/subjects-seed.json';
 import topicsSeed from '../../../../../docs/topics-seed.json';
@@ -30,8 +30,19 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { Separator } from '@/components/ui/separator';
 
 const reviewerFormSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters long."),
@@ -71,8 +82,10 @@ export default function NewReviewerPage() {
   const { user, isAdmin, isLoading: isUserLoading } = useUser();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isAddSubjectOpen, setIsAddSubjectOpen] = useState(false);
-  const [isAddTopicOpen, setIsAddTopicOpen] = useState(false);
+  const [isManageSubjectsOpen, setIsManageSubjectsOpen] = useState(false);
+  const [isManageTopicsOpen, setIsManageTopicsOpen] = useState(false);
+  const [subjectToDelete, setSubjectToDelete] = useState<Subject | null>(null);
+  const [topicToDelete, setTopicToDelete] = useState<Topic | null>(null);
 
   const { data: subjects, isLoading: isLoadingSubjects } = useCollection<Subject>(useMemoFirebase(() => firestore ? query(collection(firestore, 'subjects')) : null, [firestore]));
   const { data: topics, isLoading: isLoadingTopics } = useCollection<Topic>(useMemoFirebase(() => firestore ? query(collection(firestore, 'topics')) : null, [firestore]));
@@ -135,7 +148,6 @@ export default function NewReviewerPage() {
       });
       toast({ title: 'Subject Added', description: `${data.name} has been added.` });
       subjectForm.reset();
-      setIsAddSubjectOpen(false);
       form.setValue('subjectId', slug, { shouldValidate: true });
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Error', description: error.message });
@@ -155,10 +167,35 @@ export default function NewReviewerPage() {
       });
       toast({ title: 'Topic Added', description: `${data.name} has been added.` });
       topicForm.reset();
-      setIsAddTopicOpen(false);
       form.setValue('topicIds', [...form.getValues('topicIds'), slug], { shouldValidate: true });
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Error', description: error.message });
+    }
+  };
+  
+  const handleDeleteSubject = async (subjectId: string) => {
+    if (!firestore) return;
+    try {
+        await deleteDoc(doc(firestore, 'subjects', subjectId));
+        toast({ title: 'Subject Deleted' });
+        setSubjectToDelete(null);
+        if (form.getValues('subjectId') === subjectId) {
+            form.setValue('subjectId', '');
+        }
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: 'Error', description: error.message });
+    }
+  };
+
+  const handleDeleteTopic = async (topicId: string) => {
+    if (!firestore) return;
+    try {
+        await deleteDoc(doc(firestore, 'topics', topicId));
+        toast({ title: 'Topic Deleted' });
+        setTopicToDelete(null);
+        form.setValue('topicIds', form.getValues('topicIds').filter(id => id !== topicId), { shouldValidate: true });
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: 'Error', description: error.message });
     }
   };
 
@@ -355,8 +392,8 @@ export default function NewReviewerPage() {
                         <FormItem>
                             <FormLabel>Subject</FormLabel>
                             <Select onValueChange={(value) => {
-                                if (value === 'add-new') {
-                                    setIsAddSubjectOpen(true);
+                                if (value === 'manage') {
+                                    setIsManageSubjectsOpen(true);
                                 } else {
                                     field.onChange(value);
                                     form.setValue('topicIds', []); // Reset topics when subject changes
@@ -369,8 +406,8 @@ export default function NewReviewerPage() {
                             </FormControl>
                             <SelectContent>
                                 {isLoadingSubjects ? <SelectItem value="loading" disabled>Loading...</SelectItem> : subjects?.filter(s => s.categoryId === selectedCategory).map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-                                <SelectItem value="add-new" className="text-primary font-semibold">
-                                    <span className="flex items-center"><PlusCircle className="h-4 w-4 mr-2" /> Add new subject...</span>
+                                <SelectItem value="manage" className="text-primary font-semibold">
+                                    <span className="flex items-center"><PlusCircle className="h-4 w-4 mr-2" /> Manage subjects...</span>
                                 </SelectItem>
                             </SelectContent>
                             </Select>
@@ -389,9 +426,9 @@ export default function NewReviewerPage() {
                         <FormItem>
                             <div className="flex justify-between items-center mb-2">
                                 <FormLabel>Topics</FormLabel>
-                                <Button type="button" variant="outline" size="sm" onClick={() => setIsAddTopicOpen(true)}>
+                                <Button type="button" variant="outline" size="sm" onClick={() => setIsManageTopicsOpen(true)}>
                                     <PlusCircle className="h-4 w-4 mr-2" />
-                                    New Topic
+                                    Manage Topics
                                 </Button>
                             </div>
                         
@@ -499,47 +536,91 @@ export default function NewReviewerPage() {
         </CardContent>
       </Card>
 
-      {/* Add Subject Dialog */}
-      <Dialog open={isAddSubjectOpen} onOpenChange={setIsAddSubjectOpen}>
+      {/* Manage Subjects Dialog */}
+      <Dialog open={isManageSubjectsOpen} onOpenChange={setIsManageSubjectsOpen}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New Subject</DialogTitle>
-             <DialogDescription>For category: {categories.find(c => c.id === selectedCategory)?.name || '...'}</DialogDescription>
-          </DialogHeader>
-          <Form {...subjectForm}>
-            <form onSubmit={subjectForm.handleSubmit(handleAddSubject)} className="space-y-4">
-              <FormField control={subjectForm.control} name="name" render={({ field }) => (
-                <FormItem><FormLabel>Subject Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-              )} />
-              <FormField control={subjectForm.control} name="color" render={({ field }) => (
-                  <FormItem><FormLabel>Color</FormLabel><FormControl><Input type="color" {...field} className="p-1 h-10 w-full" /></FormControl><FormMessage /></FormItem>
-              )} />
-              <DialogFooter>
-                <Button type="button" variant="ghost" onClick={() => setIsAddSubjectOpen(false)}>Cancel</Button>
-                <Button type="submit" disabled={subjectForm.formState.isSubmitting}>
-                    {subjectForm.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Add Subject
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
+            <DialogHeader>
+                <DialogTitle>Manage Subjects</DialogTitle>
+                <DialogDescription>Add or delete subjects for the '{categories.find(c => c.id === selectedCategory)?.name}' category.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
+                {isLoadingSubjects ? <p>Loading...</p> : (subjects?.filter(s => s.categoryId === selectedCategory) || []).map(subject => (
+                    <div key={subject.id} className="flex items-center justify-between rounded-md border p-2">
+                        <div className="flex items-center gap-2">
+                            <div className="h-4 w-4 rounded-full" style={{ backgroundColor: subject.color }} />
+                            <span>{subject.name}</span>
+                        </div>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSubjectToDelete(subject)}>
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                        </AlertDialogTrigger>
+                    </div>
+                ))}
+            </div>
+            <Separator />
+            <p className="text-sm font-medium">Add New Subject</p>
+            <Form {...subjectForm}>
+                <form onSubmit={subjectForm.handleSubmit(handleAddSubject)} className="space-y-4">
+                  <FormField control={subjectForm.control} name="name" render={({ field }) => (
+                    <FormItem><FormLabel className="sr-only">Subject Name</FormLabel><FormControl><Input placeholder="Subject Name" {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                  <FormField control={subjectForm.control} name="color" render={({ field }) => (
+                      <FormItem><FormLabel className="sr-only">Color</FormLabel><FormControl><div className="flex items-center gap-2"><span>Color:</span><Input type="color" {...field} className="p-1 h-10 w-full" /></div></FormControl><FormMessage /></FormItem>
+                  )} />
+                  <DialogFooter className="!mt-2">
+                    <Button type="submit" disabled={subjectForm.formState.isSubmitting}>
+                        {subjectForm.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Add Subject
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </Form>
         </DialogContent>
       </Dialog>
       
-      {/* Add Topic Dialog */}
-      <Dialog open={isAddTopicOpen} onOpenChange={setIsAddTopicOpen}>
+      <AlertDialog open={!!subjectToDelete} onOpenChange={() => setSubjectToDelete(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    This will permanently delete the subject "{subjectToDelete?.name}". Associated articles and questions will NOT be deleted but may become uncategorized. This action cannot be undone.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setSubjectToDelete(null)}>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={() => subjectToDelete && handleDeleteSubject(subjectToDelete.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Manage Topics Dialog */}
+      <Dialog open={isManageTopicsOpen} onOpenChange={setIsManageTopicsOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add New Topic</DialogTitle>
+            <DialogTitle>Manage Topics</DialogTitle>
             <DialogDescription>For subject: {subjects?.find(s => s.id === selectedSubjectId)?.name || '...'}</DialogDescription>
           </DialogHeader>
+            <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
+                {isLoadingTopics ? <p>Loading...</p> : availableTopics.map(topic => (
+                    <div key={topic.id} className="flex items-center justify-between rounded-md border p-2">
+                        <span>{topic.name}</span>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setTopicToDelete(topic)}>
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                        </AlertDialogTrigger>
+                    </div>
+                ))}
+            </div>
+            <Separator/>
+            <p className="text-sm font-medium">Add New Topic</p>
           <Form {...topicForm}>
             <form onSubmit={topicForm.handleSubmit(handleAddTopic)} className="space-y-4">
               <FormField control={topicForm.control} name="name" render={({ field }) => (
-                <FormItem><FormLabel>Topic Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel className="sr-only">Topic Name</FormLabel><FormControl><Input placeholder="Topic Name" {...field} /></FormControl><FormMessage /></FormItem>
               )} />
-              <DialogFooter>
-                <Button type="button" variant="ghost" onClick={() => setIsAddTopicOpen(false)}>Cancel</Button>
+              <DialogFooter className="!mt-2">
                 <Button type="submit" disabled={topicForm.formState.isSubmitting}>
                     {topicForm.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Add Topic
@@ -549,6 +630,23 @@ export default function NewReviewerPage() {
           </Form>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!topicToDelete} onOpenChange={() => setTopicToDelete(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    This will permanently delete the topic "{topicToDelete?.name}". Associated articles and questions will not be deleted but will lose this topic tag. This action cannot be undone.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setTopicToDelete(null)}>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={() => topicToDelete && handleDeleteTopic(topicToDelete.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
+
+    
