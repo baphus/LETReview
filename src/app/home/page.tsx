@@ -52,65 +52,66 @@ export default function HomePage() {
   }
 
   return (
-    <div className="container mx-auto max-w-4xl">
-      <DayDetailDialog
-        date={selectedDate}
-        onClose={() => setSelectedDate(null)}
-        userProgress={selectedDate ? user.dailyProgress[format(selectedDate, 'yyyy-MM-dd')] : undefined}
-      />
-      <p className="text-muted-foreground mb-6">Welcome back, {user.name}!</p>
-      
-      {user.examDate && <Countdown examDate={new Date(user.examDate)} />}
+    <>
+      <div className="container mx-auto max-w-4xl">
+        <DayDetailDialog
+          date={selectedDate}
+          onClose={() => setSelectedDate(null)}
+          userProgress={selectedDate ? user.dailyProgress[format(selectedDate, 'yyyy-MM-dd')] : undefined}
+        />
+        <p className="text-muted-foreground mb-6">Welcome back, {user.name}!</p>
+        
+        {user.examDate && <Countdown examDate={new Date(user.examDate)} />}
 
-      {!isStreakSecuredToday && (
-         <Card className="mb-6 bg-blue-50 border-blue-200">
-          <CardHeader>
-            <CardTitle className="text-center text-blue-800 font-headline flex items-center justify-center gap-2">
-                <Flame className="h-6 w-6"/> Secure Your Streak!
-            </CardTitle>
-            <CardDescription className="text-center text-blue-600">You haven't completed a daily challenge yet. Finish one to maintain your streak.</CardDescription>
-          </CardHeader>
-          <CardFooter>
-            <Link href="/daily" className="w-full">
-                <Button className="w-full">Go to Daily Challenges</Button>
-            </Link>
-          </CardFooter>
-        </Card>
-      )}
+        {!isStreakSecuredToday && (
+           <Card className="mb-6 bg-blue-50 border-blue-200">
+            <CardHeader>
+              <CardTitle className="text-center text-blue-800 font-headline flex items-center justify-center gap-2">
+                  <Flame className="h-6 w-6"/> Secure Your Streak!
+              </CardTitle>
+              <CardDescription className="text-center text-blue-600">You haven't completed a daily challenge yet. Finish one to maintain your streak.</CardDescription>
+            </CardHeader>
+            <CardFooter>
+              <Link href="/daily" className="w-full">
+                  <Button className="w-full">Go to Daily Challenges</Button>
+              </Link>
+            </CardFooter>
+          </Card>
+        )}
 
-        <section className="mb-6">
-            <h2 className="text-xl font-bold font-headline mb-4">Question of the Day</h2>
-            {questionOfTheDay ? (
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center justify-between">
-                            <span className="text-lg">{questionOfTheDay.question}</span>
-                        </CardTitle>
-                        
-                    </CardHeader>
-                    {!user.dailyProgress?.[todayKey]?.qotdCompleted && (
-                        <CardFooter>
-                            <Link href="/daily" className="w-full">
-                                <Button className="w-full">
-                                    <Lightbulb className="mr-2 h-4 w-4" />
-                                    Answer Now
-                                </Button>
-                            </Link>
-                        </CardFooter>
-                    )}
-                </Card>
-            ) : (<Card><CardContent><p>Loading question...</p></CardContent></Card>)}
-        </section>
+          <section className="mb-6">
+              <h2 className="text-xl font-bold font-headline mb-4">Question of the Day</h2>
+              {questionOfTheDay ? (
+                  <Card>
+                      <CardHeader>
+                          <CardTitle className="flex items-center justify-between">
+                              <span className="text-lg">{questionOfTheDay.question}</span>
+                          </CardTitle>
+                          
+                      </CardHeader>
+                      {!user.dailyProgress?.[todayKey]?.qotdCompleted && (
+                          <CardFooter>
+                              <Link href="/daily" className="w-full">
+                                  <Button className="w-full">
+                                      <Lightbulb className="mr-2 h-4 w-4" />
+                                      Answer Now
+                                  </Button>
+                              </Link>
+                          </CardFooter>
+                      )}
+                  </Card>
+              ) : (<Card><CardContent><p>Loading question...</p></CardContent></Card>)}
+          </section>
 
-      <Separator className="my-6" />
+        <Separator className="my-6" />
+      </div>
 
        <section className="mt-8">
-        <h2 className="text-xl font-bold font-headline mb-4">Activity Calendar</h2>
+        <div className="container mx-auto max-w-4xl">
+            <h2 className="text-xl font-bold font-headline mb-4">Activity Calendar</h2>
+        </div>
         <ActivityCalendar dailyProgress={user.dailyProgress} onDayClick={handleDayClick} />
        </section>
-
-    </div>
+    </>
   );
 }
-
-    
