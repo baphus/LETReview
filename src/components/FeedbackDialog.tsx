@@ -13,12 +13,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, MessageSquare } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useFirestore } from '@/firebase';
 import { useUser } from '@/firebase/auth/use-user';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -33,8 +32,12 @@ const feedbackFormSchema = z.object({
 
 type FeedbackFormValues = z.infer<typeof feedbackFormSchema>;
 
-export function FeedbackDialog() {
-  const [open, setOpen] = useState(false);
+interface FeedbackDialogProps {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+}
+
+export function FeedbackDialog({ open, onOpenChange }: FeedbackDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const firestore = useFirestore();
   const { user, firebaseUser } = useUser();
@@ -73,7 +76,7 @@ export function FeedbackDialog() {
           className: 'bg-green-100 border-green-200',
         });
         form.reset();
-        setOpen(false);
+        onOpenChange(false);
       })
       .catch((error) => {
         const permissionError = new FirestorePermissionError({
@@ -89,13 +92,7 @@ export function FeedbackDialog() {
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="w-full">
-          <MessageSquare className="mr-2 h-4 w-4" />
-          Send Feedback
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Submit Feedback</DialogTitle>
@@ -145,7 +142,7 @@ export function FeedbackDialog() {
               )}
             />
             <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
               <Button type="submit" disabled={isSubmitting}>

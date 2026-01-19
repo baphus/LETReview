@@ -21,7 +21,6 @@ import { useAuth, useFirestore } from "@/firebase";
 import { doc, updateDoc } from "firebase/firestore";
 import { signOut } from "firebase/auth";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { FeedbackDialog } from "@/components/FeedbackDialog";
 import { Badge } from "@/components/ui/badge";
 import type { PetProfile } from "@/lib/types";
 
@@ -186,7 +185,7 @@ export default function ProfilePage() {
   const handlePetNameSave = async (originalName: string) => {
     if (user && newPetName.trim()) {
         updateUser({
-            [`petNames.${originalName}`]: newPetName.trim()
+            petNames: { ...user.petNames, [originalName]: newPetName.trim() }
         });
         setEditingPet(null);
         toast({
@@ -200,7 +199,7 @@ export default function ProfilePage() {
   const handleSettingsSave = async () => {
      if (user) {
         updateUser({
-            examDate: examDate ? examDate.toISOString() : null,
+            examDate: examDate ? examDate.toISOString() : undefined,
             passingScore: passingScore,
         });
         toast({
@@ -672,18 +671,6 @@ export default function ProfilePage() {
            <p className="text-sm text-muted-foreground italic">
             This app is lovingly dedicated to my girlfriend, Yve, an aspiring teacher who inspired this project.
           </p>
-        </CardContent>
-      </Card>
-
-      <Card className="mt-6">
-        <CardHeader>
-            <CardTitle>Feedback</CardTitle>
-            <CardDescription>
-                Have a suggestion or found a bug? We'd love to hear from you.
-            </CardDescription>
-        </CardHeader>
-        <CardContent>
-            <FeedbackDialog />
         </CardContent>
       </Card>
 

@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { BookOpen, CalendarDays, Clock, Home, User, Lightbulb, LogIn } from "lucide-react";
+import { BookOpen, CalendarDays, Clock, Home, User, Lightbulb, LogIn, MessageSquare } from "lucide-react";
 import {
   SidebarHeader,
   SidebarMenu,
@@ -19,6 +19,8 @@ import { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
 import Logo from "./Logo";
 import { useUser } from "@/firebase/auth/use-user";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+import { useState } from "react";
+import { FeedbackDialog } from "./FeedbackDialog";
 
 
 const navItems = [
@@ -36,6 +38,7 @@ export function AppSidebar() {
   const { state: sidebarState, setOpenMobile } = useSidebar();
   const { user, firebaseUser, linkGoogleAccount } = useUser();
   const isAnonymous = firebaseUser?.isAnonymous;
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
 
 
   const TimerIndicator = () => {
@@ -102,6 +105,23 @@ export function AppSidebar() {
       )
   }
 
+  const feedbackButton = (
+    <SidebarMenuButton
+      onClick={() => {
+        setIsFeedbackOpen(true);
+        setOpenMobile(false);
+      }}
+      className="justify-between h-12"
+    >
+      <div className="flex items-center gap-3">
+        <MessageSquare className="h-5 w-5" />
+        <span className="group-data-[collapsible=icon]:hidden">
+          Feedback
+        </span>
+      </div>
+    </SidebarMenuButton>
+  );
+
   return (
     <>
       <SidebarHeader>
@@ -117,6 +137,22 @@ export function AppSidebar() {
            <NavItem key={item.href} {...item} />
         ))}
       </SidebarMenu>
+
+      <SidebarSeparator />
+      <SidebarMenu>
+        <SidebarMenuItem>
+          {sidebarState === "collapsed" ? (
+            <Tooltip>
+              <TooltipTrigger asChild>{feedbackButton}</TooltipTrigger>
+              <TooltipContent side="right" align="center">Send Feedback</TooltipContent>
+            </Tooltip>
+          ) : (
+            feedbackButton
+          )}
+        </SidebarMenuItem>
+      </SidebarMenu>
+      <FeedbackDialog open={isFeedbackOpen} onOpenChange={setIsFeedbackOpen} />
+
         {user && (
             <>
             <SidebarSeparator />
