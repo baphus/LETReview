@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { User, Flame, Gem, Award, Shield, Edit, Check, Lock, CheckCircle, Lightbulb, HelpCircle, X } from "lucide-react";
+import { User, Flame, Gem, Award, Shield, Edit, Check, Lock, CheckCircle, Lightbulb, HelpCircle } from "lucide-react";
 import Image from "next/image";
 import { streakPets, getQuestionOfTheDay, achievementPets, rarePets } from "@/lib/data";
 import type { PetProfile, QuizQuestion } from "@/lib/types";
@@ -14,15 +14,12 @@ import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import Countdown from "@/components/Countdown";
-import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Calendar } from "@/components/ui/calendar";
-import { addDays, format, isBefore, startOfDay, isSameDay } from "date-fns";
+import { format, isToday, isFuture } from "date-fns";
 import { DayDetailDialog } from "@/components/DayDetailDialog";
 import { useUser } from "@/firebase/auth/use-user";
-import { useFirestore } from "@/firebase";
-import { doc, updateDoc } from "firebase/firestore";
+import { ActivityCalendar } from "@/components/ActivityCalendar";
 
 const allPets: PetProfile[] = [
     ...streakPets,
@@ -34,14 +31,12 @@ const getTodayKey = () => format(new Date(), 'yyyy-MM-dd');
 
 export default function HomePage() {
   const { toast } = useToast();
-  const { user } = useUser();
-  const firestore = useFirestore();
+  const { user, updateUser } = useUser();
   
   const [editingPet, setEditingPet] = useState<string | null>(null);
   const [newPetName, setNewPetName] = useState("");
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [questionOfTheDay, setQuestionOfTheDay] = useState<QuizQuestion | null>(null);
-  const [showCalendarHelp, setShowCalendarHelp] = useState(true);
   
   const todayKey = useMemo(() => getTodayKey(), []);
 
@@ -50,7 +45,7 @@ export default function HomePage() {
   }, []);
 
   const checkAchievements = useCallback(async () => {
-    if (!user || !firestore) return;
+    if (!user) return;
 
     let updatedUser: Partial<typeof user> = {};
     let statsUpdated = false;
@@ -88,45 +83,15 @@ export default function HomePage() {
     }
 
     if (statsUpdated) {
-        const userRef = doc(firestore, "users", user.uid);
-        await updateDoc(userRef, updatedUser);
+        updateUser(updatedUser);
     }
-  }, [user, firestore, toast]);
+  }, [user, toast, updateUser]);
 
   useEffect(() => {
     if (user) {
         checkAchievements();
     }
   }, [user, checkAchievements]);
-  
-  const qotdCompletedDays = useMemo(() => {
-    if (!user?.dailyProgress) return [];
-    return Object.entries(user.dailyProgress).reduce((acc, [dateStr, progress]) => {
-      if (progress.qotdCompleted) {
-        const [year, month, day] = dateStr.split('-').map(Number);
-        const date = new Date(year, month - 1, day);
-        acc.push(date);
-      }
-      return acc;
-    }, [] as Date[]);
-  }, [user?.dailyProgress]);
-
-  const questionsAnsweredDays = useMemo(() => {
-    if (!user?.dailyProgress) return [];
-    return Object.entries(user.dailyProgress).reduce((acc, [dateStr, progress]) => {
-      if ((progress.questionsAnswered || 0) > 0) {
-        const [year, month, day] = dateStr.split('-').map(Number);
-        acc.push(new Date(year, month - 1, day));
-      }
-      return acc;
-    }, [] as Date[]);
-  }, [user?.dailyProgress]);
-
-  const streakDays = useMemo(() => {
-    if (!user) return [];
-    const startDate = user.lastChallengeDate === todayKey ? startOfDay(new Date()) : startOfDay(new Date(user.lastChallengeDate || new Date()));
-    return Array.from({ length: user.streak || 0 }, (_, i) => addDays(startDate, -i));
-}, [user, todayKey]);
   
   const isStreakSecuredToday = useMemo(() => {
     if (!user) return false;
@@ -159,9 +124,8 @@ export default function HomePage() {
   };
   
   const handlePetNameSave = async (originalName: string) => {
-    if (user && firestore && newPetName.trim()) {
-        const userRef = doc(firestore, "users", user.uid);
-        await updateDoc(userRef, {
+    if (user && newPetName.trim()) {
+        updateUser({
             [`petNames.${originalName}`]: newPetName.trim()
         });
         setEditingPet(null);
@@ -174,8 +138,7 @@ export default function HomePage() {
   }
 
   const handleDayClick = (day: Date) => {
-    if (isSameDay(day, startOfDay(new Date()))) return;
-    if (isBefore(day, startOfDay(new Date()))) {
+    if (!isToday(day) && !isFuture(day)) {
       setSelectedDate(day);
     }
   };
@@ -408,61 +371,21 @@ export default function HomePage() {
 
        <section className="mt-8">
         <h2 className="text-xl font-bold font-headline mb-4">Activity Calendar</h2>
-        <Card>
-            <CardHeader>
-              {showCalendarHelp ? (
-                <div className="flex justify-between items-start gap-4">
-                  <CardDescription>
-                    Your current streak is marked with a flame (🔥) and completed Questions of the Day are marked with a check (✅). Click a past day to see details.
-                  </CardDescription>
-                  <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0 -mt-1 -mr-2" onClick={() => setShowCalendarHelp(false)}>
-                    <X className="h-4 w-4" />
-                    <span className="sr-only">Hide help</span>
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex justify-end -my-2 -mr-2">
-                  <Button variant="ghost" size="icon" onClick={() => setShowCalendarHelp(true)}>
-                    <HelpCircle className="h-4 w-4" />
-                    <span className="sr-only">Show Calendar Legend</span>
-                  </Button>
-                </div>
-              )}
-            </CardHeader>
-            <CardContent className="flex justify-center">
-               <Calendar
-                    mode="multiple"
-                    onDayClick={handleDayClick}
-                    disabled={{ after: new Date() }}
-                    className="rounded-md border"
-                    modifiers={{
-                       streak: streakDays,
-                       qotd_completed: qotdCompletedDays,
-                       questions_answered: questionsAnsweredDays,
-                    }}
-                    modifiersClassNames={{
-                        streak: 'day-streak',
-                        qotd_completed: 'day-qotd-completed',
-                        questions_answered: 'day-questions-answered'
-                    }}
-                />
-            </CardContent>
-        </Card>
+        <ActivityCalendar dailyProgress={user.dailyProgress} onDayClick={handleDayClick} />
        </section>
 
       <section className="mt-8">
         <h2 className="text-xl font-bold font-headline mb-4">Pet Collection ({unlockedPetsCount}/{allPets.length})</h2>
         <Card>
           <CardContent className="p-4">
-            <TooltipProvider>
             <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
               {allPets.map((pet) => (
                 <PetDisplay key={pet.name} pet={pet} />
               ))}
             </div>
-            </TooltipProvider>
           </CardContent>
         </Card>
       </section>
     </div>
   );
+}
