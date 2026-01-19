@@ -108,6 +108,7 @@ export const useUser = () => {
           createdAt: serverTimestamp(),
           questionsAnswered: 0,
           answeredQuestionIds: [],
+          hasCompletedOnboarding: false,
         };
         const userRef = doc(firestore, 'users', user.uid);
         setDoc(userRef, newUserProfile).then(() => {
@@ -186,6 +187,7 @@ export const useUser = () => {
                 email: googleUser.email || '',
                 avatarUrl: googleUser.photoURL || localUser.avatarUrl,
                 createdAt: serverTimestamp(),
+                hasCompletedOnboarding: false,
             };
             await setDoc(userRef, mergedData);
             clearLocalUser();
@@ -217,13 +219,16 @@ export const useUser = () => {
   const memoizedUpdateUser = useCallback((data: Partial<UserProfile>) => {
       if (firebaseUser?.isAnonymous) {
           updateLocalUser(data);
+          return Promise.resolve();
       } else if (firestore && firebaseUser) {
           const userRef = doc(firestore, "users", firebaseUser.uid);
-          updateDoc(userRef, data).catch((error) => {
+          return updateDoc(userRef, data).catch((error) => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: userRef.path, operation: 'update', requestResourceData: data }));
             toast({ variant: 'destructive', title: 'Update failed', description: 'Could not save your changes.' });
+            throw error;
           });
       }
+      return Promise.reject(new Error("User or Firestore not available"));
   }, [firebaseUser, firestore, updateLocalUser, toast]);
 
   return { user, isAdmin, updateUser: memoizedUpdateUser, firebaseUser, isLoading, activeTheme: user?.activeTheme || 'default', linkGoogleAccount };

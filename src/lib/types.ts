@@ -116,4 +116,5 @@ export interface UserProfile {
     questionsAnswered?: number;
     answeredQuestionIds?: string[];
     quizProgress?: Record<string, TopicQuizProgress>;
+    hasCompletedOnboarding?: boolean;
 }

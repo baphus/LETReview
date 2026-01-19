@@ -20,6 +20,7 @@ import SplashScreen from "@/components/SplashScreen";
 import { FirebaseClientProvider } from "@/firebase/client-provider";
 import { useUser } from "@/firebase/auth/use-user";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { OnboardingDialog } from "@/components/OnboardingDialog";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const spaceGrotesk = Space_Grotesk({
@@ -29,8 +30,9 @@ const spaceGrotesk = Space_Grotesk({
 
 function RootLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { user, isLoading, activeTheme } = useUser();
+  const { user, isLoading, activeTheme, firebaseUser } = useUser();
   const [isShowingSplash, setIsShowingSplash] = useState(pathname === "/");
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
     if (pathname === '/') {
@@ -58,6 +60,12 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
       document.documentElement.classList.add(activeTheme);
     }
   }, [activeTheme]);
+
+  useEffect(() => {
+    if (user && !isLoading && firebaseUser && !firebaseUser.isAnonymous && !user.hasCompletedOnboarding) {
+        setShowOnboarding(true);
+    }
+  }, [user, isLoading, firebaseUser]);
 
   if (isShowingSplash && pathname === "/") {
     return <SplashScreen />;
@@ -118,6 +126,7 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
             <main className="flex-1 overflow-y-auto pb-20 md:pb-4">
               {children}
             </main>
+            <OnboardingDialog open={showOnboarding} onOpenChange={setShowOnboarding} />
             <BottomNav />
             <Toaster />
           </SidebarInset>
