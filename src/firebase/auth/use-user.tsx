@@ -35,16 +35,16 @@ export const useUser = () => {
   const auth = useAuth();
   const firestore = useFirestore();
 
-  const handleUserSnapshot = useCallback((docSnap: DocumentData) => {
+  const handleUserSnapshot = useCallback((docSnap: DocumentData, user: User) => {
     if (docSnap.exists()) {
         setFirestoreUser(docSnap.data() as UserProfile);
-    } else if (firebaseUser && firestore && !firebaseUser.isAnonymous) {
+    } else if (user && firestore && !user.isAnonymous) {
         // Create new user profile if it doesn't exist for a NON-anonymous user
         const newUserProfile: UserProfile = {
-          uid: firebaseUser.uid,
-          name: firebaseUser.displayName || 'New User',
-          avatarUrl: firebaseUser.photoURL || `https://avatar.vercel.sh/${firebaseUser.uid}`,
-          email: firebaseUser.email || '',
+          uid: user.uid,
+          name: user.displayName || 'New User',
+          avatarUrl: user.photoURL || `https://avatar.vercel.sh/${user.uid}`,
+          email: user.email || '',
           points: 0,
           streak: 0,
           highestStreak: 0,
@@ -61,7 +61,7 @@ export const useUser = () => {
           questionsAnswered: 0,
           answeredQuestionIds: [],
         };
-        const userRef = doc(firestore, 'users', firebaseUser.uid);
+        const userRef = doc(firestore, 'users', user.uid);
         setDoc(userRef, newUserProfile, { merge: true }).then(() => {
           setFirestoreUser(newUserProfile);
         }).catch(async (serverError) => {
@@ -74,57 +74,64 @@ export const useUser = () => {
         });
     }
     setIsLoading(false);
-    if (pathname === '/login' && !firebaseUser?.isAnonymous) {
+    if (pathname === '/login' && !user.isAnonymous) {
       router.push('/home');
     }
-  }, [firebaseUser, firestore, pathname, router]);
+  }, [firestore, pathname, router]);
 
   useEffect(() => {
-    if (!auth) return;
+    if (!auth || !firestore) return;
 
-    const unsubscribe = onAuthStateChanged(auth, async (userAuth) => {
+    let unsubscribeSnapshot: () => void = () => {};
+
+    const unsubscribeAuth = onAuthStateChanged(auth, async (userAuth) => {
+      unsubscribeSnapshot(); // Unsubscribe from any previous listener
+
       if (userAuth) {
-        setFirebaseUser(userAuth);
+        setFirebaseUser(userAuth); // Keep this to expose firebaseUser
         if (userAuth.isAnonymous) {
-            setIsLoading(false);
+          setFirestoreUser(null);
+          setIsLoading(false);
+        } else {
+          // Is a real user, set up the snapshot listener
+          const userRef = doc(firestore, 'users', userAuth.uid);
+          unsubscribeSnapshot = onSnapshot(
+            userRef,
+            (docSnap) => {
+              handleUserSnapshot(docSnap, userAuth);
+            },
+            (error) => {
+              const permissionError = new FirestorePermissionError({
+                path: userRef.path,
+                operation: 'get',
+              });
+              errorEmitter.emit('permission-error', permissionError);
+              setIsLoading(false);
+            }
+          );
         }
       } else {
-        // If there's no logged-in user, attempt to sign in anonymously
+        // No user is signed in, attempt anonymous sign-in
+        setFirebaseUser(null);
+        setFirestoreUser(null);
         try {
-            await signInAnonymously(auth);
+          await signInAnonymously(auth);
+          // The onAuthStateChanged listener will fire again with the new anonymous user
         } catch (error) {
-            console.error("Anonymous sign-in failed on startup:", error);
-            // Handle failure case if necessary
-            setFirebaseUser(null);
-            setFirestoreUser(null);
-            setIsLoading(false);
-            if (pathname !== '/') {
-               router.push('/');
-            }
+          console.error("Anonymous sign-in failed:", error);
+          setIsLoading(false);
+          if (pathname !== '/') {
+            router.push('/');
+          }
         }
       }
     });
 
-    return () => unsubscribe();
-  }, [auth, router, pathname]);
-
-  useEffect(() => {
-    if (firebaseUser && firestore && !firebaseUser.isAnonymous) {
-      const userRef = doc(firestore, 'users', firebaseUser.uid);
-      const unsubscribe = onSnapshot(userRef, 
-        (docSnap) => handleUserSnapshot(docSnap),
-        (error) => {
-          const permissionError = new FirestorePermissionError({
-              path: userRef.path,
-              operation: 'get',
-          });
-          errorEmitter.emit('permission-error', permissionError);
-          setIsLoading(false);
-        }
-      );
-      return () => unsubscribe();
-    }
-  }, [firebaseUser, firestore, handleUserSnapshot]);
+    return () => {
+      unsubscribeAuth();
+      unsubscribeSnapshot();
+    };
+  }, [auth, firestore, router, pathname, handleUserSnapshot]);
   
   const linkGoogleAccount = useCallback(async () => {
     if (!auth || !auth.currentUser || !firestore || !localUser) return;
