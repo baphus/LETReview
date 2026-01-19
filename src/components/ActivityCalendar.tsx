@@ -3,18 +3,17 @@
 
 import { useState, useMemo } from 'react';
 import { add, sub, format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, isToday, isFuture } from 'date-fns';
-import { ChevronLeft, ChevronRight, Gem, Clock, HelpCircle, Award, CheckCircle, Flame, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Gem, Clock, HelpCircle, Award, CheckCircle, Flame } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import type { DailyProgress } from '@/lib/types';
-import { Alert, AlertDescription } from './ui/alert';
 
 interface ActivityCalendarProps {
   dailyProgress: Record<string, DailyProgress>;
   onDayClick: (date: Date) => void;
+  view: 'week' | 'month';
 }
 
 type View = 'week' | 'month';
@@ -32,10 +31,8 @@ const StatDisplay = ({ icon: Icon, value, label, colorClass, isZero }: { icon: R
   );
 };
 
-export function ActivityCalendar({ dailyProgress, onDayClick }: ActivityCalendarProps) {
-  const [view, setView] = useState<View>('week');
+export function ActivityCalendar({ dailyProgress, onDayClick, view }: ActivityCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [showLegend, setShowLegend] = useState(true);
 
   const dateManipulation = useMemo(() => ({
     unit: view === 'week' ? { weeks: 1 } : { months: 1 },
@@ -64,50 +61,15 @@ export function ActivityCalendar({ dailyProgress, onDayClick }: ActivityCalendar
   return (
     <Card>
       <CardHeader>
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-          <div className="flex items-center gap-2">
+        <div className="flex justify-center items-center gap-4">
             <Button variant="outline" size="icon" onClick={handlePrev}><ChevronLeft className="h-4 w-4" /></Button>
             <h2 className="text-lg font-semibold text-center w-48">{view === 'week' ? weekHeader : format(currentDate, headerFormat)}</h2>
             <Button variant="outline" size="icon" onClick={handleNext}><ChevronRight className="h-4 w-4" /></Button>
-          </div>
-          <div className="flex items-center gap-2">
-             {!showLegend && (
-               <Tooltip>
-                <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" onClick={() => setShowLegend(true)}>
-                      <HelpCircle className="h-4 w-4"/>
-                      <span className="sr-only">Show Legend</span>
-                    </Button>
-                </TooltipTrigger>
-                <TooltipContent>Show Legend</TooltipContent>
-              </Tooltip>
-            )}
-             <Select value={view} onValueChange={(v) => setView(v as View)}>
-                <SelectTrigger className="w-full sm:w-auto">
-                    <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="week">Week</SelectItem>
-                    <SelectItem value="month">Month</SelectItem>
-                </SelectContent>
-            </Select>
-          </div>
         </div>
-        {showLegend && (
-            <Alert className="mt-4">
-                <AlertDescription className="flex items-center justify-between text-sm">
-                   <span>Your current streak is marked with a flame (🔥) and completed Questions of the Day are marked with a check (✅). Click a past day to see details.</span>
-                   <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => setShowLegend(false)}>
-                       <X className="h-4 w-4 text-muted-foreground"/>
-                       <span className="sr-only">Hide Legend</span>
-                   </Button>
-                </AlertDescription>
-            </Alert>
-        )}
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-0 md:p-6 md:pt-0">
         <TooltipProvider>
-          <div className="grid grid-cols-7 border-t border-l">
+          <div className="grid grid-cols-7 border-t border-l md:border-0">
             {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
               <div key={i} className="text-center font-bold text-xs sm:text-sm p-2 border-b border-r text-muted-foreground">{day}</div>
             ))}
@@ -130,7 +92,7 @@ export function ActivityCalendar({ dailyProgress, onDayClick }: ActivityCalendar
                     <div
                       onClick={() => !isDayFuture && onDayClick(day)}
                       className={cn(
-                        "relative p-1.5 sm:p-2 border-b border-r flex flex-col justify-between transition-colors min-h-24 sm:aspect-square",
+                        "relative p-1.5 sm:p-2 border-b border-r flex flex-col justify-between transition-colors min-h-28 md:aspect-square",
                         isDayFuture ? "bg-muted/10 cursor-not-allowed" : `hover:bg-primary/5 cursor-pointer`,
                         getHeatColor(points),
                         isDayToday && "ring-2 ring-primary ring-inset",
