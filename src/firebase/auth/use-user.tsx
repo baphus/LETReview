@@ -1,7 +1,7 @@
 'use client';
 
 import { useAuth, useFirestore } from '@/firebase';
-import { User, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInAnonymously } from 'firebase/auth';
+import { User, onAuthStateChanged, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signInAnonymously } from 'firebase/auth';
 import { doc, setDoc, onSnapshot, DocumentData, serverTimestamp, getDoc, updateDoc } from 'firebase/firestore';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
@@ -168,13 +168,14 @@ export const useUser = () => {
     };
   }, [auth, firestore, handleUserSnapshot]);
 
-  const linkGoogleAccount = useCallback(async () => {
-    if (!auth || !firestore || !localUser) return;
-    
-    const provider = new GoogleAuthProvider();
+  // Effect for handling redirect result from Google sign-in
+  useEffect(() => {
+    if (!auth || !firestore || isLoading) return;
 
-    try {
-        const result = await signInWithPopup(auth, provider);
+    getRedirectResult(auth)
+      .then(async (result) => {
+        if (!result || !localUser) return; // No redirect result or no local user to merge
+
         const googleUser = result.user;
         const userRef = doc(firestore, "users", googleUser.uid);
         const userDoc = await getDoc(userRef);
@@ -197,7 +198,7 @@ export const useUser = () => {
                 className: "bg-green-100 border-green-300",
             });
         } else {
-            toast({
+             toast({
                 title: `Welcome back, ${googleUser.displayName}!`,
                 description: "You've successfully signed in.",
                 className: "bg-blue-100 border-blue-300",
@@ -205,13 +206,21 @@ export const useUser = () => {
         }
         router.push('/home');
 
-    } catch (error: any) {
-        if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
-          console.error("Error linking Google account:", error);
-          toast({ variant: "destructive", title: "Sign-in Error", description: error.message || "Could not sign in with Google." });
-        }
-    }
-  }, [auth, firestore, router, toast, localUser, clearLocalUser]);
+      })
+      .catch((error) => {
+        console.error("Error with redirect result:", error);
+        toast({ variant: "destructive", title: "Sign-in Error", description: error.message || "Could not complete sign in." });
+      });
+  }, [auth, firestore, isLoading, localUser, clearLocalUser, toast, router]);
+
+  const linkGoogleAccount = useCallback(async () => {
+    if (!auth) return;
+    const provider = new GoogleAuthProvider();
+    await signInWithRedirect(auth, provider).catch((error) => {
+        console.error("Error starting redirect sign-in:", error);
+        toast({ variant: "destructive", title: "Sign-in Error", description: "Could not start the sign-in process." });
+    });
+  }, [auth, toast]);
   
   const user = firebaseUser?.isAnonymous ? localUser : firestoreUser;
   const isAdmin = user?.uid === 'q4vgkFodzoSaPM1BuNbRI0Wx9YZ2';
