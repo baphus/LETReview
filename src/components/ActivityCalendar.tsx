@@ -23,9 +23,9 @@ const StatDisplay = ({ icon: Icon, value, label, colorClass, isZero }: { icon: R
     return null;
   }
   return (
-    <div className={cn("flex items-center gap-1.5")}>
-      <Icon className={cn("h-4 w-4 shrink-0", colorClass)} />
-      <span className="text-sm font-semibold">{value}</span>
+    <div className={cn("flex items-center gap-1")}>
+      <Icon className={cn("h-3 w-3 sm:h-4 sm:w-4 shrink-0", colorClass)} />
+      <span className="text-xs sm:text-sm font-semibold">{value}</span>
       <span className="sr-only">{label}</span>
     </div>
   );
@@ -126,31 +126,25 @@ export function ActivityCalendar({ dailyProgress, onDayClick }: ActivityCalendar
                     <div
                       onClick={() => !isDayFuture && onDayClick(day)}
                       className={cn(
-                        "relative aspect-square p-2 border-b border-r flex flex-col justify-between transition-colors",
+                        "relative p-1.5 sm:p-2 border-b border-r flex flex-col justify-between transition-colors min-h-24 sm:min-h-0 sm:aspect-square",
                         isDayFuture ? "bg-muted/10 cursor-not-allowed" : `hover:bg-primary/5 cursor-pointer`,
                         getHeatColor(points),
                         isDayToday && "ring-2 ring-primary ring-inset",
                       )}
                     >
                       <div className="flex justify-between items-start">
-                        <span className={cn("font-bold text-xs sm:text-sm", isDayToday ? 'text-primary' : 'text-foreground')}>{format(day, 'd')}</span>
+                        <span className={cn("font-bold text-sm", isDayToday ? 'text-primary' : 'text-foreground')}>{format(day, 'd')}</span>
                         <div className="flex items-center gap-1 z-10 relative">
                             {isStreakDay && <Flame className="h-4 w-4 text-destructive" />}
                             {qotd && <CheckCircle className="h-4 w-4 text-green-500" />}
                         </div>
                       </div>
-                      <div className="hidden sm:grid grid-cols-2 gap-1.5 mt-auto">
+                      <div className="grid grid-cols-2 gap-x-2 gap-y-1 mt-auto">
                         <StatDisplay icon={Gem} value={points} label="Points" colorClass="text-yellow-500" isZero={points === 0} />
                         <StatDisplay icon={Clock} value={pomodoros} label="Pomodoros" colorClass="text-red-500" isZero={pomodoros === 0} />
                         <StatDisplay icon={HelpCircle} value={questions} label="Questions" colorClass="text-green-500" isZero={questions === 0} />
                         <StatDisplay icon={Award} value={challenges} label="Challenges" colorClass="text-purple-500" isZero={challenges === 0} />
                       </div>
-                       <div className="sm:hidden grid grid-cols-2 gap-0.5 mt-auto place-items-center">
-                          {points > 0 && <Gem className="h-3 w-3 text-yellow-500" />}
-                          {pomodoros > 0 && <Clock className="h-3 w-3 text-red-500" />}
-                          {questions > 0 && <HelpCircle className="h-3 w-3 text-green-500" />}
-                          {challenges > 0 && <Award className="h-3 w-3 text-purple-500" />}
-                       </div>
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>
