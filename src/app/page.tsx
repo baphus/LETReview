@@ -66,7 +66,7 @@ const features = [
 ];
 
 export default function LandingPage() {
-  const { user, firebaseUser } = useUser();
+  const { user, firebaseUser, linkGoogleAccount } = useUser();
   const isAnonymous = firebaseUser?.isAnonymous;
 
   return (
@@ -87,12 +87,10 @@ export default function LandingPage() {
                 </p>
               </div>
               <div>
-                <Link href={user ? "/home" : "/login"}>
-                  <Button size="lg">
-                    {user ? "Go to Dashboard" : "Get Started for Free"}
+                 <Button size="lg" onClick={() => user && !isAnonymous ? router.push('/home') : linkGoogleAccount()}>
+                    {user && !isAnonymous ? "Go to Dashboard" : "Get Started for Free"}
                     <ChevronRight className="w-5 h-5 ml-2" />
                   </Button>
-                </Link>
               </div>
               <div className="w-full max-w-4xl mt-8">
                  <Image 
@@ -183,11 +181,9 @@ export default function LandingPage() {
             <p className="max-w-[600px] mx-auto text-muted-foreground md:text-xl mb-6">
               Sign up today and take the first step towards becoming a Licensed Professional Teacher.
             </p>
-            <Link href={user && !isAnonymous ? "/home" : "/login"}>
-               <Button size="lg">
+             <Button size="lg" onClick={() => user && !isAnonymous ? router.push('/home') : linkGoogleAccount()}>
                 {user && !isAnonymous ? "Go to Dashboard" : "Sign Up to Save Progress"}
               </Button>
-            </Link>
           </div>
         </section>
 
