@@ -44,13 +44,11 @@ export const useUser = () => {
   const auth = useAuth();
   const firestore = useFirestore();
 
-  // This ref is to avoid stale closures in the handleUserSnapshot callback
   const firestoreRef = useRef(firestore);
   useEffect(() => {
     firestoreRef.current = firestore;
   }, [firestore]);
 
-  // Effect for managing local (anonymous) user state
   useEffect(() => {
       if (typeof window !== 'undefined') {
           try {
@@ -93,7 +91,6 @@ export const useUser = () => {
     if (docSnap.exists()) {
         setFirestoreUser(docSnap.data() as UserProfile);
     } else if (user && currentFirestore && !user.isAnonymous) {
-        // Create new user profile if it doesn't exist for a NON-anonymous user
         const newUserProfile: UserProfile = {
           uid: user.uid,
           name: user.displayName || 'New User',
@@ -131,88 +128,79 @@ export const useUser = () => {
     setIsLoading(false);
   }, []);
 
-  // Combined effect to handle auth flow correctly
+  // Corrected auth flow
   useEffect(() => {
     if (!auth || !firestore) return;
 
-    // This ref will hold the unsubscribe function for onAuthStateChanged
-    let unsubscribeAuth: (() => void) | null = null;
     let unsubscribeSnapshot: () => void = () => {};
 
-    getRedirectResult(auth)
-      .then(async (result) => {
-        if (result && localUser) {
-          const googleUser = result.user;
-          const userRef = doc(firestore, "users", googleUser.uid);
-          const userDoc = await getDoc(userRef);
+    const unsubscribeAuth = onAuthStateChanged(auth, async (userAuth) => {
+        unsubscribeSnapshot(); // Always clean up previous snapshot listener
 
-          if (!userDoc.exists()) {
-            const mergedData: UserProfile = {
-              ...localUser,
-              uid: googleUser.uid,
-              name: googleUser.displayName || localUser.name,
-              email: googleUser.email || '',
-              avatarUrl: googleUser.photoURL || localUser.avatarUrl,
-              createdAt: serverTimestamp(),
-              hasCompletedOnboarding: false,
-            };
-            await setDoc(userRef, mergedData);
-            clearLocalUser();
-            toast({
-              title: "Account Synced!",
-              description: "Your progress has been saved to your Google account.",
-              className: "bg-green-100 border-green-300",
-            });
-          } else {
-            toast({
-              title: `Welcome back, ${googleUser.displayName}!`,
-              description: "You've successfully signed in.",
-              className: "bg-blue-100 border-blue-300",
-            });
-          }
-        }
-      })
-      .catch((error) => {
-        console.error("Error processing redirect result:", error);
-        toast({ variant: "destructive", title: "Sign-in Error", description: error.message });
-      })
-      .finally(() => {
-        // After redirect check is complete, set up the auth state listener.
-        unsubscribeAuth = onAuthStateChanged(auth, (userAuth) => {
-          unsubscribeSnapshot(); // clean up previous listener
-
-          if (userAuth) {
+        if (userAuth) {
+            // A user is authenticated.
             setFirebaseUser(userAuth);
             if (userAuth.isAnonymous) {
-              setFirestoreUser(null);
-              setIsLoading(false);
+                setFirestoreUser(null); // Anonymous users use local state.
+                setIsLoading(false);
             } else {
-              const userRef = doc(firestore, 'users', userAuth.uid);
-              unsubscribeSnapshot = onSnapshot(
-                userRef,
-                (docSnap) => handleUserSnapshot(docSnap, userAuth),
-                (error) => {
-                  errorEmitter.emit('permission-error', new FirestorePermissionError({ path: userRef.path, operation: 'get' }));
-                  setIsLoading(false);
-                }
-              );
+                // A real user is signed in. Set up a real-time listener for their profile.
+                const userRef = doc(firestore, 'users', userAuth.uid);
+                unsubscribeSnapshot = onSnapshot(userRef, (docSnap) => {
+                    handleUserSnapshot(docSnap, userAuth);
+                }, (error) => {
+                    errorEmitter.emit('permission-error', new FirestorePermissionError({ path: userRef.path, operation: 'get' }));
+                    setIsLoading(false);
+                });
             }
-          } else {
-            // No user is signed in, and redirect is processed. Safe to sign in anon.
-            signInAnonymously(auth).catch(err => {
-              console.error("Anonymous sign-in failed:", err);
-              setIsLoading(false);
-            });
-          }
-        });
-      });
+        } else {
+            // No user is authenticated. This could be initial load or a redirect return.
+            setIsLoading(true);
+            try {
+                const result = await getRedirectResult(auth);
+                if (result) {
+                    // Sign-in via redirect was successful. `onAuthStateChanged` will fire again with the user.
+                    // We just need to handle the data merge from the local guest account.
+                    const googleUser = result.user;
+                    const userRef = doc(firestore, "users", googleUser.uid);
+                    const userDoc = await getDoc(userRef);
+
+                    if (!userDoc.exists() && localUser) {
+                        const mergedData: UserProfile = {
+                            ...localUser,
+                            uid: googleUser.uid,
+                            name: googleUser.displayName || localUser.name,
+                            email: googleUser.email || '',
+                            avatarUrl: googleUser.photoURL || localUser.avatarUrl,
+                            createdAt: serverTimestamp(),
+                            hasCompletedOnboarding: false,
+                        };
+                        await setDoc(userRef, mergedData);
+                        clearLocalUser();
+                        toast({
+                            title: "Account Synced!",
+                            description: "Your guest progress has been saved to your Google account.",
+                            className: "bg-green-100 border-green-300",
+                        });
+                    }
+                } else {
+                    // No redirect result, so it's a fresh visit. Sign in as a guest.
+                    signInAnonymously(auth).catch(err => {
+                        console.error("Anonymous sign-in failed:", err);
+                        setIsLoading(false);
+                    });
+                }
+            } catch (error) {
+                console.error("Error processing redirect result:", error);
+                toast({ variant: "destructive", title: "Sign-in Error", description: "There was a problem signing you in." });
+                setIsLoading(false);
+            }
+        }
+    });
 
     return () => {
-      // Cleanup both listeners
-      if (unsubscribeAuth) {
         unsubscribeAuth();
-      }
-      unsubscribeSnapshot();
+        unsubscribeSnapshot();
     };
   }, [auth, firestore, localUser, handleUserSnapshot, clearLocalUser, toast]);
 
