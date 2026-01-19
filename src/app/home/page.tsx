@@ -1,10 +1,11 @@
+
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { User, Flame, Gem, Award, Shield, Edit, Check, Lock, CheckCircle, Lightbulb, HelpCircle } from "lucide-react";
+import { User, Flame, Gem, Award, Shield, Edit, Check, Lock, CheckCircle, Lightbulb, HelpCircle, Clock, XCircle } from "lucide-react";
 import Image from "next/image";
 import { streakPets, getQuestionOfTheDay, achievementPets, rarePets } from "@/lib/data";
 import type { PetProfile, QuizQuestion } from "@/lib/types";
@@ -19,6 +20,8 @@ import { format, isToday, isFuture } from "date-fns";
 import { DayDetailDialog } from "@/components/DayDetailDialog";
 import { useUser } from "@/firebase/auth/use-user";
 import { ActivityCalendar } from "@/components/ActivityCalendar";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+
 
 const allPets: PetProfile[] = [
     ...streakPets,
@@ -114,7 +117,7 @@ export default function HomePage() {
     }).length;
   }, [user]);
 
-  const todaysProgress = user?.dailyProgress?.[todayKey] || { pointsEarned: 0, pomodorosCompleted: 0, qotdCompleted: false };
+  const todaysProgress = user?.dailyProgress?.[todayKey] || { pointsEarned: 0, pomodorosCompleted: 0, qotdCompleted: false, questionsAnswered: 0, challengesCompleted: [] };
 
   const handlePetNameEdit = (originalName: string) => {
     if (!user) return;
@@ -237,28 +240,40 @@ export default function HomePage() {
       
       <section className="my-6">
         <div className="grid grid-cols-2 gap-4">
-            <Card className="bg-destructive/10 border-destructive">
-                <CardHeader className="items-center pb-2">
-                    <CardTitle className="text-destructive">
-                        <Flame className="h-8 w-8" />
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="text-center">
-                    <div className="text-4xl font-bold">{user.streak}</div>
-                    <p className="text-xs text-muted-foreground">Day Streak</p>
-                </CardContent>
-            </Card>
-            <Card className="bg-accent/10 border-accent">
-                <CardHeader className="items-center pb-2">
-                    <CardTitle className="text-accent">
-                        <Gem className="h-8 w-8" />
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="text-center">
-                    <div className="text-4xl font-bold">{user.points}</div>
-                    <p className="text-xs text-muted-foreground">Total Points</p>
-                </CardContent>
-            </Card>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Card className="bg-destructive/10 border-destructive">
+                  <CardHeader className="items-center pb-2">
+                      <CardTitle className="text-destructive">
+                          <Flame className="h-8 w-8" />
+                      </CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-center">
+                      <div className="text-4xl font-bold">{user.streak}</div>
+                  </CardContent>
+              </Card>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Daily Streak</p>
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Card className="bg-accent/10 border-accent">
+                  <CardHeader className="items-center pb-2">
+                      <CardTitle className="text-accent">
+                          <Gem className="h-8 w-8" />
+                      </CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-center">
+                      <div className="text-4xl font-bold">{user.points}</div>
+                  </CardContent>
+              </Card>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Total Points</p>
+            </TooltipContent>
+          </Tooltip>
         </div>
       </section>
 
@@ -279,41 +294,53 @@ export default function HomePage() {
       )}
 
        <section className="mb-6">
-        <h2 className="text-xl font-bold font-headline mb-4">Today's Progress</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-             <Card>
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">Points Earned Today</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-2xl font-bold flex items-center gap-2"><Gem className="h-5 w-5 text-accent" />{todaysProgress.pointsEarned || 0}</p>
-                </CardContent>
-             </Card>
-             <Card>
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">Pomodoros Today</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-2xl font-bold flex items-center gap-2"><Award className="h-5 w-5 text-muted-foreground" />{todaysProgress.pomodorosCompleted || 0}</p>
-                </CardContent>
-             </Card>
-             <Card>
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">QOTD</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    {todaysProgress.qotdCompleted ? (
-                        <Badge variant="secondary" className="text-green-600 border-green-300">
-                            <CheckCircle className="h-4 w-4 mr-1"/> Answered
-                        </Badge>
-                    ) : (
-                         <Badge variant="outline">
-                             Pending
-                        </Badge>
-                    )}
-                </CardContent>
-             </Card>
-        </div>
+        <h2 className="text-xl font-bold font-headline mb-4">Today's Activity</h2>
+         <Card>
+            <CardContent className="p-4 flex items-center justify-around flex-wrap gap-4">
+                <Tooltip>
+                    <TooltipTrigger className="flex items-center gap-2 p-2 rounded-md hover:bg-muted">
+                        <Gem className="h-5 w-5 text-accent" />
+                        <span className="text-lg font-bold">{todaysProgress.pointsEarned || 0}</span>
+                    </TooltipTrigger>
+                    <TooltipContent><p>Points Earned Today</p></TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                    <TooltipTrigger className="flex items-center gap-2 p-2 rounded-md hover:bg-muted">
+                        <Clock className="h-5 w-5 text-destructive" />
+                        <span className="text-lg font-bold">{todaysProgress.pomodorosCompleted || 0}</span>
+                    </TooltipTrigger>
+                    <TooltipContent><p>Pomodoros Completed</p></TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                    <TooltipTrigger className="flex items-center gap-2 p-2 rounded-md hover:bg-muted">
+                        <HelpCircle className="h-5 w-5 text-primary" />
+                        <span className="text-lg font-bold">{todaysProgress.questionsAnswered || 0}</span>
+                    </TooltipTrigger>
+                    <TooltipContent><p>Questions Answered Today</p></TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                    <TooltipTrigger className="flex items-center gap-2 p-2 rounded-md hover:bg-muted">
+                        <Award className="h-5 w-5 text-yellow-500" />
+                        <span className="text-lg font-bold">{todaysProgress.challengesCompleted?.length || 0}</span>
+                    </TooltipTrigger>
+                    <TooltipContent><p>Challenges Completed</p></TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                    <TooltipTrigger className="p-2 rounded-md hover:bg-muted">
+                        {todaysProgress.qotdCompleted ? (
+                            <CheckCircle className="h-6 w-6 text-green-600" />
+                        ) : (
+                             <XCircle className="h-6 w-6 text-muted-foreground" />
+                        )}
+                    </TooltipTrigger>
+                    <TooltipContent><p>Question of the Day {todaysProgress.qotdCompleted ? 'Answered' : 'Pending'}</p></TooltipContent>
+                </Tooltip>
+            </CardContent>
+        </Card>
        </section>
 
         <section className="mb-6">
@@ -342,39 +369,6 @@ export default function HomePage() {
 
       <Separator className="my-6" />
 
-      <section>
-        <h2 className="text-xl font-bold font-headline mb-4">Your Stats</h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Highest Daily Streak</CardTitle>
-                <Shield className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                <div className="text-2xl font-bold">{user.highestStreak}</div>
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Highest Quiz Streak</CardTitle>
-                <Award className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                <div className="text-2xl font-bold">{user.highestQuizStreak}</div>
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Questions Answered</CardTitle>
-                <HelpCircle className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                <div className="text-2xl font-bold">{user.questionsAnswered || 0}</div>
-                </CardContent>
-            </Card>
-        </div>
-      </section>
-
        <section className="mt-8">
         <h2 className="text-xl font-bold font-headline mb-4">Activity Calendar</h2>
         <ActivityCalendar dailyProgress={user.dailyProgress} onDayClick={handleDayClick} />
@@ -395,3 +389,5 @@ export default function HomePage() {
     </div>
   );
 }
+
+    
