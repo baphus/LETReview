@@ -9,7 +9,7 @@ import type { Reviewer, Subject, Topic } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Clock, Tag, Brain, Book, Video, Bookmark, BarChart } from 'lucide-react';
+import { Clock, Tag, Brain, Book, Video, Bookmark, BarChart, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -162,7 +162,16 @@ export default function ReviewArticlePage() {
                 <CardHeader className="flex-row items-center justify-between">
                     <CardTitle className="text-lg">Review Tools</CardTitle>
                     <div className="flex items-center gap-2">
-                        {isAdmin && article && <AddQuestionDialog article={article} />}
+                         {isAdmin && (
+                            <>
+                                <Link href={`/reviewer/review/${article.slug}/edit`} passHref>
+                                    <Button variant="outline" size="icon" aria-label="Edit article">
+                                        <Edit className="h-5 w-5" />
+                                    </Button>
+                                </Link>
+                                {article && <AddQuestionDialog article={article} />}
+                            </>
+                        )}
                         <Button variant={isBookmarked ? "secondary" : "outline"} size="icon" onClick={handleToggleBookmark} aria-label={isBookmarked ? "Remove bookmark" : "Bookmark article"}>
                             <Bookmark className={cn("h-5 w-5", isBookmarked && "fill-current")} />
                         </Button>
