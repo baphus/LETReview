@@ -75,15 +75,6 @@ export const useUser = () => {
       }
   }, []);
 
-  const clearLocalUser = useCallback(() => {
-      if (typeof window !== 'undefined') {
-          localStorage.removeItem('localUser');
-          const defaultUser = createDefaultUser();
-          setLocalUser(defaultUser);
-          localStorage.setItem('localUser', JSON.stringify(defaultUser));
-      }
-  }, []);
-  
   const handleUserSnapshot = useCallback((docSnap: DocumentData, user: User) => {
     if (docSnap.exists()) {
         setFirestoreUser(docSnap.data() as UserProfile);
@@ -181,24 +172,34 @@ export const useUser = () => {
         const userRef = doc(firestore, "users", googleUser.uid);
         const userDoc = await getDoc(userRef);
 
+        // This logic is now simplified to not merge with a local guest user.
         if (!userDoc.exists()) {
-            // Merge with localUser if it exists, otherwise create a new profile from Google data.
-            const baseProfile = localUser || createDefaultUser();
-            
-            const mergedData: UserProfile = {
-                ...baseProfile,
-                uid: googleUser.uid,
-                name: googleUser.displayName || baseProfile.name,
-                email: googleUser.email || '',
-                avatarUrl: googleUser.photoURL || baseProfile.avatarUrl,
-                createdAt: serverTimestamp(),
-                hasCompletedOnboarding: false,
+            const newUserProfile: UserProfile = {
+              uid: googleUser.uid,
+              name: googleUser.displayName || 'New User',
+              avatarUrl: googleUser.photoURL || `https://avatar.vercel.sh/${googleUser.uid}`,
+              email: googleUser.email || '',
+              points: 0,
+              streak: 0,
+              highestStreak: 0,
+              highestQuizStreak: 0,
+              completedSessions: 0,
+              unlockedThemes: ['default'],
+              activeTheme: 'default',
+              unlockedPets: [],
+              petNames: {},
+              dailyProgress: {},
+              lastLogin: getTodayKey(),
+              passingScore: 85,
+              createdAt: serverTimestamp(),
+              questionsAnswered: 0,
+              answeredQuestionIds: [],
+              hasCompletedOnboarding: false,
             };
-            await setDoc(userRef, mergedData);
-            clearLocalUser();
+            await setDoc(userRef, newUserProfile);
             toast({
-                title: "Account Synced!",
-                description: "Your guest progress has been saved to your Google account.",
+                title: "Welcome!",
+                description: "Your account has been created.",
                 className: "bg-green-100 border-green-300",
             });
         } else {
@@ -214,7 +215,7 @@ export const useUser = () => {
         console.error("Error with redirect result:", error);
         toast({ variant: "destructive", title: "Sign-in Error", description: error.message || "Could not complete sign in." });
       });
-  }, [auth, firestore, isLoading, localUser, clearLocalUser, toast, router]);
+  }, [auth, firestore, isLoading, toast, router]);
 
   const linkGoogleAccount = useCallback(async () => {
     if (!auth) return;
