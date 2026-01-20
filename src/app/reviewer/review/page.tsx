@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -47,7 +48,7 @@ export default function ReviewPage() {
     const [categoryId, setCategoryId] = useState<'gened' | 'profed' | 'majorship'>('profed');
     const [subjectId, setSubjectId] = useState<'all' | string>('all');
     const firestore = useFirestore();
-    const { user, isAdmin } = useUser();
+    const { user, isAdmin, firebaseUser } = useUser();
     const { toast } = useToast();
 
     const articlesQuery = useMemoFirebase(() => {
@@ -71,9 +72,9 @@ export default function ReviewPage() {
     }, [firestore]);
     
     const bookmarksQuery = useMemoFirebase(() => {
-        if (!firestore || !user) return null;
+        if (!firestore || !user || !firebaseUser || firebaseUser.isAnonymous) return null;
         return collection(firestore, `users/${user.uid}/reviewerBookmarks`);
-    }, [firestore, user]);
+    }, [firestore, user, firebaseUser]);
 
     const { data: articles, isLoading: isLoadingArticles } = useCollection<ReviewArticle>(articlesQuery);
     const { data: subjects, isLoading: isLoadingSubjects } = useCollection<Subject>(subjectsQuery);
@@ -106,7 +107,7 @@ export default function ReviewPage() {
         e.preventDefault();
         e.stopPropagation();
 
-        if (!user || !firestore) {
+        if (!user || !firestore || !firebaseUser || firebaseUser.isAnonymous) {
             toast({ variant: 'destructive', title: 'Please log in to bookmark articles.'});
             return;
         }
