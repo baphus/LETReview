@@ -5,7 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where, doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import type { Reviewer, Subject } from '@/lib/types';
+import type { Reviewer, Subject, Topic } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -57,12 +57,18 @@ export default function ReviewArticlePage() {
         return collection(firestore, 'subjects');
     }, [firestore]);
 
+    const topicsQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return collection(firestore, 'topics');
+    }, [firestore]);
+
     const { data: articles, isLoading: isLoadingArticle } = useCollection<Reviewer>(articleQuery);
     const { data: subjects, isLoading: isLoadingSubjects } = useCollection<Subject>(subjectsQuery);
+    const { data: topics, isLoading: isLoadingTopics } = useCollection<Topic>(topicsQuery);
     
     const article = articles?.[0];
     const subject = subjects?.find(s => s.id === article?.subjectId);
-    const isLoading = isLoadingArticle || isLoadingSubjects;
+    const isLoading = isLoadingArticle || isLoadingSubjects || isLoadingTopics;
 
     const handleMarkAsComplete = () => {
         if (!user || !firestore || !article) {
@@ -111,6 +117,8 @@ export default function ReviewArticlePage() {
     if (!article) {
         return <div className="text-center">Article not found.</div>;
     }
+    
+    const articleTopics = topics?.filter(topic => article.topicIds.includes(topic.id)) || [];
 
     return (
         <article className="prose prose-quoteless prose-neutral dark:prose-invert max-w-none">
@@ -150,12 +158,28 @@ export default function ReviewArticlePage() {
                 <Card className="bg-primary/5">
                     <CardHeader>
                         <CardTitle>Practice Quiz</CardTitle>
-                        <CardDescription>Test your understanding of this topic.</CardDescription>
+                        <CardDescription>
+                             {articleTopics.length > 1
+                                ? "Test your understanding with quizzes for each topic."
+                                : "Test your understanding of this topic."
+                            }
+                        </CardDescription>
                     </CardHeader>
-                    <CardFooter>
-                        <Link href={`/reviewer/questions?topic=${article.topicIds[0]}`} passHref>
-                            <Button>Start Practice Quiz</Button>
-                        </Link>
+                    <CardFooter className={cn(articleTopics.length > 1 && "flex-col items-start gap-2")}>
+                       {articleTopics.length > 0 ? (
+                            articleTopics.map(topic => (
+                                <Link key={topic.id} href={`/reviewer/questions?topic=${topic.id}`} passHref className="w-full">
+                                    <Button className="w-full justify-start">
+                                        <Brain className="mr-2 h-4 w-4" />
+                                        <span>
+                                            {articleTopics.length > 1 ? `Quiz: ${topic.name}` : `Start Practice Quiz`}
+                                        </span>
+                                    </Button>
+                                </Link>
+                            ))
+                        ) : (
+                             <Button disabled>No practice quiz available.</Button>
+                        )}
                     </CardFooter>
                 </Card>
                  <Card>
