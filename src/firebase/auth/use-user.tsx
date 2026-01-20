@@ -2,7 +2,7 @@
 'use client';
 
 import { useAuth, useFirestore } from '@/firebase';
-import { User, onAuthStateChanged, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signInAnonymously } from 'firebase/auth';
+import { User, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInAnonymously } from 'firebase/auth';
 import { doc, setDoc, onSnapshot, DocumentData, serverTimestamp, getDoc, updateDoc } from 'firebase/firestore';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
@@ -42,7 +42,6 @@ export const useUser = () => {
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
-  const pathname = usePathname();
   const auth = useAuth();
   const firestore = useFirestore();
 
@@ -79,7 +78,6 @@ export const useUser = () => {
     if (docSnap.exists()) {
         setFirestoreUser(docSnap.data() as UserProfile);
     } else if (user && firestore && !user.isAnonymous) {
-        // Create new user profile if it doesn't exist for a NON-anonymous user
         const newUserProfile: UserProfile = {
           uid: user.uid,
           name: user.displayName || 'New User',
@@ -159,20 +157,16 @@ export const useUser = () => {
       unsubscribeSnapshot();
     };
   }, [auth, firestore, handleUserSnapshot]);
-
-  // Effect for handling redirect result from Google sign-in
-  useEffect(() => {
-    if (!auth || !firestore || isLoading) return;
-
-    getRedirectResult(auth)
-      .then(async (result) => {
-        if (!result) return; // Exit if no redirect result.
-
+  
+  const linkGoogleAccount = useCallback(async () => {
+    if (!auth || !firestore) return;
+    const provider = new GoogleAuthProvider();
+    try {
+        const result = await signInWithPopup(auth, provider);
         const googleUser = result.user;
         const userRef = doc(firestore, "users", googleUser.uid);
         const userDoc = await getDoc(userRef);
 
-        // This logic is now simplified to not merge with a local guest user.
         if (!userDoc.exists()) {
             const newUserProfile: UserProfile = {
               uid: googleUser.uid,
@@ -209,23 +203,28 @@ export const useUser = () => {
                 className: "bg-blue-100 border-blue-300",
             });
         }
-        router.push('/home'); // Always redirect if there was a result.
-      })
-      .catch((error) => {
-        console.error("Error with redirect result:", error);
-        toast({ variant: "destructive", title: "Sign-in Error", description: error.message || "Could not complete sign in." });
-      });
-  }, [auth, firestore, isLoading, toast, router]);
+        router.push('/home');
+    } catch (error: any) {
+        // Handle common popup errors
+        if (error.code === 'auth/popup-closed-by-user') {
+            toast({
+                variant: 'destructive',
+                title: 'Sign-in cancelled',
+                description: 'You closed the sign-in window before completion.',
+            });
+        } else if (error.code === 'auth/popup-blocked') {
+            toast({
+                variant: 'destructive',
+                title: 'Popup blocked',
+                description: 'Please allow popups for this site to sign in.',
+            });
+        } else {
+            console.error("Error with popup sign-in:", error);
+            toast({ variant: "destructive", title: "Sign-in Error", description: error.message || "Could not complete sign in." });
+        }
+    }
+  }, [auth, firestore, router, toast]);
 
-  const linkGoogleAccount = useCallback(async () => {
-    if (!auth) return;
-    const provider = new GoogleAuthProvider();
-    await signInWithRedirect(auth, provider).catch((error) => {
-        console.error("Error starting redirect sign-in:", error);
-        toast({ variant: "destructive", title: "Sign-in Error", description: "Could not start the sign-in process." });
-    });
-  }, [auth, toast]);
-  
   const user = firebaseUser?.isAnonymous ? localUser : firestoreUser;
   const isAdmin = user?.uid === 'q4vgkFodzoSaPM1BuNbRI0Wx9YZ2';
 
