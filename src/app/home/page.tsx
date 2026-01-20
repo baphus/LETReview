@@ -8,7 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { User, Flame, Edit, Check, Lock, HelpCircle, X, BookOpen, Brain, Heart, CheckCircle } from "lucide-react";
 import Image from "next/image";
 import { streakPets, achievementPets, rarePets } from "@/lib/data";
-import type { Reviewer, Topic, PetProfile, Subject } from "@/lib/types";
+import type { Reviewer, Topic, PetProfile, Subject, QuizQuestion } from "@/lib/types";
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
@@ -60,6 +60,7 @@ export default function HomePage() {
   const { data: articles, isLoading: isLoadingArticles } = useCollection<Reviewer>(useMemoFirebase(() => firestore ? query(collection(firestore, 'reviewers'), where('status', '==', 'published')) : null, [firestore]));
   const { data: topics, isLoading: isLoadingTopics } = useCollection<Topic>(useMemoFirebase(() => firestore ? collection(firestore, 'topics') : null, [firestore]));
   const { data: subjects, isLoading: isLoadingSubjects } = useCollection<Subject>(useMemoFirebase(() => firestore ? collection(firestore, 'subjects') : null, [firestore]));
+  const { data: questions, isLoading: isLoadingQuestions } = useCollection<QuizQuestion>(useMemoFirebase(() => firestore ? collection(firestore, 'questions') : null, [firestore]));
   const allPets: PetProfile[] = useMemo(() => [...streakPets, ...achievementPets, ...rarePets], []);
 
   useEffect(() => {
@@ -69,10 +70,21 @@ export default function HomePage() {
   }, [articles, featuredArticle]);
 
   useEffect(() => {
-    if (topics && topics.length > 0 && !randomTopic) {
-      setRandomTopic(topics[Math.floor(Math.random() * topics.length)]);
+    if (topics && topics.length > 0 && questions && questions.length > 0 && !randomTopic) {
+      const topicIdsWithQuestions = new Set<string>();
+      questions.forEach(q => {
+        q.topicIds?.forEach(topicId => {
+          topicIdsWithQuestions.add(topicId);
+        });
+      });
+
+      const topicsWithQuestions = topics.filter(t => topicIdsWithQuestions.has(t.id));
+
+      if (topicsWithQuestions.length > 0) {
+        setRandomTopic(topicsWithQuestions[Math.floor(Math.random() * topicsWithQuestions.length)]);
+      }
     }
-  }, [topics, randomTopic]);
+  }, [topics, questions, randomTopic]);
 
   useEffect(() => {
     if (user) {
@@ -186,7 +198,7 @@ export default function HomePage() {
                     </Card>
                 )}
 
-                {isLoadingTopics ? <Skeleton className="h-56 w-full" /> : (
+                {isLoadingTopics || isLoadingQuestions ? <Skeleton className="h-56 w-full" /> : (
                     randomTopic ? (
                         <Card className="flex flex-col">
                             <CardHeader>
