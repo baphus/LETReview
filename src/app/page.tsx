@@ -149,6 +149,7 @@ export default function LandingPage() {
                     height={800}
                     className="rounded-lg shadow-2xl w-full h-auto"
                     data-ai-hint="app screenshot"
+                    priority
                  />
               </div>
             </div>
@@ -176,11 +177,13 @@ export default function LandingPage() {
             {features.map((feature, index) => (
               <div 
                 key={feature.title} 
-                ref={(el) => (featureRefs.current[index] = el)}
-                data-animation-id={`feature-${index}`}
                 className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center"
               >
-                <div className={`flex justify-center ${index % 2 === 1 ? 'md:order-2' : ''} ${animatedElements.has(`feature-${index}`) ? 'animate-fade-in-up' : 'opacity-0'}`} style={{ animationDelay: `${200 * index}ms` }}>
+                <div 
+                  ref={(el) => (featureRefs.current[index] = el)}
+                  data-animation-id={`feature-image-${index}`}
+                  className={`flex justify-center ${index % 2 === 1 ? 'md:order-2' : ''} ${animatedElements.has(`feature-image-${index}`) ? 'animate-fade-in-up' : 'opacity-0'}`}
+                >
                     <Image 
                         src={feature.image}
                         alt={feature.title}
@@ -188,6 +191,7 @@ export default function LandingPage() {
                         height={500}
                         className="rounded-lg border-4 border-white/10 shadow-2xl"
                         data-ai-hint={feature.image_hint}
+                        priority
                     />
                 </div>
                 <div className={`space-y-6 ${index % 2 === 1 ? 'md:order-1' : ''}`}>
@@ -294,3 +298,5 @@ export default function LandingPage() {
     </div>
   )
 }
+
+    
