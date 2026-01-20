@@ -106,6 +106,18 @@ export default function EditReviewerPage() {
 
   const form = useForm<ReviewerFormValues>({
     resolver: zodResolver(reviewerFormSchema),
+    defaultValues: {
+      title: '',
+      slug: '',
+      excerpt: '',
+      content: '',
+      category: 'profed',
+      subjectId: '',
+      topicIds: [],
+      difficulty: 'medium',
+      reviewerType: 'article',
+      estimatedTime: 25,
+    }
   });
   
   useEffect(() => {
