@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useParams } from 'next/navigation';
@@ -6,7 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where, doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import type { Reviewer } from '@/lib/types';
+import type { Reviewer, Subject } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -52,9 +51,18 @@ export default function ReviewArticlePage() {
         if (!firestore) return null;
         return query(collection(firestore, 'reviewers'), where('slug', '==', slug));
     }, [firestore, slug]);
+    
+    const subjectsQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return collection(firestore, 'subjects');
+    }, [firestore]);
 
-    const { data: articles, isLoading } = useCollection<Reviewer>(articleQuery);
+    const { data: articles, isLoading: isLoadingArticle } = useCollection<Reviewer>(articleQuery);
+    const { data: subjects, isLoading: isLoadingSubjects } = useCollection<Subject>(subjectsQuery);
+    
     const article = articles?.[0];
+    const subject = subjects?.find(s => s.id === article?.subjectId);
+    const isLoading = isLoadingArticle || isLoadingSubjects;
 
     const handleMarkAsComplete = () => {
         if (!user || !firestore || !article) {
@@ -108,9 +116,11 @@ export default function ReviewArticlePage() {
         <article className="prose prose-quoteless prose-neutral dark:prose-invert max-w-none">
             <header className="mb-8">
                  <div className="flex flex-wrap items-center gap-2 mb-4 text-sm">
-                    <Badge variant="secondary" className="capitalize" style={{ backgroundColor: '#3F51B5', color: 'white' }}>
-                        {article.subjectId.replace(/-/g, ' ')}
-                    </Badge>
+                    {subject && (
+                        <Badge variant="secondary" className="capitalize" style={{ backgroundColor: subject.color, color: 'white' }}>
+                            {subject.name}
+                        </Badge>
+                    )}
                      <Badge
                         className={cn(
                             "capitalize",
@@ -208,5 +218,3 @@ export default function ReviewArticlePage() {
         </article>
     );
 }
-
-
