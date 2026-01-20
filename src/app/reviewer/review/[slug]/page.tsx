@@ -45,7 +45,7 @@ export default function ReviewArticlePage() {
     const params = useParams();
     const slug = params.slug as string;
     const firestore = useFirestore();
-    const { user, isAdmin } = useUser();
+    const { user, isAdmin, firebaseUser } = useUser();
     const { toast } = useToast();
 
     const articleQuery = useMemoFirebase(() => {
@@ -72,9 +72,9 @@ export default function ReviewArticlePage() {
     const isLoading = isLoadingArticle || isLoadingSubjects || isLoadingTopics;
 
     const bookmarksQuery = useMemoFirebase(() => {
-        if (!firestore || !user) return null;
+        if (!firestore || !user || !firebaseUser || firebaseUser.isAnonymous) return null;
         return collection(firestore, `users/${user.uid}/reviewerBookmarks`);
-    }, [firestore, user]);
+    }, [firestore, user, firebaseUser]);
     const { data: bookmarks } = useCollection<{ createdAt: string }>(bookmarksQuery);
 
     const isBookmarked = useMemo(() => {
@@ -83,7 +83,7 @@ export default function ReviewArticlePage() {
     }, [bookmarks, article]);
 
     const handleToggleBookmark = async () => {
-        if (!user || !firestore || !article) {
+        if (!user || !firestore || !article || !firebaseUser || firebaseUser.isAnonymous) {
             toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to bookmark articles.' });
             return;
         }
