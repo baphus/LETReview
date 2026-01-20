@@ -10,6 +10,7 @@ import Image from 'next/image';
 import LandingHeader from "@/components/LandingHeader";
 import LandingFooter from "@/components/LandingFooter";
 import { useUser } from "@/firebase/auth/use-user";
+import { useEffect, useRef, useState } from "react";
 
 const features = [
   {
@@ -72,13 +73,47 @@ export default function LandingPage() {
   const router = useRouter();
   const isAnonymous = firebaseUser?.isAnonymous;
 
+  const featureRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const testimonialRef = useRef<HTMLDivElement | null>(null);
+  const ctaRef = useRef<HTMLDivElement | null>(null);
+  const [animatedElements, setAnimatedElements] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const elementsToObserve = [
+      ...featureRefs.current,
+      testimonialRef.current,
+      ctaRef.current,
+    ].filter(Boolean) as Element[];
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const id = entry.target.getAttribute('data-animation-id');
+            if (id) {
+              setAnimatedElements((prev) => new Set(prev).add(id));
+              observer.unobserve(entry.target);
+            }
+          }
+        });
+      },
+      { threshold: 0.15 }
+    );
+
+    elementsToObserve.forEach((el) => observer.observe(el));
+
+    return () => {
+      elementsToObserve.forEach((el) => observer.unobserve(el));
+    };
+  }, []);
+
   return (
     <div className="flex flex-col min-h-screen bg-background font-body">
       <LandingHeader />
 
       <main className="flex-1">
         {/* Hero Section */}
-        <section id="home" className="w-full py-20 md:py-32 bg-primary/5 relative">
+        <section id="home" className="w-full pt-20 md:pt-32 pb-28 md:pb-40 bg-primary/5 relative">
            <div
             className="absolute inset-0 z-0"
             style={{
@@ -139,7 +174,13 @@ export default function LandingPage() {
         <section id="features" className="w-full py-20 md:py-24 bg-slate-900">
           <div className="container mx-auto px-4 md:px-6 space-y-20">
             {features.map((feature, index) => (
-              <div key={feature.title} className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center animate-fade-in-up" style={{ animationDelay: `${200 * index}ms`, opacity: 0}}>
+              <div 
+                key={feature.title} 
+                ref={(el) => (featureRefs.current[index] = el)}
+                data-animation-id={`feature-${index}`}
+                className={`grid grid-cols-1 md:grid-cols-2 gap-12 items-center ${animatedElements.has(`feature-${index}`) ? 'animate-fade-in-up' : 'opacity-0'}`}
+                style={{ animationDelay: `${200 * index}ms` }}
+              >
                 <div className={`flex justify-center ${index % 2 === 1 ? 'md:order-2' : ''}`}>
                     <Image 
                         src={feature.image}
@@ -188,8 +229,12 @@ export default function LandingPage() {
                   ></path>
               </svg>
           </div>
-          <div className="container mx-auto grid items-center justify-center gap-4 px-4 text-center md:px-6">
-            <div className="space-y-3 animate-fade-in-up">
+          <div
+            ref={testimonialRef}
+            data-animation-id="testimonial"
+            className={`container mx-auto grid items-center justify-center gap-4 px-4 text-center md:px-6 ${animatedElements.has('testimonial') ? 'animate-fade-in-up' : 'opacity-0'}`}
+          >
+            <div className="space-y-3">
               <h2 className="text-3xl font-bold tracking-tighter md:text-4xl/tight font-headline">
                 Trusted by Future Educators
               </h2>
@@ -197,7 +242,7 @@ export default function LandingPage() {
                 See what aspiring teachers are saying about their review journey with us.
               </p>
             </div>
-            <div className="mx-auto w-full max-w-sm space-y-2 animate-fade-in-up animation-delay-200">
+            <div className="mx-auto w-full max-w-sm space-y-2">
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-center mb-2">
@@ -220,14 +265,18 @@ export default function LandingPage() {
 
         {/* CTA Section */}
         <section id="cta" className="w-full py-20 md:py-32 bg-primary/5">
-          <div className="container mx-auto text-center px-4 md:px-6">
-            <div className="animate-fade-in-up">
+          <div
+            ref={ctaRef}
+            data-animation-id="cta"
+            className={`container mx-auto text-center px-4 md:px-6 ${animatedElements.has('cta') ? 'animate-fade-in-up' : 'opacity-0'}`}
+          >
+            <div>
               <h2 className="text-3xl md:text-4xl font-bold tracking-tighter font-headline mb-4">Ready to Start Your Journey?</h2>
               <p className="max-w-[600px] mx-auto text-muted-foreground md:text-xl mb-6">
                 Sign up today and take the first step towards becoming a Licensed Professional Teacher.
               </p>
             </div>
-             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up animation-delay-200">
+             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <Button size="lg" onClick={() => user && !isAnonymous ? router.push('/home') : linkGoogleAccount()}>
                     {user && !isAnonymous ? "Go to Dashboard" : "Sign Up to Save Progress"}
                 </Button>
