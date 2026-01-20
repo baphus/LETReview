@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -212,23 +213,42 @@ export default function HomePage() {
                     </Card>
                 )}
 
-                {isLoadingTopics ? <Skeleton className="h-56 w-full" /> : randomTopic && (
-                    <Card className="flex flex-col">
-                        <CardHeader>
-                            <CardTitle className="font-headline text-lg flex items-center gap-2"><Brain/> Practice Quiz</CardTitle>
-                            <CardDescription>Test your knowledge on a random topic.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="flex-grow">
-                            <div className="bg-muted p-4 rounded-lg text-center">
-                                <p className="font-semibold text-lg">{randomTopic.name}</p>
-                            </div>
-                        </CardContent>
-                        <CardFooter>
-                            <Link href={`/reviewer/questions?topic=${randomTopic.id}`} passHref className="w-full">
-                                <Button className="w-full">Take Quiz</Button>
-                            </Link>
-                        </CardFooter>
-                    </Card>
+                {isLoadingTopics ? <Skeleton className="h-56 w-full" /> : (
+                    randomTopic ? (
+                        <Card className="flex flex-col">
+                            <CardHeader>
+                                <CardTitle className="font-headline text-lg flex items-center gap-2"><Brain/> Practice Quiz</CardTitle>
+                                <CardDescription>Test your knowledge on a random topic.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="flex-grow">
+                                <div className="bg-muted p-4 rounded-lg text-center">
+                                    <p className="font-semibold text-lg">{randomTopic.name}</p>
+                                </div>
+                            </CardContent>
+                            <CardFooter>
+                                <Link href={`/reviewer/questions?topic=${randomTopic.id}`} passHref className="w-full">
+                                    <Button className="w-full">Take Quiz</Button>
+                                </Link>
+                            </CardFooter>
+                        </Card>
+                    ) : (
+                        <Card className="flex flex-col">
+                            <CardHeader>
+                                <CardTitle className="font-headline text-lg flex items-center gap-2"><Brain/> Practice Quiz</CardTitle>
+                                <CardDescription>Test your knowledge with questions from all topics.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="flex-grow">
+                                <div className="bg-muted p-4 rounded-lg text-center">
+                                    <p className="font-semibold text-lg">General Practice</p>
+                                </div>
+                            </CardContent>
+                            <CardFooter>
+                                <Link href={`/quiz`} passHref className="w-full">
+                                    <Button className="w-full">Take Quiz</Button>
+                                </Link>
+                            </CardFooter>
+                        </Card>
+                    )
                 )}
             </div>
         </section>
