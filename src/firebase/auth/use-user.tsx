@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useAuth, useFirestore } from '@/firebase';
@@ -44,7 +45,7 @@ export const useUser = () => {
   const auth = useAuth();
   const firestore = useFirestore();
   
-  const wasAnonymousRef = useRef<boolean>(true);
+  const justLoggedInRef = useRef(false);
 
 
   // Effect for managing local (anonymous) user state
@@ -126,8 +127,6 @@ export const useUser = () => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (userAuth) => {
       unsubscribeSnapshot();
       
-      wasAnonymousRef.current = firebaseUser?.isAnonymous || !firebaseUser;
-
       if (userAuth) {
         setFirebaseUser(userAuth);
         if (userAuth.isAnonymous) {
@@ -165,7 +164,9 @@ export const useUser = () => {
   
   // This effect handles redirection after a successful login.
   useEffect(() => {
-      if (!isLoading && firebaseUser && !firebaseUser.isAnonymous && wasAnonymousRef.current) {
+      if (!isLoading && firebaseUser && !firebaseUser.isAnonymous && justLoggedInRef.current) {
+          // This was a fresh login, redirect to home.
+          justLoggedInRef.current = false; // Reset the flag
           router.push('/home');
       }
   }, [isLoading, firebaseUser, router]);
@@ -176,8 +177,9 @@ export const useUser = () => {
     const provider = new GoogleAuthProvider();
     try {
         await signInWithPopup(auth, provider);
+        justLoggedInRef.current = true;
         // The onAuthStateChanged listener will handle the rest:
-        // creating the user doc, setting state, and the redirect effect will fire.
+        // creating the user doc, and the redirect effect will fire.
     } catch (error: any) {
         if (error.code === 'auth/popup-closed-by-user') {
             toast({
