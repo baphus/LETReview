@@ -5,11 +5,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { User, Flame, Edit, Check, Lock, Lightbulb, HelpCircle, X, BookOpen, Brain, Heart, CheckCircle } from "lucide-react";
+import { User, Flame, Edit, Check, Lock, HelpCircle, X, BookOpen, Brain, Heart, CheckCircle } from "lucide-react";
 import Image from "next/image";
-import { getQuestionOfTheDay, streakPets, achievementPets, rarePets } from "@/lib/data";
-import type { QuizQuestion, Reviewer, Topic, PetProfile, Subject } from "@/lib/types";
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { streakPets, achievementPets, rarePets } from "@/lib/data";
+import type { Reviewer, Topic, PetProfile, Subject } from "@/lib/types";
+import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -26,7 +26,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, query, where } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
-
+import { QuestionOfTheDay } from "@/components/QuestionOfTheDay";
 
 const getTodayKey = () => format(new Date(), 'yyyy-MM-dd');
 
@@ -49,7 +49,6 @@ export default function HomePage() {
   const firestore = useFirestore();
   
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [questionOfTheDay, setQuestionOfTheDay] = useState<QuizQuestion | null>(null);
   const [view, setView] = useState<'week' | 'month'>('week');
   const [showLegend, setShowLegend] = useState(false);
 
@@ -118,10 +117,6 @@ export default function HomePage() {
   }, []);
   
   const todayKey = useMemo(() => getTodayKey(), []);
-
-  useEffect(() => {
-    getQuestionOfTheDay().then(setQuestionOfTheDay);
-  }, []);
   
   const isStreakSecuredToday = useMemo(() => {
     if (!user) return false;
@@ -166,31 +161,9 @@ export default function HomePage() {
           </Card>
         )}
 
-          <section className="mb-6">
-              <h2 className="text-xl font-bold font-headline mb-4">Question of the Day</h2>
-              {questionOfTheDay ? (
-                  <Card>
-                      <CardHeader>
-                          <CardTitle className="flex items-center justify-between">
-                              <span className="text-lg">{questionOfTheDay.question}</span>
-                          </CardTitle>
-                          
-                      </CardHeader>
-                      {!user.dailyProgress?.[todayKey]?.qotdCompleted && (
-                          <CardFooter>
-                              <Link href="/daily" className="w-full">
-                                  <Button className="w-full">
-                                      <Lightbulb className="mr-2 h-4 w-4" />
-                                      Answer Now
-                                  </Button>
-                              </Link>
-                          </CardFooter>
-                      )}
-                  </Card>
-              ) : (<Card><CardContent><p>Loading question...</p></CardContent></Card>)}
-          </section>
+        <QuestionOfTheDay />
 
-          <section className="my-6">
+        <section className="my-6">
             <h2 className="text-xl font-bold font-headline mb-4">For You</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {isLoadingArticles || isLoadingSubjects ? <Skeleton className="h-56 w-full" /> : featuredArticle && subjects && (
