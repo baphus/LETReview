@@ -178,10 +178,9 @@ export default function LandingPage() {
                 key={feature.title} 
                 ref={(el) => (featureRefs.current[index] = el)}
                 data-animation-id={`feature-${index}`}
-                className={`grid grid-cols-1 md:grid-cols-2 gap-12 items-center ${animatedElements.has(`feature-${index}`) ? 'animate-fade-in-up' : 'opacity-0'}`}
-                style={{ animationDelay: `${200 * index}ms` }}
+                className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center"
               >
-                <div className={`flex justify-center ${index % 2 === 1 ? 'md:order-2' : ''}`}>
+                <div className={`flex justify-center ${index % 2 === 1 ? 'md:order-2' : ''} ${animatedElements.has(`feature-${index}`) ? 'animate-fade-in-up' : 'opacity-0'}`} style={{ animationDelay: `${200 * index}ms` }}>
                     <Image 
                         src={feature.image}
                         alt={feature.title}
