@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useAuth, useFirestore } from '@/firebase';
@@ -174,19 +175,22 @@ export const useUser = () => {
 
     getRedirectResult(auth)
       .then(async (result) => {
-        if (!result || !localUser) return; // No redirect result or no local user to merge
+        if (!result) return; // Exit if no redirect result.
 
         const googleUser = result.user;
         const userRef = doc(firestore, "users", googleUser.uid);
         const userDoc = await getDoc(userRef);
 
         if (!userDoc.exists()) {
+            // Merge with localUser if it exists, otherwise create a new profile from Google data.
+            const baseProfile = localUser || createDefaultUser();
+            
             const mergedData: UserProfile = {
-                ...localUser,
+                ...baseProfile,
                 uid: googleUser.uid,
-                name: googleUser.displayName || localUser.name,
+                name: googleUser.displayName || baseProfile.name,
                 email: googleUser.email || '',
-                avatarUrl: googleUser.photoURL || localUser.avatarUrl,
+                avatarUrl: googleUser.photoURL || baseProfile.avatarUrl,
                 createdAt: serverTimestamp(),
                 hasCompletedOnboarding: false,
             };
@@ -194,7 +198,7 @@ export const useUser = () => {
             clearLocalUser();
             toast({
                 title: "Account Synced!",
-                description: "Your progress has been saved to your Google account.",
+                description: "Your guest progress has been saved to your Google account.",
                 className: "bg-green-100 border-green-300",
             });
         } else {
@@ -204,8 +208,7 @@ export const useUser = () => {
                 className: "bg-blue-100 border-blue-300",
             });
         }
-        router.push('/home');
-
+        router.push('/home'); // Always redirect if there was a result.
       })
       .catch((error) => {
         console.error("Error with redirect result:", error);
