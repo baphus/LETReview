@@ -1,5 +1,5 @@
 # LETReview: Your Gamified LET Review Partner
-
+ 
 ![LETReview App Screenshot](/public/images/landing/app-preview.png)
 
 Ace the Licensure Examination for Teachers (LET) with a review experience that's effective, engaging, and fun! LETReview is a mobile-first web application designed to help aspiring educators in the Philippines prepare for their board exams through a personalized and gamified approach.
