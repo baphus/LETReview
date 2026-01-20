@@ -78,18 +78,24 @@ export default function LandingPage() {
 
       <main className="flex-1">
         {/* Hero Section */}
-        <section id="home" className="w-full py-20 md:py-32 bg-primary/5">
-          <div className="container mx-auto px-4 md:px-6">
+        <section id="home" className="w-full py-20 md:py-32 bg-primary/5 relative overflow-hidden">
+           <div
+            className="absolute inset-0 z-0"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+            }}
+          />
+          <div className="container mx-auto px-4 md:px-6 relative z-10">
             <div className="flex flex-col items-center space-y-8 text-center">
               <div className="space-y-4">
-                <h1 className="text-4xl md:text-6xl font-bold tracking-tighter font-headline">
+                <h1 className="text-4xl md:text-6xl font-bold tracking-tighter font-headline animate-fade-in-up">
                   Ace the LET, One Question at a Time.
                 </h1>
-                <p className="max-w-[700px] mx-auto text-muted-foreground md:text-xl">
+                <p className="max-w-[700px] mx-auto text-muted-foreground md:text-xl animate-fade-in-up animation-delay-200">
                   Your personalized and gamified review partner for the Licensure Examination for Teachers. Study smarter, not harder.
                 </p>
               </div>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up animation-delay-400">
                  <Button size="lg" onClick={() => user && !isAnonymous ? router.push('/home') : linkGoogleAccount()}>
                     {user && !isAnonymous ? "Go to Dashboard" : "Get Started for Free"}
                     <ChevronRight className="w-5 h-5 ml-2" />
@@ -100,7 +106,7 @@ export default function LandingPage() {
                     </Button>
                   )}
               </div>
-              <div className="w-full max-w-4xl mt-8">
+              <div className="w-full max-w-4xl mt-8 animate-fade-in-up animation-delay-600">
                  <Image 
                     src="/images/landing/app-preview.png"
                     alt="App Preview"
@@ -118,7 +124,7 @@ export default function LandingPage() {
         <section id="features" className="w-full py-20 md:py-24 bg-slate-900">
           <div className="container mx-auto px-4 md:px-6 space-y-20">
             {features.map((feature, index) => (
-              <div key={feature.title} className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+              <div key={feature.title} className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center animate-fade-in-up" style={{ animationDelay: `${200 * index}ms`, opacity: 0}}>
                 <div className={`flex justify-center ${index % 2 === 1 ? 'md:order-2' : ''}`}>
                     <Image 
                         src={feature.image}
@@ -153,7 +159,7 @@ export default function LandingPage() {
          {/* Testimonial Section */}
         <section id="testimonials" className="w-full py-20 md:py-32">
           <div className="container mx-auto grid items-center justify-center gap-4 px-4 text-center md:px-6">
-            <div className="space-y-3">
+            <div className="space-y-3 animate-fade-in-up">
               <h2 className="text-3xl font-bold tracking-tighter md:text-4xl/tight font-headline">
                 Trusted by Future Educators
               </h2>
@@ -161,7 +167,7 @@ export default function LandingPage() {
                 See what aspiring teachers are saying about their review journey with us.
               </p>
             </div>
-            <div className="mx-auto w-full max-w-sm space-y-2">
+            <div className="mx-auto w-full max-w-sm space-y-2 animate-fade-in-up animation-delay-200">
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-center mb-2">
@@ -185,11 +191,13 @@ export default function LandingPage() {
         {/* CTA Section */}
         <section id="cta" className="w-full py-20 md:py-32 bg-primary/5">
           <div className="container mx-auto text-center px-4 md:px-6">
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tighter font-headline mb-4">Ready to Start Your Journey?</h2>
-            <p className="max-w-[600px] mx-auto text-muted-foreground md:text-xl mb-6">
-              Sign up today and take the first step towards becoming a Licensed Professional Teacher.
-            </p>
-             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <div className="animate-fade-in-up">
+              <h2 className="text-3xl md:text-4xl font-bold tracking-tighter font-headline mb-4">Ready to Start Your Journey?</h2>
+              <p className="max-w-[600px] mx-auto text-muted-foreground md:text-xl mb-6">
+                Sign up today and take the first step towards becoming a Licensed Professional Teacher.
+              </p>
+            </div>
+             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up animation-delay-200">
                 <Button size="lg" onClick={() => user && !isAnonymous ? router.push('/home') : linkGoogleAccount()}>
                     {user && !isAnonymous ? "Go to Dashboard" : "Sign Up to Save Progress"}
                 </Button>

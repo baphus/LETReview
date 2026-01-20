@@ -16,7 +16,6 @@ import {
 } from "@/components/ui/sidebar";
 import { AppHeader } from "@/components/AppHeader";
 import { AppSidebar } from "@/components/AppSidebar";
-import SplashScreen from "@/components/SplashScreen";
 import { FirebaseClientProvider } from "@/firebase/client-provider";
 import { useUser } from "@/firebase/auth/use-user";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -31,28 +30,7 @@ const spaceGrotesk = Space_Grotesk({
 function RootLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, isLoading, activeTheme, firebaseUser } = useUser();
-  const [isShowingSplash, setIsShowingSplash] = useState(pathname === "/");
   const [showOnboarding, setShowOnboarding] = useState(false);
-
-  useEffect(() => {
-    if (pathname === '/') {
-      setIsShowingSplash(true);
-      const splashShown = typeof window !== 'undefined' ? sessionStorage.getItem("splashShown") : null;
-      if (splashShown) {
-        setIsShowingSplash(false);
-      } else {
-        setTimeout(() => {
-          setIsShowingSplash(false);
-          if(typeof window !== 'undefined') {
-            sessionStorage.setItem("splashShown", "true");
-          }
-        }, 3000);
-      }
-    } else {
-      setIsShowingSplash(false);
-    }
-  }, [pathname]);
-
 
   useEffect(() => {
     document.documentElement.classList.remove('mint', 'sunset', 'rose');
@@ -66,10 +44,6 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
         setShowOnboarding(true);
     }
   }, [user, isLoading, firebaseUser]);
-
-  if (isShowingSplash && pathname === "/") {
-    return <SplashScreen />;
-  }
 
   const isAppPage = pathname !== '/';
 
