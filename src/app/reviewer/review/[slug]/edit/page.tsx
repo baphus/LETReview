@@ -317,11 +317,7 @@ export default function EditReviewerPage() {
                     render={({ field }) => (
                     <FormItem>
                         <FormLabel>Category</FormLabel>
-                        <Select onValueChange={(value) => {
-                            field.onChange(value);
-                            form.setValue('subjectId', ''); // Reset subject when category changes
-                            form.setValue('topicIds', []); // Reset topics too
-                        }} value={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                             <SelectTrigger>
                             <SelectValue placeholder="Select category" />
@@ -347,7 +343,6 @@ export default function EditReviewerPage() {
                                     setIsManageSubjectsOpen(true);
                                 } else {
                                     field.onChange(value);
-                                    form.setValue('topicIds', []); // Reset topics when subject changes
                                 }
                             }} value={field.value}>
                             <FormControl>
@@ -396,7 +391,7 @@ export default function EditReviewerPage() {
                                             checked={field.value?.includes(topic.id)}
                                             onCheckedChange={(checked) => {
                                                 return checked
-                                                ? field.onChange([...field.value, topic.id])
+                                                ? field.onChange([...(field.value || []), topic.id])
                                                 : field.onChange(
                                                     field.value?.filter(
                                                         (value) => value !== topic.id
