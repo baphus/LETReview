@@ -9,11 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, orderBy } from 'firebase/firestore';
+import { collection, query, where, orderBy, doc, deleteDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import type { Reviewer as ReviewArticle, Subject } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useUser } from '@/firebase/auth/use-user';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useToast } from '@/hooks/use-toast';
 
 const articleTypeIcons = {
   "article": <Book className="h-4 w-4" />,
@@ -46,7 +47,8 @@ export default function ReviewPage() {
     const [categoryId, setCategoryId] = useState<'gened' | 'profed' | 'majorship'>('profed');
     const [subjectId, setSubjectId] = useState<'all' | string>('all');
     const firestore = useFirestore();
-    const { isAdmin } = useUser();
+    const { user, isAdmin } = useUser();
+    const { toast } = useToast();
 
     const articlesQuery = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -67,9 +69,20 @@ export default function ReviewPage() {
         if (!firestore) return null;
         return query(collection(firestore, 'subjects'), orderBy('orderIndex'));
     }, [firestore]);
+    
+    const bookmarksQuery = useMemoFirebase(() => {
+        if (!firestore || !user) return null;
+        return collection(firestore, `users/${user.uid}/reviewerBookmarks`);
+    }, [firestore, user]);
 
     const { data: articles, isLoading: isLoadingArticles } = useCollection<ReviewArticle>(articlesQuery);
     const { data: subjects, isLoading: isLoadingSubjects } = useCollection<Subject>(subjectsQuery);
+    const { data: bookmarks } = useCollection(bookmarksQuery);
+
+    const bookmarkedIds = useMemo(() => {
+        if (!bookmarks) return new Set();
+        return new Set(bookmarks.map(b => b.id));
+    }, [bookmarks]);
 
     const filteredSubjects = useMemo(() => {
         if (!subjects) return [];
@@ -78,9 +91,42 @@ export default function ReviewPage() {
 
     const sortedArticles = useMemo(() => {
         if (!articles) return [];
-        // Perform client-side sorting
-        return [...articles].sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0));
-    }, [articles]);
+        return [...articles].sort((a, b) => {
+            const aIsBookmarked = bookmarkedIds.has(a.id);
+            const bIsBookmarked = bookmarkedIds.has(b.id);
+            
+            if (aIsBookmarked && !bIsBookmarked) return -1;
+            if (!aIsBookmarked && bIsBookmarked) return 1;
+            
+            return (a.orderIndex || 0) - (b.orderIndex || 0);
+        });
+    }, [articles, bookmarkedIds]);
+
+    const handleToggleBookmark = async (e: React.MouseEvent, article: ReviewArticle) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (!user || !firestore) {
+            toast({ variant: 'destructive', title: 'Please log in to bookmark articles.'});
+            return;
+        }
+
+        const bookmarkRef = doc(firestore, `users/${user.uid}/reviewerBookmarks`, article.id);
+        const isBookmarked = bookmarkedIds.has(article.id);
+
+        try {
+             if (isBookmarked) {
+                await deleteDoc(bookmarkRef);
+                toast({ title: 'Bookmark removed' });
+            } else {
+                await setDoc(bookmarkRef, { createdAt: serverTimestamp() });
+                toast({ title: 'Article bookmarked!'});
+            }
+        } catch(error) {
+             toast({ variant: 'destructive', title: 'Error', description: 'Could not update bookmark.'});
+        }
+    };
+
 
     return (
         <div>
@@ -124,49 +170,52 @@ export default function ReviewPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {isLoadingArticles && Array.from({ length: 3 }).map((_, i) => <ReviewCardSkeleton key={i} />)}
                 
-                {!isLoadingArticles && sortedArticles.map(article => (
-                    <Card key={article.slug} className="flex flex-col">
-                        <CardHeader>
-                            <div className="flex justify-between items-start">
-                                <Badge variant="secondary" className="capitalize mb-2" style={{ backgroundColor: subjects?.find(s => s.id === article.subjectId)?.color || '#6c757d', color: 'white' }}>
-                                    {subjects?.find(s => s.id === article.subjectId)?.name || article.subjectId}
-                                </Badge>
-                                 <Badge
-                                    className={cn(
-                                        "capitalize",
-                                        article.difficulty === 'easy' && 'bg-green-100 text-green-800',
-                                        article.difficulty === 'medium' && 'bg-yellow-100 text-yellow-800',
-                                        article.difficulty === 'hard' && 'bg-red-100 text-red-800'
-                                    )}
-                                >
-                                    {article.difficulty}
-                                </Badge>
-                            </div>
-                            <CardTitle className="font-headline text-xl">{article.title}</CardTitle>
-                            <CardDescription>{article.excerpt}</CardDescription>
-                        </CardHeader>
-                        <CardContent className="flex-grow">
-                             <div className="flex items-center text-sm text-muted-foreground gap-4">
-                                <div className="flex items-center gap-1">
-                                    {articleTypeIcons[article.reviewerType as keyof typeof articleTypeIcons]}
-                                    <span className="capitalize">{article.reviewerType}</span>
+                {!isLoadingArticles && sortedArticles.map(article => {
+                    const isBookmarked = bookmarkedIds.has(article.id);
+                    return (
+                        <Card key={article.slug} className="flex flex-col hover:border-primary/50 transition-colors">
+                            <CardHeader>
+                                <div className="flex justify-between items-start">
+                                    <Badge variant="secondary" className="capitalize mb-2" style={{ backgroundColor: subjects?.find(s => s.id === article.subjectId)?.color || '#6c757d', color: 'white' }}>
+                                        {subjects?.find(s => s.id === article.subjectId)?.name || article.subjectId}
+                                    </Badge>
+                                    <Badge
+                                        className={cn(
+                                            "capitalize",
+                                            article.difficulty === 'easy' && 'bg-green-100 text-green-800',
+                                            article.difficulty === 'medium' && 'bg-yellow-100 text-yellow-800',
+                                            article.difficulty === 'hard' && 'bg-red-100 text-red-800'
+                                        )}
+                                    >
+                                        {article.difficulty}
+                                    </Badge>
                                 </div>
-                                <div className="flex items-center gap-1">
-                                    <Clock className="h-4 w-4" />
-                                    <span>{article.estimatedTime} min read</span>
+                                <CardTitle className="font-headline text-xl">{article.title}</CardTitle>
+                                <CardDescription>{article.excerpt}</CardDescription>
+                            </CardHeader>
+                            <CardContent className="flex-grow">
+                                <div className="flex items-center text-sm text-muted-foreground gap-4">
+                                    <div className="flex items-center gap-1">
+                                        {articleTypeIcons[article.reviewerType as keyof typeof articleTypeIcons]}
+                                        <span className="capitalize">{article.reviewerType}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        <Clock className="h-4 w-4" />
+                                        <span>{article.estimatedTime} min read</span>
+                                    </div>
                                 </div>
-                            </div>
-                        </CardContent>
-                        <CardFooter className="flex justify-between">
-                            <Button variant="ghost" size="icon">
-                                <Bookmark className="h-5 w-5" />
-                            </Button>
-                            <Link href={`/reviewer/review/${article.slug}`} passHref>
-                                <Button>Start Review</Button>
-                            </Link>
-                        </CardFooter>
-                    </Card>
-                ))}
+                            </CardContent>
+                            <CardFooter className="flex justify-between mt-auto">
+                                <Button variant="ghost" size="icon" onClick={(e) => handleToggleBookmark(e, article)}>
+                                    <Bookmark className={cn("h-5 w-5", isBookmarked && "fill-current text-primary")} />
+                                </Button>
+                                <Link href={`/reviewer/review/${article.slug}`} passHref>
+                                    <Button>Start Review</Button>
+                                </Link>
+                            </CardFooter>
+                        </Card>
+                    )
+                })}
             </div>
 
             {!isLoadingArticles && sortedArticles.length === 0 && (

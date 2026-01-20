@@ -4,12 +4,12 @@ import { useParams } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, doc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import type { Reviewer, Subject, Topic } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Clock, Tag, Brain, Book, Video } from 'lucide-react';
+import { Clock, Tag, Brain, Book, Video, Bookmark, BarChart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -18,6 +18,7 @@ import { AddQuestionDialog } from '@/components/AddQuestionDialog';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { useMemo } from 'react';
 
 const articleTypeIcons = {
   "article": <Book className="h-4 w-4" />,
@@ -70,44 +71,47 @@ export default function ReviewArticlePage() {
     const subject = subjects?.find(s => s.id === article?.subjectId);
     const isLoading = isLoadingArticle || isLoadingSubjects || isLoadingTopics;
 
-    const handleMarkAsComplete = () => {
+    const bookmarksQuery = useMemoFirebase(() => {
+        if (!firestore || !user) return null;
+        return collection(firestore, `users/${user.uid}/reviewerBookmarks`);
+    }, [firestore, user]);
+    const { data: bookmarks } = useCollection<{ createdAt: string }>(bookmarksQuery);
+
+    const isBookmarked = useMemo(() => {
+        if (!bookmarks || !article) return false;
+        return bookmarks.some(b => b.id === article.id);
+    }, [bookmarks, article]);
+
+    const handleToggleBookmark = async () => {
         if (!user || !firestore || !article) {
-            toast({
-                variant: 'destructive',
-                title: 'Error',
-                description: 'You must be logged in to save progress.',
-            });
+            toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to bookmark articles.' });
             return;
         }
 
-        const progressRef = doc(firestore, `users/${user.uid}/reviewerProgress`, article.id);
-        const progressData = {
-            status: 'completed',
-            progressPercent: 100,
-            updatedAt: serverTimestamp(),
-        };
+        const bookmarkRef = doc(firestore, `users/${user.uid}/reviewerBookmarks`, article.id);
 
-        setDoc(progressRef, progressData, { merge: true })
-            .catch(async (serverError) => {
-                console.error("Error marking as complete: ", serverError);
-                toast({
-                    variant: 'destructive',
-                    title: 'Error',
-                    description: 'Could not save your progress.',
-                });
-                const permissionError = new FirestorePermissionError({
-                    path: progressRef.path,
-                    operation: 'write',
-                    requestResourceData: progressData,
-                });
-                errorEmitter.emit('permission-error', permissionError);
+        try {
+            if (isBookmarked) {
+                await deleteDoc(bookmarkRef);
+                toast({ title: 'Bookmark removed' });
+            } else {
+                await setDoc(bookmarkRef, { createdAt: serverTimestamp() });
+                toast({ title: 'Article bookmarked!', className: "bg-green-100 border-green-300" });
+            }
+        } catch (serverError) {
+             console.error("Error toggling bookmark: ", serverError);
+             const permissionError = new FirestorePermissionError({
+                path: bookmarkRef.path,
+                operation: isBookmarked ? 'delete' : 'write',
+                requestResourceData: isBookmarked ? undefined : { createdAt: new Date().toISOString() },
             });
-        
-        toast({
-            title: "Progress Saved!",
-            description: "You've marked this article as completed.",
-            className: "bg-green-100 border-green-300",
-        });
+            errorEmitter.emit('permission-error', permissionError);
+             toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'Could not update your bookmark.',
+            });
+        }
     };
 
     if (isLoading) {
@@ -154,47 +158,50 @@ export default function ReviewArticlePage() {
                 </div>
             </header>
 
-            <div className="not-prose grid md:grid-cols-2 gap-4 mb-8">
-                <Card className="bg-primary/5">
-                    <CardHeader>
-                        <CardTitle>Practice Quiz</CardTitle>
-                        <CardDescription>
-                             {articleTopics.length > 1
-                                ? "Test your understanding with quizzes for each topic."
-                                : "Test your understanding of this topic."
-                            }
-                        </CardDescription>
-                    </CardHeader>
-                    <CardFooter className={cn(articleTopics.length > 1 && "flex-col items-start gap-2")}>
-                       {articleTopics.length > 0 ? (
-                            articleTopics.map(topic => (
-                                <Link key={topic.id} href={`/reviewer/questions?topic=${topic.id}`} passHref className="w-full">
-                                    <Button className="w-full justify-start">
-                                        <Brain className="mr-2 h-4 w-4" />
-                                        <span>
-                                            {articleTopics.length > 1 ? `Quiz: ${topic.name}` : `Start Practice Quiz`}
-                                        </span>
-                                    </Button>
-                                </Link>
-                            ))
-                        ) : (
-                             <Button disabled>No practice quiz available.</Button>
-                        )}
-                    </CardFooter>
-                </Card>
-                 <Card>
-                    <CardHeader>
-                        <CardTitle>Mark as Complete</CardTitle>
-                        <CardDescription>Keep track of your progress and move on.</CardDescription>
-                    </CardHeader>
-                    <CardFooter>
-                       <div className="w-full flex gap-2">
-                            <Button variant="secondary" className="flex-1" onClick={handleMarkAsComplete}>Mark as Completed</Button>
-                            {isAdmin && article && <AddQuestionDialog article={article} />}
-                       </div>
-                    </CardFooter>
-                </Card>
-            </div>
+            <Card className="not-prose mb-8">
+                <CardHeader className="flex-row items-center justify-between">
+                    <CardTitle className="text-lg">Review Tools</CardTitle>
+                    <div className="flex items-center gap-2">
+                        {isAdmin && article && <AddQuestionDialog article={article} />}
+                        <Button variant={isBookmarked ? "secondary" : "outline"} size="icon" onClick={handleToggleBookmark} aria-label={isBookmarked ? "Remove bookmark" : "Bookmark article"}>
+                            <Bookmark className={cn("h-5 w-5", isBookmarked && "fill-current")} />
+                        </Button>
+                    </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    {articleTopics.length > 0 ? (
+                        articleTopics.map(topic => {
+                            const progress = user?.quizProgress?.[topic.id];
+                            const averageScore = progress ? progress.averageScore : null;
+                            return (
+                                <div key={topic.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 rounded-lg border p-3">
+                                    <div className="flex-1">
+                                        <p className="font-semibold">{topic.name}</p>
+                                        {averageScore !== null && typeof averageScore === 'number' ? (
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <BarChart className="h-4 w-4 text-muted-foreground" />
+                                                <p className="text-sm text-muted-foreground">
+                                                    Average Score: <span className="font-bold">{averageScore.toFixed(0)}%</span>
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            <p className="text-sm text-muted-foreground mt-1">No quiz data yet.</p>
+                                        )}
+                                    </div>
+                                    <Link href={`/reviewer/questions?topic=${topic.id}`} passHref className="w-full sm:w-auto">
+                                        <Button variant="outline" className="w-full justify-center">
+                                            <Brain className="mr-2 h-4 w-4" />
+                                            Practice Quiz
+                                        </Button>
+                                    </Link>
+                                </div>
+                            )
+                        })
+                    ) : (
+                        <p className="text-sm text-muted-foreground text-center">No practice quizzes available for this article.</p>
+                    )}
+                </CardContent>
+            </Card>
             
             <div className="markdown-content">
                  <ReactMarkdown 
