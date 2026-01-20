@@ -1,11 +1,10 @@
-
 'use client';
 
 import { useAuth, useFirestore } from '@/firebase';
 import { User, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInAnonymously } from 'firebase/auth';
 import { doc, setDoc, onSnapshot, DocumentData, serverTimestamp, getDoc, updateDoc } from 'firebase/firestore';
 import { useRouter, usePathname } from 'next/navigation';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import type { UserProfile } from '@/lib/types';
 import { format } from "date-fns";
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -44,6 +43,9 @@ export const useUser = () => {
   const router = useRouter();
   const auth = useAuth();
   const firestore = useFirestore();
+  
+  const wasAnonymousRef = useRef<boolean>(true);
+
 
   // Effect for managing local (anonymous) user state
   useEffect(() => {
@@ -123,6 +125,8 @@ export const useUser = () => {
 
     const unsubscribeAuth = onAuthStateChanged(auth, async (userAuth) => {
       unsubscribeSnapshot();
+      
+      wasAnonymousRef.current = firebaseUser?.isAnonymous || !firebaseUser;
 
       if (userAuth) {
         setFirebaseUser(userAuth);
@@ -156,56 +160,25 @@ export const useUser = () => {
       unsubscribeAuth();
       unsubscribeSnapshot();
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth, firestore, handleUserSnapshot]);
   
+  // This effect handles redirection after a successful login.
+  useEffect(() => {
+      if (!isLoading && firebaseUser && !firebaseUser.isAnonymous && wasAnonymousRef.current) {
+          router.push('/home');
+      }
+  }, [isLoading, firebaseUser, router]);
+
+
   const linkGoogleAccount = useCallback(async () => {
-    if (!auth || !firestore) return;
+    if (!auth) return;
     const provider = new GoogleAuthProvider();
     try {
-        const result = await signInWithPopup(auth, provider);
-        const googleUser = result.user;
-        const userRef = doc(firestore, "users", googleUser.uid);
-        const userDoc = await getDoc(userRef);
-
-        if (!userDoc.exists()) {
-            const newUserProfile: UserProfile = {
-              uid: googleUser.uid,
-              name: googleUser.displayName || 'New User',
-              avatarUrl: googleUser.photoURL || `https://avatar.vercel.sh/${googleUser.uid}`,
-              email: googleUser.email || '',
-              points: 0,
-              streak: 0,
-              highestStreak: 0,
-              highestQuizStreak: 0,
-              completedSessions: 0,
-              unlockedThemes: ['default'],
-              activeTheme: 'default',
-              unlockedPets: [],
-              petNames: {},
-              dailyProgress: {},
-              lastLogin: getTodayKey(),
-              passingScore: 85,
-              createdAt: serverTimestamp(),
-              questionsAnswered: 0,
-              answeredQuestionIds: [],
-              hasCompletedOnboarding: false,
-            };
-            await setDoc(userRef, newUserProfile);
-            toast({
-                title: "Welcome!",
-                description: "Your account has been created.",
-                className: "bg-green-100 border-green-300",
-            });
-        } else {
-             toast({
-                title: `Welcome back, ${googleUser.displayName}!`,
-                description: "You've successfully signed in.",
-                className: "bg-blue-100 border-blue-300",
-            });
-        }
-        router.push('/home');
+        await signInWithPopup(auth, provider);
+        // The onAuthStateChanged listener will handle the rest:
+        // creating the user doc, setting state, and the redirect effect will fire.
     } catch (error: any) {
-        // Handle common popup errors
         if (error.code === 'auth/popup-closed-by-user') {
             toast({
                 variant: 'destructive',
@@ -223,7 +196,7 @@ export const useUser = () => {
             toast({ variant: "destructive", title: "Sign-in Error", description: error.message || "Could not complete sign in." });
         }
     }
-  }, [auth, firestore, router, toast]);
+  }, [auth, toast]);
 
   const user = firebaseUser?.isAnonymous ? localUser : firestoreUser;
   const isAdmin = user?.uid === 'q4vgkFodzoSaPM1BuNbRI0Wx9YZ2';
