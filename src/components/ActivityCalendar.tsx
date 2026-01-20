@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { add, sub, format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, isToday, isFuture } from 'date-fns';
+import { add, sub, format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, isToday, isFuture, isSameMonth } from 'date-fns';
 import { ChevronLeft, ChevronRight, Gem, Clock, HelpCircle, Award, CheckCircle, Flame } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -34,18 +34,18 @@ const StatDisplay = ({ icon: Icon, value, label, colorClass, isZero }: { icon: R
 export function ActivityCalendar({ dailyProgress, onDayClick, view }: ActivityCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
 
-  const dateManipulation = useMemo(() => ({
-    unit: view === 'week' ? { weeks: 1 } : { months: 1 },
-    start: view === 'week' ? startOfWeek : startOfMonth,
-    end: view === 'week' ? endOfWeek : endOfMonth,
-  }), [view]);
+  const handlePrev = () => setCurrentDate(current => sub(current, view === 'week' ? { weeks: 1 } : { months: 1 }));
+  const handleNext = () => setCurrentDate(current => add(current, view === 'week' ? { weeks: 1 } : { months: 1 }));
 
-  const handlePrev = () => setCurrentDate(current => sub(current, dateManipulation.unit));
-  const handleNext = () => setCurrentDate(current => add(current, dateManipulation.unit));
-
-  const startDate = dateManipulation.start(currentDate);
-  const endDate = dateManipulation.end(currentDate);
-  const days = eachDayOfInterval({ start: startDate, end: endDate });
+  const {days, startDate, endDate} = useMemo(() => {
+    const start = view === 'week' ? startOfWeek(currentDate, { weekStartsOn: 0 }) : startOfWeek(startOfMonth(currentDate), { weekStartsOn: 0 });
+    const end = view === 'week' ? endOfWeek(currentDate, { weekStartsOn: 0 }) : endOfWeek(endOfMonth(currentDate), { weekStartsOn: 0 });
+    return {
+        days: eachDayOfInterval({ start, end }),
+        startDate: start,
+        endDate: end
+    };
+  }, [currentDate, view]);
 
   const getHeatColor = (points: number) => {
     if (points === 0) return 'bg-muted/20';
@@ -55,7 +55,6 @@ export function ActivityCalendar({ dailyProgress, onDayClick, view }: ActivityCa
     return 'bg-primary/60';
   };
 
-  const headerFormat = view === 'week' ? 'MMMM yyyy' : 'MMMM yyyy';
   const weekHeader = `${format(startDate, 'MMM d')} - ${format(endDate, 'MMM d, yyyy')}`;
 
   return (
@@ -63,7 +62,7 @@ export function ActivityCalendar({ dailyProgress, onDayClick, view }: ActivityCa
       <CardHeader>
         <div className="flex justify-center items-center gap-4">
             <Button variant="outline" size="icon" onClick={handlePrev}><ChevronLeft className="h-4 w-4" /></Button>
-            <h2 className="text-lg font-semibold text-center w-48">{view === 'week' ? weekHeader : format(currentDate, headerFormat)}</h2>
+            <h2 className="text-lg font-semibold text-center w-48">{view === 'week' ? weekHeader : format(currentDate, 'MMMM yyyy')}</h2>
             <Button variant="outline" size="icon" onClick={handleNext}><ChevronRight className="h-4 w-4" /></Button>
         </div>
       </CardHeader>
@@ -85,6 +84,7 @@ export function ActivityCalendar({ dailyProgress, onDayClick, view }: ActivityCa
 
               const isDayToday = isToday(day);
               const isDayFuture = isFuture(day);
+              const isCurrentMonth = isSameMonth(day, currentDate);
 
               return (
                 <Tooltip key={day.toString()} delayDuration={200}>
@@ -94,32 +94,39 @@ export function ActivityCalendar({ dailyProgress, onDayClick, view }: ActivityCa
                       className={cn(
                         "relative p-1.5 sm:p-2 border-b border-r flex flex-col justify-between transition-colors min-h-28 md:aspect-square",
                         isDayFuture ? "bg-muted/10 cursor-not-allowed" : `hover:bg-primary/5 cursor-pointer`,
-                        getHeatColor(points),
+                        isCurrentMonth ? getHeatColor(points) : 'bg-muted/10',
                         isDayToday && "ring-2 ring-primary ring-inset",
+                        !isCurrentMonth && !isDayFuture && "cursor-pointer"
                       )}
                     >
                       <div className="flex justify-between items-start">
-                        <span className={cn("font-bold text-sm", isDayToday ? 'text-primary' : 'text-foreground')}>{format(day, 'd')}</span>
+                        <span className={cn("font-bold text-sm", isDayToday ? 'text-primary' : isCurrentMonth ? 'text-foreground' : 'text-muted-foreground/50')}>{format(day, 'd')}</span>
                         <div className="flex items-center gap-1 z-10 relative">
-                            {isStreakDay && <Flame className="h-4 w-4 text-destructive" />}
-                            {qotd && <CheckCircle className="h-4 w-4 text-green-500" />}
+                            {isStreakDay && isCurrentMonth && <Flame className="h-4 w-4 text-destructive" />}
+                            {qotd && isCurrentMonth && <CheckCircle className="h-4 w-4 text-green-500" />}
                         </div>
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-2 gap-y-0.5 mt-auto">
-                        <StatDisplay icon={Gem} value={points} label="Points" colorClass="text-yellow-500" isZero={points === 0} />
-                        <StatDisplay icon={Clock} value={pomodoros} label="Pomodoros" colorClass="text-red-500" isZero={pomodoros === 0} />
-                        <StatDisplay icon={HelpCircle} value={questions} label="Questions" colorClass="text-green-500" isZero={questions === 0} />
-                        <StatDisplay icon={Award} value={challenges} label="Challenges" colorClass="text-purple-500" isZero={challenges === 0} />
-                      </div>
+                      {isCurrentMonth && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-2 gap-y-0.5 mt-auto">
+                            <StatDisplay icon={Gem} value={points} label="Points" colorClass="text-yellow-500" isZero={points === 0} />
+                            <StatDisplay icon={Clock} value={pomodoros} label="Pomodoros" colorClass="text-red-500" isZero={pomodoros === 0} />
+                            <StatDisplay icon={HelpCircle} value={questions} label="Questions" colorClass="text-green-500" isZero={questions === 0} />
+                            <StatDisplay icon={Award} value={challenges} label="Challenges" colorClass="text-purple-500" isZero={challenges === 0} />
+                        </div>
+                      )}
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>
                     <p className="font-bold">{format(day, 'MMM d, yyyy')}</p>
-                    {isStreakDay && <p className="flex items-center gap-1"><Flame className="h-4 w-4 text-destructive" /> Streak Maintained</p>}
-                    <p>{points} Points Earned</p>
-                    <p>{pomodoros} Pomodoros Completed</p>
-                    <p>{questions} Questions Answered</p>
-                    <p>{challenges} Challenges Completed</p>
+                    {isCurrentMonth && (
+                        <>
+                            {isStreakDay && <p className="flex items-center gap-1"><Flame className="h-4 w-4 text-destructive" /> Streak Maintained</p>}
+                            <p>{points} Points Earned</p>
+                            <p>{pomodoros} Pomodoros Completed</p>
+                            <p>{questions} Questions Answered</p>
+                            <p>{challenges} Challenges Completed</p>
+                        </>
+                    )}
                   </TooltipContent>
                 </Tooltip>
               );
