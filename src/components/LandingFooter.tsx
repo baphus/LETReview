@@ -13,9 +13,15 @@ export default function LandingFooter() {
           <Logo className="h-8 w-8 text-primary" />
           <span className="font-bold text-lg">LETReview</span>
         </div>
-        <p className="text-sm text-muted-foreground">
-          © {currentYear} LETReview. All rights reserved.
-        </p>
+        <div className="flex flex-col md:flex-row items-center gap-2 md:gap-4 text-sm text-muted-foreground">
+            <p>
+             © {currentYear} LETReview. All rights reserved.
+            </p>
+            <div className="flex gap-4">
+                <Link href="/privacy" className="hover:underline">Privacy Policy</Link>
+                <Link href="/terms" className="hover:underline">Terms of Service</Link>
+            </div>
+        </div>
       </div>
     </footer>
   );
