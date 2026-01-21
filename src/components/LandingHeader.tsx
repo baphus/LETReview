@@ -12,7 +12,7 @@ export default function LandingHeader() {
   const router = useRouter();
 
   return (
-    <header className="px-4 lg:px-6 h-16 flex items-center shadow-sm sticky top-0 bg-background/95 backdrop-blur z-10">
+    <header className="px-4 lg:px-6 h-16 flex items-center shadow-sm sticky top-0 bg-background/95 backdrop-blur z-50">
       <Link href="/" className="flex items-center justify-center">
         <Logo className="h-8 w-8 text-primary" />
         <span className="sr-only">LETReview</span>
