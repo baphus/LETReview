@@ -1,11 +1,6 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import remarkMath from 'remark-math';
-import rehypeKatex from 'rehype-katex';
-import rehypeRaw from 'rehype-raw';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where, doc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import type { Reviewer, Subject, Topic } from '@/lib/types';
@@ -22,6 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { useMemo } from 'react';
+import { MdxRenderer } from '@/components/MdxRenderer';
 
 const articleTypeIcons = {
   "article": <Book className="h-4 w-4" />,
@@ -127,6 +123,43 @@ export default function ReviewArticlePage() {
     
     const articleTopics = topics?.filter(topic => article.topicIds.includes(topic.id)) || [];
 
+    const mdxComponents = {
+        h1: (props: any) => <h2 className="text-3xl font-bold font-headline mt-12 mb-4 border-b pb-2" {...props} />,
+        h2: (props: any) => <h3 className="text-2xl font-bold font-headline mt-10 mb-4" {...props} />,
+        h3: (props: any) => <h4 className="text-xl font-bold font-headline mt-8 mb-4" {...props} />,
+        p: (props: any) => <p className="leading-7 mb-4" {...props} />,
+        ul: (props: any) => <ul className="list-disc pl-6 mb-4 space-y-2" {...props} />,
+        ol: (props: any) => <ol className="list-decimal pl-6 mb-4 space-y-2" {...props} />,
+        li: (props: any) => <li className="pl-2" {...props} />,
+        a: (props: any) => <a className="text-primary underline hover:text-primary/90" {...props} />,
+        strong: (props: any) => <strong className="font-semibold" {...props} />,
+        blockquote: (props: any) => <blockquote className="border-l-4 border-primary bg-muted/50 p-4 italic my-6 rounded-r-lg" {...props} />,
+        code: ({ inline, className, children, ...props }: any) => {
+            const match = /language-(\w+)/.exec(className || '');
+            return !inline ? (
+                <pre className="bg-slate-900 text-white rounded-lg p-4 my-6 overflow-x-auto">
+                    <code className="font-mono text-sm" {...props}>
+                        {children}
+                    </code>
+                </pre>
+            ) : (
+                <code className="bg-muted px-1.5 py-0.5 rounded-md font-mono text-sm" {...props}>
+                    {children}
+                </code>
+            );
+        },
+        hr: (props: any) => <hr className="my-8 border-border" {...props} />,
+        table: (props: any) => (
+            <div className="overflow-x-auto my-8 border rounded-lg">
+                <table className="w-full" {...props} />
+            </div>
+        ),
+        thead: (props: any) => <thead className="bg-muted/50" {...props} />,
+        tr: (props: any) => <tr className="border-b m-0 p-0 even:bg-muted/20" {...props} />,
+        th: (props: any) => <th className="p-3 font-semibold text-left" {...props} />,
+        td: (props: any) => <td className="p-3" {...props} />,
+    };
+
     return (
         <article className="prose prose-quoteless prose-neutral dark:prose-invert max-w-none">
             <header className="mb-8">
@@ -216,48 +249,7 @@ export default function ReviewArticlePage() {
             </Card>
             
             <div className="markdown-content">
-                 <ReactMarkdown 
-                    remarkPlugins={[remarkGfm, remarkMath]}
-                    rehypePlugins={[rehypeRaw, rehypeKatex]}
-                    components={{
-                        h1: ({node, ...props}) => <h2 className="text-3xl font-bold font-headline mt-12 mb-4 border-b pb-2" {...props} />,
-                        h2: ({node, ...props}) => <h3 className="text-2xl font-bold font-headline mt-10 mb-4" {...props} />,
-                        h3: ({node, ...props}) => <h4 className="text-xl font-bold font-headline mt-8 mb-4" {...props} />,
-                        p: ({node, ...props}) => <p className="leading-7 mb-4" {...props} />,
-                        ul: ({node, ...props}) => <ul className="list-disc pl-6 mb-4 space-y-2" {...props} />,
-                        ol: ({node, ...props}) => <ol className="list-decimal pl-6 mb-4 space-y-2" {...props} />,
-                        li: ({node, ...props}) => <li className="pl-2" {...props} />,
-                        a: ({node, ...props}) => <a className="text-primary underline hover:text-primary/90" {...props} />,
-                        strong: ({node, ...props}) => <strong className="font-semibold" {...props} />,
-                        blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-primary bg-muted/50 p-4 italic my-6 rounded-r-lg" {...props} />,
-                        code: ({ node, inline, className, children, ...props }) => {
-                            const match = /language-(\w+)/.exec(className || '');
-                            return !inline ? (
-                                <pre className="bg-slate-900 text-white rounded-lg p-4 my-6 overflow-x-auto">
-                                    <code className="font-mono text-sm" {...props}>
-                                        {children}
-                                    </code>
-                                </pre>
-                            ) : (
-                                <code className="bg-muted px-1.5 py-0.5 rounded-md font-mono text-sm" {...props}>
-                                    {children}
-                                </code>
-                            );
-                        },
-                        hr: ({node, ...props}) => <hr className="my-8 border-border" {...props} />,
-                        table: ({node, ...props}) => (
-                            <div className="overflow-x-auto my-8 border rounded-lg">
-                                <table className="w-full" {...props} />
-                            </div>
-                        ),
-                        thead: ({node, ...props}) => <thead className="bg-muted/50" {...props} />,
-                        tr: ({node, ...props}) => <tr className="border-b m-0 p-0 even:bg-muted/20" {...props} />,
-                        th: ({node, ...props}) => <th className="p-3 font-semibold text-left" {...props} />,
-                        td: ({node, ...props}) => <td className="p-3" {...props} />,
-                    }}
-                 >
-                    {article.content}
-                </ReactMarkdown>
+                 <MdxRenderer source={article.content} components={mdxComponents} />
             </div>
         </article>
     );
