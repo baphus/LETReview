@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -66,13 +65,25 @@ export default function EditQuestionPage() {
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
+    defaultValues: {
+        question: '',
+        difficulty: 'medium',
+        choices: ['', '', '', ''],
+        correctAnswer: '',
+        explanation: '',
+        category: 'profed',
+        subjectId: '',
+        topicIds: []
+    }
   });
   
   useEffect(() => {
     if (question) {
         form.reset({
             ...question,
+            choices: question.choices as [string, string, string, string] || ['', '', '', ''],
             correctAnswer: question.correctAnswer || '',
+            explanation: question.explanation || '',
             subjectId: question.subjectId || '',
             topicIds: question.topicIds || [],
         });
@@ -233,7 +244,7 @@ export default function EditQuestionPage() {
                                     <FormItem className="flex items-center space-x-3 space-y-0">
                                         <FormControl>
                                             <div className="flex items-center gap-2 w-full">
-                                                <RadioGroupItem value={currentChoiceField.value} />
+                                                <RadioGroupItem value={currentChoiceField.value || ''} />
                                                 <Input {...currentChoiceField} placeholder={`Choice ${String.fromCharCode(65 + index)}`} />
                                             </div>
                                         </FormControl>
