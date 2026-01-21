@@ -135,6 +135,12 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap"
           rel="stylesheet"
         />
+        <link
+          rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css"
+          integrity="sha384-hIoDRK3BOKdib2SgYJymby3d+gDRRQWPzEdi1o4pG4_zL4p3S/tYCEFj+3qG4QCE"
+          crossOrigin="anonymous"
+        />
       </head>
       <body
         className={`${inter.variable} ${spaceGrotesk.variable} font-body antialiased flex flex-col h-dvh bg-background`}
