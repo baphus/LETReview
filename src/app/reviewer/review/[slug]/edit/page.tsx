@@ -84,8 +84,6 @@ export default function EditReviewerPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isManageSubjectsOpen, setIsManageSubjectsOpen] = useState(false);
   const [isManageTopicsOpen, setIsManageTopicsOpen] = useState(false);
-  const [subjectToDelete, setSubjectToDelete] = useState<Subject | null>(null);
-  const [topicToDelete, setTopicToDelete] = useState<Topic | null>(null);
 
   // Fetch the article to edit
   const articleRef = useMemoFirebase(() => firestore && slug ? doc(firestore, 'reviewers', slug) : null, [firestore, slug]);
@@ -180,7 +178,6 @@ export default function EditReviewerPage() {
     try {
         await deleteDoc(doc(firestore, 'subjects', subjectId));
         toast({ title: 'Subject Deleted' });
-        setSubjectToDelete(null);
         if (form.getValues('subjectId') === subjectId) {
             form.setValue('subjectId', '');
         }
@@ -194,7 +191,6 @@ export default function EditReviewerPage() {
     try {
         await deleteDoc(doc(firestore, 'topics', topicId));
         toast({ title: 'Topic Deleted' });
-        setTopicToDelete(null);
         form.setValue('topicIds', form.getValues('topicIds').filter(id => id !== topicId), { shouldValidate: true });
     } catch (error: any) {
         toast({ variant: 'destructive', title: 'Error', description: error.message });
@@ -496,11 +492,25 @@ export default function EditReviewerPage() {
                             <div className="h-4 w-4 rounded-full" style={{ backgroundColor: subject.color }} />
                             <span>{subject.name}</span>
                         </div>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSubjectToDelete(subject)}>
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                        </AlertDialogTrigger>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                              <AlertDialogHeader>
+                                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                      This will permanently delete the subject "{subject.name}". Associated articles and questions will NOT be deleted but may become uncategorized. This action cannot be undone.
+                                  </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDeleteSubject(subject.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+                              </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                     </div>
                 ))}
             </div>
@@ -524,21 +534,6 @@ export default function EditReviewerPage() {
               </Form>
         </DialogContent>
       </Dialog>
-      
-      <AlertDialog open={!!subjectToDelete} onOpenChange={() => setSubjectToDelete(null)}>
-        <AlertDialogContent>
-            <AlertDialogHeader>
-                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                <AlertDialogDescription>
-                    This will permanently delete the subject "{subjectToDelete?.name}". Associated articles and questions will NOT be deleted but may become uncategorized. This action cannot be undone.
-                </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-                <AlertDialogCancel onClick={() => setSubjectToDelete(null)}>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={() => subjectToDelete && handleDeleteSubject(subjectToDelete.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
-            </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {/* Manage Topics Dialog */}
       <Dialog open={isManageTopicsOpen} onOpenChange={setIsManageTopicsOpen}>
@@ -551,11 +546,25 @@ export default function EditReviewerPage() {
                 {isLoadingTopics ? <p>Loading...</p> : availableTopics.map(topic => (
                     <div key={topic.id} className="flex items-center justify-between rounded-md border p-2">
                         <span>{topic.name}</span>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setTopicToDelete(topic)}>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
                                 <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
-                        </AlertDialogTrigger>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This will permanently delete the topic "{topic.name}". Associated articles and questions will not be deleted but will lose this topic tag. This action cannot be undone.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDeleteTopic(topic.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                     </div>
                 ))}
             </div>
@@ -576,21 +585,6 @@ export default function EditReviewerPage() {
           </Form>
         </DialogContent>
       </Dialog>
-
-      <AlertDialog open={!!topicToDelete} onOpenChange={() => setTopicToDelete(null)}>
-        <AlertDialogContent>
-            <AlertDialogHeader>
-                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                <AlertDialogDescription>
-                    This will permanently delete the topic "{topicToDelete?.name}". Associated articles and questions will not be deleted but will lose this topic tag. This action cannot be undone.
-                </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-                <AlertDialogCancel onClick={() => setTopicToDelete(null)}>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={() => topicToDelete && handleDeleteTopic(topicToDelete.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
-            </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }
