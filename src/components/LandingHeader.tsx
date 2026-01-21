@@ -19,18 +19,12 @@ export default function LandingHeader() {
         <span className="font-bold text-lg ml-2">LETReview</span>
       </Link>
       <nav className="ml-auto flex gap-4 sm:gap-6 items-center">
-        <Link href="#features" className="text-sm font-medium hover:underline underline-offset-4">
-          Features
-        </Link>
-        <Link href="#testimonials" className="text-sm font-medium hover:underline underline-offset-4">
-          Testimonials
-        </Link>
         {user && !isAnonymous ? (
            <Link href="/home">
              <Button>Dashboard</Button>
            </Link>
         ) : (
-            <Button onClick={linkGoogleAccount}>Login with Google</Button>
+            <Button onClick={linkGoogleAccount}>Get Started</Button>
         )}
       </nav>
     </header>
