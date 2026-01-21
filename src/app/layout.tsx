@@ -121,8 +121,10 @@ export default function RootLayout({
         <title>LETReview</title>
         <meta
           name="description"
-          content="A mobile-first web application for studying the Licensure Exam for Teachers (LET) in the Philippines."
+          content="A gamified, mobile-first web application for studying the Licensure Exam for Teachers (LET) in the Philippines."
         />
+        <meta name="theme-color" content="#4A4AFF" />
+        <link rel="manifest" href="/manifest.json" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
           rel="preconnect"

@@ -121,7 +121,7 @@ export default function LandingPage() {
               backgroundSize: '30px',
             }}
           />
-          <div className="container mx-auto px-4 md:px-6 relative">
+          <div className="container mx-auto px-4 md:px-6 relative z-10">
             <div className="flex flex-col items-center space-y-8 text-center">
               <div className="space-y-4">
                 <h1 className="text-4xl md:text-6xl font-bold tracking-tighter font-headline animate-fade-in-up">
@@ -155,7 +155,7 @@ export default function LandingPage() {
               </div>
             </div>
           </div>
-           <div className="absolute bottom-0 left-0 right-0 overflow-hidden" style={{lineHeight: 0}}>
+           <div className="absolute bottom-0 left-0 right-0 overflow-hidden z-0" style={{lineHeight: 0}}>
               <svg
                   className="relative block"
                   data-name="Layer 1"
@@ -299,7 +299,3 @@ export default function LandingPage() {
     </div>
   )
 }
-
-    
-
-    
