@@ -22,8 +22,6 @@ import { useFirestore } from '@/firebase';
 import { useUser } from '@/firebase/auth/use-user';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
 
 const feedbackFormSchema = z.object({
   type: z.enum(['bug', 'feature', 'general'], { required_error: 'Please select a feedback type.' }),
@@ -59,36 +57,33 @@ export function FeedbackDialog({ open, onOpenChange }: FeedbackDialogProps) {
     }
     setIsSubmitting(true);
 
-    const feedbackCollection = collection(firestore, 'feedback');
-    const feedbackData = {
-      ...data,
-      userId: firebaseUser.uid,
-      userName: user?.name || 'Anonymous User',
-      pageUrl: pathname,
-      createdAt: serverTimestamp(),
-    };
-    
-    addDoc(feedbackCollection, feedbackData)
-      .then(() => {
+    try {
+        const feedbackCollection = collection(firestore, 'feedback');
+        await addDoc(feedbackCollection, {
+            ...data,
+            userId: firebaseUser.uid,
+            userName: user?.name || 'Anonymous User',
+            pageUrl: pathname,
+            createdAt: serverTimestamp(),
+        });
+
         toast({
-          title: 'Feedback Sent!',
-          description: "Thank you for your valuable input.",
-          className: 'bg-green-100 border-green-200',
+            title: 'Feedback Sent!',
+            description: "Thank you for your valuable input.",
+            className: 'bg-green-100 border-green-200',
         });
         form.reset();
         onOpenChange(false);
-      })
-      .catch((error) => {
-        const permissionError = new FirestorePermissionError({
-          path: feedbackCollection.path,
-          operation: 'create',
-          requestResourceData: feedbackData,
+    } catch (error) {
+        console.error("Feedback submission error:", error);
+        toast({
+            variant: 'destructive',
+            title: 'Submission Failed',
+            description: 'An error occurred while sending your feedback. Please try again.',
         });
-        errorEmitter.emit('permission-error', permissionError);
-      })
-      .finally(() => {
+    } finally {
         setIsSubmitting(false);
-      });
+    }
   };
 
   return (
