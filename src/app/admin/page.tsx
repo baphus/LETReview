@@ -1,14 +1,13 @@
-
 'use client';
 
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, doc, deleteDoc } from 'firebase/firestore';
 import type { Reviewer, Subject, Topic, QuizQuestion } from '@/lib/types';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
-import { MoreHorizontal, PlusCircle, Trash2, Edit } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2, Edit, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -20,10 +19,23 @@ export default function AdminDashboard() {
   const { toast } = useToast();
   const [itemToDelete, setItemToDelete] = useState<{ id: string; name: string, type: 'reviewer' | 'question' } | null>(null);
 
+  const [questionsPage, setQuestionsPage] = useState(1);
+  const [topicsPage, setTopicsPage] = useState(1);
+  const QUESTIONS_PER_PAGE = 10;
+  const TOPICS_PER_PAGE = 5;
+
   const { data: reviewers, isLoading: isLoadingReviewers } = useCollection<Reviewer>(useMemoFirebase(() => firestore ? query(collection(firestore, 'reviewers')) : null, [firestore]));
   const { data: subjects, isLoading: isLoadingSubjects } = useCollection<Subject>(useMemoFirebase(() => firestore ? query(collection(firestore, 'subjects')) : null, [firestore]));
   const { data: topics, isLoading: isLoadingTopics } = useCollection<Topic>(useMemoFirebase(() => firestore ? query(collection(firestore, 'topics')) : null, [firestore]));
   const { data: questions, isLoading: isLoadingQuestions } = useCollection<QuizQuestion>(useMemoFirebase(() => firestore ? query(collection(firestore, 'questions')) : null, [firestore]));
+
+  // Pagination logic for questions
+  const paginatedQuestions = questions?.slice((questionsPage - 1) * QUESTIONS_PER_PAGE, questionsPage * QUESTIONS_PER_PAGE);
+  const totalQuestionsPages = questions ? Math.ceil(questions.length / QUESTIONS_PER_PAGE) : 0;
+
+  // Pagination logic for topics
+  const paginatedTopics = topics?.slice((topicsPage - 1) * TOPICS_PER_PAGE, topicsPage * TOPICS_PER_PAGE);
+  const totalTopicsPages = topics ? Math.ceil(topics.length / TOPICS_PER_PAGE) : 0;
 
   const handleDelete = async () => {
     if (!itemToDelete || !firestore) return;
@@ -150,7 +162,7 @@ export default function AdminDashboard() {
                         {isLoadingQuestions ? (
                             <TableRow><TableCell colSpan={4}>Loading...</TableCell></TableRow>
                         ) : (
-                            questions?.slice(0, 10).map(q => (
+                            paginatedQuestions?.map(q => (
                                 <TableRow key={q.id}>
                                     <TableCell className="max-w-sm truncate font-medium">{q.question}</TableCell>
                                     <TableCell><Badge variant="secondary">{q.category}</Badge></TableCell>
@@ -176,10 +188,32 @@ export default function AdminDashboard() {
                         )}
                     </TableBody>
                 </Table>
-                 {questions && questions.length > 10 && (
-                    <p className="text-sm text-muted-foreground mt-2">Showing 10 of {questions.length} questions.</p>
-                )}
             </CardContent>
+             {questions && questions.length > QUESTIONS_PER_PAGE && (
+                <CardFooter className="justify-between">
+                    <span className="text-sm text-muted-foreground">
+                        Page {questionsPage} of {totalQuestionsPages}
+                    </span>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setQuestionsPage(p => p - 1)}
+                            disabled={questionsPage === 1}
+                        >
+                            <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setQuestionsPage(p => p + 1)}
+                            disabled={questionsPage === totalQuestionsPages}
+                        >
+                            <ChevronRight className="h-4 w-4" />
+                        </Button>
+                    </div>
+                </CardFooter>
+            )}
         </Card>
 
         <div className="grid gap-4 md:grid-cols-2">
@@ -226,7 +260,7 @@ export default function AdminDashboard() {
                             {isLoadingTopics ? (
                                 <TableRow><TableCell colSpan={2}>Loading...</TableCell></TableRow>
                             ) : (
-                                topics?.slice(0,5).map(topic => (
+                                paginatedTopics?.map(topic => (
                                     <TableRow key={topic.id}>
                                         <TableCell>{topic.name}</TableCell>
                                         <TableCell>{subjects?.find(s => s.id === topic.subjectId)?.name || 'N/A'}</TableCell>
@@ -235,10 +269,32 @@ export default function AdminDashboard() {
                             )}
                         </TableBody>
                     </Table>
-                    {topics && topics.length > 5 && (
-                        <p className="text-sm text-muted-foreground mt-2">Showing 5 of {topics.length} topics.</p>
-                    )}
                 </CardContent>
+                {topics && topics.length > TOPICS_PER_PAGE && (
+                    <CardFooter className="justify-between">
+                        <span className="text-sm text-muted-foreground">
+                            Page {topicsPage} of {totalTopicsPages}
+                        </span>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => setTopicsPage(p => p - 1)}
+                                disabled={topicsPage === 1}
+                            >
+                                <ChevronLeft className="h-4 w-4" />
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => setTopicsPage(p => p + 1)}
+                                disabled={topicsPage === totalTopicsPages}
+                            >
+                                <ChevronRight className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </CardFooter>
+                )}
             </Card>
         </div>
     </div>
