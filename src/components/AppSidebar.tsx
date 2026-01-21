@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { BookOpen, CalendarDays, Clock, Home, User, Lightbulb, LogIn, MessageSquare } from "lucide-react";
+import { BookOpen, CalendarDays, Clock, Home, User, Lightbulb, LogIn, MessageSquare, Shield } from "lucide-react";
 import {
   SidebarHeader,
   SidebarMenu,
@@ -36,7 +36,7 @@ export function AppSidebar() {
   const searchParams = useSearchParams();
   const { time, isActive } = useTimer();
   const { state: sidebarState, setOpenMobile } = useSidebar();
-  const { user, firebaseUser, linkGoogleAccount } = useUser();
+  const { user, isAdmin, firebaseUser, linkGoogleAccount } = useUser();
   const isAnonymous = firebaseUser?.isAnonymous;
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
 
@@ -121,6 +121,20 @@ export function AppSidebar() {
     </SidebarMenuButton>
   );
 
+  const adminButton = (
+     <SidebarMenuButton
+          isActive={pathname.startsWith('/admin')}
+          className="justify-between h-12"
+        >
+          <div className="flex items-center gap-3">
+            <Shield className="h-5 w-5" />
+            <span className="group-data-[collapsible=icon]:hidden">
+              Admin
+            </span>
+          </div>
+        </SidebarMenuButton>
+  )
+
   return (
     <>
       <SidebarHeader>
@@ -139,6 +153,20 @@ export function AppSidebar() {
 
       <SidebarSeparator />
       <SidebarMenu>
+         {isAdmin && (
+            <SidebarMenuItem>
+                 <Link href="/admin" className="w-full" onClick={() => setOpenMobile(false)}>
+                    {sidebarState === "collapsed" ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>{adminButton}</TooltipTrigger>
+                        <TooltipContent side="right" align="center">Admin Dashboard</TooltipContent>
+                      </Tooltip>
+                   ) : (
+                    adminButton
+                   )}
+                </Link>
+            </SidebarMenuItem>
+        )}
         <SidebarMenuItem>
           {sidebarState === "collapsed" ? (
             <Tooltip>
