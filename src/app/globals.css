@@ -135,6 +135,9 @@
 
 
 @layer utilities {
+  .katex-display {
+    @apply overflow-x-auto overflow-y-hidden pb-2;
+  }
   .animation-delay-200 {
     animation-delay: 200ms;
   }

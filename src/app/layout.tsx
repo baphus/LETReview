@@ -50,7 +50,7 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
   if (isLoading && isAppPage && !user) {
     return (
       <div className="flex flex-col h-dvh">
-        <main className="flex-1 overflow-y-auto p-4">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
           <div className="flex items-center gap-2 mb-6">
             <Skeleton className="h-8 w-8" />
             <Skeleton className="h-8 w-48" />
@@ -75,7 +75,7 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
   if (isAppPage && !user) {
     return (
        <div className="flex flex-col h-dvh">
-        <main className="flex-1 overflow-y-auto p-4">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
           <div className="flex items-center gap-2 mb-6">
             <Skeleton className="h-8 w-8" />
             <Skeleton className="h-8 w-48" />
@@ -98,7 +98,7 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
           </Sidebar>
           <SidebarInset className="flex flex-col">
             <AppHeader />
-            <main className="flex-1 overflow-y-auto p-4 sm:p-6">
+            <main className="flex-1 overflow-y-auto py-4 sm:py-6">
               {children}
             </main>
             <OnboardingDialog open={showOnboarding} onOpenChange={setShowOnboarding} />
