@@ -181,11 +181,10 @@ export const useUser = () => {
         // The onAuthStateChanged listener will handle the rest:
         // creating the user doc, and the redirect effect will fire.
     } catch (error: any) {
-        if (error.code === 'auth/popup-closed-by-user') {
+        if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
             toast({
-                variant: 'destructive',
                 title: 'Sign-in cancelled',
-                description: 'You closed the sign-in window before completion.',
+                description: 'You closed the sign-in window before completing the sign-in process.',
             });
         } else if (error.code === 'auth/popup-blocked') {
             toast({
