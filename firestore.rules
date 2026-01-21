@@ -56,7 +56,7 @@ service cloud.firestore {
     }
 
     match /feedback/{feedbackId} {
-      allow create: if isSignedIn();
+      allow create: if request.auth.uid == request.resource.data.userId;
       allow read, list: if isAdmin();
       allow update, delete: if false;
     }
