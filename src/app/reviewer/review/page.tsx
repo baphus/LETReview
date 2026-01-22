@@ -4,7 +4,7 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Clock, Book, Video, Brain, Bookmark, PlusCircle } from 'lucide-react';
+import { Clock, Book, Video, Brain, Bookmark, PlusCircle, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -158,14 +158,22 @@ export default function ReviewPage() {
                             )}
                         </SelectContent>
                     </Select>
-                    {isAdmin && (
-                        <Link href="/reviewer/review/new" passHref className="w-full sm:w-auto sm:ml-auto">
-                            <Button className="w-full justify-center">
-                                <PlusCircle className="mr-2 h-4 w-4" />
-                                New Article
+                     <div className="flex-1 flex justify-end gap-2 w-full sm:w-auto">
+                        <Link href="/flashcards" passHref>
+                            <Button variant="outline">
+                                <Zap className="mr-2 h-4 w-4" />
+                                Flashcard Mode
                             </Button>
                         </Link>
-                    )}
+                        {isAdmin && (
+                            <Link href="/reviewer/review/new" passHref>
+                                <Button>
+                                    <PlusCircle className="mr-2 h-4 w-4" />
+                                    New Article
+                                </Button>
+                            </Link>
+                        )}
+                    </div>
                 </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

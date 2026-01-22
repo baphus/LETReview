@@ -26,6 +26,7 @@ const getPageTitle = (pathname: string, searchParams: URLSearchParams) => {
     if (pathname.startsWith('/daily')) return 'Daily Activities';
     if (pathname.startsWith('/timer')) return 'Timer';
     if (pathname.startsWith('/profile')) return 'Profile';
+    if (pathname.startsWith('/flashcards')) return 'Flashcard Mode';
     return 'LETReview';
 }
 
