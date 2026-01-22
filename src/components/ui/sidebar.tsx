@@ -15,6 +15,7 @@ import { Sheet, SheetContent } from "@/components/ui/sheet"
 
 const SIDEBAR_WIDTH = "16rem"
 const SIDEBAR_WIDTH_ICON = "4rem" // Increased width for icon-only state
+const SIDEBAR_WIDTH_MOBILE = "16rem"
 
 type SidebarContext = {
   state: "expanded" | "collapsed"
