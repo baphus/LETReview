@@ -48,7 +48,7 @@ export default function LandingFooter() {
 
         <div className="mt-12 pt-8 border-t border-slate-800 flex flex-col sm:flex-row justify-between items-center text-sm">
           <p className="text-slate-500">© {currentYear} LETReview. All rights reserved.</p>
-          <p className="mt-4 sm:mt-0">Made with ❤️ by Josephus</p>
+          <p className="mt-4 sm:mt-0">Made with ❤️ by sephus</p>
         </div>
       </div>
     </footer>
