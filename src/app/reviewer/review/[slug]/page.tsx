@@ -1,13 +1,14 @@
+
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
 import { collection, query, where, doc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
-import type { Reviewer, Subject, Topic } from '@/lib/types';
+import type { Reviewer, Subject, Topic, ReviewerProgress } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Clock, Tag, Brain, Book, Video, Bookmark, BarChart, Edit } from 'lucide-react';
+import { Clock, Tag, Brain, Book, Video, Bookmark, BarChart, Edit, ArrowLeft, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -16,8 +17,9 @@ import { AddQuestionDialog } from '@/components/AddQuestionDialog';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { MdxRenderer } from '@/components/MdxRenderer';
+import { Progress } from '@/components/ui/progress';
 
 const articleTypeIcons = {
   "article": <Book className="h-4 w-4" />,
@@ -47,6 +49,10 @@ export default function ReviewArticlePage() {
     const { user, isAdmin, firebaseUser } = useUser();
     const { toast } = useToast();
 
+    // State for pagination
+    const [pages, setPages] = useState<string[]>([]);
+    const [currentPage, setCurrentPage] = useState(0);
+
     const articleQuery = useMemoFirebase(() => {
         if (!firestore) return null;
         return query(collection(firestore, 'reviewers'), where('slug', '==', slug));
@@ -67,14 +73,78 @@ export default function ReviewArticlePage() {
     const { data: topics, isLoading: isLoadingTopics } = useCollection<Topic>(topicsQuery);
     
     const article = articles?.[0];
-    const subject = subjects?.find(s => s.id === article?.subjectId);
-    const isLoading = isLoadingArticle || isLoadingSubjects || isLoadingTopics;
 
+    // Query for user progress on this specific article
+    const progressRef = useMemoFirebase(() => {
+        if (!firestore || !user || !article || firebaseUser?.isAnonymous) return null;
+        return doc(firestore, `users/${user.uid}/reviewerProgress`, article.id);
+    }, [firestore, user, article, firebaseUser]);
+    const { data: progress, isLoading: isLoadingProgress } = useDoc<ReviewerProgress>(progressRef);
+    
     const bookmarksQuery = useMemoFirebase(() => {
         if (!firestore || !user || !firebaseUser || firebaseUser.isAnonymous) return null;
         return collection(firestore, `users/${user.uid}/reviewerBookmarks`);
     }, [firestore, user, firebaseUser]);
     const { data: bookmarks } = useCollection<{ createdAt: string }>(bookmarksQuery);
+
+    const subject = subjects?.find(s => s.id === article?.subjectId);
+    const isLoading = isLoadingArticle || isLoadingSubjects || isLoadingTopics;
+
+    // Effect to split content into pages when article loads
+    useEffect(() => {
+        if (article) {
+            const contentPages = article.content.split(/\n---\n/);
+            setPages(contentPages);
+        }
+    }, [article]);
+
+    // Effect to set initial page from saved progress
+    useEffect(() => {
+        if (progress && pages.length > 0) {
+            const bookmarkedPage = progress.lastReadPosition || 0;
+            if (bookmarkedPage < pages.length) {
+                setCurrentPage(bookmarkedPage);
+            }
+        }
+    // We only want this to run once when progress and pages are loaded.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [progress, pages.length > 0]);
+
+    // Debounced effect to save progress when page changes
+    useEffect(() => {
+        const saveProgress = async () => {
+            if (!progressRef || pages.length === 0 || isLoadingProgress || !user || firebaseUser?.isAnonymous) return;
+
+            const totalPages = pages.length;
+            const progressPercent = Math.round(((currentPage + 1) / totalPages) * 100);
+            let status: ReviewerProgress['status'] = 'in_progress';
+            if (currentPage === totalPages - 1) status = 'completed';
+            else if (progressPercent < 5 && currentPage === 0) status = 'not_started';
+
+            const progressData: Partial<ReviewerProgress> = {
+                status,
+                progressPercent,
+                lastReadPosition: currentPage,
+                updatedAt: serverTimestamp() as any,
+            };
+
+            try {
+                await setDoc(progressRef, progressData, { merge: true });
+            } catch (serverError) {
+                console.error("Could not save progress", serverError);
+                const permissionError = new FirestorePermissionError({
+                    path: progressRef.path,
+                    operation: 'write',
+                    requestResourceData: progressData,
+                });
+                errorEmitter.emit('permission-error', permissionError);
+            }
+        };
+
+        const timeoutId = setTimeout(saveProgress, 1500); // Debounce for 1.5s
+        return () => clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentPage, pages.length]);
 
     const isBookmarked = useMemo(() => {
         if (!bookmarks || !article) return false;
@@ -112,6 +182,20 @@ export default function ReviewArticlePage() {
             });
         }
     };
+    
+    const handleNextPage = () => {
+        if (currentPage < pages.length - 1) {
+            setCurrentPage(p => p + 1);
+            window.scrollTo(0, 0);
+        }
+    };
+
+    const handlePrevPage = () => {
+        if (currentPage > 0) {
+            setCurrentPage(p => p - 1);
+            window.scrollTo(0, 0);
+        }
+    };
 
     if (isLoading) {
         return <ArticleSkeleton />;
@@ -122,6 +206,8 @@ export default function ReviewArticlePage() {
     }
     
     const articleTopics = topics?.filter(topic => article.topicIds.includes(topic.id)) || [];
+    const totalPages = pages.length;
+    const currentProgress = totalPages > 0 ? ((currentPage + 1) / totalPages) * 100 : 0;
 
     const mdxComponents = {
         h1: (props: any) => <h2 className="text-3xl font-bold font-headline mt-12 mb-4 border-b pb-2" {...props} />,
@@ -161,7 +247,7 @@ export default function ReviewArticlePage() {
     };
 
     return (
-        <article className="prose prose-quoteless prose-neutral dark:prose-invert max-w-none">
+        <article className="prose prose-quoteless prose-neutral dark:prose-invert max-w-none pb-32">
             <header className="mb-8">
                  <div className="flex flex-wrap items-center gap-2 mb-4 text-sm">
                     {subject && (
@@ -216,8 +302,8 @@ export default function ReviewArticlePage() {
                 <CardContent className="space-y-4">
                     {articleTopics.length > 0 ? (
                         articleTopics.map(topic => {
-                            const progress = user?.quizProgress?.[topic.id];
-                            const averageScore = progress ? progress.averageScore : null;
+                            const topicProgress = user?.quizProgress?.[topic.id];
+                            const averageScore = topicProgress ? topicProgress.averageScore : null;
                             return (
                                 <div key={topic.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 rounded-lg border p-3">
                                     <div className="flex-1">
@@ -249,8 +335,33 @@ export default function ReviewArticlePage() {
             </Card>
             
             <div className="markdown-content">
-                 <MdxRenderer source={article.content} components={mdxComponents} />
+                {pages.length > 0 && currentPage < pages.length ? (
+                    <MdxRenderer source={pages[currentPage]} components={mdxComponents} />
+                ) : (
+                    <p>Loading content...</p>
+                )}
             </div>
+
+            {totalPages > 1 && (
+                <div className="fixed bottom-0 left-0 right-0 z-40 bg-background/95 border-t backdrop-blur-sm md:left-[var(--sidebar-width)] peer-data-[collapsible=icon]:md:left-[var(--sidebar-width-icon)]">
+                    <div className="container mx-auto max-w-4xl px-4 sm:px-6 py-3">
+                        <div className="flex items-center gap-4">
+                            <Button variant="outline" onClick={handlePrevPage} disabled={currentPage === 0}>
+                                <ArrowLeft className="h-4 w-4 md:mr-2" />
+                                <span className="hidden md:inline">Previous</span>
+                            </Button>
+                            <div className="flex-1 text-center text-sm text-muted-foreground">
+                                Page {currentPage + 1} of {totalPages}
+                            </div>
+                            <Button variant="outline" onClick={handleNextPage} disabled={currentPage >= totalPages - 1}>
+                                <span className="hidden md:inline">Next</span>
+                                <ArrowRight className="h-4 w-4 md:ml-2" />
+                            </Button>
+                        </div>
+                        <Progress value={currentProgress} className="mt-3 h-1" />
+                    </div>
+                </div>
+            )}
         </article>
     );
 }
