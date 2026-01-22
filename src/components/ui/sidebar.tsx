@@ -4,7 +4,7 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { VariantProps, cva } from "class-variance-authority"
-import { Menu } from "lucide-react"
+import { Menu, ChevronsLeft } from "lucide-react"
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
@@ -13,7 +13,7 @@ import { Separator } from "@/components/ui/separator"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
 
 const SIDEBAR_WIDTH = "16rem"
-const SIDEBAR_WIDTH_ICON = "4rem" // Increased width for icon-only state
+const SIDEBAR_WIDTH_ICON = "4.5rem" // Increased width for icon-only state
 const SIDEBAR_WIDTH_MOBILE = "16rem"
 
 type SidebarContext = {
@@ -105,6 +105,7 @@ const SidebarProvider = React.forwardRef<
                   ...style,
                 } as React.CSSProperties
               }
+              data-state={state}
               className={cn("group/sidebar-wrapper", className)}
               ref={ref}
               {...props}
@@ -142,11 +143,10 @@ const Sidebar = React.forwardRef<
         ref={ref}
         className={cn(
             "fixed top-0 left-0 z-40 h-dvh flex-col border-r bg-background transition-[width] duration-300 md:flex",
-            state === 'expanded' && "w-[var(--sidebar-width)]",
-            state === 'collapsed' && "w-[var(--sidebar-width-icon)]",
+            "w-[var(--sidebar-width)]",
+            "group-data-[state=collapsed]/sidebar-wrapper:w-[var(--sidebar-width-icon)]",
             className
         )}
-        data-state={state}
         {...props}
       >
         {children}
@@ -185,14 +185,13 @@ const SidebarInset = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"main">
 >(({ className, ...props }, ref) => {
-  const { state } = useSidebar();
   return (
     <main
       ref={ref}
       className={cn(
         "flex-1 transition-[margin-left] duration-300",
         "md:ml-[var(--sidebar-width)]",
-        state === 'collapsed' && "md:ml-[var(--sidebar-width-icon)]",
+        "group-data-[state=collapsed]/sidebar-wrapper:md:ml-[var(--sidebar-width-icon)]",
         className
       )}
       {...props}
@@ -205,14 +204,12 @@ const SidebarHeader = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"div">
 >(({ className, ...props }, ref) => {
-  const { state } = useSidebar();
   return (
     <div
       ref={ref}
-      data-state={state}
       className={cn(
         "flex items-center p-4", 
-        "data-[state=collapsed]:justify-center",
+        "group-data-[state=collapsed]/sidebar-wrapper:justify-center",
         className
       )}
       {...props}
@@ -228,7 +225,7 @@ const SidebarFooter = React.forwardRef<
   return (
     <div
       ref={ref}
-      className={cn("flex flex-col gap-2 p-3 mt-auto border-t", className)}
+      className={cn("flex flex-col gap-2 p-2 mt-auto border-t", className)}
       {...props}
     />
   )
@@ -321,17 +318,15 @@ const SidebarMenuButton = React.forwardRef<
     },
     ref
   ) => {
-    const { state } = useSidebar();
     const Comp = asChild ? Slot : "button"
 
     return (
       <Comp
         ref={ref}
-        data-state={state}
         data-active={isActive}
         className={cn(
           sidebarMenuButtonVariants({ variant }),
-          "data-[state=collapsed]:justify-center data-[state=collapsed]:px-0",
+          "group-data-[state=collapsed]/sidebar-wrapper:justify-center group-data-[state=collapsed]/sidebar-wrapper:px-0 group-data-[state=collapsed]/sidebar-wrapper:py-3",
           className
         )}
         {...props}
@@ -340,6 +335,29 @@ const SidebarMenuButton = React.forwardRef<
   }
 )
 SidebarMenuButton.displayName = "SidebarMenuButton"
+
+const SidebarToggle = React.forwardRef<
+  React.ElementRef<typeof Button>,
+  React.ComponentProps<typeof Button>
+>(({ className, ...props }, ref) => {
+  const { setOpen } = useSidebar()
+  return (
+    <div className="hidden md:flex p-2 items-center justify-center">
+        <Button
+          ref={ref}
+          variant="outline"
+          size="icon"
+          className={cn("w-full h-auto p-2", className)}
+          onClick={() => setOpen((open) => !open)}
+          {...props}
+        >
+          <ChevronsLeft className="h-5 w-5 transition-transform duration-300 group-data-[state=collapsed]/sidebar-wrapper:rotate-180" />
+          <span className="sr-only">Toggle sidebar</span>
+        </Button>
+    </div>
+  )
+})
+SidebarToggle.displayName = "SidebarToggle"
 
 export {
   Sidebar,
@@ -353,5 +371,6 @@ export {
   SidebarProvider,
   SidebarSeparator,
   SidebarTrigger,
+  SidebarToggle,
   useSidebar,
 }

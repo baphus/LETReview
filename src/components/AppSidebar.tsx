@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { BookOpen, CalendarDays, Clock, Home, User, Lightbulb, LogIn, MessageSquare, Shield, ChevronsLeft } from "lucide-react";
+import { BookOpen, CalendarDays, Clock, Home, User, Lightbulb, LogIn, MessageSquare, Shield } from "lucide-react";
 import {
   SidebarHeader,
   SidebarMenu,
@@ -12,6 +12,7 @@ import {
   useSidebar,
   SidebarFooter,
   SidebarSeparator,
+  SidebarToggle,
 } from "@/components/ui/sidebar";
 import { Badge } from "./ui/badge";
 import { useTimer } from "@/hooks/use-timer";
@@ -21,7 +22,6 @@ import { useUser } from "@/firebase/auth/use-user";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { useState } from "react";
 import { FeedbackDialog } from "./FeedbackDialog";
-import { Button } from "./ui/button";
 
 
 const navItems = [
@@ -36,18 +36,14 @@ export function AppSidebar() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { time, isActive } = useTimer();
-  const { state: sidebarState, setOpenMobile, setOpen } = useSidebar();
+  const { state: sidebarState, setOpenMobile } = useSidebar();
   const { user, isAdmin, firebaseUser, linkGoogleAccount } = useUser();
   const isAnonymous = firebaseUser?.isAnonymous;
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
 
   const TimerIndicator = () => {
     if (!isActive) return null;
-    if (sidebarState === "collapsed") {
-      return (
-        <div className="absolute top-1 right-1 h-2 w-2 rounded-full bg-destructive" />
-      );
-    }
+    
     const minutes = Math.floor(time / 60);
     const seconds = time % 60;
 
@@ -75,13 +71,13 @@ export function AppSidebar() {
           isActive={isActivePath}
         >
           <div className="flex items-center gap-3">
-            <Icon className="h-5 w-5 shrink-0" />
-            <span className="group-data-[state=collapsed]/button:hidden">
+            <Icon className="h-6 w-6 shrink-0" />
+            <span className="group-data-[state=collapsed]/sidebar-wrapper:hidden">
               {label}
             </span>
           </div>
           {href === '/timer' && (
-            <div className="relative group-data-[state=collapsed]/button:hidden">
+            <div className="relative group-data-[state=collapsed]/sidebar-wrapper:hidden">
               <TimerIndicator />
             </div>
           )}
@@ -111,8 +107,8 @@ export function AppSidebar() {
       }}
     >
       <div className="flex items-center gap-3">
-        <MessageSquare className="h-5 w-5 shrink-0" />
-        <span className="group-data-[state=collapsed]/button:hidden">
+        <MessageSquare className="h-6 w-6 shrink-0" />
+        <span className="group-data-[state=collapsed]/sidebar-wrapper:hidden">
           Feedback
         </span>
       </div>
@@ -124,8 +120,8 @@ export function AppSidebar() {
           isActive={pathname.startsWith('/admin')}
         >
           <div className="flex items-center gap-3">
-            <Shield className="h-5 w-5 shrink-0" />
-            <span className="group-data-[state=collapsed]/button:hidden">
+            <Shield className="h-6 w-6 shrink-0" />
+            <span className="group-data-[state=collapsed]/sidebar-wrapper:hidden">
               Admin
             </span>
           </div>
@@ -137,7 +133,7 @@ export function AppSidebar() {
       <SidebarHeader>
         <div className="flex items-center gap-2">
           <Logo className="h-8 w-8 text-primary" />
-          <span className="font-bold text-lg group-data-[state=collapsed]:hidden">
+          <span className="font-bold text-lg group-data-[state=collapsed]/sidebar-wrapper:hidden">
             LETReview
           </span>
         </div>
@@ -191,7 +187,7 @@ export function AppSidebar() {
                                             <LogIn className="h-4 w-4" />
                                         </AvatarFallback>
                                     </Avatar>
-                                    <div className="flex flex-col items-start group-data-[state=collapsed]/button:hidden">
+                                    <div className="flex flex-col items-start group-data-[state=collapsed]/sidebar-wrapper:hidden">
                                         <span className="font-semibold text-sm">Sign In</span>
                                         <span className="text-xs text-muted-foreground">Save Progress</span>
                                     </div>
@@ -216,7 +212,7 @@ export function AppSidebar() {
                                                 <User className="h-4 w-4" />
                                             </AvatarFallback>
                                         </Avatar>
-                                        <div className="flex flex-col items-start overflow-hidden group-data-[state=collapsed]/button:hidden">
+                                        <div className="flex flex-col items-start overflow-hidden group-data-[state=collapsed]/sidebar-wrapper:hidden">
                                             <span className="font-semibold text-sm truncate">{user.name}</span>
                                             <span className="text-xs text-muted-foreground">View Profile</span>
                                         </div>
@@ -231,12 +227,7 @@ export function AppSidebar() {
                 )}
             </SidebarFooter>
         )}
-        <SidebarSeparator/>
-        <div className="p-2 hidden md:block">
-            <Button variant="outline" size="icon" className="w-full h-auto p-2" onClick={() => setOpen(!sidebarState)}>
-                 <ChevronsLeft className="h-5 w-5 transition-transform duration-300 group-data-[state=collapsed]/sidebar-wrapper:rotate-180" />
-            </Button>
-        </div>
+      <SidebarToggle />
     </>
   );
 }

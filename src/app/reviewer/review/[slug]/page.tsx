@@ -321,7 +321,7 @@ export default function ReviewArticlePage() {
             </div>
 
             {totalPages > 1 && (
-                <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-background/80 backdrop-blur-sm transition-[left] duration-300 md:left-[var(--sidebar-width)] group-data-[state=collapsed]/sidebar-wrapper:md:left-[var(--sidebar-width-icon)]">
+                <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-background/80 backdrop-blur-sm transition-[margin-left] duration-300 md:ml-[var(--sidebar-width)] group-data-[state=collapsed]/sidebar-wrapper:md:ml-[var(--sidebar-width-icon)]">
                     <div className="container mx-auto max-w-4xl px-4 sm:px-6 py-2">
                         <Progress value={currentProgress} className="h-1" />
                         <div className="flex items-center justify-between gap-4 mt-2">
