@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { BookOpen, CalendarDays, Clock, Home, User, Lightbulb, LogIn, MessageSquare, Shield } from "lucide-react";
+import { BookOpen, CalendarDays, Clock, Home, User, Lightbulb, LogIn, MessageSquare, Shield, ChevronsLeft } from "lucide-react";
 import {
   SidebarHeader,
   SidebarMenu,
@@ -21,6 +21,7 @@ import { useUser } from "@/firebase/auth/use-user";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { useState } from "react";
 import { FeedbackDialog } from "./FeedbackDialog";
+import { Button } from "./ui/button";
 
 
 const navItems = [
@@ -35,11 +36,10 @@ export function AppSidebar() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { time, isActive } = useTimer();
-  const { state: sidebarState, setOpenMobile } = useSidebar();
+  const { state: sidebarState, setOpenMobile, setOpen } = useSidebar();
   const { user, isAdmin, firebaseUser, linkGoogleAccount } = useUser();
   const isAnonymous = firebaseUser?.isAnonymous;
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
-
 
   const TimerIndicator = () => {
     if (!isActive) return null;
@@ -73,16 +73,15 @@ export function AppSidebar() {
       const button = (
         <SidebarMenuButton
           isActive={isActivePath}
-          className="justify-between h-12"
         >
           <div className="flex items-center gap-3">
-            <Icon className="h-5 w-5" />
-            <span className="group-data-[collapsible=icon]:hidden">
+            <Icon className="h-5 w-5 shrink-0" />
+            <span className="group-data-[state=collapsed]/button:hidden">
               {label}
             </span>
           </div>
           {href === '/timer' && (
-            <div className="relative group-data-[collapsible=icon]:-mr-1">
+            <div className="relative group-data-[state=collapsed]/button:hidden">
               <TimerIndicator />
             </div>
           )}
@@ -110,11 +109,10 @@ export function AppSidebar() {
       onClick={() => {
         setIsFeedbackOpen(true);
       }}
-      className="justify-between h-12"
     >
       <div className="flex items-center gap-3">
-        <MessageSquare className="h-5 w-5" />
-        <span className="group-data-[collapsible=icon]:hidden">
+        <MessageSquare className="h-5 w-5 shrink-0" />
+        <span className="group-data-[state=collapsed]/button:hidden">
           Feedback
         </span>
       </div>
@@ -124,11 +122,10 @@ export function AppSidebar() {
   const adminButton = (
      <SidebarMenuButton
           isActive={pathname.startsWith('/admin')}
-          className="justify-between h-12"
         >
           <div className="flex items-center gap-3">
-            <Shield className="h-5 w-5" />
-            <span className="group-data-[collapsible=icon]:hidden">
+            <Shield className="h-5 w-5 shrink-0" />
+            <span className="group-data-[state=collapsed]/button:hidden">
               Admin
             </span>
           </div>
@@ -140,7 +137,7 @@ export function AppSidebar() {
       <SidebarHeader>
         <div className="flex items-center gap-2">
           <Logo className="h-8 w-8 text-primary" />
-          <span className="font-bold text-lg group-data-[collapsible=icon]:hidden">
+          <span className="font-bold text-lg group-data-[state=collapsed]:hidden">
             LETReview
           </span>
         </div>
@@ -149,10 +146,6 @@ export function AppSidebar() {
         {navItems.map((item) => (
            <NavItem key={item.href} {...item} />
         ))}
-      </SidebarMenu>
-
-      <SidebarSeparator />
-      <SidebarMenu>
          {isAdmin && (
             <SidebarMenuItem>
                  <Link href="/admin" className="w-full" onClick={() => setOpenMobile(false)}>
@@ -167,6 +160,10 @@ export function AppSidebar() {
                 </Link>
             </SidebarMenuItem>
         )}
+      </SidebarMenu>
+
+      <SidebarSeparator />
+      <SidebarMenu>
         <SidebarMenuItem>
           {sidebarState === "collapsed" ? (
             <Tooltip>
@@ -181,15 +178,12 @@ export function AppSidebar() {
       <FeedbackDialog open={isFeedbackOpen} onOpenChange={setIsFeedbackOpen} />
 
         {user && (
-            <>
-            <SidebarSeparator />
             <SidebarFooter>
                 {isAnonymous ? (
                      <Tooltip>
                         <TooltipTrigger asChild>
                              <SidebarMenuButton
                                 onClick={() => { linkGoogleAccount(); setOpenMobile(false); }}
-                                className="h-14"
                             >
                                 <div className="flex items-center gap-3">
                                     <Avatar className="h-8 w-8">
@@ -197,9 +191,9 @@ export function AppSidebar() {
                                             <LogIn className="h-4 w-4" />
                                         </AvatarFallback>
                                     </Avatar>
-                                    <div className="flex flex-col items-start group-data-[collapsible=icon]:hidden">
+                                    <div className="flex flex-col items-start group-data-[state=collapsed]/button:hidden">
                                         <span className="font-semibold text-sm">Sign In</span>
-                                        <span className="text-xs text-muted-foreground">Save Your Progress</span>
+                                        <span className="text-xs text-muted-foreground">Save Progress</span>
                                     </div>
                                 </div>
                             </SidebarMenuButton>
@@ -214,7 +208,6 @@ export function AppSidebar() {
                             <TooltipTrigger asChild>
                                 <SidebarMenuButton
                                     isActive={pathname === '/profile'}
-                                    className="h-14"
                                 >
                                     <div className="flex items-center gap-3">
                                         <Avatar className="h-8 w-8">
@@ -223,8 +216,8 @@ export function AppSidebar() {
                                                 <User className="h-4 w-4" />
                                             </AvatarFallback>
                                         </Avatar>
-                                        <div className="flex flex-col items-start group-data-[collapsible=icon]:hidden">
-                                            <span className="font-semibold text-sm">{user.name}</span>
+                                        <div className="flex flex-col items-start overflow-hidden group-data-[state=collapsed]/button:hidden">
+                                            <span className="font-semibold text-sm truncate">{user.name}</span>
                                             <span className="text-xs text-muted-foreground">View Profile</span>
                                         </div>
                                     </div>
@@ -237,8 +230,13 @@ export function AppSidebar() {
                     </Link>
                 )}
             </SidebarFooter>
-            </>
         )}
+        <SidebarSeparator/>
+        <div className="p-2 hidden md:block">
+            <Button variant="outline" size="icon" className="w-full h-auto p-2" onClick={() => setOpen(!sidebarState)}>
+                 <ChevronsLeft className="h-5 w-5 transition-transform duration-300 group-data-[state=collapsed]/sidebar-wrapper:rotate-180" />
+            </Button>
+        </div>
     </>
   );
 }

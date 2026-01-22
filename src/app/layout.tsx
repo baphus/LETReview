@@ -89,23 +89,21 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
 
   return (
     <TimerProvider>
-      <TooltipProvider delayDuration={0}>
         <SidebarProvider>
-          <Sidebar>
-            <SidebarContent>
-              <AppSidebar />
-            </SidebarContent>
-          </Sidebar>
-          <SidebarInset className="flex flex-col">
-            <AppHeader />
-            <main className="flex-1 overflow-y-auto py-4 sm:py-6">
-              {children}
-            </main>
-            <OnboardingDialog open={showOnboarding} onOpenChange={setShowOnboarding} />
-            <Toaster />
-          </SidebarInset>
+            <div className="flex h-dvh">
+                <Sidebar>
+                    <AppSidebar />
+                </Sidebar>
+                <SidebarInset className="flex flex-col flex-1">
+                    <AppHeader />
+                    <main className="flex-1 overflow-y-auto py-4 sm:py-6">
+                    {children}
+                    </main>
+                    <OnboardingDialog open={showOnboarding} onOpenChange={setShowOnboarding} />
+                    <Toaster />
+                </SidebarInset>
+            </div>
         </SidebarProvider>
-      </TooltipProvider>
     </TimerProvider>
   );
 }

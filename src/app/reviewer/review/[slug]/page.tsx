@@ -1,10 +1,10 @@
+
 'use client';
 
 import { useParams } from 'next/navigation';
 import { useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
 import { collection, query, where, doc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import type { Reviewer, Subject, Topic, ReviewerProgress } from '@/lib/types';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Clock, Tag, Brain, Book, Video, Bookmark, BarChart, Edit, ArrowLeft, ArrowRight } from 'lucide-react';
@@ -12,13 +12,14 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/firebase/auth/use-user';
-import { AddQuestionDialog } from '@/components/AddQuestionDialog';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { useMemo, useState, useEffect } from 'react';
 import { MdxRenderer } from '@/components/MdxRenderer';
 import { Progress } from '@/components/ui/progress';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+
 
 const articleTypeIcons = {
   "article": <Book className="h-4 w-4" />,
@@ -310,60 +311,6 @@ export default function ReviewArticlePage() {
                     </div>
                 </div>
             </header>
-
-            <Card className="not-prose mb-8">
-                <CardHeader className="flex-row items-center justify-between">
-                    <CardTitle className="text-lg">Review Tools</CardTitle>
-                    <div className="flex items-center gap-2">
-                         {isAdmin && (
-                            <>
-                                <Link href={`/reviewer/review/${article.slug}/edit`} passHref>
-                                    <Button variant="outline" size="icon" aria-label="Edit article">
-                                        <Edit className="h-5 w-5" />
-                                    </Button>
-                                </Link>
-                                {article && <AddQuestionDialog article={article} />}
-                            </>
-                        )}
-                        <Button variant={isBookmarked ? "secondary" : "outline"} size="icon" onClick={handleToggleBookmark} aria-label={isBookmarked ? "Remove bookmark" : "Bookmark article"}>
-                            <Bookmark className={cn("h-5 w-5", isBookmarked && "fill-current")} />
-                        </Button>
-                    </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    {articleTopics.length > 0 ? (
-                        articleTopics.map(topic => {
-                            const topicProgress = user?.quizProgress?.[topic.id];
-                            const averageScore = topicProgress ? topicProgress.averageScore : null;
-                            return (
-                                <div key={topic.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 rounded-lg border p-3">
-                                    <div className="flex-1">
-                                        <p className="font-semibold">{topic.name}</p>
-                                        {averageScore !== null && typeof averageScore === 'number' ? (
-                                            <div className="flex items-center gap-2 mt-1">
-                                                <BarChart className="h-4 w-4 text-muted-foreground" />
-                                                <p className="text-sm text-muted-foreground">
-                                                    Average Score: <span className="font-bold">{averageScore.toFixed(0)}%</span>
-                                                </p>
-                                            </div>
-                                        ) : (
-                                            <p className="text-sm text-muted-foreground mt-1">No quiz data yet.</p>
-                                        )}
-                                    </div>
-                                    <Link href={`/reviewer/questions?topic=${topic.id}`} passHref className="w-full sm:w-auto">
-                                        <Button variant="outline" className="w-full justify-center">
-                                            <Brain className="mr-2 h-4 w-4" />
-                                            Practice Quiz
-                                        </Button>
-                                    </Link>
-                                </div>
-                            )
-                        })
-                    ) : (
-                        <p className="text-sm text-muted-foreground text-center">No practice quizzes available for this article.</p>
-                    )}
-                </CardContent>
-            </Card>
             
             <div className="markdown-content" suppressHydrationWarning>
                 {pages.length > 0 && currentPage < pages.length ? (
@@ -374,22 +321,67 @@ export default function ReviewArticlePage() {
             </div>
 
             {totalPages > 1 && (
-                <div className="fixed bottom-0 left-0 right-0 z-40 bg-background/95 border-t backdrop-blur-sm md:left-[var(--sidebar-width)] peer-data-[collapsible=icon]:md:left-[var(--sidebar-width-icon)]">
-                    <div className="container mx-auto max-w-4xl px-4 sm:px-6 py-3">
-                        <div className="flex items-center gap-4">
-                            <Button variant="outline" onClick={handlePrevPage} disabled={currentPage === 0}>
-                                <ArrowLeft className="h-4 w-4 md:mr-2" />
-                                <span className="hidden md:inline">Previous</span>
+                <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-background/80 backdrop-blur-sm transition-[left] duration-300 md:left-[var(--sidebar-width)] group-data-[state=collapsed]/sidebar-wrapper:md:left-[var(--sidebar-width-icon)]">
+                    <div className="container mx-auto max-w-4xl px-4 sm:px-6 py-2">
+                        <Progress value={currentProgress} className="h-1" />
+                        <div className="flex items-center justify-between gap-4 mt-2">
+                            <Button variant="ghost" size="icon" onClick={handlePrevPage} disabled={currentPage === 0}>
+                                <ArrowLeft className="h-5 w-5" />
+                                <span className="sr-only">Previous Page</span>
                             </Button>
-                            <div className="flex-1 text-center text-sm text-muted-foreground">
-                                Page {currentPage + 1} of {totalPages}
+                            
+                             <div className="flex items-center gap-2">
+                                <Button variant={isBookmarked ? "secondary" : "ghost"} size="icon" onClick={handleToggleBookmark} aria-label={isBookmarked ? "Remove bookmark" : "Bookmark article"}>
+                                    <Bookmark className={cn("h-5 w-5", isBookmarked && "fill-current")} />
+                                </Button>
+                               
+                               {articleTopics.length > 0 && (
+                                 <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button variant="ghost" size="icon" aria-label="Practice Quizzes">
+                                            <Brain className="h-5 w-5" />
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-80 mb-2">
+                                        <div className="grid gap-4">
+                                            <div className="space-y-2">
+                                                <h4 className="font-medium leading-none">Practice Quizzes</h4>
+                                                <p className="text-sm text-muted-foreground">
+                                                Test your knowledge on topics from this article.
+                                                </p>
+                                            </div>
+                                            <div className="grid gap-2">
+                                                {articleTopics.map(topic => (
+                                                    <Link key={topic.id} href={`/reviewer/questions?topic=${topic.id}`} passHref>
+                                                        <Button variant="outline" className="w-full justify-between">
+                                                            {topic.name}
+                                                            <ArrowRight className="h-4 w-4" />
+                                                        </Button>
+                                                    </Link>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </PopoverContent>
+                                </Popover>
+                               )}
+
+                                {isAdmin && (
+                                     <Link href={`/reviewer/review/${article.slug}/edit`} passHref>
+                                        <Button variant="ghost" size="icon" aria-label="Edit article">
+                                            <Edit className="h-5 w-5" />
+                                        </Button>
+                                    </Link>
+                                )}
                             </div>
-                            <Button variant="outline" onClick={handleNextPage} disabled={currentPage >= totalPages - 1}>
-                                <span className="hidden md:inline">Next</span>
-                                <ArrowRight className="h-4 w-4 md:ml-2" />
+
+                            <Button variant="ghost" size="icon" onClick={handleNextPage} disabled={currentPage >= totalPages - 1}>
+                                <ArrowRight className="h-5 w-5" />
+                                 <span className="sr-only">Next Page</span>
                             </Button>
                         </div>
-                        <Progress value={currentProgress} className="mt-3 h-1" />
+                         <div className="text-center text-xs text-muted-foreground mt-1">
+                            Page {currentPage + 1} of {totalPages}
+                        </div>
                     </div>
                 </div>
             )}
