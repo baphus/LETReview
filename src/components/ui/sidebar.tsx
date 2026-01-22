@@ -13,7 +13,7 @@ import { Separator } from "@/components/ui/separator"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
 
 const SIDEBAR_WIDTH = "16rem"
-const SIDEBAR_WIDTH_ICON = "4.5rem" // Increased width for icon-only state
+const SIDEBAR_WIDTH_ICON = "4.5rem"
 const SIDEBAR_WIDTH_MOBILE = "16rem"
 
 type SidebarContext = {
@@ -47,7 +47,7 @@ const SidebarProvider = React.forwardRef<
 >(
   (
     {
-      defaultOpen = true,
+      defaultOpen = false,
       open: openProp,
       onOpenChange: setOpenProp,
       className,
@@ -288,7 +288,7 @@ const SidebarMenuItem = React.forwardRef<
 SidebarMenuItem.displayName = "SidebarMenuItem"
 
 const sidebarMenuButtonVariants = cva(
-  "group/button peer/menu-button flex w-full items-center justify-between gap-3 overflow-hidden rounded-md px-3 py-2 text-left text-base outline-none ring-ring transition-colors hover:bg-muted focus-visible:ring-2 active:bg-muted disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:font-medium",
+  "group/button peer/menu-button flex w-full h-12 items-center justify-start gap-3 overflow-hidden rounded-md px-3 py-2 text-left text-base outline-none ring-ring transition-colors hover:bg-muted focus-visible:ring-2 active:bg-muted disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:font-medium",
   {
     variants: {
       variant: {
