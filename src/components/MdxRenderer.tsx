@@ -4,8 +4,10 @@ import { useState, useEffect } from 'react';
 import { evaluate } from '@mdx-js/mdx';
 import * as runtime from 'react/jsx-runtime';
 import { useMDXComponents } from '@mdx-js/react';
+import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
+import rehypeRaw from 'rehype-raw';
 import { Skeleton } from './ui/skeleton';
 
 interface MdxRendererProps {
@@ -28,8 +30,8 @@ export function MdxRenderer({ source, components = {} }: MdxRendererProps) {
       try {
         const mod = await evaluate(source, {
           ...(runtime as any),
-          remarkPlugins: [remarkMath],
-          rehypePlugins: [rehypeKatex],
+          remarkPlugins: [remarkGfm, remarkMath],
+          rehypePlugins: [rehypeRaw, rehypeKatex],
           format: 'mdx'
         });
 
