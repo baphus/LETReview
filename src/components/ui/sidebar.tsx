@@ -127,7 +127,7 @@ const Sidebar = React.forwardRef<
     if (isMobile) {
       return (
         <Sheet open={openMobile} onOpenChange={setOpenMobile}>
-            <SheetContent side="left" className="p-0 w-[var(--sidebar-width-mobile)]" style={{'--sidebar-width-mobile': SIDEBAR_WIDTH_MOBILE} as React.CSSProperties}>
+            <SheetContent side="top" className="p-0">
                 {children}
             </SheetContent>
         </Sheet>
