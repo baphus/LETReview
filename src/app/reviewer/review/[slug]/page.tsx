@@ -238,6 +238,12 @@ export default function ReviewArticlePage() {
     }
     
     const articleTopics = topics?.filter(topic => article.topicIds.includes(topic.id)) || [];
+    const firstTopic = useMemo(() => articleTopics.length > 0 ? articleTopics[0] : null, [articleTopics]);
+    const topicStats = useMemo(() => {
+        if (!firstTopic || !user || !user.quizProgress) return null;
+        return user.quizProgress[firstTopic.id] || null;
+    }, [firstTopic, user]);
+    
     const totalPages = pages.length;
     const currentProgress = totalPages > 0 ? ((currentPage + 1) / totalPages) * 100 : 0;
 
@@ -335,8 +341,8 @@ export default function ReviewArticlePage() {
                                     <Bookmark className={cn("h-5 w-5", isBookmarked && "fill-current")} />
                                 </Button>
                                
-                               {articleTopics.length > 0 && (
-                                 <Popover>
+                               {article.topicIds.length > 0 && (
+                                <Popover>
                                     <PopoverTrigger asChild>
                                         <Button variant="ghost" size="icon" aria-label="Practice Quizzes">
                                             <Brain className="h-5 w-5" />
@@ -345,21 +351,41 @@ export default function ReviewArticlePage() {
                                     <PopoverContent className="w-80 mb-2">
                                         <div className="grid gap-4">
                                             <div className="space-y-2">
-                                                <h4 className="font-medium leading-none">Practice Quizzes</h4>
+                                                <h4 className="font-medium leading-none">Practice Quiz</h4>
                                                 <p className="text-sm text-muted-foreground">
-                                                Test your knowledge on topics from this article.
+                                                Test your knowledge on a topic from this article.
                                                 </p>
                                             </div>
-                                            <div className="grid gap-2">
-                                                {articleTopics.map(topic => (
-                                                    <Link key={topic.id} href={`/reviewer/questions?topic=${topic.id}`} passHref>
-                                                        <Button variant="outline" className="w-full justify-between">
-                                                            {topic.name}
-                                                            <ArrowRight className="h-4 w-4" />
+                                            {firstTopic ? (
+                                                <div className="grid gap-4">
+                                                    <div className="p-4 bg-muted/50 rounded-lg">
+                                                        <p className="font-semibold text-center mb-4">{firstTopic.name}</p>
+                                                        <div className="grid grid-cols-3 text-center">
+                                                            <div>
+                                                                <p className="text-2xl font-bold">{topicStats?.highestScore?.toFixed(0) || 0}%</p>
+                                                                <p className="text-xs text-muted-foreground">Highest</p>
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-2xl font-bold">{topicStats?.averageScore?.toFixed(0) || 0}%</p>
+                                                                <p className="text-xs text-muted-foreground">Average</p>
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-2xl font-bold">{topicStats?.scores?.length || 0}</p>
+                                                                <p className="text-xs text-muted-foreground">Taken</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <Link href={`/reviewer/questions?topic=${firstTopic.id}`} passHref>
+                                                        <Button className="w-full justify-between">
+                                                            Start Quiz <ArrowRight className="h-4 w-4" />
                                                         </Button>
                                                     </Link>
-                                                ))}
-                                            </div>
+                                                </div>
+                                            ) : (
+                                                <p className="text-sm text-muted-foreground text-center py-4">
+                                                    No practice quizzes available for this article.
+                                                </p>
+                                            )}
                                         </div>
                                     </PopoverContent>
                                 </Popover>

@@ -157,7 +157,21 @@ export default function HomePage() {
         
         {user.examDate && <Countdown examDate={new Date(user.examDate)} />}
 
-        {!isStreakSecuredToday && (
+        {isStreakSecuredToday ? (
+           <Card className="mb-6 bg-green-50 border-green-200">
+            <CardHeader>
+              <CardTitle className="text-center text-green-800 font-headline flex items-center justify-center gap-2">
+                  <CheckCircle className="h-6 w-6"/> Streak Secured!
+              </CardTitle>
+              <CardDescription className="text-center text-green-600">You've secured your streak for today. Why not try another challenge for extra points?</CardDescription>
+            </CardHeader>
+            <CardFooter>
+              <Link href="/daily" className="w-full">
+                  <Button className="w-full">Go to Daily Challenges</Button>
+              </Link>
+            </CardFooter>
+          </Card>
+        ) : (
            <Card className="mb-6 bg-blue-50 border-blue-200">
             <CardHeader>
               <CardTitle className="text-center text-blue-800 font-headline flex items-center justify-center gap-2">
