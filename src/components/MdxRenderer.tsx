@@ -18,13 +18,18 @@ interface MdxRendererProps {
 export function MdxRenderer({ source, components = {} }: MdxRendererProps) {
   const [mdxModule, setMdxModule] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isMounted, setIsMounted] = useState(false);
 
   const mdxComponents = useMDXComponents(components);
 
   useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted) return;
+
     let active = true;
-    setIsLoading(true);
 
     async function compileMdx() {
       try {
@@ -43,39 +48,32 @@ export function MdxRenderer({ source, components = {} }: MdxRendererProps) {
         if (active) {
           setError(`MDX compilation error: ${e.message}`);
         }
-      } finally {
-        if (active) {
-          setIsLoading(false);
-        }
       }
     }
 
+    setMdxModule(null);
     compileMdx();
 
     return () => {
       active = false;
     };
-  }, [source]);
+  }, [source, isMounted]);
 
-  if (isLoading) {
+  if (error) {
+    return <div className="p-4 text-red-600 bg-red-50 border border-red-200 rounded-md">{error}</div>;
+  }
+
+  if (!isMounted || !mdxModule) {
     return (
         <div className="space-y-4">
             <Skeleton className="h-4 w-full" />
             <Skeleton className="h-4 w-full" />
             <Skeleton className="h-4 w-5/6" />
             <Skeleton className="h-24 w-full mt-4" />
-             <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-full" />
             <Skeleton className="h-4 w-full" />
         </div>
     );
-  }
-
-  if (error) {
-    return <div className="p-4 text-red-600 bg-red-50 border border-red-200 rounded-md">{error}</div>;
-  }
-
-  if (!mdxModule) {
-    return null;
   }
 
   const Content = mdxModule.default;
