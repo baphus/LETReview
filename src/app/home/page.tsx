@@ -44,6 +44,36 @@ const motivationalQuotes = [
   "Consistency is the key to success.",
 ];
 
+const StreakMessage = ({ streak }: { streak: number }) => {
+    let message: { title: string; body: string; } | null = null;
+    
+    if (streak >= 100) {
+        message = { title: "Legendary!", body: `You're on a ${streak}-day streak! Incredible dedication!` };
+    } else if (streak >= 50) {
+        message = { title: "Amazing Milestone!", body: `A ${streak}-day streak is a huge achievement. Keep it up!` };
+    } else if (streak >= 30) {
+        message = { title: "Incredible!", body: `You've maintained your streak for ${streak} days! You're unstoppable.` };
+    } else if (streak >= 14) {
+        message = { title: "Fantastic!", body: `A ${streak}-day streak! You've built a strong habit.` };
+    } else if (streak >= 7) {
+        message = { title: "Great Week!", body: `You're on a ${streak}-day streak! Keep the momentum going.` };
+    } else if (streak >= 3) {
+        message = { title: "On a Roll!", body: `That's a ${streak}-day streak! You're building a great habit.` };
+    }
+
+    if (!message) return null;
+
+    return (
+        <Card className="mb-6 bg-accent/10 border-accent/20">
+            <CardHeader>
+                <CardTitle className="text-center text-accent-foreground font-headline flex items-center justify-center gap-2"><Flame className="text-destructive"/> {message.title}</CardTitle>
+                <CardDescription className="text-center text-accent-foreground/80">{message.body}</CardDescription>
+            </CardHeader>
+        </Card>
+    );
+};
+
+
 export default function HomePage() {
   const { user } = useUser();
   const firestore = useFirestore();
@@ -156,6 +186,8 @@ export default function HomePage() {
         <p className="text-muted-foreground mb-6">Welcome back, {user.name}!</p>
         
         {user.examDate && <Countdown examDate={new Date(user.examDate)} />}
+
+        <StreakMessage streak={user.streak} />
 
         {isStreakSecuredToday ? (
            <Card className="mb-6 bg-green-50 border-green-200">

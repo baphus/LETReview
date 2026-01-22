@@ -129,6 +129,8 @@ const QuestionSkeleton = () => (
     </Card>
 )
 
+const positiveEmojis = ['✨', '🎉', '👍', '✅', '💯'];
+
 export default function QuizPage() {
   const router = useRouter();
   const { user, isAdmin, updateUser } = useUser();
@@ -142,6 +144,11 @@ export default function QuizPage() {
   const [isShuffled, setIsShuffled] = useState(false);
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  const [quizStreak, setQuizStreak] = useState(0);
+  const [showEmoji, setShowEmoji] = useState(false);
+  const [showStreak, setShowStreak] = useState(false);
+  const [currentEmoji, setCurrentEmoji] = useState('✨');
   
   const { toast } = useToast();
 
@@ -166,6 +173,7 @@ export default function QuizPage() {
     setShowResults(false);
     setChallengeAnswers([]);
     setAnsweredCurrent(false);
+    setQuizStreak(0);
     fetchAndSetQuestions();
   }, [fetchAndSetQuestions]);
 
@@ -177,7 +185,11 @@ export default function QuizPage() {
         setCurrentIndex((prev) => prev + 1);
         setAnsweredCurrent(false);
     } else {
-        setQuizScore(challengeAnswers.reduce((acc, ans) => acc + (ans.isCorrect ? 1 : 0), 0));
+        const finalScore = challengeAnswers.reduce((acc, ans) => acc + (ans.isCorrect ? 1 : 0), 0);
+        if (quizStreak > 0 && user && quizStreak > (user.highestQuizStreak || 0)) {
+            updateUser({ highestQuizStreak: quizStreak });
+        }
+        setQuizScore(finalScore);
         setShowResults(true);
     }
     setAnsweredCurrent(false);
@@ -192,13 +204,39 @@ export default function QuizPage() {
   };
   
   const handleAnswer = (correct: boolean, answer: string) => {
-    if (correct && user && !user.answeredQuestionIds?.includes(currentQuestion.id)) {
-        updateUser({ 
-            questionsAnswered: (user.questionsAnswered || 0) + 1,
-            answeredQuestionIds: [...(user.answeredQuestionIds || []), currentQuestion.id]
-        });
-    }
+    if (correct) {
+        const newStreak = quizStreak + 1;
+        setQuizStreak(newStreak);
 
+        setCurrentEmoji(positiveEmojis[Math.floor(Math.random() * positiveEmojis.length)]);
+        setShowEmoji(true);
+        setTimeout(() => setShowEmoji(false), 1000);
+
+        if (newStreak > 1) {
+            setShowStreak(true);
+            setTimeout(() => setShowStreak(false), 1500);
+        }
+
+        if (user && !user.answeredQuestionIds?.includes(currentQuestion.id)) {
+            updateUser({
+                questionsAnswered: (user.questionsAnswered || 0) + 1,
+                answeredQuestionIds: [...(user.answeredQuestionIds || []), currentQuestion.id]
+            });
+        }
+    } else {
+        if (quizStreak > 0) {
+            toast({
+                variant: "destructive",
+                title: "Streak Lost!",
+                description: `You had a streak of ${quizStreak}. Keep trying!`,
+            });
+            if (user && quizStreak > (user.highestQuizStreak || 0)) {
+                updateUser({ highestQuizStreak: quizStreak });
+            }
+        }
+        setQuizStreak(0);
+    }
+    
     const newAnswers = [...challengeAnswers];
     const existingAnswerIndex = newAnswers.findIndex(a => a.questionId === currentQuestion.id);
     
@@ -219,20 +257,6 @@ export default function QuizPage() {
     }
     
     setChallengeAnswers(newAnswers);
-
-    if (correct) {
-        toast({
-            title: "Correct!",
-            description: "Nice work!",
-            className: "bg-green-100 border-green-300"
-        });
-    } else {
-            toast({
-            variant: "destructive",
-            title: "Incorrect",
-            description: "Better luck next time!",
-        });
-    }
     setAnsweredCurrent(true);
   };
 
@@ -356,7 +380,7 @@ export default function QuizPage() {
         {isLoading ? (
           <QuestionSkeleton />
         ) : questions.length > 0 && currentQuestion ? (
-          <>
+          <div className="relative">
             <QuizCard 
                 question={currentQuestion} 
                 onAnswer={handleAnswer} 
@@ -364,7 +388,17 @@ export default function QuizPage() {
                 userAnswer={userAnswerForCurrentQuestion}
                 hasAnswered={answeredCurrent}
             />
-          </>
+             {showEmoji && (
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                    <span className="text-6xl animate-emoji-pop">{currentEmoji}</span>
+                </div>
+            )}
+            {showStreak && (
+                <div className="pointer-events-none absolute -top-4 -right-4 bg-destructive text-destructive-foreground px-3 py-1 rounded-full text-lg font-bold animate-combo-pop">
+                    🔥 Streak x{quizStreak}!
+                </div>
+            )}
+          </div>
         ) : (
           <Card className="h-80 flex justify-center items-center">
              <div className="text-center text-muted-foreground">
