@@ -2,7 +2,7 @@
 'use client';
 
 import { useAuth, useFirestore } from '@/firebase';
-import { User, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInAnonymously } from 'firebase/auth';
+import { User, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInAnonymously, linkWithPopup } from 'firebase/auth';
 import { doc, setDoc, onSnapshot, DocumentData, serverTimestamp, getDoc, updateDoc } from 'firebase/firestore';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState, useCallback, useRef } from 'react';
@@ -173,13 +173,15 @@ export const useUser = () => {
 
 
   const linkGoogleAccount = useCallback(async () => {
-    if (!auth) return;
+    if (!auth || !firebaseUser) return;
     const provider = new GoogleAuthProvider();
     try {
-        await signInWithPopup(auth, provider);
+        if (firebaseUser.isAnonymous) {
+            await linkWithPopup(firebaseUser, provider);
+        } else {
+            await signInWithPopup(auth, provider);
+        }
         justLoggedInRef.current = true;
-        // The onAuthStateChanged listener will handle the rest:
-        // creating the user doc, and the redirect effect will fire.
     } catch (error: any) {
         if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
             toast({
@@ -192,12 +194,18 @@ export const useUser = () => {
                 title: 'Popup blocked',
                 description: 'Please allow popups for this site to sign in.',
             });
+        } else if (error.code === 'auth/credential-already-in-use') {
+            toast({
+                variant: 'destructive',
+                title: 'Account Already Exists',
+                description: 'This Google account is already linked to another user. Please sign in with your existing account.',
+            });
         } else {
             console.error("Error with popup sign-in:", error);
             toast({ variant: "destructive", title: "Sign-in Error", description: error.message || "Could not complete sign in." });
         }
     }
-  }, [auth, toast]);
+  }, [auth, firebaseUser, toast]);
 
   const user = firebaseUser?.isAnonymous ? localUser : firestoreUser;
   const isAdmin = user?.uid === 'q4vgkFodzoSaPM1BuNbRI0Wx9YZ2';
