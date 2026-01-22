@@ -183,7 +183,20 @@ export const useUser = () => {
         }
         justLoggedInRef.current = true;
     } catch (error: any) {
-        if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+        if (error.code === 'auth/credential-already-in-use') {
+            toast({
+                title: 'Account exists',
+                description: 'This Google account is already registered. Signing you in...',
+            });
+            try {
+                // Discard anonymous user and sign in with the existing Google account
+                await signInWithPopup(auth, provider);
+                justLoggedInRef.current = true;
+            } catch (signInError: any) {
+                console.error("Error during force sign-in:", signInError);
+                toast({ variant: "destructive", title: "Sign-in Error", description: signInError.message || "Could not sign you in." });
+            }
+        } else if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
             toast({
                 title: 'Sign-in cancelled',
                 description: 'You closed the sign-in window before completing the sign-in process.',
@@ -193,12 +206,6 @@ export const useUser = () => {
                 variant: 'destructive',
                 title: 'Popup blocked',
                 description: 'Please allow popups for this site to sign in.',
-            });
-        } else if (error.code === 'auth/credential-already-in-use') {
-            toast({
-                variant: 'destructive',
-                title: 'Account Already Exists',
-                description: 'This Google account is already linked to another user. Please sign in with your existing account.',
             });
         } else {
             console.error("Error with popup sign-in:", error);
