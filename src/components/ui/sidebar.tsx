@@ -122,7 +122,7 @@ const Sidebar = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"div">
 >(({ className, children, ...props }, ref) => {
-    const { isMobile, openMobile, setOpenMobile, state } = useSidebar()
+    const { isMobile, openMobile, setOpenMobile } = useSidebar()
 
     if (isMobile) {
       return (
@@ -208,7 +208,7 @@ const SidebarHeader = React.forwardRef<
     <div
       ref={ref}
       className={cn(
-        "flex items-center p-4", 
+        "flex h-16 items-center p-4", 
         "group-data-[state=collapsed]/sidebar-wrapper:justify-center",
         className
       )}
@@ -288,7 +288,7 @@ const SidebarMenuItem = React.forwardRef<
 SidebarMenuItem.displayName = "SidebarMenuItem"
 
 const sidebarMenuButtonVariants = cva(
-  "group/button peer/menu-button flex w-full items-center gap-3 overflow-hidden rounded-md px-3 py-2 text-left text-sm outline-none ring-ring transition-colors hover:bg-muted focus-visible:ring-2 active:bg-muted disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:font-medium",
+  "group/button peer/menu-button flex w-full items-center justify-between gap-3 overflow-hidden rounded-md px-3 py-2 text-left text-base outline-none ring-ring transition-colors hover:bg-muted focus-visible:ring-2 active:bg-muted disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:font-medium",
   {
     variants: {
       variant: {
@@ -326,7 +326,7 @@ const SidebarMenuButton = React.forwardRef<
         data-active={isActive}
         className={cn(
           sidebarMenuButtonVariants({ variant }),
-          "group-data-[state=collapsed]/sidebar-wrapper:justify-center group-data-[state=collapsed]/sidebar-wrapper:px-0 group-data-[state=collapsed]/sidebar-wrapper:py-3",
+          "group-data-[state=collapsed]/sidebar-wrapper:justify-center group-data-[state=collapsed]/sidebar-wrapper:px-0 group-data-[state=collapsed]/sidebar-wrapper:py-2",
           className
         )}
         {...props}

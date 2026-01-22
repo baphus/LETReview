@@ -71,7 +71,7 @@ export function AppSidebar() {
           isActive={isActivePath}
         >
           <div className="flex items-center gap-3">
-            <Icon className="h-6 w-6 shrink-0" />
+            <Icon className="h-5 w-5 shrink-0" />
             <span className="group-data-[state=collapsed]/sidebar-wrapper:hidden">
               {label}
             </span>
@@ -107,7 +107,7 @@ export function AppSidebar() {
       }}
     >
       <div className="flex items-center gap-3">
-        <MessageSquare className="h-6 w-6 shrink-0" />
+        <MessageSquare className="h-5 w-5 shrink-0" />
         <span className="group-data-[state=collapsed]/sidebar-wrapper:hidden">
           Feedback
         </span>
@@ -120,7 +120,7 @@ export function AppSidebar() {
           isActive={pathname.startsWith('/admin')}
         >
           <div className="flex items-center gap-3">
-            <Shield className="h-6 w-6 shrink-0" />
+            <Shield className="h-5 w-5 shrink-0" />
             <span className="group-data-[state=collapsed]/sidebar-wrapper:hidden">
               Admin
             </span>
