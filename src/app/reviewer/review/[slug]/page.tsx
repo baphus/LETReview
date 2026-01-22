@@ -93,8 +93,52 @@ export default function ReviewArticlePage() {
     // Effect to split content into pages when article loads
     useEffect(() => {
         if (article) {
-            const contentPages = article.content.split(/\n---\n/);
-            setPages(contentPages);
+            const WORDS_PER_PAGE = 250; // Target word count per page
+            const finalPages: string[] = [];
+
+            // First, split the content by explicit page break markers (---)
+            const sections = article.content.split(/\n---\n/);
+
+            for (const section of sections) {
+                const sectionWordCount = section.split(/\s+/).filter(Boolean).length;
+
+                // If a section is not too long, treat it as a single page.
+                // The 1.5 multiplier provides a buffer to avoid splitting slightly oversized sections.
+                if (sectionWordCount < WORDS_PER_PAGE * 1.5) {
+                    if (section.trim()) finalPages.push(section);
+                } else {
+                    // If a section is too long, split it further by paragraphs.
+                    const paragraphs = section.split('\n\n');
+                    let currentPageContent = "";
+
+                    for (const para of paragraphs) {
+                        if (!para.trim()) continue;
+
+                        const currentWordCount = currentPageContent.split(/\s+/).filter(Boolean).length;
+                        const paraWordCount = para.split(/\s+/).filter(Boolean).length;
+
+                        // If adding the next paragraph exceeds the word count, finalize the current page.
+                        if (currentWordCount > 0 && currentWordCount + paraWordCount > WORDS_PER_PAGE) {
+                            finalPages.push(currentPageContent);
+                            currentPageContent = para;
+                        } else {
+                            // Otherwise, add the paragraph to the current page.
+                            if (currentPageContent.length > 0) {
+                                currentPageContent += '\n\n';
+                            }
+                            currentPageContent += para;
+                        }
+                    }
+                    
+                    // Add any remaining content as the last page for this section.
+                    if (currentPageContent.trim()) {
+                        finalPages.push(currentPageContent);
+                    }
+                }
+            }
+
+            // Set the final pages, ensuring there's at least one page if there's content.
+            setPages(finalPages.length > 0 ? finalPages : (article.content ? [article.content] : []));
         }
     }, [article]);
 
@@ -334,7 +378,7 @@ export default function ReviewArticlePage() {
                 </CardContent>
             </Card>
             
-            <div className="markdown-content">
+            <div className="markdown-content" suppressHydrationWarning>
                 {pages.length > 0 && currentPage < pages.length ? (
                     <MdxRenderer source={pages[currentPage]} components={mdxComponents} />
                 ) : (
