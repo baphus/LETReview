@@ -93,11 +93,11 @@ export default function ReviewArticlePage() {
     // Effect to split content into pages when article loads
     useEffect(() => {
         if (article) {
-            const WORDS_PER_PAGE = 250;
+            const WORDS_PER_PAGE = 450;
             const finalPages: string[] = [];
             
             // Treat the entire content as one block and split by paragraphs.
-            const paragraphs = article.content.split(/\n\n|\n---\n/);
+            const paragraphs = article.content.split(/\n\n/);
             let currentPageContent = "";
 
             for (const para of paragraphs) {
