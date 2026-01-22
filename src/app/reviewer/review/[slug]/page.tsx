@@ -87,8 +87,21 @@ export default function ReviewArticlePage() {
     }, [firestore, user, firebaseUser]);
     const { data: bookmarks } = useCollection<{ createdAt: string }>(bookmarksQuery);
 
-    const subject = subjects?.find(s => s.id === article?.subjectId);
+    const subject = useMemo(() => subjects?.find(s => s.id === article?.subjectId), [subjects, article]);
     const isLoading = isLoadingArticle || isLoadingSubjects || isLoadingTopics;
+
+    const articleTopics = useMemo(() => topics?.filter(topic => article?.topicIds?.includes(topic.id)) || [], [topics, article]);
+    const firstTopic = useMemo(() => (articleTopics.length > 0 ? articleTopics[0] : null), [articleTopics]);
+
+    const topicStats = useMemo(() => {
+        if (!firstTopic || !user || !user.quizProgress) return null;
+        return user.quizProgress[firstTopic.id] || null;
+    }, [firstTopic, user]);
+    
+    const isBookmarked = useMemo(() => {
+        if (!bookmarks || !article) return false;
+        return bookmarks.some(b => b.id === article.id);
+    }, [bookmarks, article]);
 
     // Effect to split content into pages when article loads
     useEffect(() => {
@@ -178,11 +191,6 @@ export default function ReviewArticlePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentPage, pages.length]);
 
-    const isBookmarked = useMemo(() => {
-        if (!bookmarks || !article) return false;
-        return bookmarks.some(b => b.id === article.id);
-    }, [bookmarks, article]);
-
     const handleToggleBookmark = async () => {
         if (!user || !firestore || !article || !firebaseUser || firebaseUser.isAnonymous) {
             toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to bookmark articles.' });
@@ -236,13 +244,6 @@ export default function ReviewArticlePage() {
     if (!article) {
         return <div className="text-center">Article not found.</div>;
     }
-    
-    const articleTopics = topics?.filter(topic => article.topicIds.includes(topic.id)) || [];
-    const firstTopic = useMemo(() => articleTopics.length > 0 ? articleTopics[0] : null, [articleTopics]);
-    const topicStats = useMemo(() => {
-        if (!firstTopic || !user || !user.quizProgress) return null;
-        return user.quizProgress[firstTopic.id] || null;
-    }, [firstTopic, user]);
     
     const totalPages = pages.length;
     const currentProgress = totalPages > 0 ? ((currentPage + 1) / totalPages) * 100 : 0;
