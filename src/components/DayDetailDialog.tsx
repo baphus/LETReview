@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { getQuestionForDate } from '@/lib/data';
 import type { DailyProgress, QuizQuestion } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle, Gem, BookOpen, Clock, HelpCircle } from 'lucide-react';
+import { CheckCircle, Gem, BookOpen, Clock, HelpCircle, XCircle } from 'lucide-react';
 
 interface DayDetailDialogProps {
   date: Date | null;
@@ -35,6 +35,7 @@ export function DayDetailDialog({ date, onClose, userProgress }: DayDetailDialog
   }
 
   const challengesCompleted = userProgress?.challengesCompleted?.length || 0;
+  const wasQotdCorrect = userProgress?.qotdCompleted && question && userProgress.qotdAnswer === question.correctAnswer;
 
   return (
     <Dialog open={!!date} onOpenChange={onClose}>
@@ -93,15 +94,31 @@ export function DayDetailDialog({ date, onClose, userProgress }: DayDetailDialog
                 <CardTitle className="text-base flex justify-between items-center">
                     <span>Question of the Day</span>
                      {userProgress?.qotdCompleted && (
-                        <span className="flex items-center text-sm text-green-600">
-                            <CheckCircle className="h-4 w-4 mr-1"/> Answered
+                        <span className={`flex items-center text-sm ${wasQotdCorrect ? 'text-green-600' : 'text-red-600'}`}>
+                            {wasQotdCorrect ? <CheckCircle className="h-4 w-4 mr-1"/> : <XCircle className="h-4 w-4 mr-1"/>}
+                            Answered
                         </span>
                      )}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm font-semibold">{question.question}</p>
-                <p className="text-sm text-muted-foreground mt-2">Correct Answer: <span className="font-bold">{question.correctAnswer}</span></p>
+                {userProgress?.qotdCompleted ? (
+                   <div className="mt-2 space-y-1 text-sm">
+                        <div className="flex items-center gap-2">
+                            <span className="text-muted-foreground">Your answer:</span>
+                            <span className="font-bold">{userProgress.qotdAnswer}</span>
+                        </div>
+                        {!wasQotdCorrect && (
+                             <div className="flex items-center gap-2">
+                                <span className="text-muted-foreground">Correct answer:</span>
+                                <span className="font-bold text-green-600">{question.correctAnswer}</span>
+                            </div>
+                        )}
+                   </div>
+                ) : (
+                    <p className="text-sm text-muted-foreground mt-2 italic">You did not answer this question on this day.</p>
+                )}
               </CardContent>
             </Card>
           )}
