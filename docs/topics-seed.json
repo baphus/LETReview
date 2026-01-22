@@ -23,5 +23,11 @@
     "subjectId": "the-teaching-profession",
     "name": "Legal Bases of Education",
     "slug": "legal-bases-of-education"
+  },
+  {
+    "id": "basic-mathematics",
+    "subjectId": "general-education-concepts",
+    "name": "Basic Mathematics",
+    "slug": "basic-mathematics"
   }
 ]
