@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useAuth, useFirestore } from '@/firebase';
@@ -133,6 +134,11 @@ export const useUser = () => {
           setFirestoreUser(null);
           setIsLoading(false);
         } else {
+          // When auth state changes to a non-anonymous user,
+          // we immediately start loading their Firestore data.
+          // We set isLoading to true here to prevent the app from briefly
+          // showing guest data before the real user data is loaded.
+          setIsLoading(true);
           const userRef = doc(firestore, 'users', userAuth.uid);
           unsubscribeSnapshot = onSnapshot(
             userRef,

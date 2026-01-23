@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback, useMemo, Suspense } from 'react';
@@ -380,25 +381,46 @@ const SessionSummaryDialog = ({
           </TabsList>
           <ScrollArea className="mt-2 flex-1 pr-3">
             <TabsContent value="incorrect">
-              {stats.incorrect.map(q => (
-                <p key={q.id} className="text-sm border-b p-2">
-                  {q.question}
+              {stats.incorrect.length > 0 ? (
+                stats.incorrect.map((q) => (
+                  <div key={q.id} className="border-b p-3 text-sm last:border-b-0">
+                    <p className="font-semibold">{q.question}</p>
+                    <p className="mt-1 text-green-700 dark:text-green-500">
+                      <span className="font-medium">Correct Answer:</span> {q.correctAnswer}
+                    </p>
+                  </div>
+                ))
+              ) : (
+                <p className="p-4 text-center text-sm text-muted-foreground">
+                  No incorrect answers! Great job!
                 </p>
-              ))}
+              )}
             </TabsContent>
             <TabsContent value="hard">
-              {stats.hard.map(q => (
-                <p key={q.id} className="text-sm border-b p-2">
-                  {q.question}
+              {stats.hard.length > 0 ? (
+                stats.hard.map(q => (
+                  <p key={q.id} className="text-sm border-b p-2">
+                    {q.question}
+                  </p>
+                ))
+              ) : (
+                 <p className="p-4 text-center text-sm text-muted-foreground">
+                  No questions marked as hard.
                 </p>
-              ))}
+              )}
             </TabsContent>
             <TabsContent value="saved">
-              {stats.saved.map(q => (
-                <p key={q.id} className="text-sm border-b p-2">
-                  {q.question}
+              {stats.saved.length > 0 ? (
+                stats.saved.map(q => (
+                  <p key={q.id} className="text-sm border-b p-2">
+                    {q.question}
+                  </p>
+                ))
+              ) : (
+                 <p className="p-4 text-center text-sm text-muted-foreground">
+                  No saved questions.
                 </p>
-              ))}
+              )}
             </TabsContent>
           </ScrollArea>
         </Tabs>
