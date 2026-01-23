@@ -254,7 +254,25 @@ export default function FlashcardGamePage() {
 
   return (
     <div className="fixed inset-0 bg-background flex flex-col p-4 font-body touch-none">
-      <header className="flex items-center gap-4 mb-4 shrink-0">
+       {/* Gradient Overlays */}
+      <div
+        className="fixed inset-y-0 left-0 w-1/3 z-0 bg-gradient-to-r from-red-500/20 to-transparent pointer-events-none transition-opacity duration-200"
+        style={{ opacity: dragState.direction === 'left' ? dragState.opacity : 0 }}
+      />
+      <div
+        className="fixed inset-y-0 right-0 w-1/3 z-0 bg-gradient-to-l from-green-500/20 to-transparent pointer-events-none transition-opacity duration-200"
+        style={{ opacity: dragState.direction === 'right' ? dragState.opacity : 0 }}
+      />
+      <div
+        className="fixed inset-x-0 top-0 h-1/3 z-0 bg-gradient-to-b from-yellow-500/20 to-transparent pointer-events-none transition-opacity duration-200"
+        style={{ opacity: dragState.direction === 'up' ? dragState.opacity : 0 }}
+      />
+      <div
+        className="fixed inset-x-0 bottom-0 h-1/3 z-0 bg-gradient-to-t from-blue-500/20 to-transparent pointer-events-none transition-opacity duration-200"
+        style={{ opacity: dragState.direction === 'down' ? dragState.opacity : 0 }}
+      />
+
+      <header className="flex items-center gap-4 mb-4 shrink-0 z-10">
         <Button variant="ghost" size="icon" onClick={() => router.back()}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
@@ -281,7 +299,7 @@ export default function FlashcardGamePage() {
         </div>
       </header>
 
-      <main className="flex-1 flex flex-col items-center justify-center overflow-hidden">
+      <main className="flex-1 flex flex-col items-center justify-center overflow-hidden z-10">
         {showHint && (
           <div 
             className="absolute inset-0 z-20 bg-black/80 flex flex-col items-center justify-center text-white animate-fade-in-up"
