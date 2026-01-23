@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, orderBy } from 'firebase/firestore';
+import { collection, query, where, orderBy, limit } from 'firebase/firestore';
 import { getQuestions } from '@/lib/data';
 import type { Reviewer, Subject, Topic, QuizQuestion } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -375,7 +375,7 @@ const FlashcardSession = ({ topicId, customConfig, onExit }: { topicId: string; 
 
         if (finalDirection) {
             const resultsMap = { right: 'correct', left: 'incorrect', up: 'hard', down: 'saved' };
-            const transformMap = { right: 'translateX(500px) rotate(30deg)', left: 'translateX(-500px) rotate(-30deg)' };
+            const transformMap: { [key: string]: string } = { right: 'translateX(500px) rotate(30deg)', left: 'translateX(-500px) rotate(-30deg)' };
             if (transformMap[finalDirection]) cardRef.current.style.transform = transformMap[finalDirection];
             handleNextCard(resultsMap[finalDirection] as any);
         } else {
@@ -533,3 +533,5 @@ export default function FlashcardsPage() {
     animation: combo-pop 1.5s ease-out forwards;
 }
 */
+
+    
