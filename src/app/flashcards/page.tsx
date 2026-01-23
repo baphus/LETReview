@@ -104,6 +104,7 @@ export default function FlashcardGamePage() {
   
   const handlePointerDown = (e: React.PointerEvent) => {
     if (!isFlipped) return;
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     dragStart.current = { x: e.clientX, y: e.clientY };
     if (cardRef.current) {
         cardRef.current.style.transition = 'none';
@@ -135,7 +136,9 @@ export default function FlashcardGamePage() {
   };
   
   const handlePointerUp = (e: React.PointerEvent) => {
-    if (!dragStart.current || !cardRef.current) return;
+    if (!cardRef.current) return;
+    (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+    if (!dragStart.current) return;
 
     const dx = e.clientX - dragStart.current.x;
     const dy = e.clientY - dragStart.current.y;
@@ -157,12 +160,14 @@ export default function FlashcardGamePage() {
             case 'down': result = 'bookmarked'; break;
             case 'up': result = 'hard'; break;
         }
-        if (transform) cardRef.current.style.transform = transform;
+        if (transform && cardRef.current) cardRef.current.style.transform = transform;
         handleNextCard(result);
     } else {
+      if(cardRef.current) {
         cardRef.current.style.transition = 'transform 0.3s ease-out';
         cardRef.current.style.transform = '';
-        setDragState({ x: 0, y: 0, direction: null, opacity: 0 });
+      }
+      setDragState({ x: 0, y: 0, direction: null, opacity: 0 });
     }
     
     dragStart.current = null;
