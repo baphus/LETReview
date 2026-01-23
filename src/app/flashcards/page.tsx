@@ -399,9 +399,12 @@ const SessionSummaryDialog = ({
             <TabsContent value="hard">
               {stats.hard.length > 0 ? (
                 stats.hard.map(q => (
-                  <p key={q.id} className="text-sm border-b p-2">
-                    {q.question}
-                  </p>
+                  <div key={q.id} className="border-b p-3 text-sm last:border-b-0">
+                    <p className="font-semibold">{q.question}</p>
+                    <p className="mt-1 text-green-700 dark:text-green-500">
+                      <span className="font-medium">Correct Answer:</span> {q.correctAnswer}
+                    </p>
+                  </div>
                 ))
               ) : (
                  <p className="p-4 text-center text-sm text-muted-foreground">
@@ -412,9 +415,12 @@ const SessionSummaryDialog = ({
             <TabsContent value="saved">
               {stats.saved.length > 0 ? (
                 stats.saved.map(q => (
-                  <p key={q.id} className="text-sm border-b p-2">
-                    {q.question}
-                  </p>
+                  <div key={q.id} className="border-b p-3 text-sm last:border-b-0">
+                    <p className="font-semibold">{q.question}</p>
+                    <p className="mt-1 text-green-700 dark:text-green-500">
+                      <span className="font-medium">Correct Answer:</span> {q.correctAnswer}
+                    </p>
+                  </div>
                 ))
               ) : (
                  <p className="p-4 text-center text-sm text-muted-foreground">
