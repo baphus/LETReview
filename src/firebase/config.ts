@@ -5,7 +5,7 @@ export const firebaseConfig = {
 
   projectId: "letreview",
 
-  storageBucket: "letreview.firebasestorage.app",
+  storageBucket: "letreview.appspot.com",
 
   messagingSenderId: "719794505288",
 
