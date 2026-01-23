@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback, useMemo, Suspense } from 'react';
@@ -721,7 +722,7 @@ const FlashcardSession = ({
           </Button>
         </header>
 
-        <main className="flex-1 flex flex-col items-center justify-center overflow-hidden relative">
+        <main className="flex-1 flex flex-col items-center justify-center relative">
           <div className="flashcard-container w-full h-full max-w-md max-h-[70vh] flex items-center justify-center">
             <div
               ref={cardRef}
