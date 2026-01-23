@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { Inter, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
@@ -29,6 +29,7 @@ const spaceGrotesk = Space_Grotesk({
 
 function RootLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { user, isLoading, activeTheme, firebaseUser } = useUser();
   const [showOnboarding, setShowOnboarding] = useState(false);
 
@@ -46,6 +47,7 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
   }, [user, isLoading, firebaseUser]);
 
   const isAppPage = pathname !== '/';
+  const isFlashcardSession = pathname === '/flashcards' && searchParams.get('topic');
 
   if (isLoading && isAppPage && !user) {
     return (
@@ -59,6 +61,15 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
         </main>
         <Skeleton className="h-16 w-full" />
       </div>
+    );
+  }
+  
+  if (isFlashcardSession) {
+    return (
+      <TimerProvider>
+          {children}
+          <Toaster />
+      </TimerProvider>
     );
   }
 
