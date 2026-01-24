@@ -181,28 +181,9 @@ export const useUser = () => {
   const linkGoogleAccount = useCallback(async () => {
     if (!auth || !firebaseUser) return;
     const provider = new GoogleAuthProvider();
-    try {
-        if (firebaseUser.isAnonymous) {
-            await linkWithPopup(firebaseUser, provider);
-        } else {
-            await signInWithPopup(auth, provider);
-        }
-        justLoggedInRef.current = true;
-    } catch (error: any) {
-        if (error.code === 'auth/credential-already-in-use') {
-            toast({
-                title: 'Account exists',
-                description: 'This Google account is already registered. Signing you in...',
-            });
-            try {
-                // Discard anonymous user and sign in with the existing Google account
-                await signInWithPopup(auth, provider);
-                justLoggedInRef.current = true;
-            } catch (signInError: any) {
-                console.error("Error during force sign-in:", signInError);
-                toast({ variant: "destructive", title: "Sign-in Error", description: signInError.message || "Could not sign you in." });
-            }
-        } else if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+
+    const handleAuthError = (error: any) => {
+        if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
             toast({
                 title: 'Sign-in cancelled',
                 description: 'You closed the sign-in window before completing the sign-in process.',
@@ -214,8 +195,38 @@ export const useUser = () => {
                 description: 'Please allow popups for this site to sign in.',
             });
         } else {
-            console.error("Error with popup sign-in:", error);
-            toast({ variant: "destructive", title: "Sign-in Error", description: error.message || "Could not complete sign in." });
+            console.error("Error with Google sign-in:", error);
+            toast({ variant: "destructive", title: "Sign-in Error", description: error.message || "An unknown error occurred." });
+        }
+    };
+
+    const doSignIn = async () => {
+        try {
+            await signInWithPopup(auth, provider);
+            justLoggedInRef.current = true;
+        } catch (error) {
+            handleAuthError(error);
+        }
+    };
+    
+    try {
+        if (firebaseUser.isAnonymous) {
+            await linkWithPopup(firebaseUser, provider);
+            justLoggedInRef.current = true;
+        } else {
+            // This case is for a non-anonymous user clicking "Get Started" again.
+            // We can just treat it as a re-auth/sign-in attempt.
+            await doSignIn();
+        }
+    } catch (error: any) {
+        if (error.code === 'auth/credential-already-in-use') {
+            toast({
+                title: 'Account exists',
+                description: 'This Google account is already registered. Signing you in...',
+            });
+            await doSignIn();
+        } else {
+            handleAuthError(error);
         }
     }
   }, [auth, firebaseUser, toast]);
