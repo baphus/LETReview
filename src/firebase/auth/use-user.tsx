@@ -3,7 +3,7 @@
 'use client';
 
 import { useAuth, useFirestore } from '@/firebase';
-import { User, onAuthStateChanged, getRedirectResult, GoogleAuthProvider } from 'firebase/auth';
+import { User, onAuthStateChanged } from 'firebase/auth';
 import { doc, setDoc, onSnapshot, DocumentData, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
@@ -27,98 +27,68 @@ export const useUser = () => {
   const auth = useAuth();
   const firestore = useFirestore();
   
-  // This useEffect handles redirect results from Google Sign-In
-   useEffect(() => {
-    if (!auth || !firestore) return;
-
-    getRedirectResult(auth)
-      .then((result) => {
-        if (result) {
-          // User signed in. The onAuthStateChanged listener below will handle
-          // setting the user state and creating the document if needed.
-          toast({
-            title: "Signed In Successfully",
-            description: `Welcome back, ${result.user.displayName}!`,
-            className: "bg-green-100 border-green-300",
-          });
-        }
-      })
-      .catch((error) => {
-        console.error("Redirect sign-in error:", error);
-        toast({
-          variant: 'destructive',
-          title: 'Google Sign-In Failed',
-          description: error.message,
-        });
-      });
-  }, [auth, firestore, toast]);
-
-
   // This useEffect handles the main auth state subscription
   useEffect(() => {
-    if (!auth || !firestore) return;
-
-    // Define the snapshot handler inside the effect to capture the correct scope
-    // and avoid adding it to the dependency array.
-    const handleUserSnapshot = (docSnap: DocumentData, user: User) => {
-      if (docSnap.exists()) {
-          setFirestoreUser(docSnap.data() as UserProfile);
-      } else if (user) {
-          // This case is for users who signed up but their doc creation might have been interrupted.
-          const newUserProfile: UserProfile = {
-            uid: user.uid,
-            name: user.displayName || 'New User',
-            avatarUrl: user.photoURL || `https://avatar.vercel.sh/${user.uid}`,
-            email: user.email || '',
-            points: 0,
-            streak: 0,
-            highestStreak: 0,
-            highestQuizStreak: 0,
-            completedSessions: 0,
-            unlockedThemes: ['default'],
-            activeTheme: 'default',
-            unlockedPets: [],
-            petNames: {},
-            dailyProgress: {},
-            lastLogin: getTodayKey(),
-            passingScore: 85,
-            createdAt: serverTimestamp(),
-            questionsAnswered: 0,
-            answeredQuestionIds: [],
-            hasCompletedOnboarding: false,
-          };
-          const userRef = doc(firestore, 'users', user.uid);
-          setDoc(userRef, newUserProfile).then(() => {
-            setFirestoreUser(newUserProfile);
-          }).catch(async (serverError) => {
-            const permissionError = new FirestorePermissionError({
-              path: userRef.path,
-              operation: 'create',
-              requestResourceData: newUserProfile,
-            });
-            errorEmitter.emit('permission-error', permissionError);
-          });
-      }
-      setIsLoading(false);
-    };
+    if (!auth || !firestore) {
+        setIsLoading(false);
+        return;
+    }
 
     let unsubscribeSnapshot: () => void = () => {};
 
-    const unsubscribeAuth = onAuthStateChanged(auth, async (userAuth) => {
-      unsubscribeSnapshot();
+    const unsubscribeAuth = onAuthStateChanged(auth, (userAuth) => {
+      unsubscribeSnapshot(); // Stop listening to previous user's doc
       
       if (userAuth) {
         setFirebaseUser(userAuth);
         const userRef = doc(firestore, 'users', userAuth.uid);
-        unsubscribeSnapshot = onSnapshot(
-          userRef,
-          (docSnap) => handleUserSnapshot(docSnap, userAuth),
-          (error) => {
-            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: userRef.path, operation: 'get' }));
+
+        unsubscribeSnapshot = onSnapshot(userRef, (docSnap) => {
+          if (docSnap.exists()) {
+            setFirestoreUser(docSnap.data() as UserProfile);
             setIsLoading(false);
+          } else {
+            // User is authenticated but doesn't have a profile doc.
+            // This happens on first sign-in (e.g., with Google).
+            const newUserProfile: UserProfile = {
+              uid: userAuth.uid,
+              name: userAuth.displayName || 'New User',
+              avatarUrl: userAuth.photoURL || `https://avatar.vercel.sh/${userAuth.uid}`,
+              email: userAuth.email || '',
+              points: 0,
+              streak: 0,
+              highestStreak: 0,
+              highestQuizStreak: 0,
+              completedSessions: 0,
+              unlockedThemes: ['default'],
+              activeTheme: 'default',
+              unlockedPets: [],
+              petNames: {},
+              dailyProgress: {},
+              lastLogin: getTodayKey(),
+              passingScore: 85,
+              createdAt: serverTimestamp(),
+              questionsAnswered: 0,
+              answeredQuestionIds: [],
+              hasCompletedOnboarding: false,
+            };
+            setDoc(userRef, newUserProfile).then(() => {
+              setFirestoreUser(newUserProfile);
+              setIsLoading(false);
+            }).catch((e) => {
+              console.error("Failed to create user document:", e);
+              errorEmitter.emit('permission-error', new FirestorePermissionError({ path: userRef.path, operation: 'create', requestResourceData: newUserProfile }));
+              setIsLoading(false);
+            });
           }
-        );
+        }, (error) => {
+          console.error("Firestore onSnapshot error:", error);
+          errorEmitter.emit('permission-error', new FirestorePermissionError({ path: userRef.path, operation: 'get' }));
+          setIsLoading(false);
+        });
+
       } else {
+        // No user is signed in
         setFirebaseUser(null);
         setFirestoreUser(null);
         setIsLoading(false);
