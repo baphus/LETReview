@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -17,6 +17,7 @@ import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, up
 import { Loader2, UserPlus } from 'lucide-react';
 import Logo from '@/components/Logo';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useUser } from '@/firebase/auth/use-user';
 
 
 const formSchema = z.object({
@@ -31,10 +32,17 @@ export default function RegisterPage() {
   const router = useRouter();
   const auth = useAuth();
   const { toast } = useToast();
+  const { user, isLoading: isUserLoadingAuth } = useUser();
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isGuestLoading, setIsGuestLoading] = useState(false);
   const isMobile = useIsMobile();
+
+  useEffect(() => {
+    if (!isUserLoadingAuth && user) {
+      router.push('/home');
+    }
+  }, [user, isUserLoadingAuth, router]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -97,6 +105,14 @@ export default function RegisterPage() {
       setIsGuestLoading(false);
     }
   };
+
+  if (isUserLoadingAuth || user) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-4">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-4">
