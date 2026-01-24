@@ -713,79 +713,77 @@ const FlashcardSession = ({
         transition: 'background 0.1s ease-out',
       }}
     >
-      <div className="container mx-auto max-w-2xl flex flex-col h-full pt-6">
-        <header className="flex items-center gap-4 mb-4">
-          <Button variant="ghost" size="icon" onClick={onExit}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div className="flex-1" />
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setSessionSummary(sessionStats)}
+      <header className="container mx-auto max-w-2xl flex items-center gap-4 pt-6 px-4 shrink-0">
+        <Button variant="ghost" size="icon" onClick={onExit}>
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <div className="flex-1" />
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setSessionSummary(sessionStats)}
+        >
+          End Session
+        </Button>
+      </header>
+
+      <main className="flex-1 flex flex-col items-center justify-center relative">
+        <div className="flashcard-container w-full h-full max-w-md max-h-[70vh] flex items-center justify-center">
+          <div
+            ref={cardRef}
+            className={cn(
+              'flashcard relative w-full h-full cursor-pointer',
+              isFlipped && 'is-flipped'
+            )}
+            onClick={handleCardClick}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
           >
-            End Session
-          </Button>
-        </header>
-
-        <main className="flex-1 flex flex-col items-center justify-center relative">
-          <div className="flashcard-container w-full h-full max-w-md max-h-[70vh] flex items-center justify-center">
-            <div
-              ref={cardRef}
-              className={cn(
-                'flashcard relative w-full h-full cursor-pointer',
-                isFlipped && 'is-flipped'
-              )}
-              onClick={handleCardClick}
-              onPointerDown={handlePointerDown}
-              onPointerMove={handlePointerMove}
-              onPointerUp={handlePointerUp}
-              onPointerCancel={handlePointerUp}
-            >
-              <Card className="flashcard-front absolute w-full h-full flex items-center justify-center text-center p-6">
-                <p className="text-xl md:text-2xl font-semibold">
-                  {currentCard.question}
+            <Card className="flashcard-front absolute w-full h-full flex items-center justify-center text-center p-6">
+              <p className="text-xl md:text-2xl font-semibold">
+                {currentCard.question}
+              </p>
+            </Card>
+            <Card className="flashcard-back absolute w-full h-full flex flex-col justify-center text-center p-6">
+              <ScrollArea className="flex-1">
+                <p className="text-lg md:text-xl font-semibold">
+                  {currentCard.correctAnswer}
                 </p>
-              </Card>
-              <Card className="flashcard-back absolute w-full h-full flex flex-col justify-center text-center p-6">
-                <ScrollArea className="flex-1">
-                  <p className="text-lg md:text-xl font-semibold">
-                    {currentCard.correctAnswer}
+                {currentCard.explanation && (
+                  <p className="text-sm text-muted-foreground mt-4">
+                    {currentCard.explanation}
                   </p>
-                  {currentCard.explanation && (
-                    <p className="text-sm text-muted-foreground mt-4">
-                      {currentCard.explanation}
-                    </p>
-                  )}
-                </ScrollArea>
-              </Card>
-              {feedback && (
-                <div
-                  className={cn(
-                    'absolute inset-0 rounded-xl flex flex-col items-center justify-center text-white pointer-events-none',
-                    feedback.color
-                  )}
-                  style={{ opacity: dragState.opacity }}
-                >
-                  {React.cloneElement(feedback.icon, {
-                    className: 'h-16 w-16',
-                  })}
-                  <p className="font-bold text-xl mt-2">{feedback.text}</p>
-                </div>
-              )}
-            </div>
+                )}
+              </ScrollArea>
+            </Card>
+            {feedback && (
+              <div
+                className={cn(
+                  'absolute inset-0 rounded-xl flex flex-col items-center justify-center text-white pointer-events-none',
+                  feedback.color
+                )}
+                style={{ opacity: dragState.opacity }}
+              >
+                {React.cloneElement(feedback.icon, {
+                  className: 'h-16 w-16',
+                })}
+                <p className="font-bold text-xl mt-2">{feedback.text}</p>
+              </div>
+            )}
           </div>
-          <div className="text-center mt-4 text-sm text-muted-foreground">
-            {isFlipped ? 'Swipe to assess' : 'Tap to reveal answer'}
-          </div>
+        </div>
+        <div className="text-center mt-4 text-sm text-muted-foreground">
+          {isFlipped ? 'Swipe to assess' : 'Tap to reveal answer'}
+        </div>
 
-          {showStreak && streak > 1 && (
-            <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-destructive/80 text-destructive-foreground px-4 py-2 rounded-full text-2xl font-bold animate-combo-pop flex items-center gap-2">
-              <Flame /> Streak x{streak}!
-            </div>
-          )}
-        </main>
-      </div>
+        {showStreak && streak > 1 && (
+          <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-destructive/80 text-destructive-foreground px-4 py-2 rounded-full text-2xl font-bold animate-combo-pop flex items-center gap-2">
+            <Flame /> Streak x{streak}!
+          </div>
+        )}
+      </main>
     </div>
   );
 };
