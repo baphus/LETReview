@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -13,7 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/firebase';
-import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithRedirect, updateProfile, signInAnonymously } from 'firebase/auth';
+import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, updateProfile, signInAnonymously } from 'firebase/auth';
 import { Loader2, UserPlus } from 'lucide-react';
 import Logo from '@/components/Logo';
 import { useUser } from '@/firebase/auth/use-user';
@@ -73,8 +72,18 @@ export default function RegisterPage() {
   const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true);
     const provider = new GoogleAuthProvider();
-    // Always use redirect for Google Sign-In to avoid popup issues.
-    signInWithRedirect(auth, provider);
+    try {
+      await signInWithPopup(auth, provider);
+      router.push('/home');
+    } catch (error: any) {
+       toast({
+        variant: 'destructive',
+        title: 'Google Sign-In Failed',
+        description: `Popup was likely blocked by the browser. Please try another sign-in method or check your browser settings. Error: ${error.message}`,
+      });
+    } finally {
+        setIsGoogleLoading(false);
+    }
   };
 
   const handleGuestSignIn = async () => {
