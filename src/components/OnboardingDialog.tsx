@@ -37,7 +37,7 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
     try {
       await updateUser({
         name: name.trim(),
-        examDate: examDate ? examDate.toISOString() : undefined,
+        examDate: examDate ? examDate.toISOString() : null,
         hasCompletedOnboarding: true,
       });
       toast({ title: "Welcome!", description: "Your profile has been set up.", className: "bg-green-100 border-green-300" });

@@ -98,7 +98,7 @@ export interface UserProfile {
     name: string;
     avatarUrl: string;
     email: string;
-    examDate?: string;
+    examDate?: string | null;
     points: number;
     streak: number;
     highestStreak: number;

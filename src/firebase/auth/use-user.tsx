@@ -138,6 +138,14 @@ export const useUser = () => {
 
   const memoizedUpdateUser = useCallback((data: Partial<UserProfile>) => {
       if (firestore && firebaseUser) {
+          if (firebaseUser.isAnonymous) {
+            toast({
+                title: "Guest Mode",
+                description: "Your changes can't be saved. Please create an account to save your progress.",
+                className: "bg-amber-100 border-amber-200"
+            });
+            return Promise.resolve();
+          }
           const userRef = doc(firestore, "users", firebaseUser.uid);
           return updateDoc(userRef, data).catch((error) => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: userRef.path, operation: 'update', requestResourceData: data }));
