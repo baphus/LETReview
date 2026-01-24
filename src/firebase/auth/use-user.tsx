@@ -27,49 +27,7 @@ export const useUser = () => {
   const auth = useAuth();
   const firestore = useFirestore();
   
-  const handleUserSnapshot = useCallback((docSnap: DocumentData, user: User) => {
-    if (docSnap.exists()) {
-        setFirestoreUser(docSnap.data() as UserProfile);
-    } else if (user && firestore) {
-        // This case is for users who signed up with Google but their doc creation might have been interrupted.
-        const newUserProfile: UserProfile = {
-          uid: user.uid,
-          name: user.displayName || 'New User',
-          avatarUrl: user.photoURL || `https://avatar.vercel.sh/${user.uid}`,
-          email: user.email || '',
-          points: 0,
-          streak: 0,
-          highestStreak: 0,
-          highestQuizStreak: 0,
-          completedSessions: 0,
-          unlockedThemes: ['default'],
-          activeTheme: 'default',
-          unlockedPets: [],
-          petNames: {},
-          dailyProgress: {},
-          lastLogin: getTodayKey(),
-          passingScore: 85,
-          createdAt: serverTimestamp(),
-          questionsAnswered: 0,
-          answeredQuestionIds: [],
-          hasCompletedOnboarding: false,
-        };
-        const userRef = doc(firestore, 'users', user.uid);
-        setDoc(userRef, newUserProfile).then(() => {
-          setFirestoreUser(newUserProfile);
-        }).catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({
-            path: userRef.path,
-            operation: 'create',
-            requestResourceData: newUserProfile,
-          });
-          errorEmitter.emit('permission-error', permissionError);
-        });
-    }
-    setIsLoading(false);
-  }, [firestore]);
-
-  // Handle redirect results from Google Sign-In
+  // This useEffect handles redirect results from Google Sign-In
    useEffect(() => {
     if (!auth || !firestore) return;
 
@@ -96,8 +54,53 @@ export const useUser = () => {
   }, [auth, firestore, toast]);
 
 
+  // This useEffect handles the main auth state subscription
   useEffect(() => {
     if (!auth || !firestore) return;
+
+    // Define the snapshot handler inside the effect to capture the correct scope
+    // and avoid adding it to the dependency array.
+    const handleUserSnapshot = (docSnap: DocumentData, user: User) => {
+      if (docSnap.exists()) {
+          setFirestoreUser(docSnap.data() as UserProfile);
+      } else if (user) {
+          // This case is for users who signed up but their doc creation might have been interrupted.
+          const newUserProfile: UserProfile = {
+            uid: user.uid,
+            name: user.displayName || 'New User',
+            avatarUrl: user.photoURL || `https://avatar.vercel.sh/${user.uid}`,
+            email: user.email || '',
+            points: 0,
+            streak: 0,
+            highestStreak: 0,
+            highestQuizStreak: 0,
+            completedSessions: 0,
+            unlockedThemes: ['default'],
+            activeTheme: 'default',
+            unlockedPets: [],
+            petNames: {},
+            dailyProgress: {},
+            lastLogin: getTodayKey(),
+            passingScore: 85,
+            createdAt: serverTimestamp(),
+            questionsAnswered: 0,
+            answeredQuestionIds: [],
+            hasCompletedOnboarding: false,
+          };
+          const userRef = doc(firestore, 'users', user.uid);
+          setDoc(userRef, newUserProfile).then(() => {
+            setFirestoreUser(newUserProfile);
+          }).catch(async (serverError) => {
+            const permissionError = new FirestorePermissionError({
+              path: userRef.path,
+              operation: 'create',
+              requestResourceData: newUserProfile,
+            });
+            errorEmitter.emit('permission-error', permissionError);
+          });
+      }
+      setIsLoading(false);
+    };
 
     let unsubscribeSnapshot: () => void = () => {};
 
@@ -129,7 +132,7 @@ export const useUser = () => {
       unsubscribeAuth();
       unsubscribeSnapshot();
     };
-  }, [auth, firestore, pathname, router, handleUserSnapshot, toast]);
+  }, [auth, firestore, pathname, router]);
   
   const user = firestoreUser;
   const isAdmin = user?.uid === 'q4vgkFodzoSaPM1BuNbRI0Wx9YZ2';
