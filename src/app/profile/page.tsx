@@ -20,6 +20,7 @@ import { useUser } from "@/firebase/auth/use-user";
 import { useAuth } from "@/firebase";
 import { signOut } from "firebase/auth";
 import type { PetProfile } from "@/lib/types";
+import { Badge } from "@/components/ui/badge";
 
 const themes = [
     { name: 'Default', value: 'default', cost: 0, colors: { primary: 'hsl(231 48% 48%)', accent: 'hsl(110 32% 48%)' } },
