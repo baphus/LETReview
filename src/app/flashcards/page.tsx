@@ -610,8 +610,11 @@ const FlashcardSession = ({
 
   const handlePointerUp = (e: React.PointerEvent) => {
     if (!cardRef.current) return;
-    (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+    
+    // If no drag was started, do nothing. This prevents invalid pointer ID errors.
     if (!dragStart.current) return;
+
+    (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
 
     const dx = e.clientX - dragStart.current.x;
     const dy = e.clientY - dragStart.current.y;
