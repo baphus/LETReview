@@ -3,7 +3,7 @@
 'use client';
 
 import { useAuth, useFirestore } from '@/firebase';
-import { User, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInAnonymously, linkWithPopup } from 'firebase/auth';
+import { User, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInAnonymously, linkWithPopup, signInWithRedirect, getRedirectResult, linkWithRedirect } from 'firebase/auth';
 import { doc, setDoc, onSnapshot, DocumentData, serverTimestamp, getDoc, updateDoc } from 'firebase/firestore';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState, useCallback, useRef } from 'react';
@@ -12,6 +12,7 @@ import { format } from "date-fns";
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { useToast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const getTodayKey = () => format(new Date(), 'yyyy-MM-dd');
 
@@ -45,6 +46,7 @@ export const useUser = () => {
   const router = useRouter();
   const auth = useAuth();
   const firestore = useFirestore();
+  const isMobile = useIsMobile();
   
   const justLoggedInRef = useRef(false);
 
@@ -125,6 +127,20 @@ export const useUser = () => {
 
     let unsubscribeSnapshot: () => void = () => {};
 
+    // Handle redirect result from Google sign-in on mobile
+    getRedirectResult(auth)
+      .then((result) => {
+        if (result) {
+          // This means a sign-in or link just completed.
+          justLoggedInRef.current = true;
+          toast({ title: 'Signed in successfully!', className: 'bg-green-100 border-green-300' });
+        }
+      })
+      .catch((error) => {
+        console.error("Error getting redirect result:", error);
+        toast({ variant: "destructive", title: "Sign-in Error", description: "Could not complete sign-in. Please try again." });
+      });
+
     const unsubscribeAuth = onAuthStateChanged(auth, async (userAuth) => {
       unsubscribeSnapshot();
       
@@ -134,10 +150,6 @@ export const useUser = () => {
           setFirestoreUser(null);
           setIsLoading(false);
         } else {
-          // When auth state changes to a non-anonymous user,
-          // we immediately start loading their Firestore data.
-          // We set isLoading to true here to prevent the app from briefly
-          // showing guest data before the real user data is loaded.
           setIsLoading(true);
           const userRef = doc(firestore, 'users', userAuth.uid);
           unsubscribeSnapshot = onSnapshot(
@@ -166,12 +178,11 @@ export const useUser = () => {
       unsubscribeSnapshot();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [auth, firestore, handleUserSnapshot]);
+  }, [auth, firestore]);
   
   // This effect handles redirection after a successful login.
   useEffect(() => {
       if (!isLoading && firebaseUser && !firebaseUser.isAnonymous && justLoggedInRef.current) {
-          // This was a fresh login, redirect to home.
           justLoggedInRef.current = false; // Reset the flag
           router.push('/home');
       }
@@ -186,7 +197,7 @@ export const useUser = () => {
         if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
             toast({
                 title: 'Sign-in cancelled',
-                description: 'You closed the sign-in window before completing the sign-in process.',
+                description: 'You closed the sign-in window before completing the process.',
             });
         } else if (error.code === 'auth/popup-blocked') {
             toast({
@@ -199,8 +210,19 @@ export const useUser = () => {
             toast({ variant: "destructive", title: "Sign-in Error", description: error.message || "An unknown error occurred." });
         }
     };
+    
+    // For mobile devices, use redirect flow to prevent popup blockers.
+    if (isMobile) {
+      if (firebaseUser.isAnonymous) {
+        linkWithRedirect(firebaseUser, provider);
+      } else {
+        signInWithRedirect(auth, provider);
+      }
+      return;
+    }
 
-    const doSignIn = async () => {
+    // For desktop, use the existing popup flow.
+    const doSignInWithPopup = async () => {
         try {
             await signInWithPopup(auth, provider);
             justLoggedInRef.current = true;
@@ -214,9 +236,7 @@ export const useUser = () => {
             await linkWithPopup(firebaseUser, provider);
             justLoggedInRef.current = true;
         } else {
-            // This case is for a non-anonymous user clicking "Get Started" again.
-            // We can just treat it as a re-auth/sign-in attempt.
-            await doSignIn();
+            await doSignInWithPopup();
         }
     } catch (error: any) {
         if (error.code === 'auth/credential-already-in-use') {
@@ -224,12 +244,12 @@ export const useUser = () => {
                 title: 'Account exists',
                 description: 'This Google account is already registered. Signing you in...',
             });
-            await doSignIn();
+            await doSignInWithPopup();
         } else {
             handleAuthError(error);
         }
     }
-  }, [auth, firebaseUser, toast]);
+  }, [auth, firebaseUser, toast, isMobile]);
 
   const user = firebaseUser?.isAnonymous ? localUser : firestoreUser;
   const isAdmin = user?.uid === 'q4vgkFodzoSaPM1BuNbRI0Wx9YZ2';
