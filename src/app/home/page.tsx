@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { User, Flame, Edit, Check, Lock, HelpCircle, X, BookOpen, Brain, Heart, CheckCircle } from "lucide-react";
+import { User, Flame, Edit, Check, Lock, HelpCircle, X, BookOpen, Brain, Heart, CheckCircle, AlertTriangle } from "lucide-react";
 import Image from "next/image";
 import { streakPets, achievementPets, rarePets } from "@/lib/data";
 import type { Reviewer, Topic, PetProfile, Subject, QuizQuestion } from "@/lib/types";
@@ -22,7 +22,7 @@ import { useUser } from "@/firebase/auth/use-user";
 import { ActivityCalendar } from "@/components/ActivityCalendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, query, where } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -75,7 +75,7 @@ const StreakMessage = ({ streak }: { streak: number }) => {
 
 
 export default function HomePage() {
-  const { user } = useUser();
+  const { user, firebaseUser } = useUser();
   const firestore = useFirestore();
   
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -183,6 +183,16 @@ export default function HomePage() {
           onClose={() => setSelectedDate(null)}
           userProgress={selectedDate ? user.dailyProgress[format(selectedDate, 'yyyy-MM-dd')] : undefined}
         />
+        {firebaseUser?.isAnonymous && (
+          <Alert className="mb-6 bg-amber-50 border-amber-200 text-amber-800">
+            <AlertTriangle className="h-4 w-4 !text-amber-800" />
+            <AlertTitle>You are browsing as a guest</AlertTitle>
+            <AlertDescription>
+              Your progress is only saved on this browser. 
+              <Link href="/register" className="font-bold underline ml-1 hover:text-amber-900">Create an account</Link> to save your data.
+            </AlertDescription>
+          </Alert>
+        )}
         <p className="text-muted-foreground mb-6">Welcome back, {user.name}!</p>
         
         {user.examDate && <Countdown examDate={new Date(user.examDate)} />}

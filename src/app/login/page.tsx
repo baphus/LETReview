@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -12,8 +13,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/firebase';
-import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import { Loader2 } from 'lucide-react';
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signInAnonymously } from 'firebase/auth';
+import { Loader2, UserPlus } from 'lucide-react';
 import Logo from '@/components/Logo';
 
 const formSchema = z.object({
@@ -29,6 +30,7 @@ export default function LoginPage() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isGuestLoading, setIsGuestLoading] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -65,6 +67,22 @@ export default function LoginPage() {
       });
     } finally {
       setIsGoogleLoading(false);
+    }
+  }
+
+  const handleGuestSignIn = async () => {
+    setIsGuestLoading(true);
+    try {
+      await signInAnonymously(auth);
+      router.push('/home');
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Guest Sign-In Failed',
+        description: error.message,
+      });
+    } finally {
+      setIsGuestLoading(false);
     }
   }
 
@@ -107,7 +125,7 @@ export default function LoginPage() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full" disabled={isLoading}>
+              <Button type="submit" className="w-full" disabled={isLoading || isGoogleLoading || isGuestLoading}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Sign In
               </Button>
@@ -121,7 +139,7 @@ export default function LoginPage() {
                 <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
             </div>
           </div>
-           <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isGoogleLoading}>
+           <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading || isGuestLoading}>
             {isGoogleLoading ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
@@ -131,6 +149,17 @@ export default function LoginPage() {
             )}
             Google
           </Button>
+          <Button variant="link" className="w-full mt-2" onClick={handleGuestSignIn} disabled={isLoading || isGoogleLoading || isGuestLoading}>
+            {isGuestLoading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+                <UserPlus className="mr-2 h-4 w-4" />
+            )}
+            Try as a Guest
+          </Button>
+          <p className="text-xs text-center text-muted-foreground mt-1 px-4">
+            Guest progress is stored on this browser and will not be synced.
+          </p>
           <p className="mt-4 text-center text-sm text-muted-foreground">
             Don&apos;t have an account?{' '}
             <Link href="/register" className="font-semibold text-primary hover:underline">
