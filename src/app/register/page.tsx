@@ -13,10 +13,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/firebase';
-import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, updateProfile, signInAnonymously, signInWithRedirect } from 'firebase/auth';
+import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithRedirect, updateProfile, signInAnonymously } from 'firebase/auth';
 import { Loader2, UserPlus } from 'lucide-react';
 import Logo from '@/components/Logo';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { useUser } from '@/firebase/auth/use-user';
 
 
@@ -36,10 +35,13 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isGuestLoading, setIsGuestLoading] = useState(false);
-  const isMobile = useIsMobile();
 
   useEffect(() => {
-    if (!isUserLoadingAuth && user) {
+    if (isUserLoadingAuth) {
+      // Still checking auth state, do nothing
+      return;
+    }
+    if (user) {
       router.push('/home');
     }
   }, [user, isUserLoadingAuth, router]);
@@ -71,23 +73,8 @@ export default function RegisterPage() {
   const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true);
     const provider = new GoogleAuthProvider();
-    if (isMobile) {
-      signInWithRedirect(auth, provider);
-    } else {
-      try {
-        await signInWithPopup(auth, provider);
-        // The useUser hook handles document creation.
-        router.push('/home');
-      } catch (error: any) {
-        toast({
-          variant: 'destructive',
-          title: 'Google Sign-In Failed',
-          description: error.message,
-        });
-      } finally {
-        setIsGoogleLoading(false);
-      }
-    }
+    // Always use redirect for Google Sign-In to avoid popup issues.
+    signInWithRedirect(auth, provider);
   };
 
   const handleGuestSignIn = async () => {

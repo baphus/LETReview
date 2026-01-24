@@ -13,10 +13,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/firebase';
-import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signInAnonymously, signInWithRedirect } from 'firebase/auth';
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithRedirect, signInAnonymously } from 'firebase/auth';
 import { Loader2, UserPlus } from 'lucide-react';
 import Logo from '@/components/Logo';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { useUser } from '@/firebase/auth/use-user';
 
 const formSchema = z.object({
@@ -34,10 +33,13 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isGuestLoading, setIsGuestLoading] = useState(false);
-  const isMobile = useIsMobile();
 
   useEffect(() => {
-    if (!isUserLoadingAuth && user) {
+    if (isUserLoadingAuth) {
+      // Still checking auth state, do nothing
+      return;
+    }
+    if (user) {
       router.push('/home');
     }
   }, [user, isUserLoadingAuth, router]);
@@ -66,26 +68,8 @@ export default function LoginPage() {
   const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true);
     const provider = new GoogleAuthProvider();
-    if (isMobile) {
-      // For redirects, we don't need a try/catch here as the error
-      // will be available on the redirected page via getRedirectResult.
-      // The page will navigate away, so we don't need to manage loading state after this call.
-      signInWithRedirect(auth, provider);
-    } else {
-      // For popups, we use the existing try/catch flow.
-      try {
-        await signInWithPopup(auth, provider);
-        router.push('/home');
-      } catch (error: any) {
-        toast({
-          variant: 'destructive',
-          title: 'Google Sign-In Failed',
-          description: error.message,
-        });
-      } finally {
-        setIsGoogleLoading(false);
-      }
-    }
+    // Always use redirect for Google Sign-In to avoid popup issues.
+    signInWithRedirect(auth, provider);
   };
 
   const handleGuestSignIn = async () => {
