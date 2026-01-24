@@ -17,11 +17,8 @@ import Image from "next/image";
 import { achievementPets, rarePets, streakPets } from "@/lib/data";
 import { Progress } from "@/components/ui/progress";
 import { useUser } from "@/firebase/auth/use-user";
-import { useAuth, useFirestore } from "@/firebase";
-import { doc, updateDoc } from "firebase/firestore";
+import { useAuth } from "@/firebase";
 import { signOut } from "firebase/auth";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import type { PetProfile } from "@/lib/types";
 
 const themes = [
@@ -75,7 +72,7 @@ const allPets: PetProfile[] = [
 export default function ProfilePage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { user, firebaseUser, linkGoogleAccount, updateUser, isAdmin } = useUser();
+  const { user, updateUser } = useUser();
   const auth = useAuth();
   
   const [editingName, setEditingName] = useState(false);
@@ -369,7 +366,7 @@ export default function ProfilePage() {
             </Badge>
             {isUnlocked && (
                 <Button 
-                    variant={isActivePet ? "secondary" : "outline"} 
+                    variant={isActivePet ? "secondary" : "default"} 
                     size="sm" 
                     className="mt-2 w-full"
                     onClick={() => handleSetActivePet(pet.name)}
@@ -384,34 +381,6 @@ export default function ProfilePage() {
             )}
           </div>
     )
-  }
-
-  if (firebaseUser?.isAnonymous) {
-      return (
-        <div className="container mx-auto max-w-2xl h-full flex flex-col justify-center gap-4">
-             <Alert variant="destructive">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>Guest Mode</AlertTitle>
-              <AlertDescription>
-                Your progress is saved locally on this device only. Sign in to sync your data across devices.
-              </AlertDescription>
-            </Alert>
-            <Card className="w-full">
-                <CardHeader>
-                    <CardTitle className="text-center font-headline text-2xl">Save Your Progress</CardTitle>
-                    <CardDescription className="text-center">
-                        Sign in with Google to save your points, pets, and streaks. Don't lose your hard work!
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Button className="w-full" onClick={linkGoogleAccount}>
-                        <UserPlus className="mr-2 h-4 w-4" />
-                        Sign In with Google
-                    </Button>
-                </CardContent>
-            </Card>
-        </div>
-      )
   }
 
   return (

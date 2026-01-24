@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -69,9 +68,8 @@ const features = [
 
 
 export default function LandingPage() {
-  const { user, firebaseUser, linkGoogleAccount } = useUser();
+  const { user } = useUser();
   const router = useRouter();
-  const isAnonymous = firebaseUser?.isAnonymous;
 
   const featureRefs = useRef<(HTMLDivElement | null)[]>([]);
   const testimonialRef = useRef<HTMLDivElement | null>(null);
@@ -132,13 +130,13 @@ export default function LandingPage() {
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up animation-delay-400">
-                 <Button size="lg" onClick={() => user && !isAnonymous ? router.push('/home') : linkGoogleAccount()}>
-                    {user && !isAnonymous ? "Go to Dashboard" : "Get Started for Free"}
+                 <Button size="lg" onClick={() => router.push(user ? '/home' : '/register')}>
+                    {user ? "Go to Dashboard" : "Get Started for Free"}
                     <ChevronRight className="w-5 h-5 ml-2" />
                   </Button>
-                  {(!user || isAnonymous) && (
-                    <Button size="lg" variant="outline" onClick={() => router.push('/home')}>
-                        Try as a Guest
+                  {!user && (
+                    <Button size="lg" variant="outline" onClick={() => router.push('/login')}>
+                        Sign In
                     </Button>
                   )}
               </div>
@@ -281,12 +279,12 @@ export default function LandingPage() {
               </p>
             </div>
              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <Button size="lg" onClick={() => user && !isAnonymous ? router.push('/home') : linkGoogleAccount()}>
-                    {user && !isAnonymous ? "Go to Dashboard" : "Sign Up to Save Progress"}
+                <Button size="lg" onClick={() => router.push(user ? '/home' : '/register')}>
+                    {user ? "Go to Dashboard" : "Sign Up for Free"}
                 </Button>
-                {(!user || isAnonymous) && (
-                    <Button size="lg" variant="outline" onClick={() => router.push('/home')}>
-                        Try as a Guest
+                {!user && (
+                    <Button size="lg" variant="outline" onClick={() => router.push('/login')}>
+                        Sign In
                     </Button>
                 )}
             </div>

@@ -1,8 +1,7 @@
-
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { Inter, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
@@ -10,7 +9,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { TimerProvider } from "@/hooks/use-timer";
 import {
   Sidebar,
-  SidebarContent,
   SidebarInset,
   SidebarProvider,
 } from "@/components/ui/sidebar";
@@ -20,6 +18,7 @@ import { FirebaseClientProvider } from "@/firebase/client-provider";
 import { useUser } from "@/firebase/auth/use-user";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { OnboardingDialog } from "@/components/OnboardingDialog";
+import { Loader2 } from "lucide-react";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const spaceGrotesk = Space_Grotesk({
@@ -27,10 +26,12 @@ const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
 });
 
+const publicPaths = ['/', '/login', '/register', '/privacy-policy', '/terms-of-service', '/privacy', '/terms'];
+
+
 function RootLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const { user, isLoading, activeTheme, firebaseUser } = useUser();
+  const { user, isLoading, activeTheme } = useUser();
   const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
@@ -41,17 +42,25 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
   }, [activeTheme]);
 
   useEffect(() => {
-    if (user && !isLoading && firebaseUser && !firebaseUser.isAnonymous && !user.hasCompletedOnboarding) {
+    if (user && !isLoading && !user.hasCompletedOnboarding) {
         setShowOnboarding(true);
     }
-  }, [user, isLoading, firebaseUser]);
+  }, [user, isLoading]);
 
-  const isAppPage = pathname !== '/';
-  const isFlashcardSession = pathname === '/flashcards' && searchParams.get('topic');
+  const isPublicPage = publicPaths.includes(pathname);
 
-  if (isLoading && isAppPage && !user) {
+  if (isPublicPage) {
     return (
-      <div className="flex flex-col h-dvh">
+      <TimerProvider>
+        <main className="flex-1 overflow-y-auto">{children}</main>
+        <Toaster />
+      </TimerProvider>
+    );
+  }
+
+  if (isLoading) {
+    return (
+       <div className="flex flex-col h-dvh">
         <main className="flex-1 overflow-y-auto p-4 sm:p-6">
           <div className="flex items-center gap-2 mb-6">
             <Skeleton className="h-8 w-8" />
@@ -64,36 +73,11 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
     );
   }
   
-  if (isFlashcardSession) {
-    return (
-      <TimerProvider>
-          {children}
-          <Toaster />
-      </TimerProvider>
-    );
-  }
-
-  if (!isAppPage) {
-    return (
-      <TimerProvider>
-        <main className="flex-1 overflow-y-auto">{children}</main>
-        <Toaster />
-      </TimerProvider>
-    );
-  }
-  
-  // This is handled by the useUser hook redirecting
-  if (isAppPage && !user) {
-    return (
-       <div className="flex flex-col h-dvh">
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
-          <div className="flex items-center gap-2 mb-6">
-            <Skeleton className="h-8 w-8" />
-            <Skeleton className="h-8 w-48" />
-          </div>
-          <Skeleton className="h-64 w-full" />
-        </main>
-        <Skeleton className="h-16 w-full" />
+  // user object will be null if not logged in, and useUser handles redirection
+  if (!user) {
+     return (
+       <div className="flex flex-col h-dvh items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
@@ -156,16 +140,7 @@ export default function RootLayout({
       >
         <FirebaseClientProvider>
           <TooltipProvider>
-            <Suspense fallback={<div className="flex flex-col h-dvh">
-                <main className="flex-1 overflow-y-auto p-4 sm:p-6">
-                    <div className="flex items-center gap-2 mb-6">
-                        <Skeleton className="h-8 w-8" />
-                        <Skeleton className="h-8 w-48" />
-                    </div>
-                    <Skeleton className="h-64 w-full" />
-                </main>
-                <Skeleton className="h-16 w-full" />
-            </div>}>
+            <Suspense fallback={<div className="flex h-dvh items-center justify-center"><Loader2 className="h-8 w-8 animate-spin"/></div>}>
               <RootLayoutContent>{children}</RootLayoutContent>
             </Suspense>
           </TooltipProvider>

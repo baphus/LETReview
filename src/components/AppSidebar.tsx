@@ -38,8 +38,7 @@ export function AppSidebar() {
   const searchParams = useSearchParams();
   const { time, isActive } = useTimer();
   const { state: sidebarState, setOpenMobile } = useSidebar();
-  const { user, isAdmin, firebaseUser, linkGoogleAccount } = useUser();
-  const isAnonymous = firebaseUser?.isAnonymous;
+  const { user, isAdmin } = useUser();
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
 
   const TimerIndicator = () => {
@@ -176,56 +175,31 @@ export function AppSidebar() {
 
         {user && (
             <SidebarFooter>
-                {isAnonymous ? (
-                     <Tooltip>
+                <Link href="/profile" className="w-full" onClick={() => setOpenMobile(false)}>
+                    <Tooltip>
                         <TooltipTrigger asChild>
-                             <SidebarMenuButton
-                                onClick={() => { linkGoogleAccount(); setOpenMobile(false); }}
+                            <SidebarMenuButton
+                                isActive={pathname === '/profile'}
                             >
                                 <div className="flex items-center gap-3">
                                     <Avatar className="h-8 w-8">
+                                        <AvatarImage src={user.avatarUrl} alt={user.name} />
                                         <AvatarFallback>
-                                            <LogIn className="h-4 w-4" />
+                                            <User className="h-4 w-4" />
                                         </AvatarFallback>
                                     </Avatar>
-                                    <div className="flex flex-col items-start group-data-[state=collapsed]/sidebar-wrapper:hidden">
-                                        <span className="font-semibold text-sm">Sign In</span>
-                                        <span className="text-xs text-muted-foreground">Save Progress</span>
+                                    <div className="flex flex-col items-start overflow-hidden group-data-[state=collapsed]/sidebar-wrapper:hidden">
+                                        <span className="font-semibold text-sm truncate">{user.name}</span>
+                                        <span className="text-xs text-muted-foreground">View Profile</span>
                                     </div>
                                 </div>
                             </SidebarMenuButton>
                         </TooltipTrigger>
-                         {sidebarState === "collapsed" && (
-                            <TooltipContent side="right" align="center">Sign in to save progress</TooltipContent>
-                         )}
+                            {sidebarState === "collapsed" && (
+                            <TooltipContent side="right" align="center">{user.name}</TooltipContent>
+                            )}
                     </Tooltip>
-                ) : (
-                    <Link href="/profile" className="w-full" onClick={() => setOpenMobile(false)}>
-                       <Tooltip>
-                            <TooltipTrigger asChild>
-                                <SidebarMenuButton
-                                    isActive={pathname === '/profile'}
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <Avatar className="h-8 w-8">
-                                            <AvatarImage src={user.avatarUrl} alt={user.name} />
-                                            <AvatarFallback>
-                                                <User className="h-4 w-4" />
-                                            </AvatarFallback>
-                                        </Avatar>
-                                        <div className="flex flex-col items-start overflow-hidden group-data-[state=collapsed]/sidebar-wrapper:hidden">
-                                            <span className="font-semibold text-sm truncate">{user.name}</span>
-                                            <span className="text-xs text-muted-foreground">View Profile</span>
-                                        </div>
-                                    </div>
-                                </SidebarMenuButton>
-                            </TooltipTrigger>
-                             {sidebarState === "collapsed" && (
-                                <TooltipContent side="right" align="center">{user.name}</TooltipContent>
-                             )}
-                        </Tooltip>
-                    </Link>
-                )}
+                </Link>
             </SidebarFooter>
         )}
       <SidebarToggle />

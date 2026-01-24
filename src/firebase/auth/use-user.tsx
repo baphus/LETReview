@@ -3,87 +3,35 @@
 'use client';
 
 import { useAuth, useFirestore } from '@/firebase';
-import { User, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInAnonymously, linkWithPopup, signInWithRedirect, getRedirectResult, linkWithRedirect } from 'firebase/auth';
-import { doc, setDoc, onSnapshot, DocumentData, serverTimestamp, getDoc, updateDoc } from 'firebase/firestore';
+import { User, onAuthStateChanged } from 'firebase/auth';
+import { doc, setDoc, onSnapshot, DocumentData, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { useRouter, usePathname } from 'next/navigation';
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import type { UserProfile } from '@/lib/types';
 import { format } from "date-fns";
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { useToast } from '@/hooks/use-toast';
-import { useIsMobile } from '@/hooks/use-mobile';
 
 const getTodayKey = () => format(new Date(), 'yyyy-MM-dd');
 
-const createDefaultUser = (): UserProfile => ({
-    uid: 'anonymous',
-    name: 'Guest User',
-    avatarUrl: `https://avatar.vercel.sh/anonymous`,
-    email: '',
-    points: 0,
-    streak: 0,
-    highestStreak: 0,
-    highestQuizStreak: 0,
-    completedSessions: 0,
-    unlockedThemes: ['default'],
-    activeTheme: 'default',
-    unlockedPets: [],
-    petNames: {},
-    dailyProgress: {},
-    lastLogin: getTodayKey(),
-    passingScore: 85,
-    questionsAnswered: 0,
-    answeredQuestionIds: [],
-});
+const publicPaths = ['/', '/login', '/register', '/privacy-policy', '/terms-of-service', '/privacy', '/terms'];
 
 export const useUser = () => {
   const { toast } = useToast();
-  const [localUser, setLocalUser] = useState<UserProfile | null>(null);
   const [firestoreUser, setFirestoreUser] = useState<UserProfile | null>(null);
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
+  const pathname = usePathname();
   const auth = useAuth();
   const firestore = useFirestore();
-  const isMobile = useIsMobile();
   
-  const justLoggedInRef = useRef(false);
-
-
-  // Effect for managing local (anonymous) user state
-  useEffect(() => {
-      if (typeof window !== 'undefined') {
-          try {
-              const savedUser = localStorage.getItem('localUser');
-              if (savedUser) {
-                  setLocalUser(JSON.parse(savedUser));
-              } else {
-                  const defaultUser = createDefaultUser();
-                  setLocalUser(defaultUser);
-                  localStorage.setItem('localUser', JSON.stringify(defaultUser));
-              }
-          } catch (error) {
-              console.error("Failed to read from local storage:", error);
-              setLocalUser(createDefaultUser());
-          }
-      }
-  }, []);
-
-  const updateLocalUser = useCallback((updates: Partial<UserProfile>) => {
-      if (typeof window !== 'undefined') {
-          setLocalUser(prevUser => {
-              const newUser = { ...(prevUser || createDefaultUser()), ...updates };
-              localStorage.setItem('localUser', JSON.stringify(newUser));
-              return newUser;
-          });
-      }
-  }, []);
-
   const handleUserSnapshot = useCallback((docSnap: DocumentData, user: User) => {
     if (docSnap.exists()) {
         setFirestoreUser(docSnap.data() as UserProfile);
-    } else if (user && firestore && !user.isAnonymous) {
+    } else if (user && firestore) {
+        // This case is for users who signed up with Google but their doc creation might have been interrupted.
         const newUserProfile: UserProfile = {
           uid: user.uid,
           name: user.displayName || 'New User',
@@ -121,104 +69,33 @@ export const useUser = () => {
     setIsLoading(false);
   }, [firestore]);
 
-  const migrateAnonymousData = useCallback(async (newUserId: string) => {
-    if (!firestore || !auth) return;
-  
-    const savedLocalUser = localStorage.getItem('localUser');
-    if (savedLocalUser) {
-      const localUserData = JSON.parse(savedLocalUser) as UserProfile;
-      const userRef = doc(firestore, 'users', newUserId);
-  
-      const existingDoc = await getDoc(userRef);
-      if (existingDoc.exists()) {
-        console.log("User doc already exists, skipping migration.");
-        localStorage.removeItem('localUser');
-        return;
-      }
-  
-      const newFirebaseUser = auth.currentUser;
-  
-      const newUserProfile: UserProfile = {
-        uid: newUserId,
-        name: newFirebaseUser?.displayName || localUserData.name || 'New User',
-        avatarUrl: newFirebaseUser?.photoURL || localUserData.avatarUrl || `https://avatar.vercel.sh/${newUserId}`,
-        email: newFirebaseUser?.email || '',
-        points: localUserData.points || 0,
-        streak: localUserData.streak || 0,
-        highestStreak: localUserData.highestStreak || 0,
-        highestQuizStreak: localUserData.highestQuizStreak || 0,
-        completedSessions: localUserData.completedSessions || 0,
-        unlockedThemes: Array.from(new Set(['default', ...(localUserData.unlockedThemes || [])])),
-        unlockedPets: localUserData.unlockedPets || [],
-        petNames: localUserData.petNames || {},
-        dailyProgress: localUserData.dailyProgress || {},
-        quizProgress: localUserData.quizProgress || {},
-        lastLogin: getTodayKey(),
-        createdAt: serverTimestamp(),
-        passingScore: localUserData.passingScore || 85,
-        examDate: localUserData.examDate,
-        questionsAnswered: localUserData.questionsAnswered || 0,
-        answeredQuestionIds: localUserData.answeredQuestionIds || [],
-        activeTheme: localUserData.activeTheme || 'default',
-        activePet: localUserData.activePet,
-        hasCompletedOnboarding: true, 
-      };
-  
-      await setDoc(userRef, newUserProfile);
-      localStorage.removeItem('localUser');
-    }
-  }, [firestore, auth]);
 
-  // Main effect for handling auth state changes
   useEffect(() => {
     if (!auth || !firestore) return;
 
     let unsubscribeSnapshot: () => void = () => {};
-
-    // Handle redirect result from Google sign-in on mobile
-    getRedirectResult(auth)
-      .then(async (result) => {
-        if (result) {
-          if (result.operationType === 'link') {
-            await migrateAnonymousData(result.user.uid);
-          }
-          justLoggedInRef.current = true;
-          toast({ title: 'Signed in successfully!', className: 'bg-green-100 border-green-300' });
-        }
-      })
-      .catch((error) => {
-        console.error("Error getting redirect result:", error);
-        toast({ variant: "destructive", title: "Sign-in Error", description: "Could not complete sign-in. Please try again." });
-      });
 
     const unsubscribeAuth = onAuthStateChanged(auth, async (userAuth) => {
       unsubscribeSnapshot();
       
       if (userAuth) {
         setFirebaseUser(userAuth);
-        if (userAuth.isAnonymous) {
-          setFirestoreUser(null);
-          setIsLoading(false);
-        } else {
-          setIsLoading(true);
-          const userRef = doc(firestore, 'users', userAuth.uid);
-          unsubscribeSnapshot = onSnapshot(
-            userRef,
-            (docSnap) => handleUserSnapshot(docSnap, userAuth),
-            (error) => {
-              errorEmitter.emit('permission-error', new FirestorePermissionError({ path: userRef.path, operation: 'get' }));
-              setIsLoading(false);
-            }
-          );
-        }
+        setIsLoading(true);
+        const userRef = doc(firestore, 'users', userAuth.uid);
+        unsubscribeSnapshot = onSnapshot(
+          userRef,
+          (docSnap) => handleUserSnapshot(docSnap, userAuth),
+          (error) => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: userRef.path, operation: 'get' }));
+            setIsLoading(false);
+          }
+        );
       } else {
         setFirebaseUser(null);
         setFirestoreUser(null);
-        try {
-          await signInAnonymously(auth);
-        } catch (error) {
-          console.error("Anonymous sign-in failed:", error);
-          setIsLoading(false);
+        setIsLoading(false);
+        if (!publicPaths.includes(pathname)) {
+            router.push('/login');
         }
       }
     });
@@ -228,88 +105,13 @@ export const useUser = () => {
       unsubscribeSnapshot();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [auth, firestore, migrateAnonymousData]);
+  }, [auth, firestore, pathname, router]);
   
-  // This effect handles redirection after a successful login.
-  useEffect(() => {
-      if (!isLoading && firebaseUser && !firebaseUser.isAnonymous && justLoggedInRef.current) {
-          justLoggedInRef.current = false; // Reset the flag
-          router.push('/home');
-      }
-  }, [isLoading, firebaseUser, router]);
-
-
-  const linkGoogleAccount = useCallback(async () => {
-    if (!auth || !firebaseUser) return;
-    const provider = new GoogleAuthProvider();
-
-    const handleAuthError = (error: any) => {
-        if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
-            toast({
-                title: 'Sign-in cancelled',
-                description: 'You closed the sign-in window before completing the process.',
-            });
-        } else if (error.code === 'auth/popup-blocked') {
-            toast({
-                variant: 'destructive',
-                title: 'Popup blocked',
-                description: 'Please allow popups for this site to sign in.',
-            });
-        } else {
-            console.error("Error with Google sign-in:", error);
-            toast({ variant: "destructive", title: "Sign-in Error", description: error.message || "An unknown error occurred." });
-        }
-    };
-    
-    // For mobile devices, use redirect flow to prevent popup blockers.
-    if (isMobile) {
-      if (firebaseUser.isAnonymous) {
-        linkWithRedirect(firebaseUser, provider);
-      } else {
-        signInWithRedirect(auth, provider);
-      }
-      return;
-    }
-
-    // For desktop, use the existing popup flow.
-    const doSignInWithPopup = async () => {
-        try {
-            await signInWithPopup(auth, provider);
-            justLoggedInRef.current = true;
-        } catch (error) {
-            handleAuthError(error);
-        }
-    };
-    
-    try {
-        if (firebaseUser.isAnonymous) {
-            const result = await linkWithPopup(firebaseUser, provider);
-            await migrateAnonymousData(result.user.uid);
-            justLoggedInRef.current = true;
-        } else {
-            await doSignInWithPopup();
-        }
-    } catch (error: any) {
-        if (error.code === 'auth/credential-already-in-use') {
-            toast({
-                title: 'Account exists',
-                description: 'This Google account is already registered. Signing you in...',
-            });
-            await doSignInWithPopup();
-        } else {
-            handleAuthError(error);
-        }
-    }
-  }, [auth, firebaseUser, toast, isMobile, migrateAnonymousData]);
-
-  const user = firebaseUser?.isAnonymous ? localUser : firestoreUser;
+  const user = firestoreUser;
   const isAdmin = user?.uid === 'q4vgkFodzoSaPM1BuNbRI0Wx9YZ2';
 
   const memoizedUpdateUser = useCallback((data: Partial<UserProfile>) => {
-      if (firebaseUser?.isAnonymous) {
-          updateLocalUser(data);
-          return Promise.resolve();
-      } else if (firestore && firebaseUser) {
+      if (firestore && firebaseUser) {
           const userRef = doc(firestore, "users", firebaseUser.uid);
           return updateDoc(userRef, data).catch((error) => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: userRef.path, operation: 'update', requestResourceData: data }));
@@ -318,7 +120,7 @@ export const useUser = () => {
           });
       }
       return Promise.reject(new Error("User or Firestore not available"));
-  }, [firebaseUser, firestore, updateLocalUser, toast]);
+  }, [firebaseUser, firestore, toast]);
 
-  return { user, isAdmin, updateUser: memoizedUpdateUser, firebaseUser, isLoading, activeTheme: user?.activeTheme || 'default', linkGoogleAccount };
+  return { user, isAdmin, updateUser: memoizedUpdateUser, firebaseUser, isLoading, activeTheme: user?.activeTheme || 'default' };
 };
