@@ -106,7 +106,6 @@ export const useUser = () => {
       
       if (userAuth) {
         setFirebaseUser(userAuth);
-        setIsLoading(true);
         const userRef = doc(firestore, 'users', userAuth.uid);
         unsubscribeSnapshot = onSnapshot(
           userRef,
@@ -130,8 +129,7 @@ export const useUser = () => {
       unsubscribeAuth();
       unsubscribeSnapshot();
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [auth, firestore, pathname, router]);
+  }, [auth, firestore, pathname, router, handleUserSnapshot, toast]);
   
   const user = firestoreUser;
   const isAdmin = user?.uid === 'q4vgkFodzoSaPM1BuNbRI0Wx9YZ2';
