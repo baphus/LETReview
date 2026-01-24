@@ -121,6 +121,54 @@ export const useUser = () => {
     setIsLoading(false);
   }, [firestore]);
 
+  const migrateAnonymousData = useCallback(async (newUserId: string) => {
+    if (!firestore || !auth) return;
+  
+    const savedLocalUser = localStorage.getItem('localUser');
+    if (savedLocalUser) {
+      const localUserData = JSON.parse(savedLocalUser) as UserProfile;
+      const userRef = doc(firestore, 'users', newUserId);
+  
+      const existingDoc = await getDoc(userRef);
+      if (existingDoc.exists()) {
+        console.log("User doc already exists, skipping migration.");
+        localStorage.removeItem('localUser');
+        return;
+      }
+  
+      const newFirebaseUser = auth.currentUser;
+  
+      const newUserProfile: UserProfile = {
+        uid: newUserId,
+        name: newFirebaseUser?.displayName || localUserData.name || 'New User',
+        avatarUrl: newFirebaseUser?.photoURL || localUserData.avatarUrl || `https://avatar.vercel.sh/${newUserId}`,
+        email: newFirebaseUser?.email || '',
+        points: localUserData.points || 0,
+        streak: localUserData.streak || 0,
+        highestStreak: localUserData.highestStreak || 0,
+        highestQuizStreak: localUserData.highestQuizStreak || 0,
+        completedSessions: localUserData.completedSessions || 0,
+        unlockedThemes: Array.from(new Set(['default', ...(localUserData.unlockedThemes || [])])),
+        unlockedPets: localUserData.unlockedPets || [],
+        petNames: localUserData.petNames || {},
+        dailyProgress: localUserData.dailyProgress || {},
+        quizProgress: localUserData.quizProgress || {},
+        lastLogin: getTodayKey(),
+        createdAt: serverTimestamp(),
+        passingScore: localUserData.passingScore || 85,
+        examDate: localUserData.examDate,
+        questionsAnswered: localUserData.questionsAnswered || 0,
+        answeredQuestionIds: localUserData.answeredQuestionIds || [],
+        activeTheme: localUserData.activeTheme || 'default',
+        activePet: localUserData.activePet,
+        hasCompletedOnboarding: true, 
+      };
+  
+      await setDoc(userRef, newUserProfile);
+      localStorage.removeItem('localUser');
+    }
+  }, [firestore, auth]);
+
   // Main effect for handling auth state changes
   useEffect(() => {
     if (!auth || !firestore) return;
@@ -129,9 +177,11 @@ export const useUser = () => {
 
     // Handle redirect result from Google sign-in on mobile
     getRedirectResult(auth)
-      .then((result) => {
+      .then(async (result) => {
         if (result) {
-          // This means a sign-in or link just completed.
+          if (result.operationType === 'link') {
+            await migrateAnonymousData(result.user.uid);
+          }
           justLoggedInRef.current = true;
           toast({ title: 'Signed in successfully!', className: 'bg-green-100 border-green-300' });
         }
@@ -178,7 +228,7 @@ export const useUser = () => {
       unsubscribeSnapshot();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [auth, firestore]);
+  }, [auth, firestore, migrateAnonymousData]);
   
   // This effect handles redirection after a successful login.
   useEffect(() => {
@@ -233,7 +283,8 @@ export const useUser = () => {
     
     try {
         if (firebaseUser.isAnonymous) {
-            await linkWithPopup(firebaseUser, provider);
+            const result = await linkWithPopup(firebaseUser, provider);
+            await migrateAnonymousData(result.user.uid);
             justLoggedInRef.current = true;
         } else {
             await doSignInWithPopup();
@@ -249,7 +300,7 @@ export const useUser = () => {
             handleAuthError(error);
         }
     }
-  }, [auth, firebaseUser, toast, isMobile]);
+  }, [auth, firebaseUser, toast, isMobile, migrateAnonymousData]);
 
   const user = firebaseUser?.isAnonymous ? localUser : firestoreUser;
   const isAdmin = user?.uid === 'q4vgkFodzoSaPM1BuNbRI0Wx9YZ2';
