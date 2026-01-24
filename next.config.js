@@ -12,15 +12,16 @@ const nextConfig = {
       },
     ],
   },
-  async rewrites() {
+  async headers() {
     return [
       {
-        source: '/__/auth/:path*',
-        destination: 'https://letreview.firebaseapp.com/__/auth/:path*',
-      },
-      {
-        source: '/__/firebase/:path*',
-        destination: 'https://letreview.firebaseapp.com/__/firebase/:path*',
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Cross-Origin-Opener-Policy',
+            value: 'same-origin-allow-popups',
+          },
+        ],
       },
     ];
   },
