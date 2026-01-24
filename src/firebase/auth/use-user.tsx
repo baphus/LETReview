@@ -3,7 +3,7 @@
 'use client';
 
 import { useAuth, useFirestore } from '@/firebase';
-import { User, onAuthStateChanged } from 'firebase/auth';
+import { User, onAuthStateChanged, getRedirectResult, GoogleAuthProvider } from 'firebase/auth';
 import { doc, setDoc, onSnapshot, DocumentData, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
@@ -68,6 +68,32 @@ export const useUser = () => {
     }
     setIsLoading(false);
   }, [firestore]);
+
+  // Handle redirect results from Google Sign-In
+   useEffect(() => {
+    if (!auth || !firestore) return;
+
+    getRedirectResult(auth)
+      .then((result) => {
+        if (result) {
+          // User signed in. The onAuthStateChanged listener below will handle
+          // setting the user state and creating the document if needed.
+          toast({
+            title: "Signed In Successfully",
+            description: `Welcome back, ${result.user.displayName}!`,
+            className: "bg-green-100 border-green-300",
+          });
+        }
+      })
+      .catch((error) => {
+        console.error("Redirect sign-in error:", error);
+        toast({
+          variant: 'destructive',
+          title: 'Google Sign-In Failed',
+          description: error.message,
+        });
+      });
+  }, [auth, firestore, toast]);
 
 
   useEffect(() => {

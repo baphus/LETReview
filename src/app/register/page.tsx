@@ -12,12 +12,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth, useFirestore } from '@/firebase';
-import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, updateProfile, signInAnonymously } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { useAuth } from '@/firebase';
+import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, updateProfile, signInAnonymously, signInWithRedirect } from 'firebase/auth';
 import { Loader2, UserPlus } from 'lucide-react';
 import Logo from '@/components/Logo';
-import type { UserProfile } from '@/lib/types';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 
 const formSchema = z.object({
@@ -31,53 +30,24 @@ type FormValues = z.infer<typeof formSchema>;
 export default function RegisterPage() {
   const router = useRouter();
   const auth = useAuth();
-  const firestore = useFirestore();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isGuestLoading, setIsGuestLoading] = useState(false);
+  const isMobile = useIsMobile();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: { name: '', email: '', password: '' },
   });
 
-  const createUserDocument = async (user: any, additionalData: any = {}) => {
-      if (!user || !firestore) return;
-      const userRef = doc(firestore, 'users', user.uid);
-      
-      const newUserProfile: UserProfile = {
-        uid: user.uid,
-        name: user.displayName || 'New User',
-        avatarUrl: user.photoURL || `https://avatar.vercel.sh/${user.uid}`,
-        email: user.email || '',
-        points: 0,
-        streak: 0,
-        highestStreak: 0,
-        highestQuizStreak: 0,
-        completedSessions: 0,
-        unlockedThemes: ['default'],
-        activeTheme: 'default',
-        unlockedPets: [],
-        petNames: {},
-        dailyProgress: {},
-        lastLogin: new Date().toISOString().split('T')[0],
-        passingScore: 85,
-        createdAt: serverTimestamp(),
-        questionsAnswered: 0,
-        answeredQuestionIds: [],
-        hasCompletedOnboarding: false,
-        ...additionalData
-      };
-      await setDoc(userRef, newUserProfile);
-  }
-
   const onSubmit = async (data: FormValues) => {
     setIsLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
+      // The useUser hook will automatically create the user document in Firestore on new user creation.
+      // We just need to update the profile display name here.
       await updateProfile(userCredential.user, { displayName: data.name });
-      await createUserDocument(userCredential.user, { name: data.name });
       router.push('/home');
     } catch (error: any) {
       toast({
@@ -93,20 +63,24 @@ export default function RegisterPage() {
   const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true);
     const provider = new GoogleAuthProvider();
-    try {
-      const result = await signInWithPopup(auth, provider);
-      await createUserDocument(result.user);
-      router.push('/home');
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Google Sign-In Failed',
-        description: error.message,
-      });
-    } finally {
-      setIsGoogleLoading(false);
+    if (isMobile) {
+      signInWithRedirect(auth, provider);
+    } else {
+      try {
+        await signInWithPopup(auth, provider);
+        // The useUser hook handles document creation.
+        router.push('/home');
+      } catch (error: any) {
+        toast({
+          variant: 'destructive',
+          title: 'Google Sign-In Failed',
+          description: error.message,
+        });
+      } finally {
+        setIsGoogleLoading(false);
+      }
     }
-  }
+  };
 
   const handleGuestSignIn = async () => {
     setIsGuestLoading(true);

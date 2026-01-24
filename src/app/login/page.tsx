@@ -13,9 +13,10 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/firebase';
-import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signInAnonymously } from 'firebase/auth';
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signInAnonymously, signInWithRedirect } from 'firebase/auth';
 import { Loader2, UserPlus } from 'lucide-react';
 import Logo from '@/components/Logo';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const formSchema = z.object({
   email: z.string().email('Invalid email address.'),
@@ -31,6 +32,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isGuestLoading, setIsGuestLoading] = useState(false);
+  const isMobile = useIsMobile();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -56,19 +58,27 @@ export default function LoginPage() {
   const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true);
     const provider = new GoogleAuthProvider();
-    try {
-      await signInWithPopup(auth, provider);
-      router.push('/home');
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Google Sign-In Failed',
-        description: error.message,
-      });
-    } finally {
-      setIsGoogleLoading(false);
+    if (isMobile) {
+      // For redirects, we don't need a try/catch here as the error
+      // will be available on the redirected page via getRedirectResult.
+      // The page will navigate away, so we don't need to manage loading state after this call.
+      signInWithRedirect(auth, provider);
+    } else {
+      // For popups, we use the existing try/catch flow.
+      try {
+        await signInWithPopup(auth, provider);
+        router.push('/home');
+      } catch (error: any) {
+        toast({
+          variant: 'destructive',
+          title: 'Google Sign-In Failed',
+          description: error.message,
+        });
+      } finally {
+        setIsGoogleLoading(false);
+      }
     }
-  }
+  };
 
   const handleGuestSignIn = async () => {
     setIsGuestLoading(true);
