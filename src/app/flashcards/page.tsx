@@ -479,6 +479,7 @@ const FlashcardSession = ({
   });
   const cardRef = useRef<HTMLDivElement>(null);
   const dragStart = useRef<{ x: number; y: number } | null>(null);
+  const wasDragged = useRef(false);
 
   const fetchAndSetupDeck = useCallback(async () => {
     setIsLoading(true);
@@ -581,15 +582,21 @@ const FlashcardSession = ({
   };
 
   const handlePointerDown = (e: React.PointerEvent) => {
-    if (!isFlipped) return;
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     dragStart.current = { x: e.clientX, y: e.clientY };
-    if (cardRef.current) cardRef.current.style.transition = 'none';
+    wasDragged.current = false;
+    if (cardRef.current) {
+      cardRef.current.style.transition = 'none';
+      cardRef.current.style.cursor = 'grabbing';
+    }
     document.body.style.userSelect = 'none';
+    document.body.style.cursor = 'grabbing';
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
     if (!dragStart.current || !cardRef.current) return;
+    if (!wasDragged.current) wasDragged.current = true;
+    
     const dx = e.clientX - dragStart.current.x;
     const dy = e.clientY - dragStart.current.y;
     cardRef.current.style.transform = `translate(${dx}px, ${dy}px) rotate(${
@@ -610,15 +617,16 @@ const FlashcardSession = ({
 
   const handlePointerUp = (e: React.PointerEvent) => {
     if (!cardRef.current) return;
+    if (cardRef.current) cardRef.current.style.cursor = 'pointer';
+    document.body.style.cursor = '';
     
-    // If no drag was started, do nothing. This prevents invalid pointer ID errors.
     if (!dragStart.current) return;
 
     (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
 
     const dx = e.clientX - dragStart.current.x;
     const dy = e.clientY - dragStart.current.y;
-    const threshold = 60;
+    const threshold = 40;
 
     let finalDirection: SwipeDirection = null;
     if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > threshold)
@@ -651,7 +659,7 @@ const FlashcardSession = ({
   };
 
   const handleCardClick = () => {
-    if (!dragStart.current) setIsFlipped(f => !f);
+    if (!wasDragged.current) setIsFlipped(f => !f);
   };
 
   if (isLoading)
