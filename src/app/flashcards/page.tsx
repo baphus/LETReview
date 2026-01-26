@@ -439,15 +439,7 @@ const FlashcardSession = ({
     null
   );
 
-  const [dragState, setDragState] = useState({
-    x: 0,
-    y: 0,
-    direction: null as SwipeDirection | null,
-    opacity: 0,
-  });
   const cardRef = useRef<HTMLDivElement>(null);
-  const dragStart = useRef<{ x: number; y: number } | null>(null);
-  const wasDragged = useRef(false);
 
   const fetchAndSetupDeck = useCallback(async () => {
     setIsLoading(true);
@@ -577,123 +569,13 @@ const FlashcardSession = ({
         setCurrentIndex(Math.min(currentIndex, newDeck.length - 1));
       }
       setIsFlipped(false);
-      setDragState({ x: 0, y: 0, direction: null, opacity: 0 });
       if (cardRef.current) cardRef.current.style.transform = '';
     }, 300);
 
     return () => clearTimeout(timeoutId);
   };
 
-  const handlePointerDown = (e: React.PointerEvent) => {
-    if (!isFlipped) return; // Only allow drag when flipped
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-    dragStart.current = { x: e.clientX, y: e.clientY };
-    wasDragged.current = false;
-    if (cardRef.current) {
-      cardRef.current.style.transition = 'none';
-      cardRef.current.style.cursor = 'grabbing';
-    }
-    document.body.style.userSelect = 'none';
-    document.body.style.cursor = 'grabbing';
-  };
-
-  const handlePointerMove = (e: React.PointerEvent) => {
-    if (!dragStart.current || !cardRef.current) return;
-    if (!wasDragged.current) wasDragged.current = true;
-    
-    const dx = e.clientX - dragStart.current.x;
-    const dy = e.clientY - dragStart.current.y;
-    cardRef.current.style.transform = `translate(${dx}px, ${dy}px) rotate(${
-      dx * 0.1
-    }deg)`;
-
-    let direction: SwipeDirection = null;
-    if (Math.abs(dx) > Math.abs(dy)) direction = dx > 0 ? 'right' : 'left';
-    else direction = dy > 0 ? 'down' : 'up';
-
-    setDragState({
-      x: dx,
-      y: dy,
-      direction,
-      opacity: Math.min(Math.max(Math.abs(dx), Math.abs(dy)) / 150, 1),
-    });
-  };
-
-  const handlePointerUp = (e: React.PointerEvent) => {
-    if (cardRef.current) cardRef.current.style.cursor = 'pointer';
-    document.body.style.cursor = '';
-    
-    if (!dragStart.current) return;
-
-    const targetElement = e.currentTarget as HTMLElement;
-    if (targetElement.hasPointerCapture(e.pointerId)) {
-        targetElement.releasePointerCapture(e.pointerId);
-    }
-
-    const dx = e.clientX - dragStart.current.x;
-    const dy = e.clientY - dragStart.current.y;
-    const threshold = 40;
-
-    let finalDirection: SwipeDirection = null;
-    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > threshold)
-      finalDirection = dx > 0 ? 'right' : 'left';
-    else if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > threshold)
-      finalDirection = dy > 0 ? 'down' : 'up';
-
-    if (finalDirection) {
-      const resultsMap = {
-        right: 'correct',
-        left: 'incorrect',
-        up: 'hard',
-        down: 'saved',
-      };
-      if (finalDirection === 'down') {
-        handleToggleSave();
-        if (cardRef.current) {
-          cardRef.current.style.transition = 'transform 0.3s ease-out';
-          cardRef.current.style.transform = '';
-        }
-        setDragState({ x: 0, y: 0, direction: null, opacity: 0 });
-
-      } else {
-        handleNextCard(resultsMap[finalDirection] as any);
-      }
-    } else {
-      if (cardRef.current) {
-        cardRef.current.style.transition = 'transform 0.3s ease-out';
-        cardRef.current.style.transform = '';
-      }
-      setDragState({ x: 0, y: 0, direction: null, opacity: 0 });
-    }
-
-    dragStart.current = null;
-    document.body.style.userSelect = '';
-  };
-  
-  const handlePointerCancel = (e: React.PointerEvent) => {
-    if (dragStart.current) {
-      const targetElement = e.currentTarget as HTMLElement;
-      if (targetElement.hasPointerCapture(e.pointerId)) {
-          targetElement.releasePointerCapture(e.pointerId);
-      }
-      
-      if (cardRef.current) {
-          cardRef.current.style.transition = 'transform 0.3s ease-out';
-          cardRef.current.style.transform = '';
-          cardRef.current.style.cursor = 'pointer';
-      }
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-      dragStart.current = null;
-      setDragState({ x: 0, y: 0, direction: null, opacity: 0 });
-    }
-  };
-
   const handleCardClick = (e: React.MouseEvent) => {
-    if (wasDragged.current) {
-      wasDragged.current = false;
-      return;
-    }
     setIsFlipped(prev => !prev);
   };
 
@@ -716,48 +598,10 @@ const FlashcardSession = ({
   if (!currentCard)
     return <div className="text-center p-8">Something went wrong.</div>;
 
-  const getFeedback = () => {
-    switch (dragState.direction) {
-      case 'right':
-        return { icon: <Check />, text: 'Correct', color: 'bg-green-500/80' };
-      case 'left':
-        return { icon: <X />, text: 'Incorrect', color: 'bg-red-500/80' };
-      case 'up':
-        return { icon: <Wand2 />, text: 'Hard', color: 'bg-yellow-500/80' };
-      case 'down':
-        return { icon: <Bookmark />, text: 'Save', color: 'bg-blue-500/80' };
-      default:
-        return null;
-    }
-  };
-  const feedback = getFeedback();
-
-  const getSwipeGradient = () => {
-    if (!dragState.direction) return null;
-    const opacity = dragState.opacity * 0.2;
-    switch (dragState.direction) {
-      case 'right':
-        return `linear-gradient(90deg, transparent, rgba(74, 222, 128, ${opacity}))`;
-      case 'left':
-        return `linear-gradient(270deg, transparent, rgba(239, 68, 68, ${opacity}))`;
-      case 'up':
-        return `linear-gradient(0deg, transparent, rgba(250, 204, 21, ${opacity}))`;
-      case 'down':
-        return `linear-gradient(180deg, transparent, rgba(59, 130, 246, ${opacity}))`;
-      default:
-        return null;
-    }
-  };
-
-  const swipeGradient = getSwipeGradient();
 
   return (
     <div
       className="fixed inset-0 z-50 flex flex-col touch-none bg-background"
-      style={{
-        background: swipeGradient || undefined,
-        transition: 'background 0.1s ease-out',
-      }}
     >
       <header className="container mx-auto max-w-2xl flex items-center gap-4 pt-6 px-4 shrink-0">
         <Button variant="ghost" size="icon" onClick={onExit}>
@@ -784,11 +628,7 @@ const FlashcardSession = ({
               'flashcard relative w-full h-full cursor-pointer',
               isFlipped && 'is-flipped'
             )}
-            onClick={(e) => handleCardClick(e)}
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
-            onPointerCancel={handlePointerCancel}
+            onClick={handleCardClick}
           >
             <Card className="flashcard-front absolute w-full h-full flex items-center justify-center text-center p-4 sm:p-6">
               <p className="text-xl md:text-2xl font-semibold">
@@ -807,35 +647,21 @@ const FlashcardSession = ({
                 )}
               </ScrollArea>
             </Card>
-            {feedback && (
-              <div
-                className={cn(
-                  'absolute inset-0 rounded-xl flex flex-col items-center justify-center text-white pointer-events-none',
-                  feedback.color
-                )}
-                style={{ opacity: dragState.opacity }}
-              >
-                {React.cloneElement(feedback.icon, {
-                  className: 'h-16 w-16',
-                })}
-                <p className="font-bold text-xl mt-2">{feedback.text}</p>
-              </div>
-            )}
           </div>
         </div>
         <div className="text-center mt-4 text-sm text-muted-foreground h-5">
-          {isFlipped ? 'Tap to hide, or swipe/use buttons to assess' : 'Tap to reveal answer'}
+          {isFlipped ? 'Tap to hide, or use buttons to assess.' : 'Tap to reveal answer'}
         </div>
         
-        <div className="flex justify-center items-center py-4 shrink-0 gap-4 mt-2">
-            <Button variant="outline" size="lg" className="h-16 w-16 rounded-full border-red-500 text-red-500 hover:bg-red-50 disabled:opacity-0 transition-opacity" onClick={() => handleNextCard('incorrect')} disabled={!isFlipped}>
-                <X className="h-8 w-8" />
+        <div className="flex flex-col sm:flex-row justify-center items-center py-4 shrink-0 gap-4 mt-2 w-full max-w-md">
+            <Button variant="outline" className="w-full sm:w-auto border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600 disabled:opacity-0 transition-opacity" onClick={() => handleNextCard('incorrect')} disabled={!isFlipped}>
+                <X className="mr-2 h-4 w-4" /> Incorrect
             </Button>
-            <Button variant="outline" size="lg" className="h-16 w-16 rounded-full border-yellow-500 text-yellow-500 hover:bg-yellow-50 disabled:opacity-0 transition-opacity" onClick={() => handleNextCard('hard')} disabled={!isFlipped}>
-                <Wand2 className="h-8 w-8" />
+            <Button variant="outline" className="w-full sm:w-auto border-yellow-500 text-yellow-500 hover:bg-yellow-50 hover:text-yellow-600 disabled:opacity-0 transition-opacity" onClick={() => handleNextCard('hard')} disabled={!isFlipped}>
+                <Wand2 className="mr-2 h-4 w-4" /> Hard
             </Button>
-            <Button variant="outline" size="lg" className="h-16 w-16 rounded-full border-green-500 text-green-500 hover:bg-green-50 disabled:opacity-0 transition-opacity" onClick={() => handleNextCard('correct')} disabled={!isFlipped}>
-                <Check className="h-8 w-8" />
+            <Button variant="outline" className="w-full sm:w-auto border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600 disabled:opacity-0 transition-opacity" onClick={() => handleNextCard('correct')} disabled={!isFlipped}>
+                <Check className="mr-2 h-4 w-4" /> Correct
             </Button>
         </div>
 
