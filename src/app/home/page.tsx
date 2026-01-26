@@ -243,37 +243,41 @@ export default function HomePage() {
 
         <Separator className="my-6" />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <QuestionOfTheDay className="m-0 md:h-full flex flex-col" />
-          {isStreakSecuredToday ? (
-            <Card className="bg-green-50 border-green-200 flex flex-col">
-              <CardHeader>
-                <CardTitle className="text-green-800 font-headline flex items-center gap-2">
-                  <CheckCircle className="h-6 w-6" /> Streak Secured!
-                </CardTitle>
-                <CardDescription className="text-green-600">You're all set for today. Great job!</CardDescription>
-              </CardHeader>
-              <CardFooter className="mt-auto">
-                <Link href="/daily" className="w-full">
-                  <Button className="w-full">View Challenges</Button>
-                </Link>
-              </CardFooter>
-            </Card>
-          ) : (
-            <Card className="bg-blue-50 border-blue-200 flex flex-col">
-              <CardHeader>
-                <CardTitle className="text-blue-800 font-headline flex items-center gap-2">
-                  <Flame className="h-6 w-6" /> Secure Your Streak
-                </CardTitle>
-                <CardDescription className="text-blue-600">Complete a daily challenge to maintain your streak.</CardDescription>
-              </CardHeader>
-              <CardFooter className="mt-auto">
-                <Link href="/daily" className="w-full">
-                  <Button className="w-full">Go to Challenges</Button>
-                </Link>
-              </CardFooter>
-            </Card>
-          )}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+          <div className="md:col-span-3">
+            <QuestionOfTheDay className="m-0 h-full flex flex-col" />
+          </div>
+          <div className="md:col-span-1">
+            {isStreakSecuredToday ? (
+                <Card className="bg-green-50 border-green-200 flex flex-col h-full">
+                <CardHeader>
+                    <CardTitle className="text-green-800 font-headline flex items-center gap-2 text-xl">
+                    <CheckCircle className="h-5 w-5" /> Secured!
+                    </CardTitle>
+                    <CardDescription className="text-green-600">You're all set for today.</CardDescription>
+                </CardHeader>
+                <CardFooter className="mt-auto">
+                    <Link href="/daily" className="w-full">
+                    <Button className="w-full">View</Button>
+                    </Link>
+                </CardFooter>
+                </Card>
+            ) : (
+                <Card className="bg-blue-50 border-blue-200 flex flex-col h-full">
+                <CardHeader>
+                    <CardTitle className="text-blue-800 font-headline flex items-center gap-2 text-xl">
+                    <Flame className="h-5 w-5" /> Secure Streak
+                    </CardTitle>
+                    <CardDescription className="text-blue-600">Complete a daily challenge.</CardDescription>
+                </CardHeader>
+                <CardFooter className="mt-auto">
+                    <Link href="/daily" className="w-full">
+                    <Button className="w-full">Go</Button>
+                    </Link>
+                </CardFooter>
+                </Card>
+            )}
+          </div>
         </div>
 
         <section className="my-6">
