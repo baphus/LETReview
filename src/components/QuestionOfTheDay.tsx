@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -148,7 +149,7 @@ export const QuestionOfTheDay = ({ onCorrectAnswer, className }: { onCorrectAnsw
                     )
                 })}
             </CardContent>
-            <CardFooter>
+            <CardFooter className="mt-auto">
                  <div className={`flex items-center gap-1 font-semibold text-green-600`}>
                   <Star className={`h-4 w-4 fill-green-500`} />
                   <span>5 Points</span>

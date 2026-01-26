@@ -199,37 +199,82 @@ export default function HomePage() {
 
         <StreakMessage streak={user.streak} />
 
-        {isStreakSecuredToday ? (
-           <Card className="mb-6 bg-green-50 border-green-200">
-            <CardHeader>
-              <CardTitle className="text-center text-green-800 font-headline flex items-center justify-center gap-2">
-                  <CheckCircle className="h-6 w-6"/> Streak Secured!
-              </CardTitle>
-              <CardDescription className="text-center text-green-600">You've secured your streak for today. Why not try another challenge for extra points?</CardDescription>
-            </CardHeader>
-            <CardFooter>
-              <Link href="/daily" className="w-full">
-                  <Button className="w-full">Go to Daily Challenges</Button>
-              </Link>
-            </CardFooter>
-          </Card>
-        ) : (
-           <Card className="mb-6 bg-blue-50 border-blue-200">
-            <CardHeader>
-              <CardTitle className="text-center text-blue-800 font-headline flex items-center justify-center gap-2">
-                  <Flame className="h-6 w-6"/> Secure Your Streak!
-              </CardTitle>
-              <CardDescription className="text-center text-blue-600">You haven't completed a daily challenge yet. Finish one to maintain your streak.</CardDescription>
-            </CardHeader>
-            <CardFooter>
-              <Link href="/daily" className="w-full">
-                  <Button className="w-full">Go to Daily Challenges</Button>
-              </Link>
-            </CardFooter>
-          </Card>
-        )}
+        <section className="my-8">
+            <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold font-headline">Activity Calendar</h2>
+                 <div className="flex items-center gap-2">
+                    {!showLegend && (
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowLegend(true)}>
+                                <HelpCircle className="h-4 w-4"/>
+                                <span className="sr-only">Show Legend</span>
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Show Legend</TooltipContent>
+                    </Tooltip>
+                    )}
+                    <Select value={view} onValueChange={(v) => setView(v as 'week' | 'month')}>
+                        <SelectTrigger className="w-auto h-9">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="week">Week</SelectItem>
+                            <SelectItem value="month">Month</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+            </div>
+             {showLegend && (
+                <Alert className="mb-4">
+                    <AlertDescription className="flex items-center justify-between text-sm">
+                    <span className="flex items-center gap-1.5 flex-wrap">
+                        Streak days are marked with <Flame className="h-4 w-4 text-destructive inline-block" />, and completed Questions of the Day with a <CheckCircle className="h-4 w-4 text-green-500 inline-block" />. Click a day for details.
+                    </span>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => setShowLegend(false)}>
+                        <X className="h-4 w-4 text-muted-foreground"/>
+                        <span className="sr-only">Hide Legend</span>
+                    </Button>
+                    </AlertDescription>
+                </Alert>
+            )}
+            <ActivityCalendar dailyProgress={user.dailyProgress} onDayClick={handleDayClick} view={view} />
+        </section>
 
-        <QuestionOfTheDay />
+        <Separator className="my-6" />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <QuestionOfTheDay className="m-0 md:h-full flex flex-col" />
+          {isStreakSecuredToday ? (
+            <Card className="bg-green-50 border-green-200 flex flex-col">
+              <CardHeader>
+                <CardTitle className="text-green-800 font-headline flex items-center gap-2">
+                  <CheckCircle className="h-6 w-6" /> Streak Secured!
+                </CardTitle>
+                <CardDescription className="text-green-600">You're all set for today. Great job!</CardDescription>
+              </CardHeader>
+              <CardFooter className="mt-auto">
+                <Link href="/daily" className="w-full">
+                  <Button className="w-full">View Challenges</Button>
+                </Link>
+              </CardFooter>
+            </Card>
+          ) : (
+            <Card className="bg-blue-50 border-blue-200 flex flex-col">
+              <CardHeader>
+                <CardTitle className="text-blue-800 font-headline flex items-center gap-2">
+                  <Flame className="h-6 w-6" /> Secure Your Streak
+                </CardTitle>
+                <CardDescription className="text-blue-600">Complete a daily challenge to maintain your streak.</CardDescription>
+              </CardHeader>
+              <CardFooter className="mt-auto">
+                <Link href="/daily" className="w-full">
+                  <Button className="w-full">Go to Challenges</Button>
+                </Link>
+              </CardFooter>
+            </Card>
+          )}
+        </div>
 
         <section className="my-6">
             <h2 className="text-xl font-bold font-headline mb-4">For You</h2>
@@ -310,55 +355,7 @@ export default function HomePage() {
                 </Card>
             </section>
         )}
-
-        <Separator className="my-6" />
       </div>
-
-       <section className="mt-8">
-        <div className="md:container md:mx-auto md:max-w-4xl">
-            <div className="flex items-center justify-between mb-4 px-4 md:px-0">
-                <h2 className="text-xl font-bold font-headline">Activity Calendar</h2>
-                 <div className="flex items-center gap-2">
-                    {!showLegend && (
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowLegend(true)}>
-                                <HelpCircle className="h-4 w-4"/>
-                                <span className="sr-only">Show Legend</span>
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Show Legend</TooltipContent>
-                    </Tooltip>
-                    )}
-                    <Select value={view} onValueChange={(v) => setView(v as 'week' | 'month')}>
-                        <SelectTrigger className="w-auto h-9">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="week">Week</SelectItem>
-                            <SelectItem value="month">Month</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-            </div>
-             {showLegend && (
-                <Alert className="mb-4 mx-4 md:mx-0">
-                    <AlertDescription className="flex items-center justify-between text-sm">
-                    <span className="flex items-center gap-1.5 flex-wrap">
-                        Streak days are marked with <Flame className="h-4 w-4 text-destructive inline-block" />, and completed Questions of the Day with a <CheckCircle className="h-4 w-4 text-green-500 inline-block" />. Click a day for details.
-                    </span>
-                    <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => setShowLegend(false)}>
-                        <X className="h-4 w-4 text-muted-foreground"/>
-                        <span className="sr-only">Hide Legend</span>
-                    </Button>
-                    </AlertDescription>
-                </Alert>
-            )}
-        </div>
-        <div className="md:container md:mx-auto md:max-w-4xl">
-            <ActivityCalendar dailyProgress={user.dailyProgress} onDayClick={handleDayClick} view={view} />
-        </div>
-       </section>
     </>
   );
 }
