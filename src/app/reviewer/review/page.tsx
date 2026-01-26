@@ -4,7 +4,7 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Clock, Book, Video, Brain, Bookmark, PlusCircle, Zap } from 'lucide-react';
+import { Clock, Book, Video, Brain, Bookmark, PlusCircle, Zap, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -14,8 +14,10 @@ import { collection, query, where, orderBy, doc, deleteDoc, setDoc, serverTimest
 import type { Reviewer as ReviewArticle, Subject } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useUser } from '@/firebase/auth/use-user';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 
 const articleTypeIcons = {
   "article": <Book className="h-4 w-4" />,
@@ -48,8 +50,11 @@ const ReviewCardSkeleton = () => (
 );
 
 export default function ReviewPage() {
-    const [activeTab, setActiveTab] = useState<'gened' | 'profed' | 'majorship' | 'bookmarked'>('profed');
+    const [searchTerm, setSearchTerm] = useState('');
+    const [categoryId, setCategoryId] = useState<'all' | 'gened' | 'profed' | 'majorship'>('all');
     const [subjectId, setSubjectId] = useState<'all' | string>('all');
+    const [showOnlyBookmarked, setShowOnlyBookmarked] = useState(false);
+    
     const firestore = useFirestore();
     const { user, isAdmin, firebaseUser } = useUser();
     const { toast } = useToast();
@@ -83,33 +88,43 @@ export default function ReviewPage() {
 
     const filteredSubjects = useMemo(() => {
         if (!subjects) return [];
-        return subjects.filter(s => s.categoryId === activeTab);
-    }, [subjects, activeTab]);
+        if (categoryId === 'all') return subjects;
+        return subjects.filter(s => s.categoryId === categoryId);
+    }, [subjects, categoryId]);
 
     const displayedArticles = useMemo(() => {
         if (!allArticles) return [];
         
-        let filtered;
-        if (activeTab === 'bookmarked') {
-            filtered = allArticles.filter(article => bookmarkedIds.has(article.id));
-        } else {
-            filtered = allArticles.filter(article => article.category === activeTab);
+        let filtered = allArticles;
+
+        if (showOnlyBookmarked) {
+            filtered = filtered.filter(article => bookmarkedIds.has(article.id));
         }
 
-        if (subjectId !== 'all' && activeTab !== 'bookmarked') {
+        if (searchTerm) {
+            const lowercasedTerm = searchTerm.toLowerCase();
+            filtered = filtered.filter(article => 
+                article.title.toLowerCase().includes(lowercasedTerm) || 
+                article.excerpt.toLowerCase().includes(lowercasedTerm)
+            );
+        }
+
+        if (categoryId !== 'all') {
+            filtered = filtered.filter(article => article.category === categoryId);
+        }
+
+        if (subjectId !== 'all') {
             filtered = filtered.filter(article => article.subjectId === subjectId);
         }
         
         return filtered.sort((a, b) => {
             const aIsBookmarked = bookmarkedIds.has(a.id);
             const bIsBookmarked = bookmarkedIds.has(b.id);
-            if (activeTab !== 'bookmarked') {
-                if (aIsBookmarked && !bIsBookmarked) return -1;
-                if (!aIsBookmarked && bIsBookmarked) return 1;
-            }
+            if (aIsBookmarked && !bIsBookmarked) return -1;
+            if (!aIsBookmarked && bIsBookmarked) return 1;
             return (a.orderIndex || 0) - (b.orderIndex || 0);
         });
-    }, [allArticles, activeTab, subjectId, bookmarkedIds]);
+    }, [allArticles, searchTerm, categoryId, subjectId, showOnlyBookmarked, bookmarkedIds]);
 
     const handleToggleBookmark = async (e: React.MouseEvent, article: ReviewArticle) => {
         e.preventDefault();
@@ -140,25 +155,30 @@ export default function ReviewPage() {
     return (
         <div>
             <div className="flex flex-col gap-4 mb-6">
-                <Tabs value={activeTab} onValueChange={(value) => {
-                    setActiveTab(value as 'gened' | 'profed' | 'majorship' | 'bookmarked');
-                    setSubjectId('all');
-                }}>
-                    <TabsList className="grid w-full grid-cols-4">
-                        <TabsTrigger value="profed">Professional Ed</TabsTrigger>
-                        <TabsTrigger value="gened">General Ed</TabsTrigger>
-                        <TabsTrigger value="majorship">Majorship</TabsTrigger>
-                        <TabsTrigger value="bookmarked">Bookmarked</TabsTrigger>
-                    </TabsList>
-                </Tabs>
-                <div className="flex flex-col sm:flex-row gap-4 items-center">
-                    <Select value={subjectId} onValueChange={(value) => setSubjectId(value)} disabled={activeTab === 'bookmarked'}>
-                        <SelectTrigger className="w-full sm:w-auto">
-                            <SelectValue placeholder="Filter by subject" />
-                        </SelectTrigger>
+                <div className="relative w-full">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Input
+                        placeholder="Search articles by title or keyword..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full pl-10"
+                    />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Select value={categoryId} onValueChange={(value) => { setCategoryId(value as any); setSubjectId('all'); }}>
+                        <SelectTrigger><SelectValue placeholder="All Categories"/></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Categories</SelectItem>
+                            <SelectItem value="gened">General Education</SelectItem>
+                            <SelectItem value="profed">Professional Education</SelectItem>
+                            <SelectItem value="majorship">Majorship</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <Select value={subjectId} onValueChange={(value) => setSubjectId(value)}>
+                        <SelectTrigger><SelectValue placeholder="All Subjects"/></SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">All Subjects</SelectItem>
-                            {isLoadingSubjects ? (
+                             {isLoadingSubjects ? (
                                 <SelectItem value="loading" disabled>Loading...</SelectItem>
                             ) : (
                                 filteredSubjects.map(subject => (
@@ -167,7 +187,13 @@ export default function ReviewPage() {
                             )}
                         </SelectContent>
                     </Select>
-                     <div className="flex-1 flex justify-end gap-2 w-full sm:w-auto">
+                </div>
+                <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <Switch id="bookmarked-filter" checked={showOnlyBookmarked} onCheckedChange={setShowOnlyBookmarked} />
+                        <Label htmlFor="bookmarked-filter">Show bookmarked only</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
                         <Link href="/flashcards" passHref>
                             <Button variant="outline">
                                 <Zap className="mr-2 h-4 w-4" />

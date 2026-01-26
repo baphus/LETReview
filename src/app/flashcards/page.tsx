@@ -14,6 +14,7 @@ import {
   Flame,
   Wand2,
   Loader2,
+  Search,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -34,7 +35,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -45,7 +46,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, limit } from 'firebase/firestore';
+import { collection, query, where, limit, orderBy } from 'firebase/firestore';
 import { getQuestions } from '@/lib/data';
 import type { Reviewer, Subject, Topic, QuizQuestion } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -134,57 +135,47 @@ const FlashcardHub = ({
   ) => void;
 }) => {
   const firestore = useFirestore();
-  const [activeCategory, setActiveCategory] = useState<
-    'gened' | 'profed' | 'majorship'
-  >('profed');
-  const [customSessionTopic, setCustomSessionTopic] = useState<Topic | null>(
-    null
-  );
+  const [searchTerm, setSearchTerm] = useState('');
+  const [categoryId, setCategoryId] = useState<'all' | 'gened' | 'profed' | 'majorship'>('all');
+  const [subjectId, setSubjectId] = useState<'all' | string>('all');
+  const [customSessionTopic, setCustomSessionTopic] = useState<Topic | null>(null);
 
-  const { data: subjects, isLoading: loadingSubjects } = useCollection<Subject>(
-    useMemoFirebase(
-      () =>
-        firestore
-          ? query(
-              collection(firestore, 'subjects'),
-              where('categoryId', '==', activeCategory)
-            )
-          : null,
-      [firestore, activeCategory]
-    )
+  const { data: allSubjects, isLoading: loadingSubjects } = useCollection<Subject>(
+    useMemoFirebase(() => firestore ? query(collection(firestore, 'subjects'), orderBy('name')) : null, [firestore])
   );
-  const { data: topics, isLoading: loadingTopics } = useCollection<Topic>(
-    useMemoFirebase(
-      () =>
-        firestore && subjects && subjects.length > 0
-          ? query(
-              collection(firestore, 'topics'),
-              where(
-                'subjectId',
-                'in',
-                subjects.map(s => s.id)
-              )
-            )
-          : null,
-      [firestore, subjects]
-    )
+  const { data: allTopics, isLoading: loadingTopics } = useCollection<Topic>(
+    useMemoFirebase(() => firestore ? query(collection(firestore, 'topics'), orderBy('name')) : null, [firestore])
   );
-  const { data: reviewers, isLoading: loadingReviewers } =
-    useCollection<Reviewer>(
-      useMemoFirebase(
-        () =>
-          firestore
-            ? query(
-                collection(firestore, 'reviewers'),
-                where('category', '==', activeCategory),
-                limit(20)
-              )
-            : null,
-        [firestore, activeCategory]
-      )
-    );
+  const { data: reviewers, isLoading: loadingReviewers } = useCollection<Reviewer>(
+    useMemoFirebase(() => firestore ? query(collection(firestore, 'reviewers'), limit(50)) : null, [firestore])
+  );
 
   const isLoading = loadingSubjects || loadingTopics || loadingReviewers;
+
+  const filteredSubjects = useMemo(() => {
+    if (!allSubjects) return [];
+    if (categoryId === 'all') return allSubjects;
+    return allSubjects.filter(s => s.categoryId === categoryId);
+  }, [allSubjects, categoryId]);
+
+  const displayedTopics = useMemo(() => {
+      if (!allTopics) return [];
+
+      let topicsToDisplay = allTopics;
+
+      if (subjectId !== 'all') {
+          topicsToDisplay = topicsToDisplay.filter(t => t.subjectId === subjectId);
+      } else if (categoryId !== 'all') {
+          const subjectIdsForCategory = filteredSubjects.map(s => s.id);
+          topicsToDisplay = topicsToDisplay.filter(t => subjectIdsForCategory.includes(t.subjectId));
+      }
+      
+      if (searchTerm) {
+          topicsToDisplay = topicsToDisplay.filter(t => t.name.toLowerCase().includes(searchTerm.toLowerCase()));
+      }
+      
+      return topicsToDisplay;
+  }, [allTopics, searchTerm, categoryId, subjectId, filteredSubjects]);
 
   const findReviewerForTopic = (topicId: string) => {
     return reviewers?.find(r => r.topicIds.includes(topicId));
@@ -202,27 +193,45 @@ const FlashcardHub = ({
 
   return (
     <div className="container mx-auto max-w-5xl">
-      <Tabs
-        value={activeCategory}
-        onValueChange={v => setActiveCategory(v as any)}
-        className="mb-4"
-      >
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="gened">General Ed</TabsTrigger>
-          <TabsTrigger value="profed">Professional Ed</TabsTrigger>
-          <TabsTrigger value="majorship">Majorship</TabsTrigger>
-        </TabsList>
-      </Tabs>
+       <div className="flex flex-col gap-4 mb-6">
+        <div className="relative w-full">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Input 
+                placeholder="Search topics..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10"
+            />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Select value={categoryId} onValueChange={(value) => { setCategoryId(value as any); setSubjectId('all'); }}>
+                <SelectTrigger><SelectValue placeholder="All Categories" /></SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    <SelectItem value="gened">General Education</SelectItem>
+                    <SelectItem value="profed">Professional Education</SelectItem>
+                    <SelectItem value="majorship">Majorship</SelectItem>
+                </SelectContent>
+            </Select>
+            <Select value={subjectId} onValueChange={(value) => setSubjectId(value)}>
+                <SelectTrigger><SelectValue placeholder="All Subjects" /></SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All Subjects</SelectItem>
+                    {filteredSubjects.map(subject => <SelectItem key={subject.id} value={subject.id}>{subject.name}</SelectItem>)}
+                </SelectContent>
+            </Select>
+        </div>
+    </div>
 
       {isLoading ? (
         <HubSkeleton />
-      ) : topics && topics.length > 0 ? (
+      ) : displayedTopics && displayedTopics.length > 0 ? (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {topics.map(topic => (
+          {displayedTopics.map(topic => (
             <TopicCard
               key={topic.id}
               topic={topic}
-              subject={subjects?.find(s => s.id === topic.subjectId)}
+              subject={allSubjects?.find(s => s.id === topic.subjectId)}
               reviewer={findReviewerForTopic(topic.id)}
               onStart={() => onTopicSelect(topic.id)}
               onCustom={() => setCustomSessionTopic(topic)}
@@ -232,7 +241,7 @@ const FlashcardHub = ({
       ) : (
         <div className="text-center py-16">
           <p className="text-muted-foreground">
-            No topics found for this category.
+            No topics found for this filter.
           </p>
         </div>
       )}
@@ -364,16 +373,14 @@ const SessionSummaryDialog = ({
           </Card>
         </div>
 
-        <Tabs defaultValue="incorrect" className="flex-1 flex flex-col min-h-0">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="incorrect">
-              Incorrect ({stats.incorrect.length})
-            </TabsTrigger>
-            <TabsTrigger value="hard">Hard ({stats.hard.length})</TabsTrigger>
-            <TabsTrigger value="saved">Saved ({stats.saved.length})</TabsTrigger>
-          </TabsList>
+        <div className="flex-1 flex flex-col min-h-0">
+          <div className="grid w-full grid-cols-3">
+            <Button variant="ghost">Incorrect ({stats.incorrect.length})</Button>
+            <Button variant="ghost">Hard ({stats.hard.length})</Button>
+            <Button variant="ghost">Saved ({stats.saved.length})</Button>
+          </div>
           <ScrollArea className="mt-2 flex-1 pr-3">
-            <TabsContent value="incorrect">
+            <div>
               {stats.incorrect.length > 0 ? (
                 stats.incorrect.map((q) => (
                   <div key={q.id} className="border-b p-3 text-sm last:border-b-0">
@@ -388,41 +395,9 @@ const SessionSummaryDialog = ({
                   No incorrect answers! Great job!
                 </p>
               )}
-            </TabsContent>
-            <TabsContent value="hard">
-              {stats.hard.length > 0 ? (
-                stats.hard.map(q => (
-                  <div key={q.id} className="border-b p-3 text-sm last:border-b-0">
-                    <p className="font-semibold">{q.question}</p>
-                    <p className="mt-1 text-green-700 dark:text-green-500">
-                      <span className="font-medium">Correct Answer:</span> {q.correctAnswer}
-                    </p>
-                  </div>
-                ))
-              ) : (
-                 <p className="p-4 text-center text-sm text-muted-foreground">
-                  No questions marked as hard.
-                </p>
-              )}
-            </TabsContent>
-            <TabsContent value="saved">
-              {stats.saved.length > 0 ? (
-                stats.saved.map(q => (
-                  <div key={q.id} className="border-b p-3 text-sm last:border-b-0">
-                    <p className="font-semibold">{q.question}</p>
-                    <p className="mt-1 text-green-700 dark:text-green-500">
-                      <span className="font-medium">Correct Answer:</span> {q.correctAnswer}
-                    </p>
-                  </div>
-                ))
-              ) : (
-                 <p className="p-4 text-center text-sm text-muted-foreground">
-                  No saved questions.
-                </p>
-              )}
-            </TabsContent>
+            </div>
           </ScrollArea>
-        </Tabs>
+        </div>
 
         <DialogFooter className="mt-4 pt-4 border-t flex-col sm:flex-row gap-2">
           <Button variant="outline" className="w-full" onClick={onRestart}>
@@ -533,7 +508,7 @@ const FlashcardSession = ({
       return sessionStats.saved.some(q => q.id === deck[currentIndex].id);
   }, [deck, currentIndex, sessionStats.saved]);
 
-  const handleNextCard = (result: 'correct' | 'incorrect' | 'hard' | 'saved') => {
+  const handleNextCard = (result: 'correct' | 'incorrect' | 'hard') => {
     const currentCard = deck[currentIndex];
     if (!currentCard) return;
 
@@ -559,10 +534,6 @@ const FlashcardSession = ({
         const reinsertIndex = Math.min(currentIndex + 5, newDeck.length);
         newDeck.splice(reinsertIndex, 0, currentCard);
         break;
-      case 'saved':
-        if (!newStats.saved.find(q => q.id === currentCard.id))
-          newStats.saved.push(currentCard);
-        break;
     }
 
     newDeck.splice(currentIndex, 1);
@@ -577,14 +548,12 @@ const FlashcardSession = ({
       correct: 'right',
       incorrect: 'left',
       hard: 'up',
-      saved: 'down',
     } as const;
 
     const transformMap = {
       right: 'translateX(500px) rotate(30deg)',
       left: 'translateX(-500px) rotate(-30deg)',
       up: 'translateY(-500px) rotate(10deg)',
-      down: 'translateY(500px) rotate(-10deg)',
     };
     const direction = directionMap[result];
     if (cardRef.current && transformMap[direction]) {
@@ -602,14 +571,12 @@ const FlashcardSession = ({
           });
           const reshuffledDeck = [...questions].sort(() => Math.random() - 0.5);
           setDeck(reshuffledDeck);
-          setCurrentIndex(0);
-          setIsFlipped(false);
         }
       } else {
         setDeck(newDeck);
         setCurrentIndex(Math.min(currentIndex, newDeck.length - 1));
-        setIsFlipped(false);
       }
+      setIsFlipped(false);
       setDragState({ x: 0, y: 0, direction: null, opacity: 0 });
       if (cardRef.current) cardRef.current.style.transform = '';
     }, 300);
@@ -680,15 +647,17 @@ const FlashcardSession = ({
         up: 'hard',
         down: 'saved',
       };
-      const transformMap = {
-        right: 'translateX(500px) rotate(30deg)',
-        left: 'translateX(-500px) rotate(-30deg)',
-        up: 'translateY(-500px) rotate(10deg)',
-        down: 'translateY(500px) rotate(-10deg)',
-      };
-      if (cardRef.current && transformMap[finalDirection])
-        cardRef.current.style.transform = transformMap[finalDirection];
-      handleNextCard(resultsMap[finalDirection] as any);
+      if (finalDirection === 'down') {
+        handleToggleSave();
+        if (cardRef.current) {
+          cardRef.current.style.transition = 'transform 0.3s ease-out';
+          cardRef.current.style.transform = '';
+        }
+        setDragState({ x: 0, y: 0, direction: null, opacity: 0 });
+
+      } else {
+        handleNextCard(resultsMap[finalDirection] as any);
+      }
     } else {
       if (cardRef.current) {
         cardRef.current.style.transition = 'transform 0.3s ease-out';
