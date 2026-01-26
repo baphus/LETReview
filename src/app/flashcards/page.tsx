@@ -203,12 +203,6 @@ const FlashcardHub = ({
 
   return (
     <div className="container mx-auto max-w-5xl">
-      <header className="mb-6">
-        <h1 className="text-3xl font-bold font-headline">Flashcard Hub</h1>
-        <p className="text-muted-foreground">
-          Select a topic to start your flashcard session.
-        </p>
-      </header>
       <Tabs
         value={activeCategory}
         onValueChange={v => setActiveCategory(v as any)}
@@ -611,13 +605,11 @@ const FlashcardSession = ({
           setDeck(reshuffledDeck);
           setCurrentIndex(0);
           setIsFlipped(false);
-          if (cardRef.current) cardRef.current.classList.remove('is-flipped');
         }
       } else {
         setDeck(newDeck);
         setCurrentIndex(Math.min(currentIndex, newDeck.length - 1));
         setIsFlipped(false);
-        if (cardRef.current) cardRef.current.classList.remove('is-flipped');
       }
       setDragState({ x: 0, y: 0, direction: null, opacity: 0 });
       if (cardRef.current) cardRef.current.style.transform = '';
@@ -708,17 +700,12 @@ const FlashcardSession = ({
   };
 
   const handleCardClick = (e: React.MouseEvent) => {
-    // Only flip if not dragged
     if (wasDragged.current) {
-        wasDragged.current = false;
-        return;
+      wasDragged.current = false;
+      return;
     }
-    
-    const card = cardRef.current;
-    if (card) {
-        // We are using class manipulation instead of state to avoid re-render issues
-        card.classList.toggle('is-flipped');
-        setIsFlipped(card.classList.contains('is-flipped'));
+    if (!isFlipped) {
+      setIsFlipped(true);
     }
   };
 
@@ -807,6 +794,7 @@ const FlashcardSession = ({
             ref={cardRef}
             className={cn(
               'flashcard relative w-full h-full',
+              isFlipped && 'is-flipped',
               !isFlipped && 'cursor-pointer'
             )}
             onClick={(e) => handleCardClick(e)}
