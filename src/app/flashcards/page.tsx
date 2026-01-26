@@ -5,19 +5,16 @@ import React, { useState, useEffect, useRef, useCallback, useMemo, Suspense } fr
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft,
-  Bookmark,
   Check,
   X,
   RotateCw,
   Settings,
   Play,
-  Flame,
   Wand2,
   Loader2,
   Search,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import {
   Card,
@@ -54,12 +51,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 
 // ========= UTILITY & TYPE DEFINITIONS =========
 
-type SwipeDirection = 'left' | 'right' | 'up' | 'down' | null;
 interface SessionStats {
   correct: QuizQuestion[];
   incorrect: QuizQuestion[];
   hard: QuizQuestion[];
-  saved: QuizQuestion[];
 }
 
 // ========= HUB COMPONENTS =========
@@ -332,6 +327,8 @@ const SessionSummaryDialog = ({
 }) => {
   const total = stats.correct.length + stats.incorrect.length;
   const accuracy = total > 0 ? (stats.correct.length / total) * 100 : 0;
+  const [activeTab, setActiveTab] = useState('incorrect');
+
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
@@ -374,26 +371,43 @@ const SessionSummaryDialog = ({
         </div>
 
         <div className="flex-1 flex flex-col min-h-0">
-          <div className="grid w-full grid-cols-3">
-            <Button variant="ghost">Incorrect ({stats.incorrect.length})</Button>
-            <Button variant="ghost">Hard ({stats.hard.length})</Button>
-            <Button variant="ghost">Saved ({stats.saved.length})</Button>
+          <div className="grid w-full grid-cols-2">
+            <Button variant="ghost" onClick={() => setActiveTab('incorrect')} disabled={activeTab === 'incorrect'}>Incorrect ({stats.incorrect.length})</Button>
+            <Button variant="ghost" onClick={() => setActiveTab('hard')} disabled={activeTab === 'hard'}>Hard ({stats.hard.length})</Button>
           </div>
           <ScrollArea className="mt-2 flex-1 pr-3">
             <div>
-              {stats.incorrect.length > 0 ? (
-                stats.incorrect.map((q) => (
-                  <div key={q.id} className="border-b p-3 text-sm last:border-b-0">
-                    <p className="font-semibold">{q.question}</p>
-                    <p className="mt-1 text-green-700 dark:text-green-500">
-                      <span className="font-medium">Correct Answer:</span> {q.correctAnswer}
-                    </p>
-                  </div>
-                ))
-              ) : (
-                <p className="p-4 text-center text-sm text-muted-foreground">
-                  No incorrect answers! Great job!
-                </p>
+              {activeTab === 'incorrect' && (
+                stats.incorrect.length > 0 ? (
+                  stats.incorrect.map((q) => (
+                    <div key={q.id} className="border-b p-3 text-sm last:border-b-0">
+                      <p className="font-semibold">{q.question}</p>
+                      <p className="mt-1 text-green-700 dark:text-green-500">
+                        <span className="font-medium">Correct Answer:</span> {q.correctAnswer}
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="p-4 text-center text-sm text-muted-foreground">
+                    No incorrect answers! Great job!
+                  </p>
+                )
+              )}
+               {activeTab === 'hard' && (
+                stats.hard.length > 0 ? (
+                  stats.hard.map((q) => (
+                    <div key={q.id} className="border-b p-3 text-sm last:border-b-0">
+                      <p className="font-semibold">{q.question}</p>
+                      <p className="mt-1 text-green-700 dark:text-green-500">
+                        <span className="font-medium">Correct Answer:</span> {q.correctAnswer}
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="p-4 text-center text-sm text-muted-foreground">
+                    No questions marked as hard.
+                  </p>
+                )
               )}
             </div>
           </ScrollArea>
@@ -427,19 +441,20 @@ const FlashcardSession = ({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isFlipped, setIsFlipped] = useState(false);
-  const [streak, setStreak] = useState(0);
-  const [showStreak, setShowStreak] = useState(false);
   const [sessionStats, setSessionStats] = useState<SessionStats>({
     correct: [],
     incorrect: [],
     hard: [],
-    saved: [],
   });
   const [sessionSummary, setSessionSummary] = useState<SessionStats | null>(
     null
   );
 
   const cardRef = useRef<HTMLDivElement>(null);
+  const pointerIdRef = useRef<number | null>(null);
+  const startXRef = useRef(0);
+  const currentXRef = useRef(0);
+  const isDraggingRef = useRef(false);
 
   const fetchAndSetupDeck = useCallback(async () => {
     setIsLoading(true);
@@ -467,8 +482,7 @@ const FlashcardSession = ({
     setDeck(fetchedQuestions);
     setCurrentIndex(0);
     setIsFlipped(false);
-    setStreak(0);
-    setSessionStats({ correct: [], incorrect: [], hard: [], saved: [] });
+    setSessionStats({ correct: [], incorrect: [], hard: [] });
     setSessionSummary(null);
     setIsLoading(false);
   }, [topicId, customConfig, toast, onExit]);
@@ -477,81 +491,34 @@ const FlashcardSession = ({
     fetchAndSetupDeck();
   }, [fetchAndSetupDeck]);
 
-  const handleToggleSave = () => {
-    const currentCard = deck[currentIndex];
-    if (!currentCard) return;
-
-    let newStats = { ...sessionStats };
-    const isSaved = newStats.saved.find(q => q.id === currentCard.id);
-
-    if (isSaved) {
-      newStats.saved = newStats.saved.filter(q => q.id !== currentCard.id);
-      toast({ title: 'Bookmark removed.' });
-    } else {
-      newStats.saved.push(currentCard);
-      toast({ title: 'Bookmarked!', className: "bg-green-100 border-green-300" });
-    }
-    
-    setSessionStats(newStats);
-  };
-  
-  const isCurrentCardSaved = useMemo(() => {
-      if (!deck[currentIndex]) return false;
-      return sessionStats.saved.some(q => q.id === deck[currentIndex].id);
-  }, [deck, currentIndex, sessionStats.saved]);
-
   const handleNextCard = (result: 'correct' | 'incorrect' | 'hard') => {
     const currentCard = deck[currentIndex];
     if (!currentCard) return;
 
-    let newStreak = streak;
     let newStats = { ...sessionStats };
     let newDeck = [...deck];
 
     switch (result) {
       case 'correct':
-        newStreak++;
         newStats.correct.push(currentCard);
-        if (newStreak > 1) setShowStreak(true);
-        setTimeout(() => setShowStreak(false), 1500);
         break;
       case 'incorrect':
-        newStreak = 0;
         newStats.incorrect.push(currentCard);
         break;
       case 'hard':
-        newStreak = 0;
         if (!newStats.hard.find(q => q.id === currentCard.id))
           newStats.hard.push(currentCard);
+        // Re-insert the card a bit later in the deck
         const reinsertIndex = Math.min(currentIndex + 5, newDeck.length);
         newDeck.splice(reinsertIndex, 0, currentCard);
         break;
     }
 
+    // Always remove the card from its current position
     newDeck.splice(currentIndex, 1);
 
-    setStreak(newStreak);
     setSessionStats(newStats);
 
-    if (cardRef.current)
-      cardRef.current.style.transition = 'transform 0.3s ease-out';
-    
-    const directionMap = {
-      correct: 'right',
-      incorrect: 'left',
-      hard: 'up',
-    } as const;
-
-    const transformMap = {
-      right: 'translateX(500px) rotate(30deg)',
-      left: 'translateX(-500px) rotate(-30deg)',
-      up: 'translateY(-500px) rotate(10deg)',
-    };
-    const direction = directionMap[result];
-    if (cardRef.current && transformMap[direction]) {
-      cardRef.current.style.transform = transformMap[direction];
-    }
-    
     const timeoutId = setTimeout(() => {
       if (newDeck.length === 0) {
         if (customConfig?.count) {
@@ -561,6 +528,7 @@ const FlashcardSession = ({
             title: 'Deck complete!',
             description: 'Reshuffling for another round.',
           });
+          // Reshuffle all original questions for a new round
           const reshuffledDeck = [...questions].sort(() => Math.random() - 0.5);
           setDeck(reshuffledDeck);
         }
@@ -569,13 +537,78 @@ const FlashcardSession = ({
         setCurrentIndex(Math.min(currentIndex, newDeck.length - 1));
       }
       setIsFlipped(false);
-      if (cardRef.current) cardRef.current.style.transform = '';
+      if (cardRef.current) {
+        cardRef.current.style.transform = '';
+        cardRef.current.style.transition = '';
+      }
     }, 300);
 
     return () => clearTimeout(timeoutId);
   };
+  
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (!isFlipped) return; // Only allow swiping when answer is visible
+    startXRef.current = e.clientX;
+    currentXRef.current = e.clientX;
+    isDraggingRef.current = true;
+    pointerIdRef.current = e.pointerId;
+    if (cardRef.current) {
+        cardRef.current.setPointerCapture(e.pointerId);
+        cardRef.current.style.transition = 'none';
+    }
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isDraggingRef.current || !cardRef.current) return;
+    currentXRef.current = e.clientX;
+    const diff = currentXRef.current - startXRef.current;
+    cardRef.current.style.transform = `translateX(${diff}px) rotate(${diff * 0.05}deg)`;
+  };
+  
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (!isDraggingRef.current || !cardRef.current) return;
+    
+    if (pointerIdRef.current === e.pointerId) {
+        cardRef.current.releasePointerCapture(e.pointerId);
+    }
+    
+    isDraggingRef.current = false;
+    pointerIdRef.current = null;
+    const diff = currentXRef.current - startXRef.current;
+    cardRef.current.style.transition = 'transform 0.3s ease-out';
+
+    if (Math.abs(diff) < 50) {
+      // Not a big enough swipe, animate back to center
+      cardRef.current.style.transform = '';
+    } else {
+      // Sufficient swipe, determine direction and animate away
+      const direction = diff > 0 ? 'right' : 'left';
+      cardRef.current.style.transform = `translateX(${direction === 'right' ? 500 : -500}px) rotate(${direction === 'right' ? 30 : -30}deg)`;
+      handleNextCard(direction === 'right' ? 'correct' : 'incorrect');
+    }
+  };
+
+  const handlePointerCancel = (e: React.PointerEvent) => {
+    if (!isDraggingRef.current || !cardRef.current) return;
+    
+    if (pointerIdRef.current === e.pointerId) {
+        cardRef.current.releasePointerCapture(e.pointerId);
+    }
+
+    isDraggingRef.current = false;
+    pointerIdRef.current = null;
+    
+    cardRef.current.style.transition = 'transform 0.3s ease-out';
+    cardRef.current.style.transform = '';
+  };
+
 
   const handleCardClick = (e: React.MouseEvent) => {
+    // Prevent click from firing during a drag
+    const diff = currentXRef.current - startXRef.current;
+    if (Math.abs(diff) > 5) {
+        return;
+    }
     setIsFlipped(prev => !prev);
   };
 
@@ -608,9 +641,6 @@ const FlashcardSession = ({
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex-1" />
-        <Button variant="ghost" size="icon" onClick={handleToggleSave}>
-          <Bookmark className={cn("h-5 w-5", isCurrentCardSaved && "fill-current text-primary")} />
-        </Button>
         <Button
           variant="outline"
           size="sm"
@@ -624,11 +654,13 @@ const FlashcardSession = ({
         <div className="flashcard-container w-full h-full max-w-md max-h-[60vh] sm:max-h-[65vh] flex items-center justify-center">
           <div
             ref={cardRef}
-            className={cn(
-              'flashcard relative w-full h-full cursor-pointer',
-              isFlipped && 'is-flipped'
-            )}
+            className="flashcard relative w-full h-full cursor-pointer"
             onClick={handleCardClick}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerCancel}
+            style={{ transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)' }}
           >
             <Card className="flashcard-front absolute w-full h-full flex items-center justify-center text-center p-4 sm:p-6">
               <p className="text-xl md:text-2xl font-semibold">
@@ -664,12 +696,6 @@ const FlashcardSession = ({
                 <Check className="mr-2 h-4 w-4" /> Correct
             </Button>
         </div>
-
-        {showStreak && streak > 1 && (
-          <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-destructive/80 text-destructive-foreground px-4 py-2 rounded-full text-2xl font-bold animate-combo-pop flex items-center gap-2">
-            <Flame /> Streak x{streak}!
-          </div>
-        )}
       </main>
       
     </div>
