@@ -859,7 +859,7 @@ const FlashcardSession = ({
         )}
       </main>
       
-      <footer className="container mx-auto max-w-2xl flex justify-around items-center py-4 shrink-0">
+      <footer className="container mx-auto max-w-2xl flex justify-center items-center py-4 shrink-0 gap-4">
         <Button variant="outline" size="lg" className="h-16 w-16 rounded-full border-red-500 text-red-500 hover:bg-red-50 disabled:opacity-0 transition-opacity" onClick={() => handleNextCard('incorrect')} disabled={!isFlipped}>
             <X className="h-8 w-8" />
         </Button>
