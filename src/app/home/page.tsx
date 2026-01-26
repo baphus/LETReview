@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { User, Flame, Edit, Check, Lock, HelpCircle, X, BookOpen, Brain, Heart, CheckCircle, AlertTriangle } from "lucide-react";
+import { User, Flame, Edit, Check, Lock, HelpCircle, X, BookOpen, Brain, Heart, CheckCircle, AlertTriangle, Zap } from "lucide-react";
 import Image from "next/image";
 import { streakPets, achievementPets, rarePets } from "@/lib/data";
 import type { Reviewer, Topic, PetProfile, Subject, QuizQuestion } from "@/lib/types";
@@ -247,36 +247,49 @@ export default function HomePage() {
           <div className="md:col-span-3">
             <QuestionOfTheDay className="m-0 h-full flex flex-col" />
           </div>
-          <div className="md:col-span-1">
+          <div className="md:col-span-1 flex flex-col gap-6">
             {isStreakSecuredToday ? (
                 <Card className="bg-green-50 border-green-200 flex flex-col h-full">
-                <CardHeader>
-                    <CardTitle className="text-green-800 font-headline flex items-center gap-2 text-xl">
-                    <CheckCircle className="h-5 w-5" /> Secured!
-                    </CardTitle>
-                    <CardDescription className="text-green-600">You're all set for today.</CardDescription>
-                </CardHeader>
-                <CardFooter className="mt-auto">
-                    <Link href="/daily" className="w-full">
-                    <Button className="w-full">View</Button>
-                    </Link>
-                </CardFooter>
+                  <CardHeader>
+                      <CardTitle className="text-green-800 font-headline flex items-center gap-2 text-xl">
+                      <CheckCircle className="h-5 w-5" /> Secured!
+                      </CardTitle>
+                      <CardDescription className="text-green-600">You're all set for today.</CardDescription>
+                  </CardHeader>
+                  <CardFooter className="mt-auto">
+                      <Link href="/daily" className="w-full">
+                      <Button className="w-full">View</Button>
+                      </Link>
+                  </CardFooter>
                 </Card>
             ) : (
-                <Card className="bg-blue-50 border-blue-200 flex flex-col h-full">
-                <CardHeader>
-                    <CardTitle className="text-blue-800 font-headline flex items-center gap-2 text-xl">
-                    <Flame className="h-5 w-5" /> Secure Streak
-                    </CardTitle>
-                    <CardDescription className="text-blue-600">Complete a daily challenge.</CardDescription>
-                </CardHeader>
-                <CardFooter className="mt-auto">
-                    <Link href="/daily" className="w-full">
-                    <Button className="w-full">Go</Button>
-                    </Link>
-                </CardFooter>
+                <Card className="bg-gradient-to-br from-yellow-400 via-orange-500 to-red-600 text-white flex flex-col h-full">
+                  <CardHeader>
+                      <CardTitle className="font-headline flex items-center gap-2 text-xl">
+                      <Flame className="h-5 w-5" /> Secure Streak
+                      </CardTitle>
+                      <CardDescription className="text-white/80">Complete a daily challenge.</CardDescription>
+                  </CardHeader>
+                  <CardFooter className="mt-auto">
+                      <Link href="/daily" className="w-full">
+                      <Button className="w-full bg-white/20 hover:bg-white/30 border-white/50 border text-white">Go</Button>
+                      </Link>
+                  </CardFooter>
                 </Card>
             )}
+            <Card className="flex flex-col h-full">
+                <CardHeader>
+                    <CardTitle className="font-headline flex items-center gap-2 text-xl">
+                        <Zap className="h-5 w-5 text-primary" /> Flashcards
+                    </CardTitle>
+                    <CardDescription>Quick practice sessions.</CardDescription>
+                </CardHeader>
+                <CardFooter className="mt-auto">
+                    <Link href="/flashcards" className="w-full">
+                        <Button variant="outline" className="w-full">Practice</Button>
+                    </Link>
+                </CardFooter>
+            </Card>
           </div>
         </div>
 
