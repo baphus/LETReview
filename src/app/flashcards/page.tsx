@@ -704,9 +704,7 @@ const FlashcardSession = ({
       wasDragged.current = false;
       return;
     }
-    if (!isFlipped) {
-      setIsFlipped(true);
-    }
+    setIsFlipped(prev => !prev);
   };
 
   if (isLoading)
@@ -793,9 +791,8 @@ const FlashcardSession = ({
           <div
             ref={cardRef}
             className={cn(
-              'flashcard relative w-full h-full',
-              isFlipped && 'is-flipped',
-              !isFlipped && 'cursor-pointer'
+              'flashcard relative w-full h-full cursor-pointer',
+              isFlipped && 'is-flipped'
             )}
             onClick={(e) => handleCardClick(e)}
             onPointerDown={handlePointerDown}
@@ -837,7 +834,7 @@ const FlashcardSession = ({
           </div>
         </div>
         <div className="text-center mt-4 text-sm text-muted-foreground h-5">
-          {isFlipped ? 'Swipe or use buttons to assess' : 'Tap to reveal answer'}
+          {isFlipped ? 'Tap to hide, or swipe to assess' : 'Tap to reveal answer'}
         </div>
 
         {showStreak && streak > 1 && (
