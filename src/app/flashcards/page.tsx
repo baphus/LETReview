@@ -506,16 +506,39 @@ const FlashcardSession = ({
     setQuestions(fetchedQuestions);
     setDeck(fetchedQuestions);
     setCurrentIndex(0);
-    setIsLoading(false);
     setIsFlipped(false);
     setStreak(0);
     setSessionStats({ correct: [], incorrect: [], hard: [], saved: [] });
     setSessionSummary(null);
+    setIsLoading(false);
   }, [topicId, customConfig, toast, onExit]);
 
   useEffect(() => {
     fetchAndSetupDeck();
   }, [fetchAndSetupDeck]);
+
+  const handleToggleSave = () => {
+    const currentCard = deck[currentIndex];
+    if (!currentCard) return;
+
+    let newStats = { ...sessionStats };
+    const isSaved = newStats.saved.find(q => q.id === currentCard.id);
+
+    if (isSaved) {
+      newStats.saved = newStats.saved.filter(q => q.id !== currentCard.id);
+      toast({ title: 'Bookmark removed.' });
+    } else {
+      newStats.saved.push(currentCard);
+      toast({ title: 'Bookmarked!', className: "bg-green-100 border-green-300" });
+    }
+    
+    setSessionStats(newStats);
+  };
+  
+  const isCurrentCardSaved = useMemo(() => {
+      if (!deck[currentIndex]) return false;
+      return sessionStats.saved.some(q => q.id === deck[currentIndex].id);
+  }, [deck, currentIndex, sessionStats.saved]);
 
   const handleNextCard = (result: 'correct' | 'incorrect' | 'hard' | 'saved') => {
     const currentCard = deck[currentIndex];
@@ -556,8 +579,26 @@ const FlashcardSession = ({
 
     if (cardRef.current)
       cardRef.current.style.transition = 'transform 0.3s ease-out';
+    
+    const directionMap = {
+      correct: 'right',
+      incorrect: 'left',
+      hard: 'up',
+      saved: 'down',
+    } as const;
 
-    setTimeout(() => {
+    const transformMap = {
+      right: 'translateX(500px) rotate(30deg)',
+      left: 'translateX(-500px) rotate(-30deg)',
+      up: 'translateY(-500px) rotate(10deg)',
+      down: 'translateY(500px) rotate(-10deg)',
+    };
+    const direction = directionMap[result];
+    if (cardRef.current && transformMap[direction]) {
+      cardRef.current.style.transform = transformMap[direction];
+    }
+    
+    const timeoutId = setTimeout(() => {
       if (newDeck.length === 0) {
         if (customConfig?.count) {
           setSessionSummary(newStats);
@@ -570,18 +611,23 @@ const FlashcardSession = ({
           setDeck(reshuffledDeck);
           setCurrentIndex(0);
           setIsFlipped(false);
+          if (cardRef.current) cardRef.current.classList.remove('is-flipped');
         }
       } else {
         setDeck(newDeck);
         setCurrentIndex(Math.min(currentIndex, newDeck.length - 1));
         setIsFlipped(false);
+        if (cardRef.current) cardRef.current.classList.remove('is-flipped');
       }
       setDragState({ x: 0, y: 0, direction: null, opacity: 0 });
       if (cardRef.current) cardRef.current.style.transform = '';
     }, 300);
+
+    return () => clearTimeout(timeoutId);
   };
 
   const handlePointerDown = (e: React.PointerEvent) => {
+    if (!isFlipped) return; // Only allow drag when flipped
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     dragStart.current = { x: e.clientX, y: e.clientY };
     wasDragged.current = false;
@@ -616,7 +662,6 @@ const FlashcardSession = ({
   };
 
   const handlePointerUp = (e: React.PointerEvent) => {
-    if (!cardRef.current) return;
     if (cardRef.current) cardRef.current.style.cursor = 'pointer';
     document.body.style.cursor = '';
     
@@ -641,16 +686,20 @@ const FlashcardSession = ({
         up: 'hard',
         down: 'saved',
       };
-      const transformMap: { [key: string]: string } = {
+      const transformMap = {
         right: 'translateX(500px) rotate(30deg)',
         left: 'translateX(-500px) rotate(-30deg)',
+        up: 'translateY(-500px) rotate(10deg)',
+        down: 'translateY(500px) rotate(-10deg)',
       };
-      if (transformMap[finalDirection])
+      if (cardRef.current && transformMap[finalDirection])
         cardRef.current.style.transform = transformMap[finalDirection];
       handleNextCard(resultsMap[finalDirection] as any);
     } else {
-      cardRef.current.style.transition = 'transform 0.3s ease-out';
-      cardRef.current.style.transform = '';
+      if (cardRef.current) {
+        cardRef.current.style.transition = 'transform 0.3s ease-out';
+        cardRef.current.style.transform = '';
+      }
       setDragState({ x: 0, y: 0, direction: null, opacity: 0 });
     }
 
@@ -658,8 +707,19 @@ const FlashcardSession = ({
     document.body.style.userSelect = '';
   };
 
-  const handleCardClick = () => {
-    if (!wasDragged.current) setIsFlipped(f => !f);
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Only flip if not dragged
+    if (wasDragged.current) {
+        wasDragged.current = false;
+        return;
+    }
+    
+    const card = cardRef.current;
+    if (card) {
+        // We are using class manipulation instead of state to avoid re-render issues
+        card.classList.toggle('is-flipped');
+        setIsFlipped(card.classList.contains('is-flipped'));
+    }
   };
 
   if (isLoading)
@@ -729,6 +789,9 @@ const FlashcardSession = ({
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex-1" />
+        <Button variant="ghost" size="icon" onClick={handleToggleSave}>
+          <Bookmark className={cn("h-5 w-5", isCurrentCardSaved && "fill-current text-primary")} />
+        </Button>
         <Button
           variant="outline"
           size="sm"
@@ -738,26 +801,26 @@ const FlashcardSession = ({
         </Button>
       </header>
 
-      <main className="flex-1 flex flex-col items-center justify-center relative">
-        <div className="flashcard-container w-full h-full max-w-md max-h-[70vh] flex items-center justify-center">
+      <main className="flex-1 flex flex-col items-center justify-center relative px-4">
+        <div className="flashcard-container w-full h-full max-w-md max-h-[60vh] sm:max-h-[65vh] flex items-center justify-center">
           <div
             ref={cardRef}
             className={cn(
-              'flashcard relative w-full h-full cursor-pointer',
-              isFlipped && 'is-flipped'
+              'flashcard relative w-full h-full',
+              !isFlipped && 'cursor-pointer'
             )}
-            onClick={handleCardClick}
+            onClick={(e) => handleCardClick(e)}
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
             onPointerCancel={handlePointerUp}
           >
-            <Card className="flashcard-front absolute w-full h-full flex items-center justify-center text-center p-6">
+            <Card className="flashcard-front absolute w-full h-full flex items-center justify-center text-center p-4 sm:p-6">
               <p className="text-xl md:text-2xl font-semibold">
                 {currentCard.question}
               </p>
             </Card>
-            <Card className="flashcard-back absolute w-full h-full flex flex-col justify-center text-center p-6">
+            <Card className="flashcard-back absolute w-full h-full flex flex-col justify-center text-center p-4 sm:p-6">
               <ScrollArea className="flex-1">
                 <p className="text-lg md:text-xl font-semibold">
                   {currentCard.correctAnswer}
@@ -785,8 +848,8 @@ const FlashcardSession = ({
             )}
           </div>
         </div>
-        <div className="text-center mt-4 text-sm text-muted-foreground">
-          {isFlipped ? 'Swipe to assess' : 'Tap to reveal answer'}
+        <div className="text-center mt-4 text-sm text-muted-foreground h-5">
+          {isFlipped ? 'Swipe or use buttons to assess' : 'Tap to reveal answer'}
         </div>
 
         {showStreak && streak > 1 && (
@@ -795,6 +858,18 @@ const FlashcardSession = ({
           </div>
         )}
       </main>
+      
+      <footer className="container mx-auto max-w-2xl flex justify-around items-center py-4 shrink-0">
+        <Button variant="outline" size="lg" className="h-16 w-16 rounded-full border-red-500 text-red-500 hover:bg-red-50 disabled:opacity-0 transition-opacity" onClick={() => handleNextCard('incorrect')} disabled={!isFlipped}>
+            <X className="h-8 w-8" />
+        </Button>
+        <Button variant="outline" size="lg" className="h-16 w-16 rounded-full border-yellow-500 text-yellow-500 hover:bg-yellow-50 disabled:opacity-0 transition-opacity" onClick={() => handleNextCard('hard')} disabled={!isFlipped}>
+            <Wand className="h-8 w-8" />
+        </Button>
+        <Button variant="outline" size="lg" className="h-16 w-16 rounded-full border-green-500 text-green-500 hover:bg-green-50 disabled:opacity-0 transition-opacity" onClick={() => handleNextCard('correct')} disabled={!isFlipped}>
+            <Check className="h-8 w-8" />
+        </Button>
+      </footer>
     </div>
   );
 };
