@@ -834,7 +834,19 @@ const FlashcardSession = ({
           </div>
         </div>
         <div className="text-center mt-4 text-sm text-muted-foreground h-5">
-          {isFlipped ? 'Tap to hide, or swipe to assess' : 'Tap to reveal answer'}
+          {isFlipped ? 'Tap to hide, or swipe/use buttons to assess' : 'Tap to reveal answer'}
+        </div>
+        
+        <div className="flex justify-center items-center py-4 shrink-0 gap-4 mt-2">
+            <Button variant="outline" size="lg" className="h-16 w-16 rounded-full border-red-500 text-red-500 hover:bg-red-50 disabled:opacity-0 transition-opacity" onClick={() => handleNextCard('incorrect')} disabled={!isFlipped}>
+                <X className="h-8 w-8" />
+            </Button>
+            <Button variant="outline" size="lg" className="h-16 w-16 rounded-full border-yellow-500 text-yellow-500 hover:bg-yellow-50 disabled:opacity-0 transition-opacity" onClick={() => handleNextCard('hard')} disabled={!isFlipped}>
+                <Wand className="h-8 w-8" />
+            </Button>
+            <Button variant="outline" size="lg" className="h-16 w-16 rounded-full border-green-500 text-green-500 hover:bg-green-50 disabled:opacity-0 transition-opacity" onClick={() => handleNextCard('correct')} disabled={!isFlipped}>
+                <Check className="h-8 w-8" />
+            </Button>
         </div>
 
         {showStreak && streak > 1 && (
@@ -844,17 +856,6 @@ const FlashcardSession = ({
         )}
       </main>
       
-      <footer className="container mx-auto max-w-2xl flex justify-center items-center py-4 shrink-0 gap-4">
-        <Button variant="outline" size="lg" className="h-16 w-16 rounded-full border-red-500 text-red-500 hover:bg-red-50 disabled:opacity-0 transition-opacity" onClick={() => handleNextCard('incorrect')} disabled={!isFlipped}>
-            <X className="h-8 w-8" />
-        </Button>
-        <Button variant="outline" size="lg" className="h-16 w-16 rounded-full border-yellow-500 text-yellow-500 hover:bg-yellow-50 disabled:opacity-0 transition-opacity" onClick={() => handleNextCard('hard')} disabled={!isFlipped}>
-            <Wand className="h-8 w-8" />
-        </Button>
-        <Button variant="outline" size="lg" className="h-16 w-16 rounded-full border-green-500 text-green-500 hover:bg-green-50 disabled:opacity-0 transition-opacity" onClick={() => handleNextCard('correct')} disabled={!isFlipped}>
-            <Check className="h-8 w-8" />
-        </Button>
-      </footer>
     </div>
   );
 };
