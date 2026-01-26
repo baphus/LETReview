@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback, useMemo, Suspense } from 'react';
@@ -13,7 +12,7 @@ import {
   Settings,
   Play,
   Flame,
-  Wand,
+  Wand2,
   Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -718,7 +717,7 @@ const FlashcardSession = ({
       <SessionSummaryDialog
         stats={sessionSummary}
         onRestart={fetchAndSetupDeck}
-        onClose={onExit}
+        onExit={onExit}
       />
     );
 
@@ -733,7 +732,7 @@ const FlashcardSession = ({
       case 'left':
         return { icon: <X />, text: 'Incorrect', color: 'bg-red-500/80' };
       case 'up':
-        return { icon: <Wand />, text: 'Hard', color: 'bg-yellow-500/80' };
+        return { icon: <Wand2 />, text: 'Hard', color: 'bg-yellow-500/80' };
       case 'down':
         return { icon: <Bookmark />, text: 'Save', color: 'bg-blue-500/80' };
       default:
@@ -842,7 +841,7 @@ const FlashcardSession = ({
                 <X className="h-8 w-8" />
             </Button>
             <Button variant="outline" size="lg" className="h-16 w-16 rounded-full border-yellow-500 text-yellow-500 hover:bg-yellow-50 disabled:opacity-0 transition-opacity" onClick={() => handleNextCard('hard')} disabled={!isFlipped}>
-                <Wand className="h-8 w-8" />
+                <Wand2 className="h-8 w-8" />
             </Button>
             <Button variant="outline" size="lg" className="h-16 w-16 rounded-full border-green-500 text-green-500 hover:bg-green-50 disabled:opacity-0 transition-opacity" onClick={() => handleNextCard('correct')} disabled={!isFlipped}>
                 <Check className="h-8 w-8" />
