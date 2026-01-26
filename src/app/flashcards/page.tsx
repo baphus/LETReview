@@ -682,7 +682,7 @@ const FlashcardSession = ({
           </div>
         </div>
         <div className="text-center mt-4 text-sm text-muted-foreground h-5">
-          {isFlipped ? 'Tap to hide, or use buttons to assess.' : 'Tap to reveal answer'}
+          {isFlipped ? 'Tap to hide, swipe or use buttons to assess.' : 'Tap to reveal answer'}
         </div>
         
         <div className="flex flex-col sm:flex-row justify-center items-center py-4 shrink-0 gap-4 mt-2 w-full max-w-md">
