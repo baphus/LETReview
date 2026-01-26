@@ -252,13 +252,13 @@ export default function HomePage() {
                 <Card className="bg-green-50 border-green-200 flex flex-col h-full">
                   <CardHeader>
                       <CardTitle className="text-green-800 font-headline flex items-center gap-2 text-xl">
-                      <CheckCircle className="h-5 w-5" /> Secured!
+                      <CheckCircle className="h-5 w-5" /> Streak Secured!
                       </CardTitle>
-                      <CardDescription className="text-green-600">You're all set for today.</CardDescription>
+                      <CardDescription className="text-green-600">Take on more challenges for extra points.</CardDescription>
                   </CardHeader>
                   <CardFooter className="mt-auto">
                       <Link href="/daily" className="w-full">
-                      <Button className="w-full">View</Button>
+                      <Button className="w-full">More Challenges</Button>
                       </Link>
                   </CardFooter>
                 </Card>
