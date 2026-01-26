@@ -39,33 +39,29 @@ const ReviewCardSkeleton = () => (
         </CardContent>
         <CardFooter className="flex justify-between">
             <Skeleton className="h-10 w-10" />
-            <Skeleton className="h-10 w-28" />
+            <div className="flex gap-2">
+                <Skeleton className="h-10 w-24" />
+                <Skeleton className="h-10 w-24" />
+            </div>
         </CardFooter>
     </Card>
 );
 
 export default function ReviewPage() {
-    const [categoryId, setCategoryId] = useState<'gened' | 'profed' | 'majorship'>('profed');
+    const [activeTab, setActiveTab] = useState<'gened' | 'profed' | 'majorship' | 'bookmarked'>('profed');
     const [subjectId, setSubjectId] = useState<'all' | string>('all');
     const firestore = useFirestore();
     const { user, isAdmin, firebaseUser } = useUser();
     const { toast } = useToast();
 
-    const articlesQuery = useMemoFirebase(() => {
+    const allArticlesQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        let q = query(
+        return query(
             collection(firestore, 'reviewers'),
             where('status', '==', 'published'),
-            where('category', '==', categoryId)
         );
+    }, [firestore]);
 
-        if (subjectId !== 'all') {
-            q = query(q, where('subjectId', '==', subjectId));
-        }
-        
-        return q;
-    }, [firestore, categoryId, subjectId]);
-    
     const subjectsQuery = useMemoFirebase(() => {
         if (!firestore) return null;
         return query(collection(firestore, 'subjects'), orderBy('orderIndex'));
@@ -76,7 +72,7 @@ export default function ReviewPage() {
         return collection(firestore, `users/${user.uid}/reviewerBookmarks`);
     }, [firestore, user, firebaseUser]);
 
-    const { data: articles, isLoading: isLoadingArticles } = useCollection<ReviewArticle>(articlesQuery);
+    const { data: allArticles, isLoading: isLoadingArticles } = useCollection<ReviewArticle>(allArticlesQuery);
     const { data: subjects, isLoading: isLoadingSubjects } = useCollection<Subject>(subjectsQuery);
     const { data: bookmarks } = useCollection(bookmarksQuery);
 
@@ -87,21 +83,33 @@ export default function ReviewPage() {
 
     const filteredSubjects = useMemo(() => {
         if (!subjects) return [];
-        return subjects.filter(s => s.categoryId === categoryId);
-    }, [subjects, categoryId]);
+        return subjects.filter(s => s.categoryId === activeTab);
+    }, [subjects, activeTab]);
 
-    const sortedArticles = useMemo(() => {
-        if (!articles) return [];
-        return [...articles].sort((a, b) => {
+    const displayedArticles = useMemo(() => {
+        if (!allArticles) return [];
+        
+        let filtered;
+        if (activeTab === 'bookmarked') {
+            filtered = allArticles.filter(article => bookmarkedIds.has(article.id));
+        } else {
+            filtered = allArticles.filter(article => article.category === activeTab);
+        }
+
+        if (subjectId !== 'all' && activeTab !== 'bookmarked') {
+            filtered = filtered.filter(article => article.subjectId === subjectId);
+        }
+        
+        return filtered.sort((a, b) => {
             const aIsBookmarked = bookmarkedIds.has(a.id);
             const bIsBookmarked = bookmarkedIds.has(b.id);
-            
-            if (aIsBookmarked && !bIsBookmarked) return -1;
-            if (!aIsBookmarked && bIsBookmarked) return 1;
-            
+            if (activeTab !== 'bookmarked') {
+                if (aIsBookmarked && !bIsBookmarked) return -1;
+                if (!aIsBookmarked && bIsBookmarked) return 1;
+            }
             return (a.orderIndex || 0) - (b.orderIndex || 0);
         });
-    }, [articles, bookmarkedIds]);
+    }, [allArticles, activeTab, subjectId, bookmarkedIds]);
 
     const handleToggleBookmark = async (e: React.MouseEvent, article: ReviewArticle) => {
         e.preventDefault();
@@ -132,18 +140,19 @@ export default function ReviewPage() {
     return (
         <div>
             <div className="flex flex-col gap-4 mb-6">
-                <Tabs value={categoryId} onValueChange={(value) => {
-                    setCategoryId(value as 'gened' | 'profed' | 'majorship');
+                <Tabs value={activeTab} onValueChange={(value) => {
+                    setActiveTab(value as 'gened' | 'profed' | 'majorship' | 'bookmarked');
                     setSubjectId('all');
                 }}>
-                    <TabsList className="grid w-full grid-cols-3">
-                        <TabsTrigger value="gened">General Ed</TabsTrigger>
+                    <TabsList className="grid w-full grid-cols-4">
                         <TabsTrigger value="profed">Professional Ed</TabsTrigger>
+                        <TabsTrigger value="gened">General Ed</TabsTrigger>
                         <TabsTrigger value="majorship">Majorship</TabsTrigger>
+                        <TabsTrigger value="bookmarked">Bookmarked</TabsTrigger>
                     </TabsList>
                 </Tabs>
                 <div className="flex flex-col sm:flex-row gap-4 items-center">
-                    <Select value={subjectId} onValueChange={(value) => setSubjectId(value)}>
+                    <Select value={subjectId} onValueChange={(value) => setSubjectId(value)} disabled={activeTab === 'bookmarked'}>
                         <SelectTrigger className="w-full sm:w-auto">
                             <SelectValue placeholder="Filter by subject" />
                         </SelectTrigger>
@@ -179,7 +188,7 @@ export default function ReviewPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {isLoadingArticles && Array.from({ length: 3 }).map((_, i) => <ReviewCardSkeleton key={i} />)}
                 
-                {!isLoadingArticles && sortedArticles.map(article => {
+                {!isLoadingArticles && displayedArticles.map(article => {
                     const isBookmarked = bookmarkedIds.has(article.id);
                     return (
                         <Card key={article.slug} className="flex flex-col hover:border-primary/50 transition-colors">
@@ -218,18 +227,25 @@ export default function ReviewPage() {
                                 <Button variant="ghost" size="icon" onClick={(e) => handleToggleBookmark(e, article)}>
                                     <Bookmark className={cn("h-5 w-5", isBookmarked && "fill-current text-primary")} />
                                 </Button>
-                                <Link href={`/reviewer/review/${article.slug}`} passHref>
-                                    <Button>Start Review</Button>
-                                </Link>
+                                <div className="flex items-center gap-2">
+                                    {article.topicIds && article.topicIds.length > 0 && (
+                                        <Link href={`/flashcards?topic=${article.topicIds[0]}`} passHref>
+                                            <Button variant="outline">Session</Button>
+                                        </Link>
+                                    )}
+                                    <Link href={`/reviewer/review/${article.slug}`} passHref>
+                                        <Button>Review</Button>
+                                    </Link>
+                                </div>
                             </CardFooter>
                         </Card>
                     )
                 })}
             </div>
 
-            {!isLoadingArticles && sortedArticles.length === 0 && (
+            {!isLoadingArticles && displayedArticles.length === 0 && (
                 <div className="col-span-full text-center py-10">
-                    <p className="text-muted-foreground">No review articles found for this category.</p>
+                    <p className="text-muted-foreground">No review articles found for this filter.</p>
                 </div>
             )}
              <div className="text-center py-10 mt-8 border-t">
