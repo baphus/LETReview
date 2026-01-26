@@ -658,7 +658,10 @@ const FlashcardSession = ({
     
     if (!dragStart.current) return;
 
-    (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+    const targetElement = e.currentTarget as HTMLElement;
+    if (targetElement.hasPointerCapture(e.pointerId)) {
+        targetElement.releasePointerCapture(e.pointerId);
+    }
 
     const dx = e.clientX - dragStart.current.x;
     const dy = e.clientY - dragStart.current.y;
@@ -697,6 +700,25 @@ const FlashcardSession = ({
     dragStart.current = null;
     document.body.style.userSelect = '';
   };
+  
+  const handlePointerCancel = (e: React.PointerEvent) => {
+    if (dragStart.current) {
+      const targetElement = e.currentTarget as HTMLElement;
+      if (targetElement.hasPointerCapture(e.pointerId)) {
+          targetElement.releasePointerCapture(e.pointerId);
+      }
+      
+      if (cardRef.current) {
+          cardRef.current.style.transition = 'transform 0.3s ease-out';
+          cardRef.current.style.transform = '';
+          cardRef.current.style.cursor = 'pointer';
+      }
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      dragStart.current = null;
+      setDragState({ x: 0, y: 0, direction: null, opacity: 0 });
+    }
+  };
 
   const handleCardClick = (e: React.MouseEvent) => {
     if (wasDragged.current) {
@@ -717,7 +739,7 @@ const FlashcardSession = ({
       <SessionSummaryDialog
         stats={sessionSummary}
         onRestart={fetchAndSetupDeck}
-        onExit={onExit}
+        onClose={onExit}
       />
     );
 
@@ -797,7 +819,7 @@ const FlashcardSession = ({
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
-            onPointerCancel={handlePointerUp}
+            onPointerCancel={handlePointerCancel}
           >
             <Card className="flashcard-front absolute w-full h-full flex items-center justify-center text-center p-4 sm:p-6">
               <p className="text-xl md:text-2xl font-semibold">
