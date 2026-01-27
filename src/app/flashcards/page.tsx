@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback, useMemo, Suspense } from 'react';
@@ -454,6 +453,7 @@ const FlashcardSession = ({
   const cardRef = useRef<HTMLDivElement>(null);
   const pointerIdRef = useRef<number | null>(null);
   const startXRef = useRef(0);
+  const startTimeRef = useRef(0);
   const currentXRef = useRef(0);
   const isDraggingRef = useRef(false);
 
@@ -551,6 +551,7 @@ const FlashcardSession = ({
     if (!isFlipped) return; // Only allow swiping when answer is visible
     startXRef.current = e.clientX;
     currentXRef.current = e.clientX;
+    startTimeRef.current = Date.now();
     isDraggingRef.current = true;
     pointerIdRef.current = e.pointerId;
     if (cardRef.current) {
@@ -575,21 +576,30 @@ const FlashcardSession = ({
     
     isDraggingRef.current = false;
     pointerIdRef.current = null;
+    
     const diff = currentXRef.current - startXRef.current;
+    const duration = Date.now() - startTimeRef.current;
+    const velocity = duration > 0 ? diff / duration : 0;
+
+    const distanceThreshold = 50; // A long swipe
+    const velocityThreshold = 0.5; // A fast flick (pixels per ms)
+    
     cardRef.current.style.transition = 'transform 0.3s ease-out';
 
-    if (Math.abs(diff) < 50) {
-      // Not a big enough swipe, animate back to center
+    if (Math.abs(diff) < distanceThreshold && Math.abs(velocity) < velocityThreshold) {
+      // Not a big enough swipe or flick, animate back to center
       cardRef.current.style.transform = '';
     } else {
-      // Sufficient swipe, determine direction and animate away
+      // Sufficient swipe or flick, determine direction and animate away
       const direction = diff > 0 ? 'right' : 'left';
       cardRef.current.style.transform = `translateX(${direction === 'right' ? 500 : -500}px) rotate(${direction === 'right' ? 30 : -30}deg)`;
       handleNextCard(direction === 'right' ? 'correct' : 'incorrect');
     }
 
+    // Reset refs for the next interaction
     startXRef.current = 0;
     currentXRef.current = 0;
+    startTimeRef.current = 0;
   };
 
   const handlePointerCancel = (e: React.PointerEvent) => {
@@ -605,8 +615,10 @@ const FlashcardSession = ({
     cardRef.current.style.transition = 'transform 0.3s ease-out';
     cardRef.current.style.transform = '';
 
+    // Reset refs for the next interaction
     startXRef.current = 0;
     currentXRef.current = 0;
+    startTimeRef.current = 0;
   };
 
 
@@ -614,6 +626,10 @@ const FlashcardSession = ({
     // Prevent click from firing during a drag
     const diff = currentXRef.current - startXRef.current;
     if (Math.abs(diff) > 5) {
+        // Reset refs here too, just in case a "drag" was interpreted as a click attempt
+        startXRef.current = 0;
+        currentXRef.current = 0;
+        startTimeRef.current = 0;
         return;
     }
     setIsFlipped(prev => !prev);
@@ -767,5 +783,3 @@ export default function FlashcardsPage() {
     </Suspense>
   );
 }
-
-    
