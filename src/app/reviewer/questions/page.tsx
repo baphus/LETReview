@@ -215,7 +215,7 @@ function QuestionsPageContent() {
       const difficulty = config?.difficulty === 'all' ? undefined : config?.difficulty as 'easy' | 'medium' | 'hard';
       
       const fetchedQuestions = await getQuestions({
-          category,
+          category: topicId ? undefined : category,
           difficulty: isChallenge ? challengeDifficulty as any : difficulty,
           limit: isChallenge ? challengeCount : config?.count,
           shuffle: isChallenge || isShuffled || !!topicId,
