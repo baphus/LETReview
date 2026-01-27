@@ -149,6 +149,7 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
   const startTimeRef = useRef(0);
   const currentXRef = useRef(0);
   const isDraggingRef = useRef(false);
+  const wasDraggedRef = useRef(false);
 
   const setupDeck = useCallback(() => {
     setIsLoading(true);
@@ -180,13 +181,22 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
     setupDeck();
   }, [setupDeck]);
 
+  const currentCard = deck[currentIndex];
+
   useEffect(() => {
+    // When a new card becomes current, reset its visual state.
     if (cardRef.current) {
-        cardRef.current.style.transition = 'transform 0.6s';
-        cardRef.current.style.transform = 'rotateY(0deg)';
-        cardRef.current.style.opacity = '1';
+      cardRef.current.style.transition = 'none'; // No transition on reset
+      cardRef.current.style.transform = ''; // Clear transforms
+      cardRef.current.style.opacity = '1';
+      // Re-enable flip animation after a short delay
+      setTimeout(() => {
+        if (cardRef.current) {
+          cardRef.current.style.transition = 'transform 0.6s';
+        }
+      }, 50);
     }
-  }, [currentIndex]);
+  }, [currentCard]);
 
   const handleNextCard = (result: 'correct' | 'incorrect') => {
     const currentCard = deck[currentIndex];
@@ -221,6 +231,7 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
   
   const handlePointerDown = (e: React.PointerEvent) => {
     if (!isFlipped) return;
+    wasDraggedRef.current = false;
     startXRef.current = e.clientX;
     currentXRef.current = e.clientX;
     startTimeRef.current = Date.now();
@@ -236,6 +247,11 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
     if (!isDraggingRef.current || !cardRef.current) return;
     currentXRef.current = e.clientX;
     const diff = currentXRef.current - startXRef.current;
+    
+    if (Math.abs(diff) > 5) {
+      wasDraggedRef.current = true;
+    }
+
     const flipTransform = isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)';
     cardRef.current.style.transform = `translateX(${diff}px) rotate(${diff * 0.05}deg) ${flipTransform}`;
   };
@@ -316,11 +332,7 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
 
 
   const handleCardClick = (e: React.MouseEvent) => {
-    const diff = currentXRef.current - startXRef.current;
-    if (Math.abs(diff) > 5) {
-        startXRef.current = 0;
-        currentXRef.current = 0;
-        startTimeRef.current = 0;
+    if (wasDraggedRef.current) {
         return;
     }
     setIsFlipped(prev => !prev);
@@ -341,7 +353,6 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
       />
     );
 
-  const currentCard = deck[currentIndex];
   if (!currentCard)
     return (
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background">
