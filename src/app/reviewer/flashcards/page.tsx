@@ -1,21 +1,26 @@
 
 'use client';
 
-import { Suspense, useState, useEffect } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { Suspense, useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { FlashcardSession } from '@/components/FlashcardSession';
 import { getQuestions } from '@/lib/data';
 import type { QuizQuestion, Topic } from '@/lib/types';
 import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Play } from 'lucide-react';
+import { ArrowLeft, Play, Settings } from 'lucide-react';
 import Link from 'next/link';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+
 
 function FlashcardPageContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const topicId = searchParams.get('topicId');
   const firestore = useFirestore();
@@ -23,6 +28,14 @@ function FlashcardPageContent() {
   const [view, setView] = useState<'list' | 'session'>('list');
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // State for session questions
+  const [sessionQuestions, setSessionQuestions] = useState<QuizQuestion[]>([]);
+  
+  // State for custom session dialog
+  const [isCustomDialogOpen, setIsCustomDialogOpen] = useState(false);
+  const [customCount, setCustomCount] = useState('10');
+  const [customShuffle, setCustomShuffle] = useState(true);
 
   const topicRef = useMemoFirebase(() => topicId && firestore ? doc(firestore, 'topics', topicId) : null, [topicId, firestore]);
   const { data: topic, isLoading: isLoadingTopic } = useDoc<Topic>(topicRef);
@@ -38,6 +51,39 @@ function FlashcardPageContent() {
       setIsLoading(false);
     }
   }, [topicId]);
+
+  useEffect(() => {
+    if (questions.length > 0) {
+        setCustomCount(String(Math.min(10, questions.length)));
+    }
+  }, [questions.length]);
+
+  const countOptions = useMemo(() => {
+    if (questions.length === 0) return [];
+    
+    const options = [5, 10, 20];
+    const uniqueOptions = new Set(options.filter(o => o < questions.length));
+    uniqueOptions.add(questions.length);
+
+    return Array.from(uniqueOptions).sort((a,b) => a - b);
+  }, [questions.length]);
+
+  const handleStartFullSession = () => {
+    const shuffledQuestions = [...questions].sort(() => Math.random() - 0.5);
+    setSessionQuestions(shuffledQuestions);
+    setView('session');
+  };
+
+  const handleStartCustomSession = () => {
+    let customQuestions = [...questions];
+    if (customShuffle) {
+        customQuestions = customQuestions.sort(() => Math.random() - 0.5);
+    }
+    const count = parseInt(customCount, 10);
+    setSessionQuestions(customQuestions.slice(0, count));
+    setIsCustomDialogOpen(false);
+    setView('session');
+  };
 
   if (isLoading || isLoadingTopic) {
     return (
@@ -67,10 +113,53 @@ function FlashcardPageContent() {
   }
 
   if (view === 'session') {
-    return <FlashcardSession initialQuestions={questions} onExit={() => setView('list')} />;
+    return <FlashcardSession initialQuestions={sessionQuestions} onExit={() => setView('list')} />;
   }
 
   return (
+    <>
+    <Dialog open={isCustomDialogOpen} onOpenChange={setIsCustomDialogOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Custom Flashcard Session</DialogTitle>
+                <DialogDescription>
+                    Configure your practice session for the topic: {topic.name}
+                </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="question-count" className="text-right">
+                        Questions
+                    </Label>
+                    <Select value={customCount} onValueChange={setCustomCount}>
+                        <SelectTrigger className="col-span-3">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                             {countOptions.map(num => (
+                                <SelectItem key={num} value={String(num)}>
+                                    {num === questions.length ? `All (${num})` : `${num} Questions`}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="shuffle-questions" className="text-right">
+                        Shuffle
+                    </Label>
+                    <Switch
+                        id="shuffle-questions"
+                        checked={customShuffle}
+                        onCheckedChange={setCustomShuffle}
+                    />
+                </div>
+            </div>
+            <DialogFooter>
+                <Button onClick={handleStartCustomSession} className="w-full">Start Session</Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
     <div className="space-y-6">
       <header className="space-y-2">
         <Link href="/reviewer/review" className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
@@ -83,9 +172,14 @@ function FlashcardPageContent() {
       
       {questions.length > 0 ? (
         <>
-          <Button onClick={() => setView('session')} size="lg" className="w-full">
-            <Play className="mr-2 h-5 w-5" /> Start Session
-          </Button>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Button onClick={handleStartFullSession} size="lg" variant="outline">
+                <Play className="mr-2 h-5 w-5" /> Start Full Session ({questions.length})
+            </Button>
+            <Button onClick={() => setIsCustomDialogOpen(true)} size="lg">
+                <Settings className="mr-2 h-5 w-5" /> Custom Session
+            </Button>
+          </div>
 
           <div className="space-y-3">
             {questions.map(q => (
@@ -108,6 +202,7 @@ function FlashcardPageContent() {
         </div>
       )}
     </div>
+    </>
   );
 }
 
