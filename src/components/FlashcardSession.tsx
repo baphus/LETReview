@@ -189,18 +189,17 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
   const currentCard = deck[currentIndex];
 
   useEffect(() => {
-    // When a new card becomes current, reset its visual state.
+    wasDraggedRef.current = false;
     if (cardRef.current) {
-      wasDraggedRef.current = false;
-      cardRef.current.style.transition = 'none'; // No transition on reset
-      cardRef.current.style.transform = ''; // Clear transforms
+      cardRef.current.style.transition = 'none';
+      cardRef.current.style.transform = '';
       cardRef.current.style.opacity = '1';
-      // Re-enable flip animation after a short delay
-      setTimeout(() => {
+      
+      requestAnimationFrame(() => {
         if (cardRef.current) {
           cardRef.current.style.transition = 'transform 0.6s';
         }
-      }, 50);
+      });
     }
   }, [currentCard]);
 
@@ -255,7 +254,7 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
     currentXRef.current = e.clientX;
     const diff = currentXRef.current - startXRef.current;
     
-    if (Math.abs(diff) > 10) { // Register as a drag after 10px
+    if (Math.abs(diff) > 10) {
       wasDraggedRef.current = true;
     }
 
@@ -265,10 +264,10 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
     const maxSwipeDistance = window.innerWidth / 2.5;
     const swipeProgress = Math.min(Math.abs(diff) / maxSwipeDistance, 1);
 
-    if (diff > 0) { // Swiping right (correct)
+    if (diff > 0) {
         setRightGradientOpacity(swipeProgress);
         setLeftGradientOpacity(0);
-    } else { // Swiping left (incorrect)
+    } else {
         setLeftGradientOpacity(swipeProgress);
         setRightGradientOpacity(0);
     }
@@ -406,7 +405,7 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
       <div
         className="pointer-events-none fixed inset-y-0 left-0 w-1/3 z-20"
         style={{
-          background: 'linear-gradient(to right, hsl(var(--destructive) / 0.3), transparent)',
+          background: 'linear-gradient(to right, hsl(var(--destructive) / 0.5), transparent)',
           opacity: leftGradientOpacity,
           transition: isGrabbing ? 'none' : 'opacity 0.3s ease-out',
         }}
@@ -414,11 +413,27 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
       <div
         className="pointer-events-none fixed inset-y-0 right-0 w-1/3 z-20"
         style={{
-          background: 'linear-gradient(to left, hsl(var(--accent) / 0.3), transparent)',
+          background: 'linear-gradient(to left, hsl(var(--accent) / 0.5), transparent)',
           opacity: rightGradientOpacity,
           transition: isGrabbing ? 'none' : 'opacity 0.3s ease-out',
         }}
       />
+      <div
+        className="pointer-events-none fixed inset-y-0 left-0 flex items-center justify-start pl-8 z-30 transition-opacity"
+        style={{ opacity: leftGradientOpacity }}
+      >
+        <div className="border-2 border-destructive text-destructive font-bold uppercase text-2xl px-4 py-2 rounded-lg -rotate-15">
+          Incorrect
+        </div>
+      </div>
+      <div
+        className="pointer-events-none fixed inset-y-0 right-0 flex items-center justify-end pr-8 z-30 transition-opacity"
+        style={{ opacity: rightGradientOpacity }}
+      >
+        <div className="border-2 border-accent text-accent font-bold uppercase text-2xl px-4 py-2 rounded-lg rotate-15">
+          Correct
+        </div>
+      </div>
 
       <header className="container mx-auto max-w-2xl flex items-center gap-4 pt-6 px-4 shrink-0">
         <Button variant="ghost" size="icon" onClick={onExit}>
@@ -488,16 +503,12 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
         </div>
       </main>
       
-      <footer className="w-full max-w-md mx-auto px-4 pb-6">
-        <div className="flex justify-between text-sm text-muted-foreground font-semibold mb-2 px-2">
-            <span className="text-red-500/80">⟵ Incorrect</span>
-            <span className="text-green-500/80">Correct ⟶</span>
-        </div>
+      <footer className="w-full max-w-md mx-auto px-4 pb-6 mt-4">
         <div className="flex justify-center items-center gap-4">
-            <Button variant="outline" className="w-full sm:w-auto border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600 disabled:opacity-0 transition-opacity" onClick={() => handleButtonPress('incorrect')} disabled={!isFlipped}>
+            <Button variant="outline" className="w-full sm:w-auto border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive disabled:opacity-0 transition-opacity" onClick={() => handleButtonPress('incorrect')} disabled={!isFlipped}>
                 <X className="mr-2 h-4 w-4" /> Incorrect
             </Button>
-            <Button variant="outline" className="w-full sm:w-auto border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600 disabled:opacity-0 transition-opacity" onClick={() => handleButtonPress('correct')} disabled={!isFlipped}>
+            <Button variant="outline" className="w-full sm:w-auto border-accent text-accent hover:bg-accent/10 hover:text-accent disabled:opacity-0 transition-opacity" onClick={() => handleButtonPress('correct')} disabled={!isFlipped}>
                 <Check className="mr-2 h-4 w-4" /> Correct
             </Button>
         </div>

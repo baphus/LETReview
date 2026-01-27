@@ -3,7 +3,7 @@
 
 import { useState, useMemo, type FC, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from 'next/navigation';
-import { ArrowLeft, ArrowRight, BookOpen, CheckCircle, XCircle, Trophy, Shuffle, RefreshCcw, PlusCircle, BarChart, Gauge, Repeat } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen, CheckCircle, XCircle, Trophy, Shuffle, RefreshCcw, PlusCircle, BarChart, Gauge, Repeat, Flame } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -137,6 +137,8 @@ const QuestionSkeleton = () => (
     </Card>
 )
 
+const positiveEmojis = ['✨', '🎉', '👍', '✅', '💯'];
+
 function QuestionsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -165,6 +167,11 @@ function QuestionsPageContent() {
   
   const [topicStats, setTopicStats] = useState<TopicQuizProgress | null>(null);
   const [practiceQuizConfig, setPracticeQuizConfig] = useState({ count: 10, difficulty: 'all' });
+  
+  const [quizStreak, setQuizStreak] = useState(0);
+  const [showEmoji, setShowEmoji] = useState(false);
+  const [showStreak, setShowStreak] = useState(false);
+  const [currentEmoji, setCurrentEmoji] = useState('✨');
 
   const { toast } = useToast();
   
@@ -231,6 +238,7 @@ function QuestionsPageContent() {
     setQuizScore(0);
     setShowResults(false);
     setChallengeAnswers([]);
+    setQuizStreak(0);
     
     if (topicId) {
         setQuizPhase('settings');
@@ -241,6 +249,10 @@ function QuestionsPageContent() {
   }, [fetchAndSetQuestions, topicId, isChallenge]);
 
   const handleFinishQuiz = useCallback(async (finalAnswers: ChallengeAnswer[], finalScore: number) => {
+    if (quizStreak > 0 && user && quizStreak > (user.highestQuizStreak || 0)) {
+        updateUser({ highestQuizStreak: quizStreak });
+    }
+
     if (isChallenge) {
         setShowResults(true);
 
@@ -337,23 +349,49 @@ function QuestionsPageContent() {
         };
         updateUser(updatePayload);
     }
-  }, [isChallenge, questions.length, passingScore, challengeDifficulty, challengeCategory, user, updateUser, toast, topicId]);
+  }, [isChallenge, questions.length, passingScore, challengeDifficulty, challengeCategory, user, updateUser, toast, topicId, quizStreak]);
 
   const handleAnswer = (correct: boolean, answer: string) => {
-    if (correct && user && !user.answeredQuestionIds?.includes(currentQuestion.id)) {
-        const todayKey = getTodayKey();
-        const dailyProgress = user.dailyProgress?.[todayKey] || {};
-        updateUser({ 
-            questionsAnswered: (user.questionsAnswered || 0) + 1,
-            answeredQuestionIds: [...(user.answeredQuestionIds || []), currentQuestion.id],
-            dailyProgress: {
-                ...user.dailyProgress,
-                [todayKey]: {
-                    ...dailyProgress,
-                    questionsAnswered: (dailyProgress.questionsAnswered || 0) + 1,
+    if (correct) {
+        const newStreak = quizStreak + 1;
+        setQuizStreak(newStreak);
+
+        setCurrentEmoji(positiveEmojis[Math.floor(Math.random() * positiveEmojis.length)]);
+        setShowEmoji(true);
+        setTimeout(() => setShowEmoji(false), 1000);
+
+        if (newStreak > 1) {
+            setShowStreak(true);
+            setTimeout(() => setShowStreak(false), 1500);
+        }
+        
+        if (user && !user.answeredQuestionIds?.includes(currentQuestion.id)) {
+            const todayKey = getTodayKey();
+            const dailyProgress = user.dailyProgress?.[todayKey] || {};
+            updateUser({ 
+                questionsAnswered: (user.questionsAnswered || 0) + 1,
+                answeredQuestionIds: [...(user.answeredQuestionIds || []), currentQuestion.id],
+                dailyProgress: {
+                    ...user.dailyProgress,
+                    [todayKey]: {
+                        ...dailyProgress,
+                        questionsAnswered: (dailyProgress.questionsAnswered || 0) + 1,
+                    }
                 }
+            });
+        }
+    } else {
+        if (quizStreak > 0) {
+            toast({
+                variant: "destructive",
+                title: "Streak Lost!",
+                description: `You had a streak of ${quizStreak}. Keep trying!`,
+            });
+            if (user && quizStreak > (user.highestQuizStreak || 0)) {
+                updateUser({ highestQuizStreak: quizStreak });
             }
-        });
+        }
+        setQuizStreak(0);
     }
 
     const newAnswer: ChallengeAnswer = {
@@ -366,22 +404,26 @@ function QuestionsPageContent() {
 
     const newAnswers = [...challengeAnswers.filter(a => a.questionId !== currentQuestion.id), newAnswer];
     setChallengeAnswers(newAnswers);
-    setQuizScore(prev => prev + (correct ? 1 : 0));
+    
+    // Score is calculated on finish now
+    // setQuizScore(prev => prev + (correct ? 1 : 0));
 
     setTimeout(() => {
         if (currentIndex < questions.length - 1) {
              setCurrentIndex((prev) => prev + 1);
         } else {
             const finalScore = newAnswers.reduce((acc, ans) => acc + (ans.isCorrect ? 1 : 0), 0);
+            setQuizScore(finalScore);
             handleFinishQuiz(newAnswers, finalScore);
         }
-    }, 300);
+    }, isChallenge || topicId ? 300 : 1000);
   };
   
     const handleStartPracticeQuiz = () => {
         setCurrentIndex(0);
         setChallengeAnswers([]);
         setQuizScore(0);
+        setQuizStreak(0);
         fetchAndSetQuestions(practiceQuizConfig);
         setQuizPhase('active');
     };
@@ -404,6 +446,7 @@ function QuestionsPageContent() {
     setCurrentIndex(0);
     setChallengeAnswers([]);
     setQuizScore(0);
+    setQuizStreak(0);
     fetchAndSetQuestions();
   };
   
@@ -664,7 +707,7 @@ function QuestionsPageContent() {
 
       <div className="my-6">
         {questions.length > 0 && currentQuestion ? (
-          <>
+          <div className="relative">
             {isChallenge || (topicId && quizPhase === 'active') ? (
               <QuizCard 
                 question={currentQuestion} 
@@ -673,7 +716,17 @@ function QuestionsPageContent() {
             ) : (
                 quizPhase === 'study' && <StudyCard question={currentQuestion} />
             )}
-          </>
+             {showEmoji && (
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                    <span className="text-6xl animate-emoji-pop">{currentEmoji}</span>
+                </div>
+            )}
+            {showStreak && (
+                <div className="pointer-events-none absolute -top-4 -right-4 bg-destructive text-destructive-foreground px-3 py-1 rounded-full text-lg font-bold animate-combo-pop">
+                    🔥 Streak x{quizStreak}!
+                </div>
+            )}
+          </div>
         ) : (
           !isLoading && (
             <Card className="h-80 flex justify-center items-center">
