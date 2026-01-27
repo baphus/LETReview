@@ -143,6 +143,11 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
     null
   );
 
+  // States for swipe gradients
+  const [leftGradientOpacity, setLeftGradientOpacity] = useState(0);
+  const [rightGradientOpacity, setRightGradientOpacity] = useState(0);
+  const [isGrabbing, setIsGrabbing] = useState(false);
+
   const cardRef = useRef<HTMLDivElement>(null);
   const pointerIdRef = useRef<number | null>(null);
   const startXRef = useRef(0);
@@ -189,6 +194,7 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
       cardRef.current.style.transition = 'none'; // No transition on reset
       cardRef.current.style.transform = ''; // Clear transforms
       cardRef.current.style.opacity = '1';
+      wasDraggedRef.current = false; // Ensure drag state is reset
       // Re-enable flip animation after a short delay
       setTimeout(() => {
         if (cardRef.current) {
@@ -224,7 +230,6 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
         setCurrentIndex(Math.min(currentIndex, newDeck.length - 1));
       }
       setIsFlipped(false);
-      wasDraggedRef.current = false; // Reset drag state for the next card
     }, 300);
 
     return () => clearTimeout(timeoutId);
@@ -232,6 +237,7 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
   
   const handlePointerDown = (e: React.PointerEvent) => {
     if (!isFlipped) return;
+    setIsGrabbing(true);
     wasDraggedRef.current = false;
     startXRef.current = e.clientX;
     currentXRef.current = e.clientX;
@@ -245,7 +251,7 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
-    if (!isDraggingRef.current || !cardRef.current) return;
+    if (!isDraggingRef.current || !cardRef.current || typeof window === 'undefined') return;
     currentXRef.current = e.clientX;
     const diff = currentXRef.current - startXRef.current;
     
@@ -255,9 +261,24 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
 
     const flipTransform = isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)';
     cardRef.current.style.transform = `translateX(${diff}px) rotate(${diff * 0.05}deg) ${flipTransform}`;
+    
+    const maxSwipeDistance = window.innerWidth / 2.5;
+    const swipeProgress = Math.min(Math.abs(diff) / maxSwipeDistance, 1);
+
+    if (diff > 0) { // Swiping right (correct)
+        setRightGradientOpacity(swipeProgress);
+        setLeftGradientOpacity(0);
+    } else { // Swiping left (incorrect)
+        setLeftGradientOpacity(swipeProgress);
+        setRightGradientOpacity(0);
+    }
   };
   
   const handlePointerUp = (e: React.PointerEvent) => {
+    setIsGrabbing(false);
+    setLeftGradientOpacity(0);
+    setRightGradientOpacity(0);
+
     if (!isDraggingRef.current || !cardRef.current) return;
     
     if (pointerIdRef.current === e.pointerId) {
@@ -295,6 +316,10 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
   };
 
   const handlePointerCancel = (e: React.PointerEvent) => {
+    setIsGrabbing(false);
+    setLeftGradientOpacity(0);
+    setRightGradientOpacity(0);
+
     if (!isDraggingRef.current || !cardRef.current) return;
     
     if (pointerIdRef.current === e.pointerId) {
@@ -315,6 +340,14 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
   const handleButtonPress = (result: 'correct' | 'incorrect') => {
     if (!cardRef.current) return;
 
+    if (result === 'correct') {
+      setRightGradientOpacity(1);
+      setTimeout(() => setRightGradientOpacity(0), 400);
+    } else {
+      setLeftGradientOpacity(1);
+      setTimeout(() => setLeftGradientOpacity(0), 400);
+    }
+
     const flipTransform = isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)';
     let swipeTransform = '';
 
@@ -334,6 +367,7 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
 
   const handleCardClick = (e: React.MouseEvent) => {
     if (wasDraggedRef.current) {
+        wasDraggedRef.current = false;
         return;
     }
     setIsFlipped(prev => !prev);
@@ -371,6 +405,23 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
     <div
       className="fixed inset-0 z-50 flex flex-col touch-none bg-background"
     >
+      <div
+        className="pointer-events-none fixed inset-y-0 left-0 w-1/3 z-20"
+        style={{
+          background: 'linear-gradient(to right, hsl(var(--destructive) / 0.2), transparent)',
+          opacity: leftGradientOpacity,
+          transition: isGrabbing ? 'none' : 'opacity 0.3s ease-out',
+        }}
+      />
+      <div
+        className="pointer-events-none fixed inset-y-0 right-0 w-1/3 z-20"
+        style={{
+          background: 'linear-gradient(to left, hsl(var(--accent) / 0.2), transparent)',
+          opacity: rightGradientOpacity,
+          transition: isGrabbing ? 'none' : 'opacity 0.3s ease-out',
+        }}
+      />
+
       <header className="container mx-auto max-w-2xl flex items-center gap-4 pt-6 px-4 shrink-0">
         <Button variant="ghost" size="icon" onClick={onExit}>
           <ArrowLeft className="h-5 w-5" />
