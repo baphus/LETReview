@@ -449,7 +449,6 @@ const FlashcardSession = ({
   const [sessionSummary, setSessionSummary] = useState<SessionStats | null>(
     null
   );
-  const [isSwipingOut, setIsSwipingOut] = useState(false);
 
   const cardRef = useRef<HTMLDivElement>(null);
   const pointerIdRef = useRef<number | null>(null);
@@ -530,8 +529,6 @@ const FlashcardSession = ({
         newDeck.splice(currentIndex, 1);
     }
     
-    setIsSwipingOut(true);
-
     const timeoutId = setTimeout(() => {
       if (newDeck.length === 0 || (result !== 'hard' && deck.length === 1)) {
           if (customConfig?.count) {
@@ -551,7 +548,6 @@ const FlashcardSession = ({
         setCurrentIndex(Math.min(currentIndex, newDeck.length - 1));
       }
       setIsFlipped(false);
-      setIsSwipingOut(false);
     }, 300);
 
     return () => clearTimeout(timeoutId);
@@ -720,12 +716,7 @@ const FlashcardSession = ({
             
             {/* Next card (in the back) */}
             {deck[currentIndex + 1] && (
-                <div className={cn(
-                    "absolute w-full h-full transition-all duration-300 ease-out pointer-events-none",
-                    isSwipingOut 
-                        ? 'scale-100 translate-y-0 opacity-100' 
-                        : 'scale-95 -translate-y-2 opacity-50'
-                )}>
+                <div className="absolute w-full h-full pointer-events-none scale-95 -translate-y-2 opacity-50">
                     <Card className="w-full h-full bg-muted" />
                 </div>
             )}
