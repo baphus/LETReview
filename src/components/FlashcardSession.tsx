@@ -224,6 +224,7 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
         setCurrentIndex(Math.min(currentIndex, newDeck.length - 1));
       }
       setIsFlipped(false);
+      wasDraggedRef.current = false; // Reset drag state for the next card
     }, 300);
 
     return () => clearTimeout(timeoutId);
