@@ -48,6 +48,7 @@ import { getQuestions } from '@/lib/data';
 import type { Reviewer, Subject, Topic, QuizQuestion } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Switch } from '@/components/ui/switch';
 
 // ========= UTILITY & TYPE DEFINITIONS =========
 
@@ -586,6 +587,9 @@ const FlashcardSession = ({
       cardRef.current.style.transform = `translateX(${direction === 'right' ? 500 : -500}px) rotate(${direction === 'right' ? 30 : -30}deg)`;
       handleNextCard(direction === 'right' ? 'correct' : 'incorrect');
     }
+
+    startXRef.current = 0;
+    currentXRef.current = 0;
   };
 
   const handlePointerCancel = (e: React.PointerEvent) => {
@@ -600,6 +604,9 @@ const FlashcardSession = ({
     
     cardRef.current.style.transition = 'transform 0.3s ease-out';
     cardRef.current.style.transform = '';
+
+    startXRef.current = 0;
+    currentXRef.current = 0;
   };
 
 
@@ -760,3 +767,5 @@ export default function FlashcardsPage() {
     </Suspense>
   );
 }
+
+    
