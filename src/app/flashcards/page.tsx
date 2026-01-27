@@ -449,6 +449,7 @@ const FlashcardSession = ({
   const [sessionSummary, setSessionSummary] = useState<SessionStats | null>(
     null
   );
+  const [isSwipingOut, setIsSwipingOut] = useState(false);
 
   const cardRef = useRef<HTMLDivElement>(null);
   const pointerIdRef = useRef<number | null>(null);
@@ -492,6 +493,15 @@ const FlashcardSession = ({
     fetchAndSetupDeck();
   }, [fetchAndSetupDeck]);
 
+  // Effect to reset card styles when a new card becomes current
+  useEffect(() => {
+    if (cardRef.current) {
+        cardRef.current.style.transition = 'transform 0.6s'; // For flip animation
+        cardRef.current.style.transform = 'rotateY(0deg)';
+        cardRef.current.style.opacity = '1';
+    }
+  }, [currentIndex]);
+
   const handleNextCard = (result: 'correct' | 'incorrect' | 'hard') => {
     const currentCard = deck[currentIndex];
     if (!currentCard) return;
@@ -515,33 +525,33 @@ const FlashcardSession = ({
         break;
     }
 
-    // Always remove the card from its current position
-    newDeck.splice(currentIndex, 1);
-
-    setSessionStats(newStats);
+    // Always remove the card from its current position for correct/incorrect
+    if (result !== 'hard') {
+        newDeck.splice(currentIndex, 1);
+    }
+    
+    setIsSwipingOut(true);
 
     const timeoutId = setTimeout(() => {
-      if (newDeck.length === 0) {
-        if (customConfig?.count) {
-          setSessionSummary(newStats);
-        } else {
-          toast({
-            title: 'Deck complete!',
-            description: 'Reshuffling for another round.',
-          });
-          // Reshuffle all original questions for a new round
-          const reshuffledDeck = [...questions].sort(() => Math.random() - 0.5);
-          setDeck(reshuffledDeck);
-        }
+      if (newDeck.length === 0 || (result !== 'hard' && deck.length === 1)) {
+          if (customConfig?.count) {
+            setSessionSummary(newStats);
+          } else {
+            toast({
+              title: 'Deck complete!',
+              description: 'Reshuffling for another round.',
+            });
+            // Reshuffle all original questions for a new round
+            const reshuffledDeck = [...questions].sort(() => Math.random() - 0.5);
+            setDeck(reshuffledDeck);
+            setCurrentIndex(0);
+          }
       } else {
         setDeck(newDeck);
         setCurrentIndex(Math.min(currentIndex, newDeck.length - 1));
       }
       setIsFlipped(false);
-      if (cardRef.current) {
-        cardRef.current.style.transform = '';
-        cardRef.current.style.transition = '';
-      }
+      setIsSwipingOut(false);
     }, 300);
 
     return () => clearTimeout(timeoutId);
@@ -564,7 +574,8 @@ const FlashcardSession = ({
     if (!isDraggingRef.current || !cardRef.current) return;
     currentXRef.current = e.clientX;
     const diff = currentXRef.current - startXRef.current;
-    cardRef.current.style.transform = `translateX(${diff}px) rotate(${diff * 0.05}deg)`;
+    const flipTransform = isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)';
+    cardRef.current.style.transform = `translateX(${diff}px) rotate(${diff * 0.05}deg) ${flipTransform}`;
   };
   
   const handlePointerUp = (e: React.PointerEvent) => {
@@ -583,17 +594,21 @@ const FlashcardSession = ({
 
     const distanceThreshold = 50; // A long swipe
     const velocityThreshold = 0.5; // A fast flick (pixels per ms)
+    const isSufficientSwipe = Math.abs(diff) > distanceThreshold || Math.abs(velocity) > velocityThreshold;
     
-    cardRef.current.style.transition = 'transform 0.3s ease-out';
+    const flipTransform = isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)';
 
-    if (Math.abs(diff) < distanceThreshold && Math.abs(velocity) < velocityThreshold) {
-      // Not a big enough swipe or flick, animate back to center
-      cardRef.current.style.transform = '';
-    } else {
-      // Sufficient swipe or flick, determine direction and animate away
+    if (isSufficientSwipe) {
       const direction = diff > 0 ? 'right' : 'left';
-      cardRef.current.style.transform = `translateX(${direction === 'right' ? 500 : -500}px) rotate(${direction === 'right' ? 30 : -30}deg)`;
+      cardRef.current.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out';
+      cardRef.current.style.transform = `translateX(${direction === 'right' ? '120%' : '-120%'}) rotate(${direction === 'right' ? 15 : -15}deg) ${flipTransform}`;
+      cardRef.current.style.opacity = '0';
       handleNextCard(direction === 'right' ? 'correct' : 'incorrect');
+    } else {
+      // Not a big enough swipe or flick, animate back to center
+      cardRef.current.style.transition = 'transform 0.3s ease-out';
+      cardRef.current.style.transform = flipTransform;
+      cardRef.current.style.opacity = '1';
     }
 
     // Reset refs for the next interaction
@@ -613,7 +628,7 @@ const FlashcardSession = ({
     pointerIdRef.current = null;
     
     cardRef.current.style.transition = 'transform 0.3s ease-out';
-    cardRef.current.style.transform = '';
+    cardRef.current.style.transform = isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)';
 
     // Reset refs for the next interaction
     startXRef.current = 0;
@@ -621,12 +636,32 @@ const FlashcardSession = ({
     startTimeRef.current = 0;
   };
 
+  const handleButtonPress = (result: 'correct' | 'incorrect' | 'hard') => {
+    if (!cardRef.current) return;
+
+    const flipTransform = isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)';
+    let swipeTransform = '';
+
+    if (result === 'correct') {
+      swipeTransform = 'translateX(120%) rotate(15deg)';
+    } else if (result === 'incorrect') {
+      swipeTransform = 'translateX(-120%) rotate(-15deg)';
+    } else { // hard
+      swipeTransform = 'translateY(120%)';
+    }
+
+    cardRef.current.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out';
+    cardRef.current.style.transform = `${swipeTransform} ${flipTransform}`;
+    cardRef.current.style.opacity = '0';
+
+    handleNextCard(result);
+  };
+
 
   const handleCardClick = (e: React.MouseEvent) => {
     // Prevent click from firing during a drag
     const diff = currentXRef.current - startXRef.current;
     if (Math.abs(diff) > 5) {
-        // Reset refs here too, just in case a "drag" was interpreted as a click attempt
         startXRef.current = 0;
         currentXRef.current = 0;
         startTimeRef.current = 0;
@@ -652,7 +687,14 @@ const FlashcardSession = ({
 
   const currentCard = deck[currentIndex];
   if (!currentCard)
-    return <div className="text-center p-8">Something went wrong.</div>;
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background">
+          <div className="text-center p-8">
+            <p>Session complete or something went wrong.</p>
+            <Button onClick={onExit} className="mt-4">Return to Hub</Button>
+          </div>
+      </div>
+    );
 
 
   return (
@@ -674,48 +716,64 @@ const FlashcardSession = ({
       </header>
 
       <main className="flex-1 flex flex-col items-center justify-center relative px-4">
-        <div className="flashcard-container w-full h-full max-w-md max-h-[60vh] sm:max-h-[65vh] flex items-center justify-center">
-          <div
-            ref={cardRef}
-            className="flashcard relative w-full h-full cursor-pointer"
-            onClick={handleCardClick}
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
-            onPointerCancel={handlePointerCancel}
-            style={{ transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)' }}
-          >
-            <Card className="flashcard-front absolute w-full h-full flex items-center justify-center text-center p-4 sm:p-6">
-              <p className="text-xl md:text-2xl font-semibold">
-                {currentCard.question}
-              </p>
-            </Card>
-            <Card className="flashcard-back absolute w-full h-full flex flex-col justify-center text-center p-4 sm:p-6">
-              <ScrollArea className="flex-1">
-                <p className="text-lg md:text-xl font-semibold">
-                  {currentCard.correctAnswer}
-                </p>
-                {currentCard.explanation && (
-                  <p className="text-sm text-muted-foreground mt-4">
-                    {currentCard.explanation}
-                  </p>
-                )}
-              </ScrollArea>
-            </Card>
-          </div>
+        <div className="flashcard-container relative w-full h-full max-w-md max-h-[60vh] sm:max-h-[65vh] flex items-center justify-center">
+            
+            {/* Next card (in the back) */}
+            {deck[currentIndex + 1] && (
+                <div className={cn(
+                    "absolute w-full h-full transition-all duration-300 ease-out pointer-events-none",
+                    isSwipingOut 
+                        ? 'scale-100 translate-y-0 opacity-100' 
+                        : 'scale-95 -translate-y-2 opacity-50'
+                )}>
+                    <Card className="w-full h-full bg-muted" />
+                </div>
+            )}
+            
+            {/* Current card (on top) */}
+            {currentCard && (
+                <div
+                    ref={cardRef}
+                    className="flashcard relative w-full h-full cursor-pointer"
+                    onClick={handleCardClick}
+                    onPointerDown={handlePointerDown}
+                    onPointerMove={handlePointerMove}
+                    onPointerUp={handlePointerUp}
+                    onPointerCancel={handlePointerCancel}
+                    style={{ transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)', zIndex: 10 }}
+                >
+                    <Card className="flashcard-front absolute w-full h-full flex items-center justify-center text-center p-4 sm:p-6">
+                    <p className="text-xl md:text-2xl font-semibold">
+                        {currentCard.question}
+                    </p>
+                    </Card>
+                    <Card className="flashcard-back absolute w-full h-full flex flex-col justify-center text-center p-4 sm:p-6">
+                    <ScrollArea className="flex-1">
+                        <p className="text-lg md:text-xl font-semibold">
+                        {currentCard.correctAnswer}
+                        </p>
+                        {currentCard.explanation && (
+                        <p className="text-sm text-muted-foreground mt-4">
+                            {currentCard.explanation}
+                        </p>
+                        )}
+                    </ScrollArea>
+                    </Card>
+                </div>
+            )}
         </div>
         <div className="text-center mt-4 text-sm text-muted-foreground h-5">
           {isFlipped ? 'Tap to hide, swipe or use buttons to assess.' : 'Tap to reveal answer'}
         </div>
         
         <div className="flex flex-col sm:flex-row justify-center items-center py-4 shrink-0 gap-4 mt-2 w-full max-w-md">
-            <Button variant="outline" className="w-full sm:w-auto border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600 disabled:opacity-0 transition-opacity" onClick={() => handleNextCard('incorrect')} disabled={!isFlipped}>
+            <Button variant="outline" className="w-full sm:w-auto border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600 disabled:opacity-0 transition-opacity" onClick={() => handleButtonPress('incorrect')} disabled={!isFlipped}>
                 <X className="mr-2 h-4 w-4" /> Incorrect
             </Button>
-            <Button variant="outline" className="w-full sm:w-auto border-yellow-500 text-yellow-500 hover:bg-yellow-50 hover:text-yellow-600 disabled:opacity-0 transition-opacity" onClick={() => handleNextCard('hard')} disabled={!isFlipped}>
+            <Button variant="outline" className="w-full sm:w-auto border-yellow-500 text-yellow-500 hover:bg-yellow-50 hover:text-yellow-600 disabled:opacity-0 transition-opacity" onClick={() => handleButtonPress('hard')} disabled={!isFlipped}>
                 <Wand2 className="mr-2 h-4 w-4" /> Hard
             </Button>
-            <Button variant="outline" className="w-full sm:w-auto border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600 disabled:opacity-0 transition-opacity" onClick={() => handleNextCard('correct')} disabled={!isFlipped}>
+            <Button variant="outline" className="w-full sm:w-auto border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600 disabled:opacity-0 transition-opacity" onClick={() => handleButtonPress('correct')} disabled={!isFlipped}>
                 <Check className="mr-2 h-4 w-4" /> Correct
             </Button>
         </div>
