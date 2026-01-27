@@ -203,33 +203,6 @@ export default function HomePage() {
 
         <StreakMessage streak={user.streak} />
 
-        <Card className="mb-6">
-            <CardHeader>
-                <CardTitle className="text-lg font-headline">This Week's Progress</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <div className="flex justify-around">
-                    {weekDays.map((day, i) => {
-                        const dayKey = format(day, 'yyyy-MM-dd');
-                        const hasActivity = (user.dailyProgress?.[dayKey]?.challengesCompleted?.length || 0) > 0;
-                        const isDayToday = isToday(day);
-                        return (
-                            <div key={i} className="flex flex-col items-center gap-2">
-                                <span className="text-xs text-muted-foreground">{format(day, 'E')[0]}</span>
-                                <div className={cn(
-                                    "w-8 h-8 rounded-full flex items-center justify-center transition-all",
-                                    hasActivity ? "bg-destructive text-destructive-foreground" : "bg-muted",
-                                    isDayToday && "ring-2 ring-primary ring-offset-2 ring-offset-background"
-                                )}>
-                                    {hasActivity && <Flame className="h-5 w-5" />}
-                                </div>
-                            </div>
-                        )
-                    })}
-                </div>
-            </CardContent>
-        </Card>
-
         <Separator className="my-6" />
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
@@ -245,6 +218,27 @@ export default function HomePage() {
                       </CardTitle>
                       <CardDescription className="text-green-600">Take on more challenges for extra points.</CardDescription>
                   </CardHeader>
+                  <CardContent className="py-2">
+                    <div className="flex justify-around items-center pt-2 border-t border-green-200">
+                      {weekDays.map((day, i) => {
+                          const dayKey = format(day, 'yyyy-MM-dd');
+                          const hasActivity = (user.dailyProgress?.[dayKey]?.challengesCompleted?.length || 0) > 0;
+                          const isDayToday = isToday(day);
+                          return (
+                              <div key={i} className="flex flex-col items-center gap-1">
+                                  <span className="text-xs font-medium text-green-700">{format(day, 'E')[0]}</span>
+                                  <div className={cn(
+                                      "w-6 h-6 rounded-full flex items-center justify-center transition-all",
+                                      hasActivity ? "bg-green-500" : "bg-green-200",
+                                      isDayToday && "ring-2 ring-green-600"
+                                  )}>
+                                      {hasActivity && <Check className="h-4 w-4 text-white" />}
+                                  </div>
+                              </div>
+                          )
+                      })}
+                    </div>
+                  </CardContent>
                   <CardFooter className="mt-auto">
                       <Link href="/daily" className="w-full">
                       <Button className="w-full">More Challenges</Button>
@@ -259,6 +253,27 @@ export default function HomePage() {
                       </CardTitle>
                       <CardDescription className="text-white/80">Complete a daily challenge.</CardDescription>
                   </CardHeader>
+                   <CardContent className="py-2">
+                    <div className="flex justify-around items-center pt-2 border-t border-white/20">
+                      {weekDays.map((day, i) => {
+                          const dayKey = format(day, 'yyyy-MM-dd');
+                          const hasActivity = (user.dailyProgress?.[dayKey]?.challengesCompleted?.length || 0) > 0;
+                          const isDayToday = isToday(day);
+                          return (
+                              <div key={i} className="flex flex-col items-center gap-1">
+                                  <span className="text-xs font-medium text-white/80">{format(day, 'E')[0]}</span>
+                                  <div className={cn(
+                                      "w-6 h-6 rounded-full flex items-center justify-center transition-all",
+                                      hasActivity ? "bg-white/80" : "bg-white/20",
+                                      isDayToday && "ring-2 ring-white"
+                                  )}>
+                                      {hasActivity && <Check className="h-4 w-4 text-destructive" />}
+                                  </div>
+                              </div>
+                          )
+                      })}
+                    </div>
+                  </CardContent>
                   <CardFooter className="mt-auto">
                       <Link href="/daily" className="w-full">
                       <Button className="w-full bg-white/20 hover:bg-white/30 border-white/50 border text-white">Go</Button>
