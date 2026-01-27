@@ -205,8 +205,8 @@ export default function HomePage() {
 
         <Separator className="my-6" />
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-          <div className="md:col-span-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          <div className="md:col-span-2">
             <QuestionOfTheDay className="m-0 h-full flex flex-col" />
           </div>
           <div className="md:col-span-1 flex flex-col gap-6">
@@ -267,7 +267,7 @@ export default function HomePage() {
                                       hasActivity ? "bg-white/80" : "bg-white/20",
                                       isDayToday && "ring-2 ring-white"
                                   )}>
-                                      {hasActivity && <Check className="h-4 w-4 text-destructive" />}
+                                      {hasActivity && <Flame className="h-4 w-4 text-destructive" />}
                                   </div>
                               </div>
                           )
