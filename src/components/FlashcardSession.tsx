@@ -191,10 +191,10 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
   useEffect(() => {
     // When a new card becomes current, reset its visual state.
     if (cardRef.current) {
+      wasDraggedRef.current = false;
       cardRef.current.style.transition = 'none'; // No transition on reset
       cardRef.current.style.transform = ''; // Clear transforms
       cardRef.current.style.opacity = '1';
-      wasDraggedRef.current = false; // Ensure drag state is reset
       // Re-enable flip animation after a short delay
       setTimeout(() => {
         if (cardRef.current) {
@@ -237,7 +237,6 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
   
   const handlePointerDown = (e: React.PointerEvent) => {
     if (!isFlipped) return;
-    setIsGrabbing(true);
     wasDraggedRef.current = false;
     startXRef.current = e.clientX;
     currentXRef.current = e.clientX;
@@ -245,6 +244,7 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
     isDraggingRef.current = true;
     pointerIdRef.current = e.pointerId;
     if (cardRef.current) {
+        setIsGrabbing(true);
         cardRef.current.setPointerCapture(e.pointerId);
         cardRef.current.style.transition = 'none';
     }
@@ -255,7 +255,7 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
     currentXRef.current = e.clientX;
     const diff = currentXRef.current - startXRef.current;
     
-    if (Math.abs(diff) > 5) {
+    if (Math.abs(diff) > 10) { // Register as a drag after 10px
       wasDraggedRef.current = true;
     }
 
@@ -275,16 +275,15 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
   };
   
   const handlePointerUp = (e: React.PointerEvent) => {
-    setIsGrabbing(false);
-    setLeftGradientOpacity(0);
-    setRightGradientOpacity(0);
-
     if (!isDraggingRef.current || !cardRef.current) return;
     
     if (pointerIdRef.current === e.pointerId) {
         cardRef.current.releasePointerCapture(e.pointerId);
     }
     
+    setIsGrabbing(false);
+    setLeftGradientOpacity(0);
+    setRightGradientOpacity(0);
     isDraggingRef.current = false;
     pointerIdRef.current = null;
     
@@ -316,16 +315,15 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
   };
 
   const handlePointerCancel = (e: React.PointerEvent) => {
-    setIsGrabbing(false);
-    setLeftGradientOpacity(0);
-    setRightGradientOpacity(0);
-
     if (!isDraggingRef.current || !cardRef.current) return;
     
     if (pointerIdRef.current === e.pointerId) {
         cardRef.current.releasePointerCapture(e.pointerId);
     }
 
+    setIsGrabbing(false);
+    setLeftGradientOpacity(0);
+    setRightGradientOpacity(0);
     isDraggingRef.current = false;
     pointerIdRef.current = null;
     
@@ -375,7 +373,7 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
 
   if (isLoading)
     return (
-      <div className="text-center p-8">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
@@ -408,7 +406,7 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
       <div
         className="pointer-events-none fixed inset-y-0 left-0 w-1/3 z-20"
         style={{
-          background: 'linear-gradient(to right, hsl(var(--destructive) / 0.2), transparent)',
+          background: 'linear-gradient(to right, hsl(var(--destructive) / 0.3), transparent)',
           opacity: leftGradientOpacity,
           transition: isGrabbing ? 'none' : 'opacity 0.3s ease-out',
         }}
@@ -416,7 +414,7 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
       <div
         className="pointer-events-none fixed inset-y-0 right-0 w-1/3 z-20"
         style={{
-          background: 'linear-gradient(to left, hsl(var(--accent) / 0.2), transparent)',
+          background: 'linear-gradient(to left, hsl(var(--accent) / 0.3), transparent)',
           opacity: rightGradientOpacity,
           transition: isGrabbing ? 'none' : 'opacity 0.3s ease-out',
         }}
@@ -453,13 +451,17 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
             {currentCard && (
                 <div
                     ref={cardRef}
-                    className="flashcard relative w-full h-full cursor-pointer"
+                    className="flashcard relative w-full h-full"
                     onClick={handleCardClick}
                     onPointerDown={handlePointerDown}
                     onPointerMove={handlePointerMove}
                     onPointerUp={handlePointerUp}
                     onPointerCancel={handlePointerCancel}
-                    style={{ transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)', zIndex: 10 }}
+                    style={{ 
+                        transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)', 
+                        zIndex: 10,
+                        cursor: isFlipped ? (isGrabbing ? 'grabbing' : 'grab') : 'pointer'
+                    }}
                 >
                     <Card className="flashcard-front absolute w-full h-full flex items-center justify-center text-center p-4 sm:p-6">
                     <p className="text-xl md:text-2xl font-semibold">
@@ -484,8 +486,14 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
         <div className="text-center mt-4 text-sm text-muted-foreground h-5">
           {isFlipped ? 'Tap to hide, or swipe/use buttons to assess.' : 'Tap to reveal answer'}
         </div>
-        
-        <div className="flex justify-center items-center py-4 shrink-0 gap-4 mt-2 w-full max-w-md">
+      </main>
+      
+      <footer className="w-full max-w-md mx-auto px-4 pb-6">
+        <div className="flex justify-between text-sm text-muted-foreground font-semibold mb-2 px-2">
+            <span className="text-red-500/80">⟵ Incorrect</span>
+            <span className="text-green-500/80">Correct ⟶</span>
+        </div>
+        <div className="flex justify-center items-center gap-4">
             <Button variant="outline" className="w-full sm:w-auto border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600 disabled:opacity-0 transition-opacity" onClick={() => handleButtonPress('incorrect')} disabled={!isFlipped}>
                 <X className="mr-2 h-4 w-4" /> Incorrect
             </Button>
@@ -493,8 +501,7 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
                 <Check className="mr-2 h-4 w-4" /> Correct
             </Button>
         </div>
-      </main>
-      
+      </footer>
     </div>
   );
 };
