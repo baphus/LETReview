@@ -6,7 +6,6 @@ import {
   ArrowLeft,
   Check,
   X,
-  Wand2,
   Loader2,
   RotateCw,
 } from 'lucide-react';
@@ -29,11 +28,11 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import type { QuizQuestion } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+import { Progress } from '@/components/ui/progress';
 
 interface SessionStats {
   correct: QuizQuestion[];
   incorrect: QuizQuestion[];
-  hard: QuizQuestion[];
 }
 
 const SessionSummaryDialog = ({
@@ -47,8 +46,6 @@ const SessionSummaryDialog = ({
 }) => {
   const total = stats.correct.length + stats.incorrect.length;
   const accuracy = total > 0 ? (stats.correct.length / total) * 100 : 0;
-  const [activeTab, setActiveTab] = useState('incorrect');
-
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
@@ -91,43 +88,22 @@ const SessionSummaryDialog = ({
         </div>
 
         <div className="flex-1 flex flex-col min-h-0">
-          <div className="grid w-full grid-cols-2">
-            <Button variant="ghost" onClick={() => setActiveTab('incorrect')} disabled={activeTab === 'incorrect'}>Incorrect ({stats.incorrect.length})</Button>
-            <Button variant="ghost" onClick={() => setActiveTab('hard')} disabled={activeTab === 'hard'}>Hard ({stats.hard.length})</Button>
-          </div>
+          <DialogTitle className="text-lg font-semibold text-center pt-4">Review Incorrect Answers</DialogTitle>
           <ScrollArea className="mt-2 flex-1 pr-3">
             <div>
-              {activeTab === 'incorrect' && (
-                stats.incorrect.length > 0 ? (
-                  stats.incorrect.map((q) => (
-                    <div key={q.id} className="border-b p-3 text-sm last:border-b-0">
-                      <p className="font-semibold">{q.question}</p>
-                      <p className="mt-1 text-green-700 dark:text-green-500">
-                        <span className="font-medium">Correct Answer:</span> {q.correctAnswer}
-                      </p>
-                    </div>
-                  ))
-                ) : (
-                  <p className="p-4 text-center text-sm text-muted-foreground">
-                    No incorrect answers! Great job!
-                  </p>
-                )
-              )}
-               {activeTab === 'hard' && (
-                stats.hard.length > 0 ? (
-                  stats.hard.map((q) => (
-                    <div key={q.id} className="border-b p-3 text-sm last:border-b-0">
-                      <p className="font-semibold">{q.question}</p>
-                      <p className="mt-1 text-green-700 dark:text-green-500">
-                        <span className="font-medium">Correct Answer:</span> {q.correctAnswer}
-                      </p>
-                    </div>
-                  ))
-                ) : (
-                  <p className="p-4 text-center text-sm text-muted-foreground">
-                    No questions marked as hard.
-                  </p>
-                )
+              {stats.incorrect.length > 0 ? (
+                stats.incorrect.map((q) => (
+                  <div key={q.id} className="border-b p-3 text-sm last:border-b-0">
+                    <p className="font-semibold">{q.question}</p>
+                    <p className="mt-1 text-green-700 dark:text-green-500">
+                      <span className="font-medium">Correct Answer:</span> {q.correctAnswer}
+                    </p>
+                  </div>
+                ))
+              ) : (
+                <p className="p-4 text-center text-sm text-muted-foreground">
+                  No incorrect answers! Great job!
+                </p>
               )}
             </div>
           </ScrollArea>
@@ -162,7 +138,6 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
   const [sessionStats, setSessionStats] = useState<SessionStats>({
     correct: [],
     incorrect: [],
-    hard: [],
   });
   const [sessionSummary, setSessionSummary] = useState<SessionStats | null>(
     null
@@ -196,7 +171,7 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
     setDeck([...shuffledQuestions].sort(() => Math.random() - 0.5));
     setCurrentIndex(0);
     setIsFlipped(false);
-    setSessionStats({ correct: [], incorrect: [], hard: [] });
+    setSessionStats({ correct: [], incorrect: [] });
     setSessionSummary(null);
     setIsLoading(false);
   }, [initialQuestions, onExit, toast]);
@@ -213,7 +188,7 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
     }
   }, [currentIndex]);
 
-  const handleNextCard = (result: 'correct' | 'incorrect' | 'hard') => {
+  const handleNextCard = (result: 'correct' | 'incorrect') => {
     const currentCard = deck[currentIndex];
     if (!currentCard) return;
 
@@ -227,20 +202,12 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
       case 'incorrect':
         newStats.incorrect.push(currentCard);
         break;
-      case 'hard':
-        if (!newStats.hard.find(q => q.id === currentCard.id))
-          newStats.hard.push(currentCard);
-        const reinsertIndex = Math.min(currentIndex + 5, newDeck.length);
-        newDeck.splice(reinsertIndex, 0, currentCard);
-        break;
     }
 
-    if (result !== 'hard') {
-        newDeck.splice(currentIndex, 1);
-    }
+    newDeck.splice(currentIndex, 1);
     
     const timeoutId = setTimeout(() => {
-      if (newDeck.length === 0 || (result !== 'hard' && deck.length === 1)) {
+      if (newDeck.length === 0) {
         setSessionSummary(newStats);
       } else {
         setDeck(newDeck);
@@ -328,7 +295,7 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
     startTimeRef.current = 0;
   };
 
-  const handleButtonPress = (result: 'correct' | 'incorrect' | 'hard') => {
+  const handleButtonPress = (result: 'correct' | 'incorrect') => {
     if (!cardRef.current) return;
 
     const flipTransform = isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)';
@@ -338,8 +305,6 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
       swipeTransform = 'translateX(120%) rotate(15deg)';
     } else if (result === 'incorrect') {
       swipeTransform = 'translateX(-120%) rotate(-15deg)';
-    } else {
-      swipeTransform = 'translateY(120%)';
     }
 
     cardRef.current.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out';
@@ -386,7 +351,9 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
           </div>
       </div>
     );
-
+  
+  const totalAnswered = sessionStats.correct.length + sessionStats.incorrect.length;
+  const progress = initialQuestions.length > 0 ? (totalAnswered / initialQuestions.length) * 100 : 0;
 
   return (
     <div
@@ -396,7 +363,12 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
         <Button variant="ghost" size="icon" onClick={onExit}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <div className="flex-1" />
+         <div className="relative flex-1">
+            <Progress value={progress} />
+            <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-primary-foreground pointer-events-none">
+                {deck.length} / {initialQuestions.length} left
+            </span>
+        </div>
         <Button
           variant="outline"
           size="sm"
@@ -409,7 +381,7 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
       <main className="flex-1 flex flex-col items-center justify-center relative px-4">
         <div className="flashcard-container relative w-full h-full max-w-md max-h-[60vh] sm:max-h-[65vh] flex items-center justify-center">
             
-            {deck[currentIndex + 1] && (
+            {deck.length > 1 && (
                 <div className="absolute w-full h-full pointer-events-none scale-95 -translate-y-2 opacity-50">
                     <Card className="w-full h-full bg-muted" />
                 </div>
@@ -447,15 +419,12 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
             )}
         </div>
         <div className="text-center mt-4 text-sm text-muted-foreground h-5">
-          {isFlipped ? 'Tap to hide, swipe or use buttons to assess.' : 'Tap to reveal answer'}
+          {isFlipped ? 'Tap to hide, or swipe/use buttons to assess.' : 'Tap to reveal answer'}
         </div>
         
-        <div className="flex flex-col sm:flex-row justify-center items-center py-4 shrink-0 gap-4 mt-2 w-full max-w-md">
+        <div className="flex justify-center items-center py-4 shrink-0 gap-4 mt-2 w-full max-w-md">
             <Button variant="outline" className="w-full sm:w-auto border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600 disabled:opacity-0 transition-opacity" onClick={() => handleButtonPress('incorrect')} disabled={!isFlipped}>
                 <X className="mr-2 h-4 w-4" /> Incorrect
-            </Button>
-            <Button variant="outline" className="w-full sm:w-auto border-yellow-500 text-yellow-500 hover:bg-yellow-50 hover:text-yellow-600 disabled:opacity-0 transition-opacity" onClick={() => handleButtonPress('hard')} disabled={!isFlipped}>
-                <Wand2 className="mr-2 h-4 w-4" /> Hard
             </Button>
             <Button variant="outline" className="w-full sm:w-auto border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600 disabled:opacity-0 transition-opacity" onClick={() => handleButtonPress('correct')} disabled={!isFlipped}>
                 <Check className="mr-2 h-4 w-4" /> Correct
