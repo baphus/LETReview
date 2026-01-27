@@ -188,20 +188,19 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
 
   const currentCard = deck[currentIndex];
 
-  useEffect(() => {
+  const resetCardState = useCallback(() => {
     wasDraggedRef.current = false;
     if (cardRef.current) {
       cardRef.current.style.transition = 'none';
       cardRef.current.style.transform = '';
       cardRef.current.style.opacity = '1';
-      
-      requestAnimationFrame(() => {
-        if (cardRef.current) {
-          cardRef.current.style.transition = 'transform 0.6s';
-        }
-      });
     }
-  }, [currentCard]);
+    setIsFlipped(false);
+  }, []);
+
+  useEffect(() => {
+    resetCardState();
+  }, [currentCard, resetCardState]);
 
   const handleNextCard = (result: 'correct' | 'incorrect') => {
     const currentCard = deck[currentIndex];
@@ -228,7 +227,6 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
         setDeck(newDeck);
         setCurrentIndex(Math.min(currentIndex, newDeck.length - 1));
       }
-      setIsFlipped(false);
     }, 300);
 
     return () => clearTimeout(timeoutId);
@@ -236,7 +234,7 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
   
   const handlePointerDown = (e: React.PointerEvent) => {
     if (!isFlipped) return;
-    wasDraggedRef.current = false;
+    wasDraggedRef.current = false; // Reset drag flag on new touch
     startXRef.current = e.clientX;
     currentXRef.current = e.clientX;
     startTimeRef.current = Date.now();
@@ -254,7 +252,7 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
     currentXRef.current = e.clientX;
     const diff = currentXRef.current - startXRef.current;
     
-    if (Math.abs(diff) > 10) {
+    if (Math.abs(diff) > 10) { // Threshold to be considered a drag, not a tap
       wasDraggedRef.current = true;
     }
 
@@ -363,7 +361,7 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
 
 
   const handleCardClick = (e: React.MouseEvent) => {
-    if (wasDraggedRef.current) {
+    if (wasDraggedRef.current) { // Prevent click if card was dragged
         wasDraggedRef.current = false;
         return;
     }
@@ -466,7 +464,7 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
             {currentCard && (
                 <div
                     ref={cardRef}
-                    className="flashcard relative w-full h-full"
+                    className="flashcard relative w-full h-full select-none"
                     onClick={handleCardClick}
                     onPointerDown={handlePointerDown}
                     onPointerMove={handlePointerMove}

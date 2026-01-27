@@ -405,9 +405,6 @@ function QuestionsPageContent() {
     const newAnswers = [...challengeAnswers.filter(a => a.questionId !== currentQuestion.id), newAnswer];
     setChallengeAnswers(newAnswers);
     
-    // Score is calculated on finish now
-    // setQuizScore(prev => prev + (correct ? 1 : 0));
-
     setTimeout(() => {
         if (currentIndex < questions.length - 1) {
              setCurrentIndex((prev) => prev + 1);
@@ -416,7 +413,7 @@ function QuestionsPageContent() {
             setQuizScore(finalScore);
             handleFinishQuiz(newAnswers, finalScore);
         }
-    }, isChallenge || topicId ? 300 : 1000);
+    }, 1200);
   };
   
     const handleStartPracticeQuiz = () => {
