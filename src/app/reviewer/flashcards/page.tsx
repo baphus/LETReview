@@ -17,7 +17,7 @@ import Link from 'next/link';
 function FlashcardPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const topicId = searchParams.get('topic');
+  const topicId = searchParams.get('topicId');
   const firestore = useFirestore();
 
   const [view, setView] = useState<'list' | 'session'>('list');
