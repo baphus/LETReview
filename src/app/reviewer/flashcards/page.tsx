@@ -90,8 +90,12 @@ function FlashcardPageContent() {
           <div className="space-y-3">
             {questions.map(q => (
               <Card key={q.id}>
-                <CardContent className="p-4">
-                  <p>{q.question}</p>
+                <CardContent className="p-4 space-y-2">
+                  <p className="font-medium">{q.question}</p>
+                  <p className="text-sm text-green-600 dark:text-green-500 pt-2 border-t">
+                    <span className="font-semibold text-muted-foreground">Answer: </span>
+                    {q.correctAnswer}
+                  </p>
                 </CardContent>
               </Card>
             ))}

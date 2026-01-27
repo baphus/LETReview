@@ -287,6 +287,12 @@ export default function ReviewArticlePage() {
 
     return (
         <article className="prose prose-quoteless prose-neutral dark:prose-invert max-w-none pb-32">
+            <Link href="/reviewer/review" className="no-underline">
+                <Button variant="ghost" className="mb-4 -ml-4">
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Back to Reviewers
+                </Button>
+            </Link>
             <header className="mb-8">
                  <div className="flex flex-wrap items-center gap-2 mb-4 text-sm">
                     {subject && (
