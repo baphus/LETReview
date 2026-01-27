@@ -21,6 +21,7 @@ import { useAuth } from "@/firebase";
 import { signOut } from "firebase/auth";
 import type { PetProfile } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
+import { startOfWeek, endOfWeek, eachDayOfInterval, format, isToday } from "date-fns";
 
 const themes = [
     { name: 'Default', value: 'default', cost: 0, colors: { primary: 'hsl(231 48% 48%)', accent: 'hsl(110 32% 48%)' } },
@@ -474,6 +475,46 @@ export default function ProfilePage() {
           </div>
         </CardContent>
       </Card>
+
+      <Card className="mt-6">
+            <CardHeader>
+                <CardTitle>This Week's Progress</CardTitle>
+                <CardDescription>A look at your completed challenges for the current week.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="flex justify-between gap-1">
+                    {(() => {
+                        const weekStart = startOfWeek(new Date(), { weekStartsOn: 0 });
+                        const weekEnd = endOfWeek(new Date(), { weekStartsOn: 0 });
+                        const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
+
+                        return weekDays.map((day, i) => {
+                            const dayKey = format(day, 'yyyy-MM-dd');
+                            const hasActivity = (user.dailyProgress?.[dayKey]?.challengesCompleted?.length || 0) > 0;
+                            const isDayToday = isToday(day);
+                            return (
+                                <div key={i} className={cn(
+                                    "flex flex-col items-center gap-2 p-2 rounded-lg flex-1",
+                                    isDayToday && "bg-muted"
+                                )}>
+                                    <span className="text-sm font-semibold text-muted-foreground">{format(day, 'E')}</span>
+                                    <div className={cn(
+                                        "w-12 h-12 rounded-full flex items-center justify-center transition-all",
+                                        hasActivity ? "bg-destructive text-destructive-foreground" : "bg-muted/50",
+                                    )}>
+                                        {hasActivity ? (
+                                            <Flame className="h-7 w-7" />
+                                        ) : (
+                                            <span className="text-lg font-bold text-muted-foreground">{format(day, 'd')}</span>
+                                        )}
+                                    </div>
+                                </div>
+                            )
+                        })
+                    })()}
+                </div>
+            </CardContent>
+        </Card>
 
       <Card className="mt-6">
         <CardHeader>

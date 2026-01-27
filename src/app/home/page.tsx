@@ -16,7 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import Countdown from "@/components/Countdown";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { format, isToday, isFuture } from "date-fns";
+import { format, isToday, isFuture, startOfWeek, endOfWeek, eachDayOfInterval } from "date-fns";
 import { DayDetailDialog } from "@/components/DayDetailDialog";
 import { useUser } from "@/firebase/auth/use-user";
 import { ActivityCalendar } from "@/components/ActivityCalendar";
@@ -175,6 +175,10 @@ export default function HomePage() {
     return null; // Or show loading spinner
   }
 
+  const weekStart = startOfWeek(new Date(), { weekStartsOn: 0 });
+  const weekEnd = endOfWeek(new Date(), { weekStartsOn: 0 });
+  const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
+
   return (
     <>
       <div className="container mx-auto max-w-4xl">
@@ -199,47 +203,32 @@ export default function HomePage() {
 
         <StreakMessage streak={user.streak} />
 
-        <section className="my-8">
-            <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold font-headline">Activity Calendar</h2>
-                 <div className="flex items-center gap-2">
-                    {!showLegend && (
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowLegend(true)}>
-                                <HelpCircle className="h-4 w-4"/>
-                                <span className="sr-only">Show Legend</span>
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Show Legend</TooltipContent>
-                    </Tooltip>
-                    )}
-                    <Select value={view} onValueChange={(v) => setView(v as 'week' | 'month')}>
-                        <SelectTrigger className="w-auto h-9">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="week">Week</SelectItem>
-                            <SelectItem value="month">Month</SelectItem>
-                        </SelectContent>
-                    </Select>
+        <Card className="mb-6">
+            <CardHeader>
+                <CardTitle className="text-lg font-headline">This Week's Progress</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="flex justify-around">
+                    {weekDays.map((day, i) => {
+                        const dayKey = format(day, 'yyyy-MM-dd');
+                        const hasActivity = (user.dailyProgress?.[dayKey]?.challengesCompleted?.length || 0) > 0;
+                        const isDayToday = isToday(day);
+                        return (
+                            <div key={i} className="flex flex-col items-center gap-2">
+                                <span className="text-xs text-muted-foreground">{format(day, 'E')[0]}</span>
+                                <div className={cn(
+                                    "w-8 h-8 rounded-full flex items-center justify-center transition-all",
+                                    hasActivity ? "bg-destructive text-destructive-foreground" : "bg-muted",
+                                    isDayToday && "ring-2 ring-primary ring-offset-2 ring-offset-background"
+                                )}>
+                                    {hasActivity && <Flame className="h-5 w-5" />}
+                                </div>
+                            </div>
+                        )
+                    })}
                 </div>
-            </div>
-             {showLegend && (
-                <Alert className="mb-4">
-                    <AlertDescription className="flex items-center justify-between text-sm">
-                    <span className="flex items-center gap-1.5 flex-wrap">
-                        Streak days are marked with <Flame className="h-4 w-4 text-destructive inline-block" />, and completed Questions of the Day with a <CheckCircle className="h-4 w-4 text-green-500 inline-block" />. Click a day for details.
-                    </span>
-                    <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => setShowLegend(false)}>
-                        <X className="h-4 w-4 text-muted-foreground"/>
-                        <span className="sr-only">Hide Legend</span>
-                    </Button>
-                    </AlertDescription>
-                </Alert>
-            )}
-            <ActivityCalendar dailyProgress={user.dailyProgress} onDayClick={handleDayClick} view={view} />
-        </section>
+            </CardContent>
+        </Card>
 
         <Separator className="my-6" />
 
@@ -372,6 +361,48 @@ export default function HomePage() {
                 </Card>
             </section>
         )}
+
+        <section className="my-8">
+            <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold font-headline">Activity Calendar</h2>
+                 <div className="flex items-center gap-2">
+                    {!showLegend && (
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowLegend(true)}>
+                                <HelpCircle className="h-4 w-4"/>
+                                <span className="sr-only">Show Legend</span>
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Show Legend</TooltipContent>
+                    </Tooltip>
+                    )}
+                    <Select value={view} onValueChange={(v) => setView(v as 'week' | 'month')}>
+                        <SelectTrigger className="w-auto h-9">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="week">Week</SelectItem>
+                            <SelectItem value="month">Month</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+            </div>
+             {showLegend && (
+                <Alert className="mb-4">
+                    <AlertDescription className="flex items-center justify-between text-sm">
+                    <span className="flex items-center gap-1.5 flex-wrap">
+                        Streak days are marked with <Flame className="h-4 w-4 text-destructive inline-block" />, and completed Questions of the Day with a <CheckCircle className="h-4 w-4 text-green-500 inline-block" />. Click a day for details.
+                    </span>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => setShowLegend(false)}>
+                        <X className="h-4 w-4 text-muted-foreground"/>
+                        <span className="sr-only">Hide Legend</span>
+                    </Button>
+                    </AlertDescription>
+                </Alert>
+            )}
+            <ActivityCalendar dailyProgress={user.dailyProgress} onDayClick={handleDayClick} view={view} />
+        </section>
       </div>
     </>
   );
