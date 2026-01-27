@@ -4,56 +4,170 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Clock, Book, Video, Brain, Bookmark, PlusCircle, Zap, Search } from 'lucide-react';
+import { Clock, BookOpen, Bookmark, PlusCircle, Zap, Search, LayoutGrid, List } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where, orderBy, doc, deleteDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import type { Reviewer as ReviewArticle, Subject } from '@/lib/types';
+import type { Reviewer, Subject } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useUser } from '@/firebase/auth/use-user';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Separator } from '@/components/ui/separator';
 
-const articleTypeIcons = {
-  "article": <Book className="h-4 w-4" />,
-  "video": <Video className="h-4 w-4" />,
-  "mixed": <Brain className="h-4 w-4" />,
+const ReviewerGridCard = ({ article, subject, isBookmarked, onBookmarkToggle }: { article: Reviewer, subject?: Subject, isBookmarked: boolean, onBookmarkToggle: (e: React.MouseEvent) => void }) => {
+    return (
+        <Card className="flex flex-col hover:border-primary/50 transition-colors h-full">
+             <CardHeader>
+                <div className="flex justify-between items-start">
+                    {subject && <Badge variant="secondary" className="capitalize mb-2" style={{ backgroundColor: subject.color || '#6c757d', color: 'white' }}>{subject.name}</Badge>}
+                    <Button variant="ghost" size="icon" className="h-8 w-8 -mt-2 -mr-2 shrink-0" onClick={onBookmarkToggle}>
+                        <Bookmark className={cn("h-5 w-5 text-muted-foreground", isBookmarked && "fill-current text-primary")} />
+                    </Button>
+                </div>
+                <CardTitle className="font-headline text-xl">{article.title}</CardTitle>
+                <CardDescription className="line-clamp-3">{article.excerpt}</CardDescription>
+            </CardHeader>
+            <CardContent className="flex-grow">
+                <div className="flex items-center text-sm text-muted-foreground gap-4">
+                    <Badge
+                        variant="outline"
+                        className={cn(
+                            "capitalize",
+                            article.difficulty === 'easy' && 'border-green-300 text-green-800',
+                            article.difficulty === 'medium' && 'border-yellow-300 text-yellow-800',
+                            article.difficulty === 'hard' && 'border-red-300 text-red-800'
+                        )}
+                    >
+                        {article.difficulty}
+                    </Badge>
+                     <div className="flex items-center gap-1">
+                        <Clock className="h-4 w-4" />
+                        <span>{article.estimatedTime} min</span>
+                    </div>
+                </div>
+            </CardContent>
+            <CardFooter className="flex items-center gap-2 mt-auto">
+                <Link href={`/reviewer/review/${article.slug}`} passHref className="flex-1">
+                    <Button className="w-full">
+                        <BookOpen className="mr-2 h-4 w-4" /> Read
+                    </Button>
+                </Link>
+                <Link href={`/reviewer/flashcards?topicId=${article.topicIds[0]}`} passHref className="flex-1">
+                    <Button variant="outline" className="w-full" disabled={!article.topicIds || article.topicIds.length === 0}>
+                       <Zap className="mr-2 h-4 w-4" /> Flashcards
+                    </Button>
+                </Link>
+            </CardFooter>
+        </Card>
+    );
 };
 
-const ReviewCardSkeleton = () => (
-    <Card className="flex flex-col">
-        <CardHeader>
-            <div className="flex justify-between items-start">
-                <Skeleton className="h-6 w-20" />
-                <Skeleton className="h-6 w-16" />
+const ReviewerListCard = ({ article, subject, isBookmarked, onBookmarkToggle }: { article: Reviewer, subject?: Subject, isBookmarked: boolean, onBookmarkToggle: (e: React.MouseEvent) => void }) => {
+    return (
+        <Card className="hover:border-primary/50 transition-colors w-full">
+            <div className="flex flex-col sm:flex-row">
+                <div className="flex-1 p-6">
+                    <div className="flex justify-between items-start mb-2">
+                        {subject && <Badge variant="secondary" className="capitalize" style={{ backgroundColor: subject.color || '#6c757d', color: 'white' }}>{subject.name}</Badge>}
+                        <div className="flex items-center text-sm text-muted-foreground gap-4">
+                            <Badge
+                                variant="outline"
+                                className={cn(
+                                    "capitalize",
+                                    article.difficulty === 'easy' && 'border-green-300 text-green-800',
+                                    article.difficulty === 'medium' && 'border-yellow-300 text-yellow-800',
+                                    article.difficulty === 'hard' && 'border-red-300 text-red-800'
+                                )}
+                            >
+                                {article.difficulty}
+                            </Badge>
+                             <div className="flex items-center gap-1">
+                                <Clock className="h-4 w-4" />
+                                <span>{article.estimatedTime} min</span>
+                            </div>
+                        </div>
+                    </div>
+                    <CardTitle className="font-headline text-xl mb-2">{article.title}</CardTitle>
+                    <CardDescription className="line-clamp-2">{article.excerpt}</CardDescription>
+                </div>
+                <Separator orientation="vertical" className="hidden sm:block h-auto" />
+                <div className="p-6 pt-0 sm:pt-6 sm:pl-0 flex items-center justify-end sm:justify-center">
+                    <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="icon" onClick={onBookmarkToggle}>
+                            <Bookmark className={cn("h-5 w-5 text-muted-foreground", isBookmarked && "fill-current text-primary")} />
+                        </Button>
+                        <Link href={`/reviewer/flashcards?topicId=${article.topicIds[0]}`} passHref>
+                            <Button variant="outline" disabled={!article.topicIds || article.topicIds.length === 0}>
+                               <Zap className="mr-2 h-4 w-4" /> Flashcards
+                            </Button>
+                        </Link>
+                        <Link href={`/reviewer/review/${article.slug}`} passHref>
+                            <Button><BookOpen className="mr-2 h-4 w-4" /> Read</Button>
+                        </Link>
+                    </div>
+                </div>
             </div>
-            <Skeleton className="h-7 w-3/4 mt-2" />
-            <Skeleton className="h-4 w-full mt-1" />
-            <Skeleton className="h-4 w-5/6" />
-        </CardHeader>
-        <CardContent className="flex-grow">
-            <Skeleton className="h-5 w-1/2" />
-        </CardContent>
-        <CardFooter className="flex justify-between">
-            <Skeleton className="h-10 w-10" />
-            <div className="flex gap-2">
-                <Skeleton className="h-10 w-24" />
-                <Skeleton className="h-10 w-24" />
-            </div>
-        </CardFooter>
-    </Card>
-);
+        </Card>
+    );
+};
+
+const ReviewerSkeleton = ({ viewMode }: { viewMode: 'grid' | 'list' }) => {
+    if (viewMode === 'list') {
+        return (
+            <Card className="w-full">
+                <div className="flex flex-col sm:flex-row p-6 gap-4">
+                    <div className="flex-1 space-y-3">
+                        <div className="flex justify-between items-start">
+                            <Skeleton className="h-5 w-24" />
+                            <Skeleton className="h-5 w-16" />
+                        </div>
+                        <Skeleton className="h-6 w-3/4" />
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-5/6" />
+                    </div>
+                    <div className="flex items-center justify-end gap-2">
+                        <Skeleton className="h-10 w-10" />
+                        <Skeleton className="h-10 w-32" />
+                        <Skeleton className="h-10 w-24" />
+                    </div>
+                </div>
+            </Card>
+        )
+    }
+    return (
+        <Card className="flex flex-col h-full">
+            <CardHeader>
+                <div className="flex justify-between items-start">
+                    <Skeleton className="h-5 w-24" />
+                    <Skeleton className="h-8 w-8 rounded-full" />
+                </div>
+                <Skeleton className="h-6 w-3/4 mt-2" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-5/6" />
+            </CardHeader>
+            <CardContent className="flex-grow">
+                <Skeleton className="h-5 w-1/2" />
+            </CardContent>
+            <CardFooter className="flex items-center gap-2 mt-auto">
+                <Skeleton className="h-10 w-1/2" />
+                <Skeleton className="h-10 w-1/2" />
+            </CardFooter>
+        </Card>
+    );
+}
 
 export default function ReviewPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [categoryId, setCategoryId] = useState<'all' | 'gened' | 'profed' | 'majorship'>('all');
     const [subjectId, setSubjectId] = useState<'all' | string>('all');
     const [showOnlyBookmarked, setShowOnlyBookmarked] = useState(false);
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     
     const firestore = useFirestore();
     const { user, isAdmin, firebaseUser } = useUser();
@@ -77,7 +191,7 @@ export default function ReviewPage() {
         return collection(firestore, `users/${user.uid}/reviewerBookmarks`);
     }, [firestore, user, firebaseUser]);
 
-    const { data: allArticles, isLoading: isLoadingArticles } = useCollection<ReviewArticle>(allArticlesQuery);
+    const { data: allArticles, isLoading: isLoadingArticles } = useCollection<Reviewer>(allArticlesQuery);
     const { data: subjects, isLoading: isLoadingSubjects } = useCollection<Subject>(subjectsQuery);
     const { data: bookmarks } = useCollection(bookmarksQuery);
 
@@ -126,7 +240,7 @@ export default function ReviewPage() {
         });
     }, [allArticles, searchTerm, categoryId, subjectId, showOnlyBookmarked, bookmarkedIds]);
 
-    const handleToggleBookmark = async (e: React.MouseEvent, article: ReviewArticle) => {
+    const handleToggleBookmark = async (e: React.MouseEvent, article: Reviewer) => {
         e.preventDefault();
         e.stopPropagation();
 
@@ -150,7 +264,6 @@ export default function ReviewPage() {
              toast({ variant: 'destructive', title: 'Error', description: 'Could not update bookmark.'});
         }
     };
-
 
     return (
         <div>
@@ -193,13 +306,15 @@ export default function ReviewPage() {
                         <Switch id="bookmarked-filter" checked={showOnlyBookmarked} onCheckedChange={setShowOnlyBookmarked} />
                         <Label htmlFor="bookmarked-filter">Show bookmarked only</Label>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <Link href="/flashcards" passHref>
-                            <Button variant="outline">
-                                <Zap className="mr-2 h-4 w-4" />
-                                Flashcard Mode
+                     <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 rounded-md border p-1">
+                            <Button variant={viewMode === 'grid' ? 'secondary' : 'ghost'} size="icon" className="h-8 w-8" onClick={() => setViewMode('grid')}>
+                                <LayoutGrid className="h-4 w-4" />
                             </Button>
-                        </Link>
+                             <Button variant={viewMode === 'list' ? 'secondary' : 'ghost'} size="icon" className="h-8 w-8" onClick={() => setViewMode('list')}>
+                                <List className="h-4 w-4" />
+                            </Button>
+                        </div>
                         {isAdmin && (
                             <Link href="/reviewer/review/new" passHref>
                                 <Button>
@@ -211,66 +326,34 @@ export default function ReviewPage() {
                     </div>
                 </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {isLoadingArticles && Array.from({ length: 3 }).map((_, i) => <ReviewCardSkeleton key={i} />)}
+            
+            <div className={cn(
+                "gap-6",
+                viewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3" : "flex flex-col"
+            )}>
+                {isLoadingArticles && Array.from({ length: 6 }).map((_, i) => <ReviewerSkeleton key={i} viewMode={viewMode} />)}
                 
-                {!isLoadingArticles && displayedArticles.map(article => {
-                    const isBookmarked = bookmarkedIds.has(article.id);
-                    return (
-                        <Card key={article.slug} className="flex flex-col hover:border-primary/50 transition-colors">
-                            <CardHeader>
-                                <div className="flex justify-between items-start">
-                                    <Badge variant="secondary" className="capitalize mb-2" style={{ backgroundColor: subjects?.find(s => s.id === article.subjectId)?.color || '#6c757d', color: 'white' }}>
-                                        {subjects?.find(s => s.id === article.subjectId)?.name || article.subjectId}
-                                    </Badge>
-                                    <Badge
-                                        className={cn(
-                                            "capitalize",
-                                            article.difficulty === 'easy' && 'bg-green-100 text-green-800',
-                                            article.difficulty === 'medium' && 'bg-yellow-100 text-yellow-800',
-                                            article.difficulty === 'hard' && 'bg-red-100 text-red-800'
-                                        )}
-                                    >
-                                        {article.difficulty}
-                                    </Badge>
-                                </div>
-                                <CardTitle className="font-headline text-xl">{article.title}</CardTitle>
-                                <CardDescription>{article.excerpt}</CardDescription>
-                            </CardHeader>
-                            <CardContent className="flex-grow">
-                                <div className="flex items-center text-sm text-muted-foreground gap-4">
-                                    <div className="flex items-center gap-1">
-                                        {articleTypeIcons[article.reviewerType as keyof typeof articleTypeIcons]}
-                                        <span className="capitalize">{article.reviewerType}</span>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                        <Clock className="h-4 w-4" />
-                                        <span>{article.estimatedTime} min read</span>
-                                    </div>
-                                </div>
-                            </CardContent>
-                            <CardFooter className="flex justify-between mt-auto">
-                                <Button variant="ghost" size="icon" onClick={(e) => handleToggleBookmark(e, article)}>
-                                    <Bookmark className={cn("h-5 w-5", isBookmarked && "fill-current text-primary")} />
-                                </Button>
-                                <div className="flex items-center gap-2">
-                                    {article.topicIds && article.topicIds.length > 0 && (
-                                        <Link href={`/flashcards?topic=${article.topicIds[0]}`} passHref>
-                                            <Button variant="outline">Session</Button>
-                                        </Link>
-                                    )}
-                                    <Link href={`/reviewer/review/${article.slug}`} passHref>
-                                        <Button>Review</Button>
-                                    </Link>
-                                </div>
-                            </CardFooter>
-                        </Card>
-                    )
-                })}
+                {!isLoadingArticles && displayedArticles.map(article => (
+                    viewMode === 'grid' 
+                        ? <ReviewerGridCard 
+                            key={article.slug} 
+                            article={article} 
+                            subject={subjects?.find(s => s.id === article.subjectId)}
+                            isBookmarked={bookmarkedIds.has(article.id)}
+                            onBookmarkToggle={(e) => handleToggleBookmark(e, article)}
+                          />
+                        : <ReviewerListCard 
+                            key={article.slug} 
+                            article={article} 
+                            subject={subjects?.find(s => s.id === article.subjectId)}
+                            isBookmarked={bookmarkedIds.has(article.id)}
+                            onBookmarkToggle={(e) => handleToggleBookmark(e, article)}
+                          />
+                ))}
             </div>
 
             {!isLoadingArticles && displayedArticles.length === 0 && (
-                <div className="col-span-full text-center py-10">
+                <div className="col-span-full text-center py-16">
                     <p className="text-muted-foreground">No review articles found for this filter.</p>
                 </div>
             )}

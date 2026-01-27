@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { BookOpen, CalendarDays, Clock, Home, User, Lightbulb, LogIn, MessageSquare, Shield, Zap } from "lucide-react";
+import { BookOpen, CalendarDays, Clock, Home, User, Lightbulb, LogIn, MessageSquare, Shield } from "lucide-react";
 import {
   SidebarHeader,
   SidebarMenu,
@@ -27,7 +27,6 @@ import { FeedbackDialog } from "./FeedbackDialog";
 const navItems = [
   { href: "/home", label: "Home", icon: Home },
   { href: "/reviewer/review", label: "Reviewer", icon: BookOpen },
-  { href: "/flashcards", label: "Flashcards", icon: Zap },
   { href: "/quiz", label: "Quiz", icon: Lightbulb },
   { href: "/daily", label: "Daily", icon: CalendarDays },
   { href: "/timer", label: "Timer", icon: Clock },
@@ -60,7 +59,7 @@ export function AppSidebar() {
       let isActivePath = false;
       if (href === '/daily') {
         isActivePath = pathname.startsWith('/daily') || (pathname.startsWith('/reviewer/questions') && isChallenge);
-      } else if (href.startsWith('/reviewer')) {
+      } else if (href === '/reviewer/review') {
         isActivePath = pathname.startsWith('/reviewer') && !isChallenge;
       } else {
         isActivePath = pathname.startsWith(href);

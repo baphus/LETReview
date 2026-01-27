@@ -284,13 +284,13 @@ export default function HomePage() {
             <Card className="flex flex-col h-full">
                 <CardHeader>
                     <CardTitle className="font-headline flex items-center gap-2 text-xl">
-                        <Zap className="h-5 w-5 text-primary" /> Flashcards
+                        <BookOpen className="h-5 w-5 text-primary" /> Browse Reviewers
                     </CardTitle>
-                    <CardDescription>Quick practice sessions.</CardDescription>
+                    <CardDescription>Read articles and practice with flashcards.</CardDescription>
                 </CardHeader>
                 <CardFooter className="mt-auto">
-                    <Link href="/flashcards" className="w-full">
-                        <Button variant="outline" className="w-full">Practice</Button>
+                    <Link href="/reviewer/review" className="w-full">
+                        <Button variant="outline" className="w-full">Browse</Button>
                     </Link>
                 </CardFooter>
             </Card>
