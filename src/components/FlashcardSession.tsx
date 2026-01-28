@@ -188,14 +188,11 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
   const currentCard = deck[currentIndex];
 
   const resetCardState = useCallback(() => {
-    wasDraggedRef.current = false;
     if (cardRef.current) {
-      // Forcefully and instantly reset styles
       cardRef.current.style.transition = 'none';
       cardRef.current.style.transform = '';
       cardRef.current.style.opacity = '1';
 
-      // Re-enable transitions for the next interaction after a very short delay
       setTimeout(() => {
         if(cardRef.current) {
           cardRef.current.style.transition = 'transform 0.6s';
@@ -225,9 +222,6 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
         setDeck(prevDeck => {
             const newDeck = prevDeck.filter(card => card.id !== currentCard.id);
             if (newDeck.length === 0) {
-                // The session has ended. We construct the final stats and set the summary.
-                // `sessionStats` in this closure is from the render before this final card was processed,
-                // so we add the result of the final card manually.
                 const finalStats = {
                     correct: result === 'correct' ? [...sessionStats.correct, currentCard] : sessionStats.correct,
                     incorrect: result === 'incorrect' ? [...sessionStats.incorrect, currentCard] : sessionStats.incorrect
@@ -244,7 +238,6 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
   };
   
   const handlePointerDown = (e: React.PointerEvent) => {
-    if (!isFlipped) return;
     wasDraggedRef.current = false;
     startXRef.current = e.clientX;
     currentXRef.current = e.clientX;
@@ -259,6 +252,11 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
 
   const handlePointerMove = (e: React.PointerEvent) => {
     if (!isDraggingRef.current || !cardRef.current || typeof window === 'undefined') return;
+    
+    // If the card isn't flipped, we shouldn't process move events. This prevents
+    // slight movements from being registered as a drag, which would block the tap-to-flip.
+    if (!isFlipped) return;
+
     currentXRef.current = e.clientX;
     const diff = currentXRef.current - startXRef.current;
     
@@ -284,72 +282,50 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
   const handlePointerUp = (e: React.PointerEvent) => {
     if (pointerIdRef.current !== e.pointerId) return;
 
-    if (!isDraggingRef.current) {
-      if (!wasDraggedRef.current) {
-        setIsFlipped(prev => !prev);
-      }
-      return;
-    }
-    
+    const wasDragged = wasDraggedRef.current;
+
+    // Cleanup state for the next interaction
     if (cardRef.current) {
       cardRef.current.releasePointerCapture(e.pointerId);
     }
-    
     setIsGrabbing(false);
     setLeftGradientOpacity(0);
     setRightGradientOpacity(0);
     isDraggingRef.current = false;
     pointerIdRef.current = null;
+    wasDraggedRef.current = false;
     
-    const diff = currentXRef.current - startXRef.current;
+    // If it wasn't dragged, it's a tap. Flip the card.
+    if (!wasDragged) {
+        setIsFlipped(prev => !prev);
+        return;
+    }
 
+    // If it WAS dragged, proceed with swipe logic
+    const diff = currentXRef.current - startXRef.current;
     const distanceThreshold = 50;
     const isSufficientSwipe = Math.abs(diff) > distanceThreshold;
     
-    const flipTransform = isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)';
+    startXRef.current = 0;
+    currentXRef.current = 0;
 
-    if (wasDraggedRef.current && isSufficientSwipe) {
-      const direction = diff > 0 ? 'right' : 'left';
-      if (cardRef.current) {
-        cardRef.current.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out';
-        cardRef.current.style.transform = `translateX(${direction === 'right' ? '120%' : '-120%'}) rotate(${direction === 'right' ? 15 : -15}deg) ${flipTransform}`;
-        cardRef.current.style.opacity = '0';
-      }
-      handleNextCard(direction === 'right' ? 'correct' : 'incorrect');
+    // Swiping is only valid when the card is flipped.
+    if (isFlipped && isSufficientSwipe) {
+        const direction = diff > 0 ? 'right' : 'left';
+        if (cardRef.current) {
+            cardRef.current.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out';
+            cardRef.current.style.transform = `translateX(${direction === 'right' ? '120%' : '-120%'}) rotate(${direction === 'right' ? 15 : -15}deg) rotateY(180deg)`;
+            cardRef.current.style.opacity = '0';
+        }
+        handleNextCard(direction === 'right' ? 'correct' : 'incorrect');
     } else {
-      if (cardRef.current) {
-        cardRef.current.style.transition = 'transform 0.3s ease-out';
-        cardRef.current.style.transform = flipTransform;
-        cardRef.current.style.opacity = '1';
-      }
+        // If the swipe wasn't sufficient or card wasn't flipped, reset its position.
+        if (cardRef.current) {
+            cardRef.current.style.transition = 'transform 0.3s ease-out';
+            cardRef.current.style.transform = isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)';
+            cardRef.current.style.opacity = '1';
+        }
     }
-    
-    if (!wasDraggedRef.current) {
-        setIsFlipped(prev => !prev);
-    }
-
-    wasDraggedRef.current = false;
-    startXRef.current = 0;
-    currentXRef.current = 0;
-  };
-
-  const handlePointerCancel = (e: React.PointerEvent) => {
-    if (!isDraggingRef.current || !cardRef.current || pointerIdRef.current !== e.pointerId) return;
-    
-    cardRef.current.releasePointerCapture(e.pointerId);
-
-    setIsGrabbing(false);
-    setLeftGradientOpacity(0);
-    setRightGradientOpacity(0);
-    isDraggingRef.current = false;
-    pointerIdRef.current = null;
-    
-    cardRef.current.style.transition = 'transform 0.3s ease-out';
-    cardRef.current.style.transform = isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)';
-    
-    wasDraggedRef.current = false;
-    startXRef.current = 0;
-    currentXRef.current = 0;
   };
 
   const handleButtonPress = (result: 'correct' | 'incorrect') => {
@@ -482,7 +458,7 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
                     onPointerDown={handlePointerDown}
                     onPointerMove={handlePointerMove}
                     onPointerUp={handlePointerUp}
-                    onPointerCancel={handlePointerCancel}
+                    onPointerCancel={handlePointerUp}
                     style={{ 
                         transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)', 
                         zIndex: 10,
