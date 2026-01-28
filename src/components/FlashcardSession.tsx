@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -149,6 +150,7 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
   const [streak, setStreak] = useState(0);
   const [showCombo, setShowCombo] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
+  const [showStreakLost, setShowStreakLost] = useState(false);
   const [currentEmoji, setCurrentEmoji] = useState('✨');
   const positiveEmojis = ['✨', '🎉', '👍', '✅', '💯'];
 
@@ -157,7 +159,6 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
   const startXRef = useRef(0);
   const currentXRef = useRef(0);
   const isDraggingRef = useRef(false);
-  const wasDraggedRef = useRef(false);
 
   const setupDeck = useCallback(() => {
     setIsLoading(true);
@@ -192,20 +193,13 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
 
   const resetCardState = useCallback(() => {
     if (cardRef.current) {
-      // Force DOM reflow to ensure transition is disabled before resetting transform
       cardRef.current.style.transition = 'none';
-      // eslint-disable-next-line no-void
-      void cardRef.current.offsetHeight; // This triggers a reflow
-      
-      cardRef.current.style.transform = '';
-      cardRef.current.style.opacity = '1';
-
-      // Restore transition for next interaction
-      setTimeout(() => {
+      requestAnimationFrame(() => {
         if(cardRef.current) {
-            cardRef.current.style.transition = 'transform 0.6s, opacity 0.3s ease-out';
+            cardRef.current.style.transform = '';
+            cardRef.current.style.opacity = '1';
         }
-      }, 0);
+      });
     }
     setIsFlipped(false);
   }, []);
@@ -230,6 +224,10 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
         setTimeout(() => setShowCombo(false), 1500);
       }
     } else {
+      if (streak > 0) {
+        setShowStreakLost(true);
+        setTimeout(() => setShowStreakLost(false), 1500);
+      }
       setStreak(0);
     }
 
@@ -251,15 +249,16 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
   };
   
   const handlePointerDown = (e: React.PointerEvent) => {
-    wasDraggedRef.current = false;
-    startXRef.current = e.clientX;
-    currentXRef.current = e.clientX;
-    isDraggingRef.current = true;
-    pointerIdRef.current = e.pointerId;
-    if (cardRef.current) {
-        setIsGrabbing(true);
-        cardRef.current.setPointerCapture(e.pointerId);
-        cardRef.current.style.transition = 'none';
+    if (isFlipped) {
+        startXRef.current = e.clientX;
+        currentXRef.current = e.clientX;
+        isDraggingRef.current = true;
+        pointerIdRef.current = e.pointerId;
+        if (cardRef.current) {
+            setIsGrabbing(true);
+            cardRef.current.setPointerCapture(e.pointerId);
+            cardRef.current.style.transition = 'none';
+        }
     }
   };
 
@@ -269,11 +268,7 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
     currentXRef.current = e.clientX;
     const diff = currentXRef.current - startXRef.current;
     
-    if (Math.abs(diff) > 5) {
-      wasDraggedRef.current = true;
-    }
-
-    if (wasDraggedRef.current && isFlipped) {
+    if (isFlipped) {
         const flipTransform = 'rotateY(180deg)';
         cardRef.current.style.transform = `translateX(${diff}px) rotate(${diff * 0.05}deg) ${flipTransform}`;
         
@@ -291,34 +286,35 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
   };
   
   const handlePointerUp = (e: React.PointerEvent) => {
-    if (pointerIdRef.current !== e.pointerId) return;
+    if (pointerIdRef.current !== e.pointerId && isDraggingRef.current) return;
 
     if (cardRef.current) {
         cardRef.current.style.transition = 'transform 0.6s, opacity 0.3s ease-out';
     }
 
-    const wasDragged = wasDraggedRef.current;
+    const diff = currentXRef.current - startXRef.current;
+    const dragThreshold = 10;
+    const wasDragged = Math.abs(diff) > dragThreshold;
 
     if (cardRef.current) {
-      cardRef.current.releasePointerCapture(e.pointerId);
+      try {
+        cardRef.current.releasePointerCapture(e.pointerId);
+      } catch (error) {}
     }
     setIsGrabbing(false);
     setLeftGradientOpacity(0);
     setRightGradientOpacity(0);
     isDraggingRef.current = false;
     pointerIdRef.current = null;
-    wasDraggedRef.current = false;
     
     if (!wasDragged) {
         if (cardRef.current) {
-            // Re-apply transition specifically for the flip
             cardRef.current.style.transition = 'transform 0.6s';
         }
         setIsFlipped(prev => !prev);
         return;
     }
 
-    const diff = currentXRef.current - startXRef.current;
     const distanceThreshold = 50;
     const isSufficientSwipe = Math.abs(diff) > distanceThreshold;
     
@@ -362,9 +358,11 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
       swipeTransform = 'translateX(-120%) rotate(-15deg)';
     }
 
-    cardRef.current.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out';
-    cardRef.current.style.transform = `${swipeTransform} ${flipTransform}`;
-    cardRef.current.style.opacity = '0';
+    if (cardRef.current) {
+      cardRef.current.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out';
+      cardRef.current.style.transform = `${swipeTransform} ${flipTransform}`;
+      cardRef.current.style.opacity = '0';
+    }
 
     handleNextCard(result);
   };
@@ -469,6 +467,11 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
                     🔥 Streak x{streak}!
                 </div>
             )}
+             {showStreakLost && (
+                <div className="pointer-events-none absolute -top-4 left-0 right-0 mx-auto w-fit bg-muted text-foreground px-3 py-1 rounded-full text-lg font-bold animate-combo-pop z-40">
+                    😭 Streak Lost!
+                </div>
+            )}
 
             {deck.length > 1 && (
                 <div className="absolute w-full h-full pointer-events-none scale-95 -translate-y-2 opacity-50">
@@ -495,17 +498,21 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
                         {currentCard.question}
                     </p>
                     </Card>
-                    <Card className="flashcard-back absolute w-full h-full flex flex-col justify-center text-center p-4 sm:p-6">
-                    <ScrollArea className="flex-1">
-                        <p className="text-lg md:text-xl font-semibold">
-                        {currentCard.correctAnswer}
-                        </p>
-                        {currentCard.explanation && (
-                        <p className="text-sm text-muted-foreground mt-4">
-                            {currentCard.explanation}
-                        </p>
-                        )}
-                    </ScrollArea>
+                    <Card className="flashcard-back absolute w-full h-full flex flex-col p-4 sm:p-6">
+                        <div className="flex-1 flex flex-col items-center justify-center text-center">
+                            <ScrollArea className="w-full">
+                                <div className="p-2">
+                                    <p className="text-xl md:text-2xl font-bold text-primary">
+                                    {currentCard.correctAnswer}
+                                    </p>
+                                    {currentCard.explanation && (
+                                    <p className="text-base text-muted-foreground mt-4">
+                                        {currentCard.explanation}
+                                    </p>
+                                    )}
+                                </div>
+                            </ScrollArea>
+                        </div>
                     </Card>
                 </div>
             )}
