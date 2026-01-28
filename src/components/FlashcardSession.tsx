@@ -225,16 +225,14 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
         setDeck(prevDeck => {
             const newDeck = prevDeck.filter(card => card.id !== currentCard.id);
             if (newDeck.length === 0) {
-                // Update sessionSummary inside this callback to ensure it has the latest stats
-                setSessionSummary(currentStats => {
-                    const finalStats = { ...currentStats! };
-                    if (result === 'correct') {
-                        finalStats.correct.push(currentCard);
-                    } else {
-                        finalStats.incorrect.push(currentCard);
-                    }
-                    return finalStats;
-                });
+                // The session has ended. We construct the final stats and set the summary.
+                // `sessionStats` in this closure is from the render before this final card was processed,
+                // so we add the result of the final card manually.
+                const finalStats = {
+                    correct: result === 'correct' ? [...sessionStats.correct, currentCard] : sessionStats.correct,
+                    incorrect: result === 'incorrect' ? [...sessionStats.incorrect, currentCard] : sessionStats.incorrect
+                };
+                setSessionSummary(finalStats);
             } else {
                  setCurrentIndex(prevIndex => Math.min(prevIndex, newDeck.length - 1));
             }
@@ -284,15 +282,17 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
   };
   
   const handlePointerUp = (e: React.PointerEvent) => {
-    if (!isDraggingRef.current || !cardRef.current) {
-        if(!wasDraggedRef.current) {
-           setIsFlipped(prev => !prev);
-        }
-        return;
-    };
+    if (pointerIdRef.current !== e.pointerId) return;
+
+    if (!isDraggingRef.current) {
+      if (!wasDraggedRef.current) {
+        setIsFlipped(prev => !prev);
+      }
+      return;
+    }
     
-    if (pointerIdRef.current === e.pointerId) {
-        cardRef.current.releasePointerCapture(e.pointerId);
+    if (cardRef.current) {
+      cardRef.current.releasePointerCapture(e.pointerId);
     }
     
     setIsGrabbing(false);
@@ -310,30 +310,33 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
 
     if (wasDraggedRef.current && isSufficientSwipe) {
       const direction = diff > 0 ? 'right' : 'left';
-      cardRef.current.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out';
-      cardRef.current.style.transform = `translateX(${direction === 'right' ? '120%' : '-120%'}) rotate(${direction === 'right' ? 15 : -15}deg) ${flipTransform}`;
-      cardRef.current.style.opacity = '0';
+      if (cardRef.current) {
+        cardRef.current.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out';
+        cardRef.current.style.transform = `translateX(${direction === 'right' ? '120%' : '-120%'}) rotate(${direction === 'right' ? 15 : -15}deg) ${flipTransform}`;
+        cardRef.current.style.opacity = '0';
+      }
       handleNextCard(direction === 'right' ? 'correct' : 'incorrect');
     } else {
-      cardRef.current.style.transition = 'transform 0.3s ease-out';
-      cardRef.current.style.transform = flipTransform;
-      cardRef.current.style.opacity = '1';
+      if (cardRef.current) {
+        cardRef.current.style.transition = 'transform 0.3s ease-out';
+        cardRef.current.style.transform = flipTransform;
+        cardRef.current.style.opacity = '1';
+      }
     }
     
     if (!wasDraggedRef.current) {
         setIsFlipped(prev => !prev);
     }
 
+    wasDraggedRef.current = false;
     startXRef.current = 0;
     currentXRef.current = 0;
   };
 
   const handlePointerCancel = (e: React.PointerEvent) => {
-    if (!isDraggingRef.current || !cardRef.current) return;
+    if (!isDraggingRef.current || !cardRef.current || pointerIdRef.current !== e.pointerId) return;
     
-    if (pointerIdRef.current === e.pointerId) {
-        cardRef.current.releasePointerCapture(e.pointerId);
-    }
+    cardRef.current.releasePointerCapture(e.pointerId);
 
     setIsGrabbing(false);
     setLeftGradientOpacity(0);
@@ -343,7 +346,8 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
     
     cardRef.current.style.transition = 'transform 0.3s ease-out';
     cardRef.current.style.transform = isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)';
-
+    
+    wasDraggedRef.current = false;
     startXRef.current = 0;
     currentXRef.current = 0;
   };
@@ -423,7 +427,7 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
           transition: isGrabbing ? 'none' : 'opacity 0.3s ease-out',
         }}
       />
-      <div
+       <div
         className="pointer-events-none fixed inset-y-0 left-0 flex items-center justify-start pl-8 z-30 transition-opacity"
         style={{ opacity: leftGradientOpacity }}
       >
@@ -457,7 +461,7 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
         <div className="flex items-center gap-3">
             <Progress value={progress} className="flex-1" />
             <p className="text-sm font-semibold text-muted-foreground w-16 text-right">
-                {totalAnswered}/{initialQuestions.length}
+                {deck.length}/{initialQuestions.length}
             </p>
         </div>
       </header>
