@@ -482,7 +482,7 @@ export default function ProfilePage() {
                 <CardDescription>A look at your completed challenges for the current week.</CardDescription>
             </CardHeader>
             <CardContent>
-                <div className="flex justify-between gap-1">
+                <div className="flex justify-around">
                     {(() => {
                         const weekStart = startOfWeek(new Date(), { weekStartsOn: 0 });
                         const weekEnd = endOfWeek(new Date(), { weekStartsOn: 0 });
@@ -494,18 +494,18 @@ export default function ProfilePage() {
                             const isDayToday = isToday(day);
                             return (
                                 <div key={i} className={cn(
-                                    "flex flex-col items-center gap-2 p-2 rounded-lg flex-1",
+                                    "flex flex-col items-center gap-1 p-1 rounded-lg",
                                     isDayToday && "bg-muted"
                                 )}>
-                                    <span className="text-sm font-semibold text-muted-foreground">{format(day, 'E')}</span>
+                                    <span className="text-xs font-semibold text-muted-foreground">{format(day, 'E')}</span>
                                     <div className={cn(
-                                        "w-12 h-12 rounded-full flex items-center justify-center transition-all",
+                                        "w-8 h-8 rounded-full flex items-center justify-center transition-all",
                                         hasActivity ? "bg-destructive text-destructive-foreground" : "bg-muted/50",
                                     )}>
                                         {hasActivity ? (
-                                            <Flame className="h-7 w-7" />
+                                            <Flame className="h-5 w-5" />
                                         ) : (
-                                            <span className="text-lg font-bold text-muted-foreground">{format(day, 'd')}</span>
+                                            <span className="text-sm font-bold text-muted-foreground">{format(day, 'd')}</span>
                                         )}
                                     </div>
                                 </div>
