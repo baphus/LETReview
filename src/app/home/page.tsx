@@ -45,29 +45,15 @@ const motivationalQuotes = [
 ];
 
 const StreakMessage = ({ streak }: { streak: number }) => {
-    let message: { title: string; body: string; } | null = null;
-    
-    if (streak >= 100) {
-        message = { title: "Legendary!", body: `You're on a ${streak}-day streak! Incredible dedication!` };
-    } else if (streak >= 50) {
-        message = { title: "Amazing Milestone!", body: `A ${streak}-day streak is a huge achievement. Keep it up!` };
-    } else if (streak >= 30) {
-        message = { title: "Incredible!", body: `You've maintained your streak for ${streak} days! You're unstoppable.` };
-    } else if (streak >= 14) {
-        message = { title: "Fantastic!", body: `A ${streak}-day streak! You've built a strong habit.` };
-    } else if (streak >= 7) {
-        message = { title: "Great Week!", body: `You're on a ${streak}-day streak! Keep the momentum going.` };
-    } else if (streak >= 3) {
-        message = { title: "On a Roll!", body: `That's a ${streak}-day streak! You're building a great habit.` };
-    }
-
-    if (!message) return null;
+    if (streak < 3) return null;
 
     return (
-        <Card className="mb-6 bg-accent/10 border-accent/20">
-            <CardHeader>
-                <CardTitle className="text-center text-accent-foreground font-headline flex items-center justify-center gap-2"><Flame className="text-destructive"/> {message.title}</CardTitle>
-                <CardDescription className="text-center text-accent-foreground/80">{message.body}</CardDescription>
+        <Card className="mb-6">
+            <CardHeader className="p-4 text-center">
+                <div className="flex items-center justify-center gap-2 text-xl font-bold font-headline">
+                    <Flame className="h-6 w-6 text-destructive" />
+                    <span>{streak}-day Streak</span>
+                </div>
             </CardHeader>
         </Card>
     );
@@ -211,74 +197,74 @@ export default function HomePage() {
           </div>
           <div className="md:col-span-1 flex flex-col gap-6">
             {isStreakSecuredToday ? (
-                <Card className="bg-green-50 border-green-200 flex flex-col h-full">
-                  <CardHeader>
-                      <CardTitle className="text-green-800 font-headline flex items-center gap-2 text-xl">
-                      <CheckCircle className="h-5 w-5" /> Streak Secured!
-                      </CardTitle>
-                      <CardDescription className="text-green-600">Take on more challenges for extra points.</CardDescription>
-                  </CardHeader>
-                  <CardContent className="py-2">
-                    <div className="flex justify-around items-center pt-2 border-t border-green-200">
-                      {weekDays.map((day, i) => {
-                          const dayKey = format(day, 'yyyy-MM-dd');
-                          const hasActivity = (user.dailyProgress?.[dayKey]?.challengesCompleted?.length || 0) > 0;
-                          const isDayToday = isToday(day);
-                          return (
-                              <div key={i} className="flex flex-col items-center gap-1">
-                                  <span className="text-xs font-medium text-green-700">{format(day, 'E')[0]}</span>
-                                  <div className={cn(
-                                      "w-6 h-6 rounded-full flex items-center justify-center transition-all",
-                                      hasActivity ? "bg-green-500" : "bg-green-200",
-                                      isDayToday && "ring-2 ring-green-600"
-                                  )}>
-                                      {hasActivity && <Check className="h-4 w-4 text-white" />}
-                                  </div>
-                              </div>
-                          )
-                      })}
-                    </div>
-                  </CardContent>
-                  <CardFooter className="mt-auto">
-                      <Link href="/daily" className="w-full">
-                      <Button className="w-full">More Challenges</Button>
-                      </Link>
-                  </CardFooter>
+                <Card className="flex flex-col h-full">
+                    <CardHeader>
+                        <CardTitle className="font-headline flex items-center gap-2 text-xl">
+                            <Flame className="h-5 w-5 text-destructive" /> Streak Secured!
+                        </CardTitle>
+                        <CardDescription>Your streak is safe for today. Well done!</CardDescription>
+                    </CardHeader>
+                    <CardContent className="py-2">
+                        <div className="flex justify-around items-center pt-2 border-t">
+                            {weekDays.map((day, i) => {
+                                const dayKey = format(day, 'yyyy-MM-dd');
+                                const hasActivity = (user.dailyProgress?.[dayKey]?.challengesCompleted?.length || 0) > 0;
+                                const isDayToday = isToday(day);
+                                return (
+                                    <div key={i} className="flex flex-col items-center gap-1">
+                                        <span className="text-xs font-medium text-muted-foreground">{format(day, 'E')[0]}</span>
+                                        <div className={cn(
+                                            "w-6 h-6 rounded-full flex items-center justify-center transition-all",
+                                            hasActivity ? "bg-destructive" : "bg-muted",
+                                            isDayToday && "ring-2 ring-primary"
+                                        )}>
+                                            {hasActivity && <Flame className="h-4 w-4 text-destructive-foreground" />}
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    </CardContent>
+                    <CardFooter className="mt-auto">
+                        <Link href="/daily" className="w-full">
+                            <Button variant="secondary" className="w-full">More Challenges</Button>
+                        </Link>
+                    </CardFooter>
                 </Card>
             ) : (
-                <Card className="bg-gradient-to-br from-yellow-400 via-orange-500 to-red-600 text-white flex flex-col h-full">
-                  <CardHeader>
-                      <CardTitle className="font-headline flex items-center gap-2 text-xl">
-                      <Flame className="h-5 w-5" /> Secure Streak
-                      </CardTitle>
-                      <CardDescription className="text-white/80">Complete a daily challenge.</CardDescription>
-                  </CardHeader>
-                   <CardContent className="py-2">
-                    <div className="flex justify-around items-center pt-2 border-t border-white/20">
-                      {weekDays.map((day, i) => {
-                          const dayKey = format(day, 'yyyy-MM-dd');
-                          const hasActivity = (user.dailyProgress?.[dayKey]?.challengesCompleted?.length || 0) > 0;
-                          const isDayToday = isToday(day);
-                          return (
-                              <div key={i} className="flex flex-col items-center gap-1">
-                                  <span className="text-xs font-medium text-white/80">{format(day, 'E')[0]}</span>
-                                  <div className={cn(
-                                      "w-6 h-6 rounded-full flex items-center justify-center transition-all",
-                                      hasActivity ? "bg-white/80" : "bg-white/20",
-                                      isDayToday && "ring-2 ring-white"
-                                  )}>
-                                      {hasActivity && <Flame className="h-4 w-4 text-destructive" />}
-                                  </div>
-                              </div>
-                          )
-                      })}
-                    </div>
-                  </CardContent>
-                  <CardFooter className="mt-auto">
-                      <Link href="/daily" className="w-full">
-                      <Button className="w-full bg-white/20 hover:bg-white/30 border-white/50 border text-white">Go</Button>
-                      </Link>
-                  </CardFooter>
+                <Card className="flex flex-col h-full border-primary">
+                    <CardHeader>
+                        <CardTitle className="font-headline flex items-center gap-2 text-xl text-primary">
+                            <Flame className="h-5 w-5" /> Secure Streak
+                        </CardTitle>
+                        <CardDescription>Complete a daily challenge.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="py-2">
+                        <div className="flex justify-around items-center pt-2 border-t">
+                            {weekDays.map((day, i) => {
+                                const dayKey = format(day, 'yyyy-MM-dd');
+                                const hasActivity = (user.dailyProgress?.[dayKey]?.challengesCompleted?.length || 0) > 0;
+                                const isDayToday = isToday(day);
+                                return (
+                                    <div key={i} className="flex flex-col items-center gap-1">
+                                        <span className="text-xs font-medium text-muted-foreground">{format(day, 'E')[0]}</span>
+                                        <div className={cn(
+                                            "w-6 h-6 rounded-full flex items-center justify-center transition-all",
+                                            hasActivity ? "bg-destructive" : "bg-muted",
+                                            isDayToday && "ring-2 ring-primary"
+                                        )}>
+                                            {hasActivity && <Flame className="h-4 w-4 text-destructive-foreground" />}
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    </CardContent>
+                    <CardFooter className="mt-auto">
+                        <Link href="/daily" className="w-full">
+                            <Button className="w-full">Go to Challenges</Button>
+                        </Link>
+                    </CardFooter>
                 </Card>
             )}
             <Card className="flex flex-col h-full">
