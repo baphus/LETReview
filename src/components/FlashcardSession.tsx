@@ -146,6 +146,13 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
   const [rightGradientOpacity, setRightGradientOpacity] = useState(0);
   const [isGrabbing, setIsGrabbing] = useState(false);
 
+  // State for streaks and feedback
+  const [streak, setStreak] = useState(0);
+  const [showCombo, setShowCombo] = useState(false);
+  const [showEmoji, setShowEmoji] = useState(false);
+  const [currentEmoji, setCurrentEmoji] = useState('✨');
+  const positiveEmojis = ['✨', '🎉', '👍', '✅', '💯'];
+
   const cardRef = useRef<HTMLDivElement>(null);
   const pointerIdRef = useRef<number | null>(null);
   const startXRef = useRef(0);
@@ -174,6 +181,7 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
     setIsFlipped(false);
     setSessionStats({ correct: [], incorrect: [] });
     setSessionSummary(null);
+    setStreak(0);
     setIsLoading(false);
   }, [initialQuestions, onExit, toast]);
 
@@ -198,6 +206,29 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
   
   const handleNextCard = (result: 'correct' | 'incorrect') => {
     if (!currentCard) return;
+
+    if (result === 'correct') {
+      const newStreak = streak + 1;
+      setStreak(newStreak);
+
+      setCurrentEmoji(positiveEmojis[Math.floor(Math.random() * positiveEmojis.length)]);
+      setShowEmoji(true);
+      setTimeout(() => setShowEmoji(false), 1000);
+
+      if (newStreak > 1) {
+        setShowCombo(true);
+        setTimeout(() => setShowCombo(false), 1500);
+      }
+    } else {
+      if (streak > 0) {
+        toast({
+          variant: 'destructive',
+          title: 'Streak Lost!',
+          description: `You had a streak of ${streak}.`,
+        });
+      }
+      setStreak(0);
+    }
 
     const newStats = {
       correct: result === 'correct' ? [...sessionStats.correct, currentCard] : sessionStats.correct,
@@ -259,14 +290,12 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
   const handlePointerUp = (e: React.PointerEvent) => {
     if (pointerIdRef.current !== e.pointerId) return;
 
-    // Restore transition for flip or snap-back animations
     if (cardRef.current) {
-        cardRef.current.style.transition = 'transform 0.6s';
+        cardRef.current.style.transition = 'transform 0.6s, opacity 0.3s ease-out';
     }
 
     const wasDragged = wasDraggedRef.current;
 
-    // Cleanup state for the next interaction
     if (cardRef.current) {
       cardRef.current.releasePointerCapture(e.pointerId);
     }
@@ -277,13 +306,14 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
     pointerIdRef.current = null;
     wasDraggedRef.current = false;
     
-    // If it wasn't dragged, it's a tap. Flip the card.
     if (!wasDragged) {
+        if (cardRef.current) {
+            cardRef.current.style.transition = 'transform 0.6s';
+        }
         setIsFlipped(prev => !prev);
         return;
     }
 
-    // If it WAS dragged, proceed with swipe logic
     const diff = currentXRef.current - startXRef.current;
     const distanceThreshold = 50;
     const isSufficientSwipe = Math.abs(diff) > distanceThreshold;
@@ -291,20 +321,16 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
     startXRef.current = 0;
     currentXRef.current = 0;
 
-    // Swiping is only valid when the card is flipped.
     if (isFlipped && isSufficientSwipe) {
         const direction = diff > 0 ? 'right' : 'left';
         if (cardRef.current) {
-            // Override for swipe-off animation
             cardRef.current.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out';
             cardRef.current.style.transform = `translateX(${direction === 'right' ? '120%' : '-120%'}) rotate(${direction === 'right' ? 15 : -15}deg) rotateY(180deg)`;
             cardRef.current.style.opacity = '0';
         }
         handleNextCard(direction === 'right' ? 'correct' : 'incorrect');
     } else {
-        // If the swipe wasn't sufficient or card wasn't flipped, reset its position.
         if (cardRef.current) {
-            // Use a slightly different transition for the snap-back
             cardRef.current.style.transition = 'transform 0.3s ease-out';
             cardRef.current.style.transform = isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)';
             cardRef.current.style.opacity = '1';
@@ -429,6 +455,17 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
       <main className="flex-1 flex flex-col items-center justify-center relative px-4">
         <div className="flashcard-container relative w-full h-full max-w-md max-h-[60vh] sm:max-h-[65vh] flex items-center justify-center">
             
+            {showEmoji && (
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center z-40">
+                    <span className="text-6xl animate-emoji-pop">{currentEmoji}</span>
+                </div>
+            )}
+            {showCombo && streak > 1 && (
+                <div className="pointer-events-none absolute -top-4 -right-4 bg-destructive text-destructive-foreground px-3 py-1 rounded-full text-lg font-bold animate-combo-pop z-40">
+                    🔥 Streak x{streak}!
+                </div>
+            )}
+
             {deck.length > 1 && (
                 <div className="absolute w-full h-full pointer-events-none scale-95 -translate-y-2 opacity-50">
                     <Card className="w-full h-full bg-muted" />
