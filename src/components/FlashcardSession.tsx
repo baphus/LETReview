@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -193,9 +192,20 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
 
   const resetCardState = useCallback(() => {
     if (cardRef.current) {
+      // Force DOM reflow to ensure transition is disabled before resetting transform
       cardRef.current.style.transition = 'none';
+      // eslint-disable-next-line no-void
+      void cardRef.current.offsetHeight; // This triggers a reflow
+      
       cardRef.current.style.transform = '';
       cardRef.current.style.opacity = '1';
+
+      // Restore transition for next interaction
+      setTimeout(() => {
+        if(cardRef.current) {
+            cardRef.current.style.transition = 'transform 0.6s, opacity 0.3s ease-out';
+        }
+      }, 0);
     }
     setIsFlipped(false);
   }, []);
@@ -220,13 +230,6 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
         setTimeout(() => setShowCombo(false), 1500);
       }
     } else {
-      if (streak > 0) {
-        toast({
-          variant: 'destructive',
-          title: 'Streak Lost!',
-          description: `You had a streak of ${streak}.`,
-        });
-      }
       setStreak(0);
     }
 
@@ -308,6 +311,7 @@ export function FlashcardSession({ initialQuestions, onExit }: FlashcardSessionP
     
     if (!wasDragged) {
         if (cardRef.current) {
+            // Re-apply transition specifically for the flip
             cardRef.current.style.transition = 'transform 0.6s';
         }
         setIsFlipped(prev => !prev);
