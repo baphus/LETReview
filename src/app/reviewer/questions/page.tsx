@@ -352,46 +352,48 @@ function QuestionsPageContent() {
   }, [isChallenge, questions.length, passingScore, challengeDifficulty, challengeCategory, user, updateUser, toast, topicId, quizStreak]);
 
   const handleAnswer = (correct: boolean, answer: string) => {
-    if (correct) {
-        const newStreak = quizStreak + 1;
-        setQuizStreak(newStreak);
+    if (!isChallenge) {
+        if (correct) {
+            const newStreak = quizStreak + 1;
+            setQuizStreak(newStreak);
 
-        setCurrentEmoji(positiveEmojis[Math.floor(Math.random() * positiveEmojis.length)]);
-        setShowEmoji(true);
-        setTimeout(() => setShowEmoji(false), 1000);
+            setCurrentEmoji(positiveEmojis[Math.floor(Math.random() * positiveEmojis.length)]);
+            setShowEmoji(true);
+            setTimeout(() => setShowEmoji(false), 1000);
 
-        if (newStreak > 1) {
-            setShowStreak(true);
-            setTimeout(() => setShowStreak(false), 1500);
-        }
-        
-        if (user && !user.answeredQuestionIds?.includes(currentQuestion.id)) {
-            const todayKey = getTodayKey();
-            const dailyProgress = user.dailyProgress?.[todayKey] || {};
-            updateUser({ 
-                questionsAnswered: (user.questionsAnswered || 0) + 1,
-                answeredQuestionIds: [...(user.answeredQuestionIds || []), currentQuestion.id],
-                dailyProgress: {
-                    ...user.dailyProgress,
-                    [todayKey]: {
-                        ...dailyProgress,
-                        questionsAnswered: (dailyProgress.questionsAnswered || 0) + 1,
-                    }
-                }
-            });
-        }
-    } else {
-        if (quizStreak > 0) {
-            toast({
-                variant: "destructive",
-                title: "Streak Lost!",
-                description: `You had a streak of ${quizStreak}. Keep trying!`,
-            });
-            if (user && quizStreak > (user.highestQuizStreak || 0)) {
-                updateUser({ highestQuizStreak: quizStreak });
+            if (newStreak > 1) {
+                setShowStreak(true);
+                setTimeout(() => setShowStreak(false), 1500);
             }
+        } else {
+            if (quizStreak > 0) {
+                toast({
+                    variant: "destructive",
+                    title: "Streak Lost!",
+                    description: `You had a streak of ${quizStreak}. Keep trying!`,
+                });
+                if (user && quizStreak > (user.highestQuizStreak || 0)) {
+                    updateUser({ highestQuizStreak: quizStreak });
+                }
+            }
+            setQuizStreak(0);
         }
-        setQuizStreak(0);
+    }
+    
+    if (correct && user && !user.answeredQuestionIds?.includes(currentQuestion.id)) {
+        const todayKey = getTodayKey();
+        const dailyProgress = user.dailyProgress?.[todayKey] || {};
+        updateUser({ 
+            questionsAnswered: (user.questionsAnswered || 0) + 1,
+            answeredQuestionIds: [...(user.answeredQuestionIds || []), currentQuestion.id],
+            dailyProgress: {
+                ...user.dailyProgress,
+                [todayKey]: {
+                    ...dailyProgress,
+                    questionsAnswered: (dailyProgress.questionsAnswered || 0) + 1,
+                }
+            }
+        });
     }
 
     const newAnswer: ChallengeAnswer = {
@@ -405,6 +407,8 @@ function QuestionsPageContent() {
     const newAnswers = [...challengeAnswers.filter(a => a.questionId !== currentQuestion.id), newAnswer];
     setChallengeAnswers(newAnswers);
     
+    const advanceTimeout = isChallenge ? 300 : 1200;
+
     setTimeout(() => {
         if (currentIndex < questions.length - 1) {
              setCurrentIndex((prev) => prev + 1);
@@ -413,7 +417,7 @@ function QuestionsPageContent() {
             setQuizScore(finalScore);
             handleFinishQuiz(newAnswers, finalScore);
         }
-    }, 1200);
+    }, advanceTimeout);
   };
   
     const handleStartPracticeQuiz = () => {
