@@ -10,6 +10,7 @@ function Logo(props: { className?: string }) {
         alt="LETReview Logo"
         fill
         sizes="(max-width: 768px) 10vw, 96px"
+        className="mix-blend-multiply dark:mix-blend-screen dark:invert"
       />
     </div>
   );
