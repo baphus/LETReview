@@ -99,11 +99,11 @@ export function ActivityCalendar({ dailyProgress, onDayClick, view }: ActivityCa
                         !isCurrentMonth && !isDayFuture && "cursor-pointer"
                       )}
                     >
-                      <div className="flex justify-between items-start">
+                      <div className="flex justify-between items-start gap-1">
                         <span className={cn("font-bold text-sm", isDayToday ? 'text-primary' : isCurrentMonth ? 'text-foreground' : 'text-muted-foreground/50')}>{format(day, 'd')}</span>
-                        <div className="flex items-center gap-1 z-10 relative">
-                            {isStreakDay && isCurrentMonth && <Flame className="h-4 w-4 text-destructive" />}
-                            {qotd && isCurrentMonth && <CheckCircle className="h-4 w-4 text-green-500" />}
+                        <div className="flex flex-wrap items-center justify-end gap-0.5">
+                            {isStreakDay && isCurrentMonth && <Flame className="h-4 w-4 text-destructive shrink-0" />}
+                            {qotd && isCurrentMonth && <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />}
                         </div>
                       </div>
                       {isCurrentMonth && (
