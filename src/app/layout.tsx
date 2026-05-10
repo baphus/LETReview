@@ -3,10 +3,16 @@ import './globals.css';
 import { RootClientLayout } from '@/components/RootClientLayout';
 import { cn } from '@/lib/utils';
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
+const inter = Inter({ 
+  subsets: ['latin'], 
+  variable: '--font-inter',
+  display: 'swap',
+});
+
 const spaceGrotesk = Space_Grotesk({
   subsets: ['latin'],
   variable: '--font-space-grotesk',
+  display: 'swap',
 });
 
 export default function RootLayout({
@@ -31,10 +37,6 @@ export default function RootLayout({
           crossOrigin="anonymous"
         />
         <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap"
-          rel="stylesheet"
-        />
-        <link
           rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/katex@0.13.11/dist/katex.min.css"
           integrity="sha384-Um5gpz1odJg5Z4HAmzPtgZKdTBHZdw8S29IecapCSB31ligYPhHQZMIlWLYQGVoc"
@@ -47,6 +49,7 @@ export default function RootLayout({
           spaceGrotesk.variable,
           'font-body antialiased flex flex-col h-dvh bg-background'
         )}
+        suppressHydrationWarning
       >
         <RootClientLayout>{children}</RootClientLayout>
       </body>
