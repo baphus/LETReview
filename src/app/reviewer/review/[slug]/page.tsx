@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useParams } from 'next/navigation';
@@ -19,6 +18,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { MdxRenderer } from '@/components/MdxRenderer';
 import { Progress } from '@/components/ui/progress';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { withRetry } from '@/lib/firestore-utils';
 
 
 const articleTypeIcons = {
@@ -49,7 +49,6 @@ export default function ReviewArticlePage() {
     const { user, isAdmin, firebaseUser } = useUser();
     const { toast } = useToast();
 
-    // State for pagination
     const [pages, setPages] = useState<string[]>([]);
     const [currentPage, setCurrentPage] = useState(0);
 
@@ -74,7 +73,6 @@ export default function ReviewArticlePage() {
     
     const article = articles?.[0];
 
-    // Query for user progress on this specific article
     const progressRef = useMemoFirebase(() => {
         if (!firestore || !user || !article || firebaseUser?.isAnonymous) return null;
         return doc(firestore, `users/${user.uid}/reviewerProgress`, article.id);
@@ -103,13 +101,10 @@ export default function ReviewArticlePage() {
         return bookmarks.some(b => b.id === article.id);
     }, [bookmarks, article]);
 
-    // Effect to split content into pages when article loads
     useEffect(() => {
         if (article) {
             const WORDS_PER_PAGE = 450;
             const finalPages: string[] = [];
-            
-            // Treat the entire content as one block and split by paragraphs.
             const paragraphs = article.content.split(/\n\n/);
             let currentPageContent = "";
 
@@ -120,13 +115,10 @@ export default function ReviewArticlePage() {
                 const currentWordCount = currentPageContent.split(/\s+/).filter(Boolean).length;
                 const paraWordCount = trimmedPara.split(/\s+/).filter(Boolean).length;
 
-                // If adding the next paragraph would make the page too long,
-                // and the current page is not empty, push the current page.
                 if (currentWordCount > 0 && currentWordCount + paraWordCount > WORDS_PER_PAGE) {
                     finalPages.push(currentPageContent);
-                    currentPageContent = trimmedPara; // Start a new page with the current paragraph
+                    currentPageContent = trimmedPara;
                 } else {
-                    // Otherwise, add the paragraph to the current page.
                     if (currentPageContent.length > 0) {
                         currentPageContent += '\n\n';
                     }
@@ -134,7 +126,6 @@ export default function ReviewArticlePage() {
                 }
             }
 
-            // Add any remaining content as the last page.
             if (currentPageContent.trim()) {
                 finalPages.push(currentPageContent);
             }
@@ -143,7 +134,6 @@ export default function ReviewArticlePage() {
         }
     }, [article]);
 
-    // Effect to set initial page from saved progress
     useEffect(() => {
         if (progress && pages.length > 0) {
             const bookmarkedPage = progress.lastReadPosition || 0;
@@ -151,11 +141,8 @@ export default function ReviewArticlePage() {
                 setCurrentPage(bookmarkedPage);
             }
         }
-    // We only want this to run once when progress and pages are loaded.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [progress, pages.length > 0]);
 
-    // Debounced effect to save progress when page changes
     useEffect(() => {
         const saveProgress = async () => {
             if (!progressRef || pages.length === 0 || isLoadingProgress || !user || firebaseUser?.isAnonymous) return;
@@ -174,9 +161,9 @@ export default function ReviewArticlePage() {
             };
 
             try {
-                await setDoc(progressRef, progressData, { merge: true });
+                // Use exponential backoff for progress tracking
+                await withRetry(() => setDoc(progressRef, progressData, { merge: true }));
             } catch (serverError) {
-                console.error("Could not save progress", serverError);
                 const permissionError = new FirestorePermissionError({
                     path: progressRef.path,
                     operation: 'write',
@@ -186,10 +173,9 @@ export default function ReviewArticlePage() {
             }
         };
 
-        const timeoutId = setTimeout(saveProgress, 1500); // Debounce for 1.5s
+        const timeoutId = setTimeout(saveProgress, 1500); 
         return () => clearTimeout(timeoutId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentPage, pages.length]);
+    }, [currentPage, pages.length, progressRef, isLoadingProgress, user, firebaseUser]);
 
     const handleToggleBookmark = async () => {
         if (!user || !firestore || !article || !firebaseUser || firebaseUser.isAnonymous) {
@@ -201,14 +187,13 @@ export default function ReviewArticlePage() {
 
         try {
             if (isBookmarked) {
-                await deleteDoc(bookmarkRef);
+                await withRetry(() => deleteDoc(bookmarkRef));
                 toast({ title: 'Bookmark removed' });
             } else {
-                await setDoc(bookmarkRef, { createdAt: serverTimestamp() });
+                await withRetry(() => setDoc(bookmarkRef, { createdAt: serverTimestamp() }));
                 toast({ title: 'Article bookmarked!', className: "bg-green-100 border-green-300" });
             }
         } catch (serverError) {
-             console.error("Error toggling bookmark: ", serverError);
              const permissionError = new FirestorePermissionError({
                 path: bookmarkRef.path,
                 operation: isBookmarked ? 'delete' : 'write',

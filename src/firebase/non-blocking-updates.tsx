@@ -10,34 +10,31 @@ import {
   SetOptions,
 } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
-import {FirestorePermissionError} from '@/firebase/errors';
+import { FirestorePermissionError } from '@/firebase/errors';
+import { withRetry } from '@/lib/firestore-utils';
 
 /**
- * Initiates a setDoc operation for a document reference.
- * Does NOT await the write operation internally.
+ * Initiates a setDoc operation with exponential backoff.
  */
 export function setDocumentNonBlocking(docRef: DocumentReference, data: any, options: SetOptions) {
-  setDoc(docRef, data, options).catch(error => {
+  withRetry(() => setDoc(docRef, data, options)).catch(error => {
     errorEmitter.emit(
       'permission-error',
       new FirestorePermissionError({
         path: docRef.path,
-        operation: 'write', // or 'create'/'update' based on options
+        operation: 'write',
         requestResourceData: data,
       })
     )
   })
-  // Execution continues immediately
 }
 
 
 /**
- * Initiates an addDoc operation for a collection reference.
- * Does NOT await the write operation internally.
- * Returns the Promise for the new doc ref, but typically not awaited by caller.
+ * Initiates an addDoc operation with exponential backoff.
  */
 export function addDocumentNonBlocking(colRef: CollectionReference, data: any) {
-  const promise = addDoc(colRef, data)
+  const promise = withRetry(() => addDoc(colRef, data))
     .catch(error => {
       errorEmitter.emit(
         'permission-error',
@@ -53,11 +50,10 @@ export function addDocumentNonBlocking(colRef: CollectionReference, data: any) {
 
 
 /**
- * Initiates an updateDoc operation for a document reference.
- * Does NOT await the write operation internally.
+ * Initiates an updateDoc operation with exponential backoff.
  */
 export function updateDocumentNonBlocking(docRef: DocumentReference, data: any) {
-  updateDoc(docRef, data)
+  withRetry(() => updateDoc(docRef, data))
     .catch(error => {
       errorEmitter.emit(
         'permission-error',
@@ -72,11 +68,10 @@ export function updateDocumentNonBlocking(docRef: DocumentReference, data: any) 
 
 
 /**
- * Initiates a deleteDoc operation for a document reference.
- * Does NOT await the write operation internally.
+ * Initiates a deleteDoc operation with exponential backoff.
  */
 export function deleteDocumentNonBlocking(docRef: DocumentReference) {
-  deleteDoc(docRef)
+  withRetry(() => deleteDoc(docRef))
     .catch(error => {
       errorEmitter.emit(
         'permission-error',
