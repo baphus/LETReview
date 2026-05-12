@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { useUser } from '@/firebase/auth/use-user';
 import { streakPets, achievementPets, rarePets } from '@/lib/data';
 import { cn } from '@/lib/utils';
-import { Flame, Trophy, Brain, Stars, Moon, Coffee, Loader2, Send, Cpu, Database } from 'lucide-react';
+import { Flame, Trophy, Brain, Stars, Moon, Coffee, Loader2, Send } from 'lucide-react';
 import { format } from 'date-fns';
 import { getPetAiMessage, chatWithPet } from '@/ai/flows/pet-message-flow';
 import { Input } from '@/components/ui/input';
@@ -35,7 +35,6 @@ export function VirtualPetHero() {
   const { user } = useUser();
   const firestore = useFirestore();
   const [aiMessage, setAiMessage] = useState<string | null>(null);
-  const [messageSource, setMessageSource] = useState<'ai' | 'local'>('local');
   const [displayedMessage, setDisplayedMessage] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [userChatInput, setUserChatInput] = useState("");
@@ -114,7 +113,6 @@ export function VirtualPetHero() {
           availableTopics: topics.map(t => t.name),
         });
         setAiMessage(response.message);
-        setMessageSource(response.source || 'ai');
       } catch (error) {
         setAiMessage(null);
       } finally {
@@ -147,7 +145,6 @@ export function VirtualPetHero() {
         availableTopics: topics?.map(t => t.name) || [],
       });
       setAiMessage(response.message);
-      setMessageSource(response.source || 'ai');
     } catch (e) {
       setAiMessage(null);
     } finally {
@@ -169,17 +166,6 @@ export function VirtualPetHero() {
               </div>
             ) : (
               <>
-                <div className="absolute top-2 right-3 flex items-center gap-1">
-                   {messageSource === 'ai' ? (
-                     <Badge variant="outline" className="bg-primary/5 text-[10px] h-4 gap-1 border-primary/20 text-primary px-1.5">
-                        <Cpu className="h-2 w-2" /> AI
-                     </Badge>
-                   ) : (
-                     <Badge variant="outline" className="bg-muted/50 text-[10px] h-4 gap-1 border-muted text-muted-foreground px-1.5">
-                        <Database className="h-2 w-2" /> LOCAL
-                     </Badge>
-                   )}
-                </div>
                 <p className="text-sm md:text-base font-medium leading-tight text-foreground px-2">
                   "{displayedMessage || '...'}"
                 </p>
