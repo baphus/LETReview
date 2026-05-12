@@ -18,8 +18,51 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: 'LETReview',
-  description: 'A gamified, mobile-first web application for studying the Licensure Exam for Teachers (LET) in the Philippines.',
+  metadataBase: new URL('https://letreview.app'), // Replace with actual domain when deployed
+  title: {
+    default: 'LETReview | Your Gamified LET Review Partner',
+    template: '%s | LETReview'
+  },
+  description: 'Ace the Licensure Examination for Teachers (LET) in the Philippines with our gamified review app. Study GENED, PROFED, and Majorship topics with interactive quizzes, streaks, and pets.',
+  keywords: [
+    'LET Reviewer 2026', 
+    'Licensure Examination for Teachers', 
+    'Philippine Teacher Board Exam', 
+    'GENED Reviewer', 
+    'PROFED Reviewer', 
+    'Gamified Study App', 
+    'LET Practice Quiz'
+  ],
+  authors: [{ name: 'LETReview Team' }],
+  creator: 'LETReview',
+  publisher: 'LETReview',
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'en_PH',
+    url: 'https://letreview.app',
+    siteName: 'LETReview',
+    title: 'LETReview | Your Gamified LET Review Partner',
+    description: 'The most engaging way to prepare for the LET. Master concepts and track your progress with our gamified platform.',
+    images: [
+      {
+        url: '/images/landing/app-preview.png',
+        width: 1200,
+        height: 630,
+        alt: 'LETReview App Preview',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'LETReview | Your Gamified LET Review Partner',
+    description: 'Prepare for the LET with interactive reviewers and daily challenges.',
+    images: ['/images/landing/app-preview.png'],
+  },
   manifest: '/manifest.json',
   icons: {
     icon: '/favicon.ico',
