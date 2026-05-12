@@ -1,14 +1,14 @@
-
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { useUser } from '@/firebase/auth/use-user';
 import { streakPets, achievementPets, rarePets } from '@/lib/data';
 import { cn } from '@/lib/utils';
-import { Flame, Trophy, Brain, Stars, Moon, Coffee } from 'lucide-react';
+import { Flame, Trophy, Brain, Stars, Moon, Coffee, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { getPetAiMessage } from '@/ai/flows/pet-message-flow';
 
 type PetMood = 'happy' | 'sleepy' | 'stressed' | 'motivated' | 'focused';
 
@@ -16,7 +16,6 @@ interface MoodConfig {
   label: string;
   icon: React.ReactNode;
   color: string;
-  messages: string[];
 }
 
 const MOODS: Record<PetMood, MoodConfig> = {
@@ -24,66 +23,34 @@ const MOODS: Record<PetMood, MoodConfig> = {
     label: 'Happy',
     icon: <Stars className="h-3 w-3" />,
     color: 'bg-green-500',
-    messages: [
-      "You're doing great! Keep it up!",
-      "I love seeing you study!",
-      "Feeling good today, are you?",
-      "Education is the most powerful weapon! Let's go!",
-      "You make this look easy!",
-      "Why did the teacher wear sunglasses? Because the class was so bright!",
-    ],
   },
   sleepy: {
     label: 'Sleepy',
     icon: <Moon className="h-3 w-3" />,
     color: 'bg-blue-400',
-    messages: [
-      "Is it study time yet? *yawn*",
-      "I'm ready for a nap...",
-      "Wake me up when we start reviewing.",
-      "ZZZ... oh! I was just visualizing our success.",
-      "Even a future LPT needs their beauty sleep.",
-    ],
   },
   stressed: {
     label: 'Stressed',
     icon: <Coffee className="h-3 w-3" />,
     color: 'bg-orange-500',
-    messages: [
-      "That's a lot of questions! Take a breath.",
-      "Don't let the exam scare you!",
-      "Maybe a short break?",
-      "Deep breaths. One Republic Act at a time.",
-      "Even the best teachers started where you are.",
-    ],
   },
   motivated: {
     label: 'On Fire!',
     icon: <Flame className="h-3 w-3" />,
     color: 'bg-red-500',
-    messages: [
-      "UNSTOPPABLE! Let's crush this LET!",
-      "Look at that streak go!",
-      "You're making this look easy!",
-      "Future LPT in the building!",
-      "Your brain is basically a supercomputer right now.",
-    ],
   },
   focused: {
     label: 'Focused',
     icon: <Brain className="h-3 w-3" />,
     color: 'bg-purple-500',
-    messages: [
-      "Shhh, I'm analyzing the data...",
-      "Absolute focus mode engaged.",
-      "Every minute counts towards that LPT title.",
-      "I can practically see the neural pathways forming.",
-    ],
   },
 };
 
 export function VirtualPetHero() {
   const { user } = useUser();
+  const [aiMessage, setAiMessage] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+
   const allPets = [...streakPets, ...achievementPets, ...rarePets];
 
   const todayKey = format(new Date(), 'yyyy-MM-dd');
@@ -101,7 +68,7 @@ export function VirtualPetHero() {
   const petName = user?.petNames?.[petProfile.name] || petProfile.name;
 
   // Dynamic Logic for Mood
-  const { mood } = useMemo(() => {
+  const { moodKey, moodConfig } = useMemo(() => {
     let currentMood: PetMood = 'happy';
     if (streak >= 3) currentMood = 'motivated';
     if ((todayStats.questionsAnswered || 0) > 15) currentMood = 'focused';
@@ -109,64 +76,38 @@ export function VirtualPetHero() {
     if ((todayStats.pomodorosCompleted || 0) === 0 && !todayStats.qotdCompleted) currentMood = 'sleepy';
 
     return {
-      mood: MOODS[currentMood],
+      moodKey: currentMood,
+      moodConfig: MOODS[currentMood],
     };
   }, [streak, todayStats, challengesToday]);
 
-  const performanceRemarks = useMemo(() => {
-    if (!user) return [];
-    const remarks: string[] = [
-      `Welcome back, ${user.name}! Ready to ace the LET?`,
-      `Great to see you again, Teacher ${user.name}!`,
-    ];
+  // AI Message Generation
+  useEffect(() => {
+    if (!user) return;
 
-    // Streak Milestones
-    if (streak === 0) {
-      remarks.push("Let's start a new streak today! I believe in you.");
-    } else if (streak === 1) {
-      remarks.push("Day 1 of our new journey! The first step is the most important.");
-    } else if (streak === 3) {
-      remarks.push("3 days in a row! You're building a solid study habit.");
-    } else if (streak >= 7 && streak < 14) {
-      remarks.push(`${streak} days! You're officially a consistent reviewer!`);
-    } else if (streak >= 30) {
-      remarks.push(`A whole month of studying! ${streak} days is legendary!`);
-    }
+    const fetchAiMessage = async () => {
+      setIsGenerating(true);
+      try {
+        const response = await getPetAiMessage({
+          petName,
+          userName: user.name,
+          mood: moodConfig.label,
+          streak,
+          todayPoints: todayStats.pointsEarned || 0,
+          totalAnswers,
+          challengesToday,
+        });
+        setAiMessage(response.message);
+      } catch (error) {
+        console.error('Failed to fetch AI message:', error);
+        setAiMessage(`Hey ${user.name}! I'm happy to see you studying today.`);
+      } finally {
+        setIsGenerating(false);
+      }
+    };
 
-    // Daily Challenge Remarks
-    if (challengesToday === 1) {
-      remarks.push("First challenge of the day done! Keep that momentum.");
-    } else if (challengesToday >= 3) {
-      remarks.push(`Wow, ${challengesToday} challenges today? You're absolutely unstoppable!`);
-    }
-    
-    if (todayStats.qotdCompleted) {
-        remarks.push("You've already tackled the Question of the Day. Smart move!");
-    }
-
-    // Total Answer Milestones
-    if (totalAnswers >= 1000) {
-        remarks.push(`1,000+ questions answered! You're basically a human encyclopedia.`);
-    } else if (totalAnswers >= 500) {
-        remarks.push(`500 questions! You're halfway to becoming a master.`);
-    } else if (totalAnswers >= 100) {
-        remarks.push(`100+ questions answered! That's serious progress.`);
-    }
-
-    // Historical Comparisons
-    if (user.highestStreak > streak && streak > 0) {
-        remarks.push(`Our record is ${user.highestStreak} days. We can beat it together!`);
-    }
-
-    return remarks;
-  }, [user, streak, totalAnswers, challengesToday, todayStats.qotdCompleted]);
-
-  const randomMessage = useMemo(() => {
-    // Give performance-based messages a high priority (70% chance if available)
-    const useRemark = performanceRemarks.length > 0 && Math.random() > 0.3;
-    const pool = useRemark ? performanceRemarks : mood.messages;
-    return pool[Math.floor(Math.random() * pool.length)];
-  }, [mood, performanceRemarks]);
+    fetchAiMessage();
+  }, [user?.uid, streak, challengesToday, petName, moodConfig.label, todayStats.pointsEarned, totalAnswers]);
 
   if (!user) return null;
 
@@ -175,10 +116,14 @@ export function VirtualPetHero() {
       <div className="flex flex-col items-center gap-6">
         {/* Chat Bubble - Optimized for mobile */}
         <div className="w-full max-w-xs md:max-w-md animate-fade-in-up">
-          <div className="relative bg-card border shadow-sm rounded-2xl p-4 text-center">
-            <p className="text-sm md:text-base font-medium leading-tight text-foreground">
-              "{randomMessage}"
-            </p>
+          <div className="relative bg-card border shadow-sm rounded-2xl p-4 text-center min-h-[60px] flex items-center justify-center">
+            {isGenerating ? (
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            ) : (
+              <p className="text-sm md:text-base font-medium leading-tight text-foreground">
+                "{aiMessage || '...'}"
+              </p>
+            )}
             {/* Triangle pointer */}
             <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[8px] border-t-card" />
           </div>
@@ -189,7 +134,7 @@ export function VirtualPetHero() {
           <div className="relative">
             <div className={cn(
               "absolute inset-0 rounded-full blur-3xl opacity-20 transition-colors scale-150",
-              mood.color
+              moodConfig.color
             )} />
             <Image
               src={petProfile.image}
@@ -201,9 +146,9 @@ export function VirtualPetHero() {
             />
           </div>
           <h2 className="mt-4 text-2xl font-bold font-headline">{petName}</h2>
-          <Badge variant="secondary" className={cn("mt-1 gap-1 text-white border-none px-3 py-1", mood.color)}>
-            {mood.icon}
-            {mood.label}
+          <Badge variant="secondary" className={cn("mt-1 gap-1 text-white border-none px-3 py-1", moodConfig.color)}>
+            {moodConfig.icon}
+            {moodConfig.label}
           </Badge>
         </div>
 
