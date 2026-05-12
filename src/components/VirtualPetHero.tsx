@@ -12,7 +12,7 @@ import { getPetAiMessage, chatWithPet } from '@/ai/flows/pet-message-flow';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { collection } from 'firebase/firestore';
 import type { Topic } from '@/lib/types';
 
 type PetMood = 'happy' | 'sleepy' | 'stressed' | 'motivated' | 'focused';
@@ -62,19 +62,19 @@ export function VirtualPetHero() {
     if (!user?.quizProgress || !topics) return "No quiz data yet.";
     const summaries = Object.entries(user.quizProgress).map(([id, stats]) => {
         const topic = topics.find(t => t.id === id);
-        return `${topic?.name || 'Unknown Topic'}: ${stats.averageScore.toFixed(0)}% avg`;
+        return `${topic?.name || 'Topic'}: ${stats.averageScore.toFixed(0)}%`;
     });
     return summaries.length > 0 ? summaries.join(', ') : "No quiz data yet.";
   }, [user?.quizProgress, topics]);
 
-  const { moodConfig } = useMemo(() => {
+  const moodConfig = useMemo(() => {
     let currentMood: PetMood = 'happy';
     if (streak >= 3) currentMood = 'motivated';
-    if ((todayStats.questionsAnswered || 0) > 15) currentMood = 'focused';
+    if ((todayStats.questionsAnswered || 0) > 10) currentMood = 'focused';
     if (challengesToday > 2) currentMood = 'stressed';
     if ((todayStats.pomodorosCompleted || 0) === 0 && !todayStats.qotdCompleted) currentMood = 'sleepy';
 
-    return { moodConfig: MOODS[currentMood] };
+    return MOODS[currentMood];
   }, [streak, todayStats, challengesToday]);
 
   // Typewriter Effect
@@ -89,16 +89,13 @@ export function VirtualPetHero() {
       if (i >= text.length) {
         if (typewriterIntervalRef.current) clearInterval(typewriterIntervalRef.current);
       }
-    }, 30);
+    }, 25);
   };
 
   useEffect(() => {
     if (aiMessage) {
       startTypewriter(aiMessage);
     }
-    return () => {
-      if (typewriterIntervalRef.current) clearInterval(typewriterIntervalRef.current);
-    };
   }, [aiMessage]);
 
   // Initial Greeting
@@ -120,7 +117,7 @@ export function VirtualPetHero() {
         });
         setAiMessage(response.message);
       } catch (error) {
-        setAiMessage(`Hey ${user.name}! Ready to secure your streak today?`);
+        setAiMessage(`Hi ${user.name}! Ready to study today?`);
       } finally {
         setIsGenerating(false);
       }
@@ -152,7 +149,7 @@ export function VirtualPetHero() {
       });
       setAiMessage(response.message);
     } catch (e) {
-      setAiMessage("I'm right here with you! Let's keep studying.");
+      setAiMessage("I'm thinking... Let's check those reviewers again!");
     } finally {
       setIsGenerating(false);
     }
@@ -187,14 +184,16 @@ export function VirtualPetHero() {
               "absolute inset-0 rounded-full blur-3xl opacity-20 transition-colors scale-150",
               moodConfig.color
             )} />
-            <Image
-              src={petProfile.image}
-              alt={petName}
-              width={160}
-              height={160}
-              className="relative animate-bob z-10 p-2 drop-shadow-2xl"
-              data-ai-hint={petProfile.hint}
-            />
+            <div className="relative z-10 w-40 h-40 flex items-center justify-center overflow-hidden">
+               <Image
+                src={petProfile.image}
+                alt={petName}
+                width={160}
+                height={160}
+                className="animate-bob p-2 drop-shadow-2xl object-contain"
+                data-ai-hint={petProfile.hint}
+              />
+            </div>
           </div>
           <h2 className="mt-4 text-2xl font-bold font-headline">{petName}</h2>
           <Badge variant="secondary" className={cn("mt-1 gap-1 text-white border-none px-3 py-1", moodConfig.color)}>
@@ -210,10 +209,10 @@ export function VirtualPetHero() {
             placeholder={`Ask ${petName} for study advice...`} 
             value={userChatInput}
             onChange={(e) => setUserChatInput(e.target.value)}
-            className="flex-1 rounded-full bg-background border-primary/20 focus-visible:ring-primary"
+            className="flex-1 rounded-full bg-background border-primary/20 focus-visible:ring-primary h-11"
             disabled={isGenerating}
           />
-          <Button type="submit" size="icon" className="rounded-full shrink-0" disabled={isGenerating || !userChatInput.trim()}>
+          <Button type="submit" size="icon" className="rounded-full shrink-0 h-11 w-11" disabled={isGenerating || !userChatInput.trim()}>
             <Send className="h-4 w-4" />
           </Button>
         </form>

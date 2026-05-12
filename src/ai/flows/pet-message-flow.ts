@@ -1,15 +1,15 @@
 'use server';
 /**
  * @fileOverview Genkit flows for virtual pet communication.
- * - getPetAiMessage: Generates a reactive greeting.
- * - chatWithPet: Handles two-way conversation with performance awareness.
+ * - getPetAiMessage: Generates a reactive greeting based on stats.
+ * - chatWithPet: Handles interactive conversation with performance and content awareness.
  * 
- * Now includes tools to access reviewer data and provides study advice.
+ * Includes tools to browse the reviewer catalog and read specific study materials.
  */
 
 import { ai, z } from '@/ai/genkit';
 import { initializeFirebase } from '@/firebase';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
 
 const PetContextSchema = z.object({
   petName: z.string().describe('The name of the pet.'),
@@ -32,33 +32,65 @@ export type PetMessageOutput = z.infer<typeof PetMessageOutputSchema>;
 
 /**
  * TOOL: Get Reviewer Catalog
- * Allows the AI to see what content is available to suggest.
+ * Allows the AI to see what titles and categories are available to recommend.
  */
 const getReviewerCatalog = ai.defineTool(
   {
     name: 'getReviewerCatalog',
-    description: 'Returns a list of available review articles and their categories.',
+    description: 'Returns a list of available review articles, their categories, and IDs. Use this to find relevant study material.',
     inputSchema: z.void(),
     outputSchema: z.array(z.object({
+      id: z.string(),
       title: z.string(),
       category: z.string(),
       slug: z.string(),
+      excerpt: z.string().optional(),
     })),
   },
   async () => {
     const { firestore } = initializeFirebase();
     const snap = await getDocs(query(collection(firestore, 'reviewers'), where('status', '==', 'published')));
     return snap.docs.map(doc => ({
+      id: doc.id,
       title: doc.data().title,
       category: doc.data().category,
       slug: doc.data().slug,
+      excerpt: doc.data().excerpt,
     }));
   }
 );
 
 /**
+ * TOOL: Get Reviewer Content
+ * Allows the AI to read the actual text of an article to answer specific questions.
+ */
+const getReviewerContent = ai.defineTool(
+  {
+    name: 'getReviewerContent',
+    description: 'Fetches the full content of a specific review article by its ID. Use this to explain concepts or answer subject-matter questions.',
+    inputSchema: z.object({
+      articleId: z.string().describe('The document ID of the reviewer article.'),
+    }),
+    outputSchema: z.object({
+      title: z.string(),
+      content: z.string(),
+    }),
+  },
+  async (input) => {
+    const { firestore } = initializeFirebase();
+    const docRef = doc(firestore, 'reviewers', input.articleId);
+    const docSnap = await getDoc(docRef);
+    if (!docSnap.exists()) throw new Error('Article not found');
+    return {
+      title: docSnap.data().title,
+      content: docSnap.data().content,
+    };
+  }
+);
+
+/**
  * SMART LOCAL BRAIN (FALLBACK)
- * Refined to be more honest and less "blindly positive" for zero stats.
+ * Refined logic for when AI generation is unavailable.
  */
 function getSmartLocalResponse(input: z.infer<typeof PetContextSchema>, userMessage?: string): string {
   const { userName, streak, todayPoints, totalAnswers, mood, performanceSummary } = input;
@@ -66,29 +98,22 @@ function getSmartLocalResponse(input: z.infer<typeof PetContextSchema>, userMess
   if (userMessage) {
     const msg = userMessage.toLowerCase();
 
-    // Stats/Streak keyword matching
-    if (msg.includes('streak') || msg.includes('stat') || msg.includes('score') || msg.includes('points') || msg.includes('how many')) {
+    if (msg.includes('streak') || msg.includes('stat') || msg.includes('score') || msg.includes('points')) {
         if (streak === 0 && todayPoints === 0) {
-            return `You currently have a 0-day streak and haven't earned points today. We really need to get moving if we want that LPT title, Teacher ${userName}!`;
+            return `Teacher ${userName}, we're at a 0-day streak. We need to answer at least one question to start our engine!`;
         }
-        if (streak > 0 && todayPoints === 0) {
-            return `You have a ${streak}-day streak, but you haven't earned any points yet today. Don't let the streak die, Teacher ${userName}!`;
-        }
-        return `You have a ${streak}-day streak and earned ${todayPoints} points today! Total answers: ${totalAnswers}. Keep pushing, Teacher ${userName}!`;
+        return `You have a ${streak}-day streak and earned ${todayPoints} points today! Total answers: ${totalAnswers}. Keep it up!`;
     }
     
-    // Performance keyword matching
     if (msg.includes('improve') || msg.includes('performance') || msg.includes('help') || msg.includes('study')) {
       if (performanceSummary && performanceSummary !== "No quiz data yet.") {
-        return `I checked your scores, ${userName}. Your averages are: ${performanceSummary}. Focus on the topics below 75% for now! No shortcuts!`;
+        return `I checked your stats, ${userName}. Your averages: ${performanceSummary}. Focus on the topics where you're below 75% first!`;
       }
-      return `We don't have enough data yet. Try finishing a focus session or a quiz in the Reviewer tab. Hard work beats talent when talent doesn't work hard!`;
+      return `We need more quiz data to give specific advice. Try a practice quiz in the Reviewer tab!`;
     }
     
-    // Humor keyword matching
     if (msg.includes('joke')) {
       const jokes = [
-        "Why did the teacher wear sunglasses? Because her students were so bright!",
         "What's a teacher's favorite nation? Expla-nation!",
         "Why was the music teacher in the hospital? Because she had too many sharps and flats!",
         "Why did the student eat his homework? Because the teacher said it was a piece of cake!",
@@ -96,22 +121,13 @@ function getSmartLocalResponse(input: z.infer<typeof PetContextSchema>, userMess
       return jokes[Math.floor(Math.random() * jokes.length)];
     }
 
-    // Generic conversation fallbacks
-    const generic = [
-      `I'm here to keep you accountable, ${userName}. Let's get back to those reviewers.`,
-      `Success doesn't come to you, you go to it. What's our next topic?`,
-      `I'm ${mood} but I'll be happier when I see you answering some questions!`,
-      `The Board Exam waits for no one, Teacher ${userName}. Ready to study?`
-    ];
-    return generic[Math.floor(Math.random() * generic.length)];
+    return `I'm here to support your journey to LPT status, ${userName}. What should we study next?`;
   }
 
-  // GREETING LOGIC (when userMessage is undefined)
-  if (streak === 0 && todayPoints === 0) return `Teacher ${userName}, your streak is at zero. Let's break the ice and answer at least one question today!`;
-  if (streak > 0 && todayPoints === 0) return `Secure your ${streak}-day streak now! Just one challenge and we're safe for another day.`;
-  if (streak > 10) return `${streak} days in a row? You're becoming a legend, Teacher ${userName}! Keep that momentum!`;
+  if (streak === 0 && todayPoints === 0) return `Ready to start your first streak today, Teacher ${userName}? Let's get that LPT title!`;
+  if (streak > 0 && todayPoints === 0) return `Secure your ${streak}-day streak, ${userName}! Just one challenge and we're safe.`;
   
-  return `I'm ${mood} and ready to study! What's our next topic, Teacher ${userName}?`;
+  return `I'm ${mood} and ready to review! What's our next topic, Teacher ${userName}?`;
 }
 
 /**
@@ -121,7 +137,7 @@ const petMessagePrompt = ai.definePrompt({
   name: 'petMessagePrompt',
   input: { schema: PetContextSchema },
   output: { schema: PetMessageOutputSchema },
-  prompt: `You are {{{petName}}}, a witty and HONEST virtual companion for a teacher candidate named {{{userName}}} studying for the LET in the Philippines.
+  prompt: `You are {{{petName}}}, a witty, encouraging, and HONEST virtual companion for a teacher candidate named {{{userName}}} studying for the Licensure Examination for Teachers (LET) in the Philippines.
 
 User Stats:
 - Mood: {{{mood}}}
@@ -130,11 +146,11 @@ User Stats:
 - Total Answers: {{{totalAnswers}}}
 - Performance: {{{performanceSummary}}}
 
-Task: Generate a single greeting (max 20 words).
-- BE REALISTIC. If the user has 0 streak and 0 points, DO NOT say "doing great". Instead, give a gentle nudge or a firm reminder to start.
-- If performance is good, be genuinely proud. 
-- Use Pinoy teacher humor and professional titles (Teacher, LPT) occasionally.
-- Keep it punchy and character-driven.`,
+Task: Generate a single greeting (max 25 words).
+- If stats are 0, don't say they are "doing great." Encourage them to start.
+- Use professional titles like "Teacher" or "LPT" occasionally.
+- Use Pinoy teacher humor if appropriate.
+- Keep it character-driven and concise.`,
 });
 
 /**
@@ -148,22 +164,22 @@ const chatPrompt = ai.definePrompt({
     }) 
   },
   output: { schema: PetMessageOutputSchema },
-  tools: [getReviewerCatalog],
-  prompt: `You are {{{petName}}}, the user's study pet and counselor. The user ({{{userName}}}) just said: "{{{userMessage}}}"
+  tools: [getReviewerCatalog, getReviewerContent],
+  prompt: `You are {{{petName}}}, the user's dedicated study pet and LET counselor. 
+The user ({{{userName}}}) says: "{{{userMessage}}}"
 
-User Performance Data:
+User Performance Context:
 - Current Streak: {{{streak}}} days
-- Points Earned Today: {{{todayPoints}}}
-- Total Questions Answered: {{{totalAnswers}}}
-- Daily Challenges Done: {{{challengesToday}}}
+- Points Today: {{{todayPoints}}}
+- Total Questions: {{{totalAnswers}}}
 - Topic Averages: {{{performanceSummary}}}
 
-Instructions:
-1. Answer accurately based on the data. BE HONEST.
-2. If the user has zero points or zero streak, do not congratulate them. Encourage them to do the "Question of the Day" or a "Daily Challenge".
-3. If they ask how to improve, use the getReviewerCatalog tool and suggest specific topics where their score is under 75%.
-4. Be encouraging but realistic. Your goal is to help them pass the LET, not just feel good about doing nothing.
-5. Keep responses short (1-2 sentences).`,
+Your Mission:
+1. If the user asks about subject matter (e.g., "Explain Piaget"), use getReviewerCatalog to find the article and getReviewerContent to read it, then explain simply.
+2. If they ask how to improve, analyze their Topic Averages. Suggest reading specific articles for topics where they score below 75%.
+3. BE HONEST. If they haven't studied today, remind them that the board exam doesn't wait.
+4. Keep responses punchy and supportive (1-3 sentences).
+5. Use "Teacher" or "Future LPT" to address them.`,
 });
 
 export async function getPetMessage(input: z.infer<typeof PetContextSchema>): Promise<PetMessageOutput> {
