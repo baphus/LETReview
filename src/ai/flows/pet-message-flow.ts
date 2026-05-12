@@ -100,16 +100,23 @@ function getSmartLocalResponse(input: z.infer<typeof PetContextSchema>, userMess
 
     if (msg.includes('streak') || msg.includes('stat') || msg.includes('score') || msg.includes('points')) {
         if (streak === 0 && todayPoints === 0) {
-            return `Teacher ${userName}, we're at a 0-day streak. We need to answer at least one question to start our engine!`;
+            return `Teacher ${userName}, we're at a 0-day streak. The best time to start was yesterday; the second best time is right now! Let's get moving.`;
         }
-        return `You have a ${streak}-day streak and earned ${todayPoints} points today! Total answers: ${totalAnswers}. Keep it up!`;
+        return `You have a ${streak}-day streak and earned ${todayPoints} points today! Total questions answered: ${totalAnswers}. Consistency is the key to passing the LET!`;
     }
     
     if (msg.includes('improve') || msg.includes('performance') || msg.includes('help') || msg.includes('study')) {
       if (performanceSummary && performanceSummary !== "No quiz data yet.") {
-        return `I checked your stats, ${userName}. Your averages: ${performanceSummary}. Focus on the topics where you're below 75% first!`;
+        return `I've analyzed your performance, ${userName}. Your averages: ${performanceSummary}. I recommend focusing on your lowest-scoring topics first. Mastery takes time!`;
       }
-      return `We need more quiz data to give specific advice. Try a practice quiz in the Reviewer tab!`;
+      
+      const generalAdvice = [
+        "A great way to improve is to alternate between reading articles and taking quizzes. It builds both knowledge and recall!",
+        "Try using the Pomodoro timer in the 'Timer' tab. Focusing for 25 minutes straight can significantly boost your retention.",
+        "Don't just memorize; try to understand the 'why' behind each answer. Our explanations in the Reviewer tab help with that!",
+        "Consistency beats intensity. Even 15 minutes of review every single day is better than a 5-hour marathon once a week."
+      ];
+      return generalAdvice[Math.floor(Math.random() * generalAdvice.length)];
     }
     
     if (msg.includes('joke')) {
@@ -117,17 +124,18 @@ function getSmartLocalResponse(input: z.infer<typeof PetContextSchema>, userMess
         "What's a teacher's favorite nation? Expla-nation!",
         "Why was the music teacher in the hospital? Because she had too many sharps and flats!",
         "Why did the student eat his homework? Because the teacher said it was a piece of cake!",
+        "What is a teacher's favorite tree? Geometry!",
       ];
       return jokes[Math.floor(Math.random() * jokes.length)];
     }
 
-    return `I'm here to support your journey to LPT status, ${userName}. What should we study next?`;
+    return `I'm here to support your journey to LPT status, ${userName}. Feel free to ask me about your stats or specific LET topics!`;
   }
 
-  if (streak === 0 && todayPoints === 0) return `Ready to start your first streak today, Teacher ${userName}? Let's get that LPT title!`;
-  if (streak > 0 && todayPoints === 0) return `Secure your ${streak}-day streak, ${userName}! Just one challenge and we're safe.`;
+  if (streak === 0 && todayPoints === 0) return `Ready to start your journey today, Teacher ${userName}? Every great LPT started with a single question!`;
+  if (streak > 0 && todayPoints === 0) return `Protect your ${streak}-day streak, ${userName}! A quick challenge is all it takes to stay on track.`;
   
-  return `I'm ${mood} and ready to review! What's our next topic, Teacher ${userName}?`;
+  return `I'm feeling ${mood} and ready to review! What's our goal for today, Future LPT ${userName}?`;
 }
 
 /**
@@ -147,7 +155,7 @@ User Stats:
 - Performance: {{{performanceSummary}}}
 
 Task: Generate a single greeting (max 25 words).
-- If stats are 0, don't say they are "doing great." Encourage them to start.
+- If stats are 0, DON'T say "doing great." Instead, challenge them to start their first streak.
 - Use professional titles like "Teacher" or "LPT" occasionally.
 - Use Pinoy teacher humor if appropriate.
 - Keep it character-driven and concise.`,
@@ -176,8 +184,10 @@ User Performance Context:
 
 Your Mission:
 1. If the user asks about subject matter (e.g., "Explain Piaget"), use getReviewerCatalog to find the article and getReviewerContent to read it, then explain simply.
-2. If they ask how to improve, analyze their Topic Averages. Suggest reading specific articles for topics where they score below 75%.
-3. BE HONEST. If they haven't studied today, remind them that the board exam doesn't wait.
+2. If they ask how to improve:
+   - If performanceSummary is available, analyze the averages. Suggest reading specific articles for topics where they score below 75%.
+   - If NO performance data is available, DO NOT tell them to "come back later." Instead, give high-quality, general LET study strategies (e.g., active recall, spaced repetition, using the Pomodoro timer).
+3. BE HONEST. If they haven't studied today (0 points/0 answers), give them a friendly reality check that the exam is approaching.
 4. Keep responses punchy and supportive (1-3 sentences).
 5. Use "Teacher" or "Future LPT" to address them.`,
 });
