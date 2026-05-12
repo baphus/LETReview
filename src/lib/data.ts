@@ -1,8 +1,7 @@
-
 import { getFirestore, collection, query, where, getDocs, limit, getDoc, doc } from 'firebase/firestore';
 import { initializeFirebase } from '@/firebase';
 import type { QuizQuestion, PetProfile } from "./types";
-import staticQuestions from '../../docs/questions-seed.json';
+import staticQuestions from './seeds/questions-seed.json';
 
 const getDayOfYear = (date: Date): number => {
     const start = new Date(date.getFullYear(), 0, 0);

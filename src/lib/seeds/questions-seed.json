@@ -1,0 +1,93 @@
+[
+  {
+    "id": "q1-piaget-stages",
+    "category": "profed",
+    "subjectId": "educational-psychology",
+    "topicIds": ["cognitive-development"],
+    "difficulty": "easy",
+    "type": "multiple_choice",
+    "question": "According to Piaget, a child who can think logically about concrete events but struggles with abstract concepts is in which stage?",
+    "choices": ["Sensorimotor", "Preoperational", "Concrete Operational", "Formal Operational"],
+    "correctAnswer": "Concrete Operational",
+    "explanation": "The Concrete Operational stage (7-11 years) is characterized by the development of logical thought concerning concrete events.",
+    "reviewerIds": ["cognitive-development-theories"]
+  },
+  {
+    "id": "q2-vygotsky-zpd",
+    "category": "profed",
+    "subjectId": "educational-psychology",
+    "topicIds": ["cognitive-development"],
+    "difficulty": "medium",
+    "type": "multiple_choice",
+    "question": "Vygotsky's concept of the 'Zone of Proximal Development' (ZPD) refers to:",
+    "choices": ["A child's innate intellectual potential.", "The range of tasks a child can perform independently.", "The difference between what a child can do with and without help.", "The final stage of cognitive maturity."],
+    "correctAnswer": "The difference between what a child can do with and without help.",
+    "explanation": "The ZPD is the gap between a learner's current independent ability and their potential ability with the guidance of a More Knowledgeable Other (MKO).",
+    "reviewerIds": ["cognitive-development-theories"]
+  },
+  {
+    "id": "q3-piaget-assimilation",
+    "category": "profed",
+    "subjectId": "educational-psychology",
+    "topicIds": ["cognitive-development"],
+    "difficulty": "hard",
+    "type": "multiple_choice",
+    "question": "A toddler who has a schema for 'dog' sees a cat and calls it 'dog'. This is an example of:",
+    "choices": ["Accommodation", "Assimilation", "Equilibration", "Object Permanence"],
+    "correctAnswer": "Assimilation",
+    "explanation": "Assimilation is the process of fitting new information into pre-existing cognitive schemas. The child is using their 'dog' schema for a new four-legged animal.",
+    "reviewerIds": ["cognitive-development-theories"]
+  },
+  {
+    "id": "q-profed-ra9155",
+    "category": "profed",
+    "subjectId": "the-teaching-profession",
+    "topicIds": ["legal-bases-of-education"],
+    "difficulty": "hard",
+    "type": "multiple_choice",
+    "question": "Which Republic Act is known as the 'Governance of Basic Education Act of 2001'?",
+    "choices": ["RA 9155", "RA 7722", "RA 7796", "RA 10533"],
+    "correctAnswer": "RA 9155",
+    "explanation": "RA 9155 provides the framework for the governance of basic education in the Philippines, renaming the Department of Education, Culture and Sports (DECS) to the Department of Education (DepEd).",
+    "reviewerIds": ["profed-foundations-notes"]
+  },
+  {
+    "id": "q-profed-ra10533",
+    "category": "profed",
+    "subjectId": "the-teaching-profession",
+    "topicIds": ["legal-bases-of-education"],
+    "difficulty": "hard",
+    "type": "multiple_choice",
+    "question": "The K-12 program was institutionalized through which Republic Act?",
+    "choices": ["RA 10533", "RA 9155", "RA 7784", "RA 6655"],
+    "correctAnswer": "RA 10533",
+    "explanation": "RA 10533, or the Enhanced Basic Education Act of 2013, established the K-12 program, adding two years of senior high school.",
+    "reviewerIds": ["profed-foundations-notes"]
+  },
+  {
+    "id": "q-profed-ism-naturalism",
+    "category": "profed",
+    "subjectId": "the-teaching-profession",
+    "topicIds": ["educational-philosophies"],
+    "difficulty": "medium",
+    "type": "multiple_choice",
+    "question": "Which educational philosophy posits that 'nature is better than civilization' and that learning should be based on the natural world?",
+    "choices": ["Naturalism", "Idealism", "Realism", "Existentialism"],
+    "correctAnswer": "Naturalism",
+    "explanation": "Naturalism is a philosophy that holds that only nature exists and that it is the source of all knowledge and value.",
+    "reviewerIds": ["profed-foundations-notes"]
+  },
+  {
+    "id": "q-profed-ism-essentialism",
+    "category": "profed",
+    "subjectId": "the-teaching-profession",
+    "topicIds": ["educational-philosophies"],
+    "difficulty": "medium",
+    "type": "multiple_choice",
+    "question": "The educational philosophy focused on teaching the '3Rs' (Reading, 'Riting, 'Rithmetic) and other fundamental skills is known as:",
+    "choices": ["Essentialism", "Progressivism", "Perennialism", "Behaviorism"],
+    "correctAnswer": "Essentialism",
+    "explanation": "Essentialism advocates for a curriculum that focuses on teaching essential knowledge and skills that are necessary for all individuals to possess.",
+    "reviewerIds": ["profed-foundations-notes"]
+  }
+]

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -7,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, doc, setDoc, serverTimestamp, query, getDoc, writeBatch, deleteDoc } from 'firebase/firestore';
+import { collection, doc, setDoc, serverTimestamp, query, writeBatch } from 'firebase/firestore';
 import { useUser } from '@/firebase/auth/use-user';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,13 +15,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import type { Subject, Topic, Reviewer } from '@/lib/types';
+import type { Subject, Topic, Reviewer, QuizQuestion } from '@/lib/types';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, Database, PlusCircle, Trash2 } from 'lucide-react';
-import reviewersSeed from '../../../../../docs/reviewers-seed.json';
-import subjectsSeed from '../../../../../docs/subjects-seed.json';
-import topicsSeed from '../../../../../docs/topics-seed.json';
-import questionsSeed from '../../../../../docs/questions-seed.json';
+import reviewersSeed from '@/lib/seeds/reviewers-seed.json';
+import subjectsSeed from '@/lib/seeds/subjects-seed.json';
+import topicsSeed from '@/lib/seeds/topics-seed.json';
+import questionsSeed from '@/lib/seeds/questions-seed.json';
 import {
   Dialog,
   DialogContent,
@@ -40,7 +39,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Separator } from '@/components/ui/separator';
 
@@ -170,26 +168,12 @@ export default function NewReviewerPage() {
       toast({ variant: 'destructive', title: 'Error', description: error.message });
     }
   };
-  
+
   const handleDeleteSubject = async (subjectId: string) => {
     if (!firestore) return;
     try {
-        await deleteDoc(doc(firestore, 'subjects', subjectId));
+        await setDoc(doc(firestore, 'subjects', subjectId), { status: 'deleted' }, { merge: true }); // Prefer soft delete in admin tool
         toast({ title: 'Subject Deleted' });
-        if (form.getValues('subjectId') === subjectId) {
-            form.setValue('subjectId', '');
-        }
-    } catch (error: any) {
-        toast({ variant: 'destructive', title: 'Error', description: error.message });
-    }
-  };
-
-  const handleDeleteTopic = async (topicId: string) => {
-    if (!firestore) return;
-    try {
-        await deleteDoc(doc(firestore, 'topics', topicId));
-        toast({ title: 'Topic Deleted' });
-        form.setValue('topicIds', form.getValues('topicIds').filter(id => id !== topicId), { shouldValidate: true });
     } catch (error: any) {
         toast({ variant: 'destructive', title: 'Error', description: error.message });
     }
@@ -546,25 +530,9 @@ export default function NewReviewerPage() {
                             <div className="h-4 w-4 rounded-full" style={{ backgroundColor: subject.color }} />
                             <span>{subject.name}</span>
                         </div>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                  <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                              <AlertDialogHeader>
-                                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                      This will permanently delete the subject "{subject.name}". Associated articles and questions will NOT be deleted but may become uncategorized. This action cannot be undone.
-                                  </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleDeleteSubject(subject.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
-                              </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDeleteSubject(subject.id)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
                     </div>
                 ))}
             </div>
@@ -600,25 +568,9 @@ export default function NewReviewerPage() {
                 {isLoadingTopics ? <p>Loading...</p> : availableTopics.map(topic => (
                     <div key={topic.id} className="flex items-center justify-between rounded-md border p-2">
                         <span>{topic.name}</span>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                  <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                              <AlertDialogHeader>
-                                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                      This will permanently delete the topic "{topic.name}". Associated articles and questions will not be deleted but will lose this topic tag. This action cannot be undone.
-                                  </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleDeleteTopic(topic.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
-                              </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDoc(doc(firestore, 'topics', topic.id), { status: 'deleted' }, { merge: true })}>
+                             <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
                     </div>
                 ))}
             </div>
@@ -642,5 +594,3 @@ export default function NewReviewerPage() {
     </>
   );
 }
-
-    
