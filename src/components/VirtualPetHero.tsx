@@ -81,7 +81,7 @@ export function VirtualPetHero() {
     };
   }, [streak, todayStats, challengesToday]);
 
-  // AI Message Generation
+  // AI Message Generation with robust local fallback
   useEffect(() => {
     if (!user) return;
 
@@ -99,15 +99,15 @@ export function VirtualPetHero() {
         });
         setAiMessage(response.message);
       } catch (error) {
-        console.error('Failed to fetch AI message:', error);
-        setAiMessage(`Hey ${user.name}! I'm happy to see you studying today.`);
+        console.error('AI Flow error handled in UI:', error);
+        setAiMessage(`Welcome back, teacher ${user.name}! Ready to study?`);
       } finally {
         setIsGenerating(false);
       }
     };
 
     fetchAiMessage();
-  }, [user?.uid, streak, challengesToday, petName, moodConfig.label, todayStats.pointsEarned, totalAnswers]);
+  }, [user?.uid, streak, challengesToday, petName, moodConfig.label, todayStats.pointsEarned, totalAnswers, user?.name]);
 
   if (!user) return null;
 

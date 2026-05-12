@@ -1,6 +1,7 @@
 'use server';
 /**
  * @fileOverview A Genkit flow for generating personalized pet messages.
+ * Includes a robust fallback mechanism for when the AI service is unavailable.
  */
 
 import { ai, z } from '@/ai/genkit';
@@ -19,6 +20,7 @@ export type PetMessageInput = z.infer<typeof PetMessageInputSchema>;
 
 const PetMessageOutputSchema = z.object({
   message: z.string().describe('A short, catchy message from the pet.'),
+  source: z.enum(['ai', 'local']).optional(),
 });
 
 export type PetMessageOutput = z.infer<typeof PetMessageOutputSchema>;
@@ -39,13 +41,39 @@ Current Context:
 Your Task:
 Generate a single, short message (max 20 words) for {{{userName}}}. 
 - Use a mix of educational jokes, motivational quotes, or remarks about their specific performance.
-- Occasionally use Philippine cultural references or "Teacher" humor (e.g., Republic Acts, educational philosophers).
-- If the streak is 0, be gently encouraging. If it is high, be ecstatic.
-- If they have answered many questions today, remind them to take care of themselves.
-- If they just finished a challenge, celebrate their victory!
-
-Keep it friendly, catchy, and brief enough for a chat bubble.`,
+- Occasionally use Philippine cultural references or "Teacher" humor.
+- Keep it friendly, catchy, and brief.`,
 });
+
+/**
+ * Generates a message from the pet. 
+ * If the AI call fails (e.g. 403 Forbidden), it returns a high-quality local fallback.
+ */
+export async function getPetMessage(input: PetMessageInput): Promise<PetMessageOutput> {
+  try {
+    const { output } = await petMessagePrompt(input);
+    if (!output) throw new Error('AI returned empty output');
+    return { ...output, source: 'ai' };
+  } catch (error) {
+    console.warn('AI Pet Message generation failed, using local fallback:', error);
+    
+    // Local fallback logic
+    const fallbacks = [
+      `Hey ${input.userName}! Ready to tackle some ${input.mood === 'Focused' ? 'hard' : 'fun'} questions?`,
+      `Don't forget: Every master was once a student. Keep it up!`,
+      `Why did the teacher wear sunglasses? Because her students were so bright! Like you!`,
+      `A ${input.streak}-day streak? You're becoming a legend!`,
+      `Teaching is the profession that creates all other professions. You've got this!`,
+    ];
+    
+    const randomMessage = fallbacks[Math.floor(Math.random() * fallbacks.length)];
+    
+    return {
+      message: randomMessage,
+      source: 'local'
+    };
+  }
+}
 
 export const getPetAiMessage = ai.defineFlow(
   {
@@ -54,8 +82,6 @@ export const getPetAiMessage = ai.defineFlow(
     outputSchema: PetMessageOutputSchema,
   },
   async (input) => {
-    const { output } = await petMessagePrompt(input);
-    if (!output) throw new Error('Failed to generate AI message');
-    return output;
+    return getPetMessage(input);
   }
 );
