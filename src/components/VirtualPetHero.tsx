@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { useUser } from '@/firebase/auth/use-user';
 import { streakPets, achievementPets, rarePets } from '@/lib/data';
 import { cn } from '@/lib/utils';
-import { Flame, Trophy, Brain, Stars, Moon, Coffee, Loader2, Send } from 'lucide-react';
+import { Flame, Trophy, Brain, Stars, Moon, Coffee, Loader2, Send, Cpu, Database } from 'lucide-react';
 import { format } from 'date-fns';
 import { getPetAiMessage, chatWithPet } from '@/ai/flows/pet-message-flow';
 import { Input } from '@/components/ui/input';
@@ -35,13 +35,13 @@ export function VirtualPetHero() {
   const { user } = useUser();
   const firestore = useFirestore();
   const [aiMessage, setAiMessage] = useState<string | null>(null);
+  const [messageSource, setMessageSource] = useState<'ai' | 'local'>('local');
   const [displayedMessage, setDisplayedMessage] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [userChatInput, setUserChatInput] = useState("");
   
   const typewriterIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Fetch topics for AI context
   const { data: topics } = useCollection<Topic>(useMemoFirebase(() => firestore ? collection(firestore, 'topics') : null, [firestore]));
 
   const allPets = [...streakPets, ...achievementPets, ...rarePets];
@@ -77,7 +77,6 @@ export function VirtualPetHero() {
     return MOODS[currentMood];
   }, [streak, todayStats, challengesToday]);
 
-  // Typewriter Effect
   const startTypewriter = (text: string) => {
     if (typewriterIntervalRef.current) clearInterval(typewriterIntervalRef.current);
     
@@ -98,7 +97,6 @@ export function VirtualPetHero() {
     }
   }, [aiMessage]);
 
-  // Initial Greeting
   useEffect(() => {
     if (!user || !topics) return;
     const fetchGreeting = async () => {
@@ -116,8 +114,10 @@ export function VirtualPetHero() {
           availableTopics: topics.map(t => t.name),
         });
         setAiMessage(response.message);
+        setMessageSource(response.source || 'ai');
       } catch (error) {
-        setAiMessage(`Hi ${user.name}! Ready to study today?`);
+        setAiMessage(`Hi Teacher ${user.name}! Ready to secure your LPT title today?`);
+        setMessageSource('local');
       } finally {
         setIsGenerating(false);
       }
@@ -148,8 +148,10 @@ export function VirtualPetHero() {
         availableTopics: topics?.map(t => t.name) || [],
       });
       setAiMessage(response.message);
+      setMessageSource(response.source || 'ai');
     } catch (e) {
-      setAiMessage("I'm thinking... Let's check those reviewers again!");
+      setAiMessage("I'm thinking hard... Let's review the topics in the library!");
+      setMessageSource('local');
     } finally {
       setIsGenerating(false);
     }
@@ -160,24 +162,35 @@ export function VirtualPetHero() {
   return (
     <div className="w-full mb-8 space-y-6">
       <div className="flex flex-col items-center gap-6">
-        {/* Chat Bubble */}
         <div className="w-full max-w-xs md:max-w-md animate-fade-in-up">
-          <div className="relative bg-card border shadow-sm rounded-2xl p-4 text-center min-h-[90px] flex flex-col items-center justify-center">
+          <div className="relative bg-card border shadow-sm rounded-2xl p-4 text-center min-h-[100px] flex flex-col items-center justify-center">
             {isGenerating && !aiMessage ? (
               <div className="flex items-center gap-2 text-muted-foreground text-sm">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Thinking...</span>
+                <span>Synchronizing Neural Brain...</span>
               </div>
             ) : (
-              <p className="text-sm md:text-base font-medium leading-tight text-foreground">
-                "{displayedMessage || '...'}"
-              </p>
+              <>
+                <div className="absolute top-2 right-3 flex items-center gap-1">
+                   {messageSource === 'ai' ? (
+                     <Badge variant="outline" className="bg-primary/5 text-[10px] h-4 gap-1 border-primary/20 text-primary px-1.5">
+                        <Cpu className="h-2 w-2" /> AI
+                     </Badge>
+                   ) : (
+                     <Badge variant="outline" className="bg-muted/50 text-[10px] h-4 gap-1 border-muted text-muted-foreground px-1.5">
+                        <Database className="h-2 w-2" /> LOCAL
+                     </Badge>
+                   )}
+                </div>
+                <p className="text-sm md:text-base font-medium leading-tight text-foreground px-2">
+                  "{displayedMessage || '...'}"
+                </p>
+              </>
             )}
             <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[8px] border-t-card" />
           </div>
         </div>
 
-        {/* Pet Visual */}
         <div className="flex flex-col items-center">
           <div className="relative">
             <div className={cn(
@@ -202,11 +215,10 @@ export function VirtualPetHero() {
           </Badge>
         </div>
 
-        {/* Chat Input */}
         <form onSubmit={handleChat} className="flex w-full max-w-xs md:max-w-md items-center space-x-2">
           <Input 
             type="text" 
-            placeholder={`Ask ${petName} for study advice...`} 
+            placeholder={`Message ${petName}...`} 
             value={userChatInput}
             onChange={(e) => setUserChatInput(e.target.value)}
             className="flex-1 rounded-full bg-background border-primary/20 focus-visible:ring-primary h-11"
@@ -217,7 +229,6 @@ export function VirtualPetHero() {
           </Button>
         </form>
 
-        {/* Habit Stats */}
         <div className="w-full max-w-lg grid grid-cols-3 gap-3">
           <div className="bg-muted/40 rounded-2xl p-4 flex flex-col items-center justify-center text-center shadow-sm border border-transparent hover:border-primary/10 transition-colors">
              <Flame className="h-6 w-6 text-destructive mb-1" />
@@ -231,7 +242,7 @@ export function VirtualPetHero() {
           </div>
           <div className="bg-muted/40 rounded-2xl p-4 flex flex-col items-center justify-center text-center shadow-sm border border-transparent hover:border-primary/10 transition-colors">
              <Brain className="h-6 w-6 text-primary mb-1" />
-             <span className="text-lg font-bold">{todayStats.questionsAnswered || 0}</span>
+             <span className="text-lg font-bold">{totalAnswers}</span>
              <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Answers</span>
           </div>
         </div>
