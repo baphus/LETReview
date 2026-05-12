@@ -7,8 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { useUser } from '@/firebase/auth/use-user';
 import { streakPets, achievementPets, rarePets } from '@/lib/data';
 import { cn } from '@/lib/utils';
-import { Flame, Zap, Trophy, Brain, Coffee, Moon, Stars } from 'lucide-react';
-import { format, subDays } from 'date-fns';
+import { Flame, Trophy, Brain, Stars, Moon, Coffee } from 'lucide-react';
+import { format } from 'date-fns';
 
 type PetMood = 'happy' | 'sleepy' | 'stressed' | 'motivated' | 'focused';
 
@@ -43,7 +43,6 @@ const MOODS: Record<PetMood, MoodConfig> = {
       "Wake me up when we start reviewing.",
       "ZZZ... oh! I was just visualizing our success.",
       "Even a future LPT needs their beauty sleep.",
-      "If I fall asleep, just poke me with a stylus.",
     ],
   },
   stressed: {
@@ -56,7 +55,6 @@ const MOODS: Record<PetMood, MoodConfig> = {
       "Maybe a short break?",
       "Deep breaths. One Republic Act at a time.",
       "Even the best teachers started where you are.",
-      "I believe in you more than I believe in the test results!",
     ],
   },
   motivated: {
@@ -69,7 +67,6 @@ const MOODS: Record<PetMood, MoodConfig> = {
       "You're making this look easy!",
       "Future LPT in the building!",
       "Your brain is basically a supercomputer right now.",
-      "Why was the math book sad? Because it had too many problems. But not you!",
     ],
   },
   focused: {
@@ -81,8 +78,6 @@ const MOODS: Record<PetMood, MoodConfig> = {
       "Absolute focus mode engaged.",
       "Every minute counts towards that LPT title.",
       "I can practically see the neural pathways forming.",
-      "This kind of focus is what separates the masters.",
-      "Data processing... 99.9% consistency detected.",
     ],
   },
 };
@@ -94,6 +89,8 @@ export function VirtualPetHero() {
   const todayKey = format(new Date(), 'yyyy-MM-dd');
   const todayStats = user?.dailyProgress?.[todayKey] || {};
   const streak = user?.streak || 0;
+  const totalAnswers = user?.questionsAnswered || 0;
+  const challengesToday = todayStats.challengesCompleted?.length || 0;
 
   // Derive Pet Data
   const petProfile = useMemo(() => {
@@ -108,13 +105,13 @@ export function VirtualPetHero() {
     let currentMood: PetMood = 'happy';
     if (streak >= 3) currentMood = 'motivated';
     if ((todayStats.questionsAnswered || 0) > 15) currentMood = 'focused';
-    if ((todayStats.challengesCompleted?.length || 0) > 2) currentMood = 'stressed';
+    if (challengesToday > 2) currentMood = 'stressed';
     if ((todayStats.pomodorosCompleted || 0) === 0 && !todayStats.qotdCompleted) currentMood = 'sleepy';
 
     return {
       mood: MOODS[currentMood],
     };
-  }, [streak, todayStats]);
+  }, [streak, todayStats, challengesToday]);
 
   const performanceRemarks = useMemo(() => {
     if (!user) return [];
@@ -123,38 +120,50 @@ export function VirtualPetHero() {
       `Great to see you again, Teacher ${user.name}!`,
     ];
 
-    const yesterdayKey = format(subDays(new Date(), 1), 'yyyy-MM-dd');
-    const wasActiveYesterday = (user.dailyProgress?.[yesterdayKey]?.challengesCompleted?.length || 0) > 0;
+    // Streak Milestones
+    if (streak === 0) {
+      remarks.push("Let's start a new streak today! I believe in you.");
+    } else if (streak === 1) {
+      remarks.push("Day 1 of our new journey! The first step is the most important.");
+    } else if (streak === 3) {
+      remarks.push("3 days in a row! You're building a solid study habit.");
+    } else if (streak >= 7 && streak < 14) {
+      remarks.push(`${streak} days! You're officially a consistent reviewer!`);
+    } else if (streak >= 30) {
+      remarks.push(`A whole month of studying! ${streak} days is legendary!`);
+    }
+
+    // Daily Challenge Remarks
+    if (challengesToday === 1) {
+      remarks.push("First challenge of the day done! Keep that momentum.");
+    } else if (challengesToday >= 3) {
+      remarks.push(`Wow, ${challengesToday} challenges today? You're absolutely unstoppable!`);
+    }
     
-    if (wasActiveYesterday && streak > 1) {
-      remarks.push(`Day ${streak}! Our consistency is legendary!`);
-    } else if (!wasActiveYesterday && streak === 0) {
-      remarks.push("Welcome back! I missed our review sessions.");
+    if (todayStats.qotdCompleted) {
+        remarks.push("You've already tackled the Question of the Day. Smart move!");
     }
 
-    if (user.highestStreak > 10 && streak > 0) {
-      remarks.push(`We've hit 10+ days before, I know we can do it again!`);
+    // Total Answer Milestones
+    if (totalAnswers >= 1000) {
+        remarks.push(`1,000+ questions answered! You're basically a human encyclopedia.`);
+    } else if (totalAnswers >= 500) {
+        remarks.push(`500 questions! You're halfway to becoming a master.`);
+    } else if (totalAnswers >= 100) {
+        remarks.push(`100+ questions answered! That's serious progress.`);
     }
 
-    if ((user.questionsAnswered || 0) > 500) {
-      remarks.push(`Over 500 questions answered! You're becoming a master.`);
-    } else if ((user.questionsAnswered || 0) > 100) {
-      remarks.push(`100+ questions! That's serious dedication.`);
-    }
-
-    if (user.examDate) {
-      const daysLeft = Math.ceil((new Date(user.examDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-      if (daysLeft < 7 && daysLeft > 0) {
-        remarks.push(`Only ${daysLeft} days to go. We've got this! Final stretch!`);
-      }
+    // Historical Comparisons
+    if (user.highestStreak > streak && streak > 0) {
+        remarks.push(`Our record is ${user.highestStreak} days. We can beat it together!`);
     }
 
     return remarks;
-  }, [user, streak]);
+  }, [user, streak, totalAnswers, challengesToday, todayStats.qotdCompleted]);
 
   const randomMessage = useMemo(() => {
-    // Give welcome messages a high priority (50% chance if available)
-    const useRemark = performanceRemarks.length > 0 && Math.random() > 0.5;
+    // Give performance-based messages a high priority (70% chance if available)
+    const useRemark = performanceRemarks.length > 0 && Math.random() > 0.3;
     const pool = useRemark ? performanceRemarks : mood.messages;
     return pool[Math.floor(Math.random() * pool.length)];
   }, [mood, performanceRemarks]);
@@ -164,7 +173,7 @@ export function VirtualPetHero() {
   return (
     <div className="w-full mb-8 space-y-6">
       <div className="flex flex-col items-center gap-6">
-        {/* Chat Bubble - Always visible on mobile, above pet */}
+        {/* Chat Bubble - Optimized for mobile */}
         <div className="w-full max-w-xs md:max-w-md animate-fade-in-up">
           <div className="relative bg-card border shadow-sm rounded-2xl p-4 text-center">
             <p className="text-sm md:text-base font-medium leading-tight text-foreground">
