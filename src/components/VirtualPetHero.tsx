@@ -61,22 +61,25 @@ export function VirtualPetHero() {
     return { moodConfig: MOODS[currentMood] };
   }, [streak, todayStats, challengesToday]);
 
-  // Handle Typewriter Animation
-  useEffect(() => {
-    if (!aiMessage) return;
-    
+  // Typewriter Effect
+  const startTypewriter = (text: string) => {
     if (typewriterIntervalRef.current) clearInterval(typewriterIntervalRef.current);
     
     setDisplayedMessage("");
     let i = 0;
     typewriterIntervalRef.current = setInterval(() => {
-      setDisplayedMessage(aiMessage.substring(0, i + 1));
+      setDisplayedMessage(text.substring(0, i + 1));
       i++;
-      if (i >= aiMessage.length) {
+      if (i >= text.length) {
         if (typewriterIntervalRef.current) clearInterval(typewriterIntervalRef.current);
       }
-    }, 30);
+    }, 40);
+  };
 
+  useEffect(() => {
+    if (aiMessage) {
+      startTypewriter(aiMessage);
+    }
     return () => {
       if (typewriterIntervalRef.current) clearInterval(typewriterIntervalRef.current);
     };
@@ -99,13 +102,13 @@ export function VirtualPetHero() {
         });
         setAiMessage(response.message);
       } catch (error) {
-        setAiMessage(`Hey ${user.name}! Ready to study?`);
+        setAiMessage(`Hey ${user.name}! Ready to secure your streak today?`);
       } finally {
         setIsGenerating(false);
       }
     };
     fetchGreeting();
-  }, [user?.uid]);
+  }, [user?.uid, user?.activePet]); // Re-greet if user or pet changes
 
   const handleChat = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,7 +117,7 @@ export function VirtualPetHero() {
     const input = userChatInput.trim();
     setUserChatInput("");
     setIsGenerating(true);
-    setAiMessage(null); // Clear to trigger animation on response
+    setAiMessage(null); 
 
     try {
       const response = await chatWithPet({
@@ -129,7 +132,7 @@ export function VirtualPetHero() {
       });
       setAiMessage(response.message);
     } catch (e) {
-      setAiMessage("I'm a bit distracted right now, but I'm always cheering for you!");
+      setAiMessage("I'm right here with you! Let's keep studying.");
     } finally {
       setIsGenerating(false);
     }
@@ -142,9 +145,12 @@ export function VirtualPetHero() {
       <div className="flex flex-col items-center gap-6">
         {/* Chat Bubble */}
         <div className="w-full max-w-xs md:max-w-md animate-fade-in-up">
-          <div className="relative bg-card border shadow-sm rounded-2xl p-4 text-center min-h-[80px] flex flex-col items-center justify-center">
+          <div className="relative bg-card border shadow-sm rounded-2xl p-4 text-center min-h-[90px] flex flex-col items-center justify-center">
             {isGenerating && !aiMessage ? (
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Thinking...</span>
+              </div>
             ) : (
               <p className="text-sm md:text-base font-medium leading-tight text-foreground">
                 "{displayedMessage || '...'}"
@@ -181,10 +187,10 @@ export function VirtualPetHero() {
         <form onSubmit={handleChat} className="flex w-full max-w-xs md:max-w-md items-center space-x-2">
           <Input 
             type="text" 
-            placeholder={`Chat with ${petName}...`} 
+            placeholder={`Ask ${petName} a question...`} 
             value={userChatInput}
             onChange={(e) => setUserChatInput(e.target.value)}
-            className="flex-1 rounded-full bg-background"
+            className="flex-1 rounded-full bg-background border-primary/20 focus-visible:ring-primary"
             disabled={isGenerating}
           />
           <Button type="submit" size="icon" className="rounded-full shrink-0" disabled={isGenerating || !userChatInput.trim()}>
@@ -194,17 +200,17 @@ export function VirtualPetHero() {
 
         {/* Habit Stats */}
         <div className="w-full max-w-lg grid grid-cols-3 gap-3">
-          <div className="bg-muted/40 rounded-2xl p-4 flex flex-col items-center justify-center text-center shadow-sm">
+          <div className="bg-muted/40 rounded-2xl p-4 flex flex-col items-center justify-center text-center shadow-sm border border-transparent hover:border-primary/10 transition-colors">
              <Flame className="h-6 w-6 text-destructive mb-1" />
              <span className="text-lg font-bold">{streak}</span>
              <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Streak</span>
           </div>
-          <div className="bg-muted/40 rounded-2xl p-4 flex flex-col items-center justify-center text-center shadow-sm">
+          <div className="bg-muted/40 rounded-2xl p-4 flex flex-col items-center justify-center text-center shadow-sm border border-transparent hover:border-primary/10 transition-colors">
              <Trophy className="h-6 w-6 text-accent mb-1" />
              <span className="text-lg font-bold">{todayStats.pointsEarned || 0}</span>
              <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Today</span>
           </div>
-          <div className="bg-muted/40 rounded-2xl p-4 flex flex-col items-center justify-center text-center shadow-sm">
+          <div className="bg-muted/40 rounded-2xl p-4 flex flex-col items-center justify-center text-center shadow-sm border border-transparent hover:border-primary/10 transition-colors">
              <Brain className="h-6 w-6 text-primary mb-1" />
              <span className="text-lg font-bold">{todayStats.questionsAnswered || 0}</span>
              <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Answers</span>
