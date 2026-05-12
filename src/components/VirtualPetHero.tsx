@@ -149,8 +149,7 @@ export function VirtualPetHero() {
       setAiMessage(response.message);
       setMessageSource(response.source || 'ai');
     } catch (e) {
-      setAiMessage("I'm thinking hard... Let's review the topics in the library!");
-      setMessageSource('local');
+      setAiMessage(null);
     } finally {
       setIsGenerating(false);
     }
@@ -166,7 +165,7 @@ export function VirtualPetHero() {
             {isGenerating && !aiMessage ? (
               <div className="flex items-center gap-2 text-muted-foreground text-sm">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Synchronizing Neural Brain...</span>
+                <span>Thinking...</span>
               </div>
             ) : (
               <>
