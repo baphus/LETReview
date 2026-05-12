@@ -1,5 +1,7 @@
+import type { Metadata, Viewport } from 'next';
 import { Inter, Space_Grotesk } from 'next/font/google';
 import './globals.css';
+import 'katex/dist/katex.min.css';
 import { RootClientLayout } from '@/components/RootClientLayout';
 import { cn } from '@/lib/utils';
 
@@ -15,6 +17,21 @@ const spaceGrotesk = Space_Grotesk({
   display: 'swap',
 });
 
+export const metadata: Metadata = {
+  title: 'LETReview',
+  description: 'A gamified, mobile-first web application for studying the Licensure Exam for Teachers (LET) in the Philippines.',
+  manifest: '/manifest.json',
+  icons: {
+    icon: '/favicon.ico',
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#4A4AFF',
+  width: 'device-width',
+  initialScale: 1,
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -22,27 +39,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <title>LETReview</title>
-        <meta
-          name="description"
-          content="A gamified, mobile-first web application for studying the Licensure Exam for Teachers (LET) in the Philippines."
-        />
-        <meta name="theme-color" content="#4A4AFF" />
-        <link rel="manifest" href="/manifest.json" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/katex@0.13.11/dist/katex.min.css"
-          integrity="sha384-Um5gpz1odJg5Z4HAmzPtgZKdTBHZdw8S29IecapCSB31ligYPhHQZMIlWLYQGVoc"
-          crossOrigin="anonymous"
-        />
-      </head>
       <body
         className={cn(
           inter.variable,
