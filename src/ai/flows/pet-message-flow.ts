@@ -60,22 +60,22 @@ const getReviewerCatalog = ai.defineTool(
  * SMART LOCAL BRAIN (FALLBACK)
  */
 function getSmartLocalResponse(input: z.infer<typeof PetContextSchema>, userMessage?: string): string {
-  const { petName, userName, streak, challengesToday, mood, performanceSummary } = input;
+  const { petName, userName, streak, challengesToday, mood, performanceSummary, todayPoints, totalAnswers } = input;
   
   if (userMessage) {
     const msg = userMessage.toLowerCase();
-    
-    // Performance keyword matching
-    if (msg.includes('improve') || msg.includes('performance') || msg.includes('score') || msg.includes('help')) {
-      if (performanceSummary && performanceSummary !== "No quiz data yet.") {
-        return `I checked your stats, ${userName}! You're averaging ${performanceSummary}. Focus on the topics below 75% for now!`;
-      }
-      return `To level up, try finishing a focus session in the Timer tab. Focus is your superpower, ${userName}!`;
+
+    // Stats/Streak keyword matching
+    if (msg.includes('streak') || msg.includes('stat') || msg.includes('score') || msg.includes('points') || msg.includes('how many')) {
+        return `You have a ${streak}-day streak and earned ${todayPoints} points today! Total answers: ${totalAnswers}. You're doing great, Teacher ${userName}!`;
     }
     
-    // Study content keyword matching
-    if (msg.includes('reviewer') || msg.includes('read') || msg.includes('study') || msg.includes('topic')) {
-      return `We have modules for GenEd and ProfEd! Head over to the Reviewer tab to start reading. I recommend starting with the shortest one to build momentum.`;
+    // Performance keyword matching
+    if (msg.includes('improve') || msg.includes('performance') || msg.includes('help') || msg.includes('study')) {
+      if (performanceSummary && performanceSummary !== "No quiz data yet.") {
+        return `I checked your scores, ${userName}! You're averaging ${performanceSummary}. Focus on the topics below 75% for now!`;
+      }
+      return `To level up, try finishing a focus session in the Timer tab. Focus is your superpower, ${userName}!`;
     }
     
     // Humor keyword matching
@@ -119,6 +119,8 @@ const petMessagePrompt = ai.definePrompt({
 Stats:
 - Mood: {{{mood}}}
 - Streak: {{{streak}}} days
+- Today's Points: {{{todayPoints}}}
+- Total Answers: {{{totalAnswers}}}
 - Performance: {{{performanceSummary}}}
 
 Task: Generate a single greeting (max 20 words).
@@ -141,14 +143,20 @@ const chatPrompt = ai.definePrompt({
   tools: [getReviewerCatalog],
   prompt: `You are {{{petName}}}, the user's study pet and counselor. The user ({{{userName}}}) just said: "{{{userMessage}}}"
 
+User Performance Data:
+- Current Streak: {{{streak}}} days
+- Points Earned Today: {{{todayPoints}}}
+- Total Questions Answered: {{{totalAnswers}}}
+- Daily Challenges Done: {{{challengesToday}}}
+- Topic Averages: {{{performanceSummary}}}
+
 Context:
 - Mood: {{{mood}}}
-- Current Performance: {{{performanceSummary}}}
 - Available Topics: {{{availableTopics}}}
 
 Instructions:
-1. If the user asks how to improve or what to study, use the getReviewerCatalog tool to see what is available and compare it to their Performance Summary.
-2. Suggest specific topics or articles if they have low scores (under 75%).
+1. Answer the user's question accurately using the Performance Data provided.
+2. If they ask how to improve or what to study, use the getReviewerCatalog tool and suggest specific topics with scores under 75%.
 3. Be encouraging, short (1-2 sentences), and slightly funny.
 4. Keep the "Study Companion" persona. If they are doing great, tell them they are LPT material!`,
 });
