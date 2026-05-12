@@ -143,8 +143,8 @@ export const getQuestions = async (options: {
 export const streakPets: PetProfile[] = [
     {
         name: "Rocky",
-        unlock_criteria: "1-day streak",
-        streak_req: 1,
+        unlock_criteria: "Default Companion",
+        streak_req: 0,
         image: "/pets/rocky.png",
         hint: "very hard"
     },

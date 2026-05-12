@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -149,6 +148,7 @@ export default function ProfilePage() {
   const unlockedPetsCount = useMemo(() => {
     if (!user) return 0;
     return allPets.filter(pet => {
+      if (pet.name === 'Rocky') return true;
       if (!pet.unlock_criteria) return false;
       if (pet.unlock_criteria.includes('streak') && !pet.unlock_criteria.includes('quiz')) {
         return (user.highestStreak || 0) >= pet.streak_req;
@@ -301,16 +301,18 @@ export default function ProfilePage() {
   }
 
   const PetDisplay = ({ pet }: { pet: PetProfile }) => {
-    let isUnlocked = false;
+    let isUnlocked = pet.name === 'Rocky';
 
-    if (pet.unlock_criteria.includes('streak') && !pet.unlock_criteria.includes('quiz')) {
-        isUnlocked = (user.highestStreak || 0) >= pet.streak_req;
-    } else if (pet.unlock_criteria.includes('Purchase')) {
-        isUnlocked = user.unlockedPets.includes(pet.name);
-    } else if (pet.unlock_criteria.includes('Pomodoro')) {
-        isUnlocked = (user.completedSessions || 0) >= (pet.unlock_value || 0);
-    } else if (pet.unlock_criteria.includes('quiz streak')) {
-        isUnlocked = (user.highestQuizStreak || 0) >= (pet.unlock_value || 0);
+    if (!isUnlocked) {
+        if (pet.unlock_criteria.includes('streak') && !pet.unlock_criteria.includes('quiz')) {
+            isUnlocked = (user.highestStreak || 0) >= pet.streak_req;
+        } else if (pet.unlock_criteria.includes('Purchase')) {
+            isUnlocked = user.unlockedPets.includes(pet.name);
+        } else if (pet.unlock_criteria.includes('Pomodoro')) {
+            isUnlocked = (user.completedSessions || 0) >= (pet.unlock_value || 0);
+        } else if (pet.unlock_criteria.includes('quiz streak')) {
+            isUnlocked = (user.highestQuizStreak || 0) >= (pet.unlock_value || 0);
+        }
     }
 
     const isActivePet = user?.activePet === pet.name || (!user?.activePet && pet.name === 'Rocky');
