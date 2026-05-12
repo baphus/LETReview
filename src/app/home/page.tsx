@@ -109,7 +109,6 @@ export default function HomePage() {
             </AlertDescription>
           </Alert>
         )}
-        <p className="text-muted-foreground mb-6">Welcome back, {user.name}!</p>
         
         {/* Centerpiece: Virtual Pet Hero */}
         <VirtualPetHero />

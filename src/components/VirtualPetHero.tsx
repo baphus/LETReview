@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useMemo } from 'react';
@@ -117,7 +118,10 @@ export function VirtualPetHero() {
 
   const performanceRemarks = useMemo(() => {
     if (!user) return [];
-    const remarks: string[] = [];
+    const remarks: string[] = [
+      `Welcome back, ${user.name}! Ready to ace the LET?`,
+      `Great to see you again, Teacher ${user.name}!`,
+    ];
 
     const yesterdayKey = format(subDays(new Date(), 1), 'yyyy-MM-dd');
     const wasActiveYesterday = (user.dailyProgress?.[yesterdayKey]?.challengesCompleted?.length || 0) > 0;
@@ -149,7 +153,8 @@ export function VirtualPetHero() {
   }, [user, streak]);
 
   const randomMessage = useMemo(() => {
-    const useRemark = performanceRemarks.length > 0 && Math.random() > 0.6;
+    // Give welcome messages a high priority (50% chance if available)
+    const useRemark = performanceRemarks.length > 0 && Math.random() > 0.5;
     const pool = useRemark ? performanceRemarks : mood.messages;
     return pool[Math.floor(Math.random() * pool.length)];
   }, [mood, performanceRemarks]);
