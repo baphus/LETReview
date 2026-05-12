@@ -27,38 +27,9 @@ import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, query, where } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
 import { QuestionOfTheDay } from "@/components/QuestionOfTheDay";
+import { VirtualPetHero } from "@/components/VirtualPetHero";
 
 const getTodayKey = () => format(new Date(), 'yyyy-MM-dd');
-
-const motivationalQuotes = [
-  "Believe you can and you're halfway there.",
-  "The secret of getting ahead is getting started.",
-  "The expert in anything was once a beginner.",
-  "Don't watch the clock; do what it does. Keep going.",
-  "Success is not final, failure is not fatal: it is the courage to continue that counts.",
-  "Your only limit is your mind.",
-  "Strive for progress, not perfection.",
-  "Every accomplishment starts with the decision to try.",
-  "The future depends on what you do today.",
-  "A little progress each day adds up to big results.",
-  "Consistency is the key to success.",
-];
-
-const StreakMessage = ({ streak }: { streak: number }) => {
-    if (streak < 3) return null;
-
-    return (
-        <Card className="mb-6">
-            <CardHeader className="p-4 text-center">
-                <div className="flex items-center justify-center gap-2 text-xl font-bold font-headline">
-                    <Flame className="h-6 w-6 text-destructive" />
-                    <span>{streak}-day Streak</span>
-                </div>
-            </CardHeader>
-        </Card>
-    );
-};
-
 
 export default function HomePage() {
   const { user, firebaseUser } = useUser();
@@ -70,14 +41,11 @@ export default function HomePage() {
 
   const [featuredArticle, setFeaturedArticle] = useState<Reviewer | null>(null);
   const [randomTopic, setRandomTopic] = useState<Topic | null>(null);
-  const [companion, setCompanion] = useState<PetProfile | null>(null);
-  const [motivationalQuote, setMotivationalQuote] = useState('');
 
   const { data: articles, isLoading: isLoadingArticles } = useCollection<Reviewer>(useMemoFirebase(() => firestore ? query(collection(firestore, 'reviewers'), where('status', '==', 'published')) : null, [firestore]));
   const { data: topics, isLoading: isLoadingTopics } = useCollection<Topic>(useMemoFirebase(() => firestore ? collection(firestore, 'topics') : null, [firestore]));
   const { data: subjects, isLoading: isLoadingSubjects } = useCollection<Subject>(useMemoFirebase(() => firestore ? collection(firestore, 'subjects') : null, [firestore]));
   const { data: questions, isLoading: isLoadingQuestions } = useCollection<QuizQuestion>(useMemoFirebase(() => firestore ? collection(firestore, 'questions') : null, [firestore]));
-  const allPets: PetProfile[] = useMemo(() => [...streakPets, ...achievementPets, ...rarePets], []);
 
   useEffect(() => {
     if (articles && articles.length > 0 && !featuredArticle) {
@@ -101,48 +69,6 @@ export default function HomePage() {
       }
     }
   }, [topics, questions, randomTopic]);
-
-  useEffect(() => {
-    if (user) {
-      let petToShow: PetProfile | undefined;
-      // 1. Check for active pet
-      if (user.activePet) {
-        petToShow = allPets.find(p => p.name === user.activePet);
-      }
-      // 2. If no active pet, find a random unlocked one
-      else {
-        const unlockedPets = allPets.filter(pet => {
-            if (!pet.unlock_criteria) return false;
-            if (pet.unlock_criteria.includes('streak') && !pet.unlock_criteria.includes('quiz')) {
-                return (user.highestStreak || 0) >= pet.streak_req;
-            } else if (pet.unlock_criteria.includes('Purchase')) {
-                return user.unlockedPets?.includes(pet.name);
-            } else if (pet.unlock_criteria.includes('Pomodoro')) {
-                return (user.completedSessions || 0) >= (pet.unlock_value || 0);
-            } else if (pet.unlock_criteria.includes('quiz streak')) {
-                return (user.highestQuizStreak || 0) >= (pet.unlock_value || 0);
-            }
-            return false;
-        });
-
-        if (unlockedPets.length > 0) {
-          petToShow = unlockedPets[Math.floor(Math.random() * unlockedPets.length)];
-        }
-      }
-      
-      // 3. Fallback to Rocky
-      if (!petToShow) {
-        petToShow = allPets.find(p => p.name === 'Rocky');
-      }
-
-      setCompanion(petToShow || null);
-    }
-  }, [user, allPets]);
-
-  useEffect(() => {
-    // This will run only on the client-side to avoid hydration mismatch
-    setMotivationalQuote(motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)]);
-  }, []);
   
   const todayKey = useMemo(() => getTodayKey(), []);
   
@@ -185,9 +111,10 @@ export default function HomePage() {
         )}
         <p className="text-muted-foreground mb-6">Welcome back, {user.name}!</p>
         
-        {user.examDate && <Countdown examDate={new Date(user.examDate)} />}
+        {/* Centerpiece: Virtual Pet Hero */}
+        <VirtualPetHero />
 
-        <StreakMessage streak={user.streak} />
+        {user.examDate && <Countdown examDate={new Date(user.examDate)} />}
 
         <Separator className="my-6" />
 
@@ -345,23 +272,6 @@ export default function HomePage() {
                 )}
             </div>
         </section>
-
-        {companion && motivationalQuote && (
-            <section className="my-6">
-                <Card className="bg-accent/10 border-accent/20">
-                    <CardHeader className="flex flex-row items-center gap-4">
-                        <Image src={companion.image} alt={companion.name} width={80} height={80} className="bg-background rounded-full p-2 animate-bob" data-ai-hint={companion.hint} />
-                        <div>
-                            <CardTitle className="font-headline">{user.petNames[companion.name] || companion.name} says...</CardTitle>
-                            <CardDescription className="text-foreground/80 italic">"{motivationalQuote}"</CardDescription>
-                            <Link href="/profile#pet-collection" passHref>
-                                <Button variant="link" className="p-0 h-auto mt-1">Change Companion</Button>
-                            </Link>
-                        </div>
-                    </CardHeader>
-                </Card>
-            </section>
-        )}
 
         <section className="my-8">
             <div className="flex items-center justify-between mb-4">
