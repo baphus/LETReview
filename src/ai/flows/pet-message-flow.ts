@@ -91,23 +91,47 @@ const getReviewerContent = ai.defineTool(
 /**
  * SMART LOCAL BRAIN (FALLBACK)
  * Refined logic for when AI generation is unavailable.
+ * Now handles article recommendations and performance-based advice dynamically.
  */
 function getSmartLocalResponse(input: z.infer<typeof PetContextSchema>, userMessage?: string): string {
-  const { userName, streak, todayPoints, totalAnswers, mood, performanceSummary } = input;
+  const { userName, streak, todayPoints, totalAnswers, mood, performanceSummary, availableTopics } = input;
   
   if (userMessage) {
     const msg = userMessage.toLowerCase();
 
-    if (msg.includes('streak') || msg.includes('stat') || msg.includes('score') || msg.includes('points')) {
+    // 1. Handle Stats & Streaks
+    if (msg.includes('streak') || msg.includes('stat') || msg.includes('score') || msg.includes('points') || msg.includes('how am i doing')) {
         if (streak === 0 && todayPoints === 0) {
-            return `Teacher ${userName}, we're at a 0-day streak. The best time to start was yesterday; the second best time is right now! Let's get moving.`;
+            return `Teacher ${userName}, we're still at base camp (0-day streak). The best time to start was yesterday; the second best time is right now! Let's get moving.`;
         }
         return `You have a ${streak}-day streak and earned ${todayPoints} points today! Total questions answered: ${totalAnswers}. Consistency is the key to passing the LET!`;
     }
     
+    // 2. Handle Article Recommendations
+    if (msg.includes('article') || msg.includes('read') || msg.includes('topic') || msg.includes('subject') || msg.includes('study today')) {
+      if (availableTopics && availableTopics.length > 0) {
+        // Try to find a low-scoring topic first
+        if (performanceSummary && performanceSummary.includes('%')) {
+           const lowTopics = performanceSummary.split(', ').filter(s => {
+             const val = parseInt(s.split(': ')[1]);
+             return !isNaN(val) && val < 75;
+           });
+           if (lowTopics.length > 0) {
+              const suggested = lowTopics[0].split(': ')[0];
+              return `Looking at your scores, Teacher ${userName}, I strongly recommend reviewing "${suggested}" today. Mastery takes repetition!`;
+           }
+        }
+        // Fallback to random topic
+        const randomTopic = availableTopics[Math.floor(Math.random() * availableTopics.length)];
+        return `Since you're asking, Teacher ${userName}, why not dive into "${randomTopic}" today? It's a high-yield topic for the LET!`;
+      }
+      return `Check out the Reviewer tab, ${userName}! We have some fresh GenEd and ProfEd articles waiting for your focus.`;
+    }
+    
+    // 3. Handle Improvement Advice
     if (msg.includes('improve') || msg.includes('performance') || msg.includes('help') || msg.includes('study')) {
       if (performanceSummary && performanceSummary !== "No quiz data yet.") {
-        return `I've analyzed your performance, ${userName}. Your averages: ${performanceSummary}. I recommend focusing on your lowest-scoring topics first. Mastery takes time!`;
+        return `I've analyzed your performance, ${userName}. Your averages: ${performanceSummary}. Focus on the topics below 75% first—that's where the most growth happens!`;
       }
       
       const generalAdvice = [
@@ -119,6 +143,7 @@ function getSmartLocalResponse(input: z.infer<typeof PetContextSchema>, userMess
       return generalAdvice[Math.floor(Math.random() * generalAdvice.length)];
     }
     
+    // 4. Fun / Jokes
     if (msg.includes('joke')) {
       const jokes = [
         "What's a teacher's favorite nation? Expla-nation!",
@@ -129,9 +154,10 @@ function getSmartLocalResponse(input: z.infer<typeof PetContextSchema>, userMess
       return jokes[Math.floor(Math.random() * jokes.length)];
     }
 
-    return `I'm here to support your journey to LPT status, ${userName}. Feel free to ask me about your stats or specific LET topics!`;
+    return `I'm here to support your journey to LPT status, ${userName}. You can ask me what article to read, how to improve, or check your stats!`;
   }
 
+  // Initial Greetings
   if (streak === 0 && todayPoints === 0) return `Ready to start your journey today, Teacher ${userName}? Every great LPT started with a single question!`;
   if (streak > 0 && todayPoints === 0) return `Protect your ${streak}-day streak, ${userName}! A quick challenge is all it takes to stay on track.`;
   
@@ -183,13 +209,13 @@ User Performance Context:
 - Topic Averages: {{{performanceSummary}}}
 
 Your Mission:
-1. If the user asks about subject matter (e.g., "Explain Piaget"), use getReviewerCatalog to find the article and getReviewerContent to read it, then explain simply.
-2. If they ask how to improve:
-   - If performanceSummary is available, analyze the averages. Suggest reading specific articles for topics where they score below 75%.
-   - If NO performance data is available, DO NOT tell them to "come back later." Instead, give high-quality, general LET study strategies (e.g., active recall, spaced repetition, using the Pomodoro timer).
-3. BE HONEST. If they haven't studied today (0 points/0 answers), give them a friendly reality check that the exam is approaching.
-4. Keep responses punchy and supportive (1-3 sentences).
-5. Use "Teacher" or "Future LPT" to address them.`,
+1. If they ask "what article should I read" or "what to study", use getReviewerCatalog to find the list of articles. If they have low performance scores, suggest an article for their weakest topic. If they have no scores, pick a random high-priority topic like "Legal Bases" or "Mathematics."
+2. If they ask about subject matter (e.g., "Explain Piaget"), use getReviewerCatalog and getReviewerContent to find and read the article, then explain simply.
+3. If they ask how to improve:
+   - Analyze performanceSummary. Suggest specific articles for topics below 75%.
+   - If NO performance data, give high-quality study strategies (active recall, pomodoro).
+4. BE HONEST. If stats are 0, don't praise them. Give them a realistic reminder that the exam is approaching.
+5. Address them as "Teacher" or "Future LPT."`,
 });
 
 export async function getPetMessage(input: z.infer<typeof PetContextSchema>): Promise<PetMessageOutput> {
@@ -222,6 +248,7 @@ export const chatWithPet = ai.defineFlow(
       if (!output) throw new Error('Empty AI response');
       return { message: output.message, source: 'ai' };
     } catch (e) {
+      // Logic for true local keyword processing
       return { 
         message: getSmartLocalResponse(input, input.userMessage), 
         source: 'local' 
