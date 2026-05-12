@@ -64,27 +64,45 @@ function getSmartLocalResponse(input: z.infer<typeof PetContextSchema>, userMess
   
   if (userMessage) {
     const msg = userMessage.toLowerCase();
-    if (msg.includes('improve') || msg.includes('performance') || msg.includes('score')) {
+    
+    // Performance keyword matching
+    if (msg.includes('improve') || msg.includes('performance') || msg.includes('score') || msg.includes('help')) {
       if (performanceSummary && performanceSummary !== "No quiz data yet.") {
-        return `Looking at your scores: ${performanceSummary}. Focus on the ones below 75% first! Consistency is the key to LPT success.`;
+        return `I checked your stats, ${userName}! You're averaging ${performanceSummary}. Focus on the topics below 75% for now!`;
       }
-      return `To improve, try finishing a 25-minute Pomodoro session in the Timer tab. Focus is your superpower, ${userName}!`;
+      return `To level up, try finishing a focus session in the Timer tab. Focus is your superpower, ${userName}!`;
     }
-    if (msg.includes('reviewer') || msg.includes('read') || msg.includes('study')) {
-      return `We have modules for GenEd and ProfEd! Head over to the Reviewer tab to start reading. I suggest starting with the shortest one!`;
+    
+    // Study content keyword matching
+    if (msg.includes('reviewer') || msg.includes('read') || msg.includes('study') || msg.includes('topic')) {
+      return `We have modules for GenEd and ProfEd! Head over to the Reviewer tab to start reading. I recommend starting with the shortest one to build momentum.`;
     }
+    
+    // Humor keyword matching
     if (msg.includes('joke')) {
       const jokes = [
-        "Why did the teacher wear sunglasses? Because her students were so bright! Like you!",
+        "Why did the teacher wear sunglasses? Because her students were so bright!",
         "What's a teacher's favorite nation? Expla-nation!",
         "Why was the music teacher in the hospital? Because she had too many sharps and flats!",
+        "Why did the student eat his homework? Because the teacher said it was a piece of cake!",
       ];
       return jokes[Math.floor(Math.random() * jokes.length)];
     }
+
+    // Generic conversation fallbacks
+    const generic = [
+      `I'm always here to support your LPT journey, ${userName}! What else is on your mind?`,
+      `That's the spirit! Keep pushing and you'll be a Licensed Professional Teacher in no time.`,
+      `Interesting point! As your study pet, I think we should tackle a few more questions today.`,
+      `I'm ${mood} and ready when you are. Ask me about your performance or for a joke!`
+    ];
+    return generic[Math.floor(Math.random() * generic.length)];
   }
 
+  // GREETING LOGIC (when userMessage is undefined)
   if (streak === 0) return `Ready to start your first streak today, ${userName}? Let's get that LPT title!`;
   if (challengesToday >= 3) return `On fire! 3 challenges done. You're definitely passing that board exam!`;
+  if (streak > 5) return `${streak} days in a row? You're becoming a legend, ${userName}!`;
   
   return `I'm ${mood} and ready to study! What's our next topic, ${userName}?`;
 }
