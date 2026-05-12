@@ -11,6 +11,9 @@ import { format } from 'date-fns';
 import { getPetAiMessage, chatWithPet } from '@/ai/flows/pet-message-flow';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, where } from 'firebase/firestore';
+import type { Topic } from '@/lib/types';
 
 type PetMood = 'happy' | 'sleepy' | 'stressed' | 'motivated' | 'focused';
 
@@ -30,12 +33,16 @@ const MOODS: Record<PetMood, MoodConfig> = {
 
 export function VirtualPetHero() {
   const { user } = useUser();
+  const firestore = useFirestore();
   const [aiMessage, setAiMessage] = useState<string | null>(null);
   const [displayedMessage, setDisplayedMessage] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [userChatInput, setUserChatInput] = useState("");
   
   const typewriterIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Fetch topics for AI context
+  const { data: topics } = useCollection<Topic>(useMemoFirebase(() => firestore ? collection(firestore, 'topics') : null, [firestore]));
 
   const allPets = [...streakPets, ...achievementPets, ...rarePets];
   const todayKey = format(new Date(), 'yyyy-MM-dd');
@@ -50,6 +57,15 @@ export function VirtualPetHero() {
   }, [user?.activePet, allPets]);
 
   const petName = user?.petNames?.[petProfile.name] || petProfile.name;
+
+  const performanceSummary = useMemo(() => {
+    if (!user?.quizProgress || !topics) return "No quiz data yet.";
+    const summaries = Object.entries(user.quizProgress).map(([id, stats]) => {
+        const topic = topics.find(t => t.id === id);
+        return `${topic?.name || 'Unknown Topic'}: ${stats.averageScore.toFixed(0)}% avg`;
+    });
+    return summaries.length > 0 ? summaries.join(', ') : "No quiz data yet.";
+  }, [user?.quizProgress, topics]);
 
   const { moodConfig } = useMemo(() => {
     let currentMood: PetMood = 'happy';
@@ -73,7 +89,7 @@ export function VirtualPetHero() {
       if (i >= text.length) {
         if (typewriterIntervalRef.current) clearInterval(typewriterIntervalRef.current);
       }
-    }, 40);
+    }, 30);
   };
 
   useEffect(() => {
@@ -87,7 +103,7 @@ export function VirtualPetHero() {
 
   // Initial Greeting
   useEffect(() => {
-    if (!user) return;
+    if (!user || !topics) return;
     const fetchGreeting = async () => {
       setIsGenerating(true);
       try {
@@ -99,6 +115,8 @@ export function VirtualPetHero() {
           todayPoints: todayStats.pointsEarned || 0,
           totalAnswers,
           challengesToday,
+          performanceSummary,
+          availableTopics: topics.map(t => t.name),
         });
         setAiMessage(response.message);
       } catch (error) {
@@ -108,7 +126,7 @@ export function VirtualPetHero() {
       }
     };
     fetchGreeting();
-  }, [user?.uid, user?.activePet]); // Re-greet if user or pet changes
+  }, [user?.uid, user?.activePet, !!topics]);
 
   const handleChat = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -129,6 +147,8 @@ export function VirtualPetHero() {
         totalAnswers,
         challengesToday,
         userMessage: input,
+        performanceSummary,
+        availableTopics: topics?.map(t => t.name) || [],
       });
       setAiMessage(response.message);
     } catch (e) {
@@ -187,7 +207,7 @@ export function VirtualPetHero() {
         <form onSubmit={handleChat} className="flex w-full max-w-xs md:max-w-md items-center space-x-2">
           <Input 
             type="text" 
-            placeholder={`Ask ${petName} a question...`} 
+            placeholder={`Ask ${petName} for study advice...`} 
             value={userChatInput}
             onChange={(e) => setUserChatInput(e.target.value)}
             className="flex-1 rounded-full bg-background border-primary/20 focus-visible:ring-primary"
