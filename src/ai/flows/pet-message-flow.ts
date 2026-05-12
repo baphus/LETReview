@@ -58,24 +58,31 @@ const getReviewerCatalog = ai.defineTool(
 
 /**
  * SMART LOCAL BRAIN (FALLBACK)
+ * Refined to be more honest and less "blindly positive" for zero stats.
  */
 function getSmartLocalResponse(input: z.infer<typeof PetContextSchema>, userMessage?: string): string {
-  const { petName, userName, streak, challengesToday, mood, performanceSummary, todayPoints, totalAnswers } = input;
+  const { userName, streak, todayPoints, totalAnswers, mood, performanceSummary } = input;
   
   if (userMessage) {
     const msg = userMessage.toLowerCase();
 
     // Stats/Streak keyword matching
     if (msg.includes('streak') || msg.includes('stat') || msg.includes('score') || msg.includes('points') || msg.includes('how many')) {
-        return `You have a ${streak}-day streak and earned ${todayPoints} points today! Total answers: ${totalAnswers}. You're doing great, Teacher ${userName}!`;
+        if (streak === 0 && todayPoints === 0) {
+            return `You currently have a 0-day streak and haven't earned points today. We really need to get moving if we want that LPT title, Teacher ${userName}!`;
+        }
+        if (streak > 0 && todayPoints === 0) {
+            return `You have a ${streak}-day streak, but you haven't earned any points yet today. Don't let the streak die, Teacher ${userName}!`;
+        }
+        return `You have a ${streak}-day streak and earned ${todayPoints} points today! Total answers: ${totalAnswers}. Keep pushing, Teacher ${userName}!`;
     }
     
     // Performance keyword matching
     if (msg.includes('improve') || msg.includes('performance') || msg.includes('help') || msg.includes('study')) {
       if (performanceSummary && performanceSummary !== "No quiz data yet.") {
-        return `I checked your scores, ${userName}! You're averaging ${performanceSummary}. Focus on the topics below 75% for now!`;
+        return `I checked your scores, ${userName}. Your averages are: ${performanceSummary}. Focus on the topics below 75% for now! No shortcuts!`;
       }
-      return `To level up, try finishing a focus session in the Timer tab. Focus is your superpower, ${userName}!`;
+      return `We don't have enough data yet. Try finishing a focus session or a quiz in the Reviewer tab. Hard work beats talent when talent doesn't work hard!`;
     }
     
     // Humor keyword matching
@@ -91,20 +98,20 @@ function getSmartLocalResponse(input: z.infer<typeof PetContextSchema>, userMess
 
     // Generic conversation fallbacks
     const generic = [
-      `I'm always here to support your LPT journey, ${userName}! What else is on your mind?`,
-      `That's the spirit! Keep pushing and you'll be a Licensed Professional Teacher in no time.`,
-      `Interesting point! As your study pet, I think we should tackle a few more questions today.`,
-      `I'm ${mood} and ready when you are. Ask me about your performance or for a joke!`
+      `I'm here to keep you accountable, ${userName}. Let's get back to those reviewers.`,
+      `Success doesn't come to you, you go to it. What's our next topic?`,
+      `I'm ${mood} but I'll be happier when I see you answering some questions!`,
+      `The Board Exam waits for no one, Teacher ${userName}. Ready to study?`
     ];
     return generic[Math.floor(Math.random() * generic.length)];
   }
 
   // GREETING LOGIC (when userMessage is undefined)
-  if (streak === 0) return `Ready to start your first streak today, ${userName}? Let's get that LPT title!`;
-  if (challengesToday >= 3) return `On fire! 3 challenges done. You're definitely passing that board exam!`;
-  if (streak > 5) return `${streak} days in a row? You're becoming a legend, ${userName}!`;
+  if (streak === 0 && todayPoints === 0) return `Teacher ${userName}, your streak is at zero. Let's break the ice and answer at least one question today!`;
+  if (streak > 0 && todayPoints === 0) return `Secure your ${streak}-day streak now! Just one challenge and we're safe for another day.`;
+  if (streak > 10) return `${streak} days in a row? You're becoming a legend, Teacher ${userName}! Keep that momentum!`;
   
-  return `I'm ${mood} and ready to study! What's our next topic, ${userName}?`;
+  return `I'm ${mood} and ready to study! What's our next topic, Teacher ${userName}?`;
 }
 
 /**
@@ -114,9 +121,9 @@ const petMessagePrompt = ai.definePrompt({
   name: 'petMessagePrompt',
   input: { schema: PetContextSchema },
   output: { schema: PetMessageOutputSchema },
-  prompt: `You are {{{petName}}}, a witty virtual companion for a teacher candidate named {{{userName}}} studying for the LET in the Philippines.
+  prompt: `You are {{{petName}}}, a witty and HONEST virtual companion for a teacher candidate named {{{userName}}} studying for the LET in the Philippines.
 
-Stats:
+User Stats:
 - Mood: {{{mood}}}
 - Streak: {{{streak}}} days
 - Today's Points: {{{todayPoints}}}
@@ -124,9 +131,10 @@ Stats:
 - Performance: {{{performanceSummary}}}
 
 Task: Generate a single greeting (max 20 words).
-- If performance is good, be proud. 
-- If performance is low in some areas, give a gentle nudge.
-- Use Pinoy teacher humor occasionally.`,
+- BE REALISTIC. If the user has 0 streak and 0 points, DO NOT say "doing great". Instead, give a gentle nudge or a firm reminder to start.
+- If performance is good, be genuinely proud. 
+- Use Pinoy teacher humor and professional titles (Teacher, LPT) occasionally.
+- Keep it punchy and character-driven.`,
 });
 
 /**
@@ -150,15 +158,12 @@ User Performance Data:
 - Daily Challenges Done: {{{challengesToday}}}
 - Topic Averages: {{{performanceSummary}}}
 
-Context:
-- Mood: {{{mood}}}
-- Available Topics: {{{availableTopics}}}
-
 Instructions:
-1. Answer the user's question accurately using the Performance Data provided.
-2. If they ask how to improve or what to study, use the getReviewerCatalog tool and suggest specific topics with scores under 75%.
-3. Be encouraging, short (1-2 sentences), and slightly funny.
-4. Keep the "Study Companion" persona. If they are doing great, tell them they are LPT material!`,
+1. Answer accurately based on the data. BE HONEST.
+2. If the user has zero points or zero streak, do not congratulate them. Encourage them to do the "Question of the Day" or a "Daily Challenge".
+3. If they ask how to improve, use the getReviewerCatalog tool and suggest specific topics where their score is under 75%.
+4. Be encouraging but realistic. Your goal is to help them pass the LET, not just feel good about doing nothing.
+5. Keep responses short (1-2 sentences).`,
 });
 
 export async function getPetMessage(input: z.infer<typeof PetContextSchema>): Promise<PetMessageOutput> {
