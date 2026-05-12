@@ -116,8 +116,7 @@ export function VirtualPetHero() {
         setAiMessage(response.message);
         setMessageSource(response.source || 'ai');
       } catch (error) {
-        setAiMessage(`Hi Teacher ${user.name}! Ready to secure your LPT title today?`);
-        setMessageSource('local');
+        setAiMessage(null);
       } finally {
         setIsGenerating(false);
       }

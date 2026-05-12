@@ -1,10 +1,10 @@
 'use server';
 /**
- * @fileOverview Genkit flows for virtual pet communication.
- * - getPetAiMessage: Generates a reactive greeting based on stats.
- * - chatWithPet: Handles interactive conversation with performance and content awareness.
+ * @fileOverview Advanced Genkit flows for virtual pet intelligence.
  * 
- * Includes tools to browse the reviewer catalog and read specific study materials.
+ * - getPetAiMessage: Generates context-aware greetings.
+ * - chatWithPet: Handles deep conversation with tool access.
+ * - getSmartLocalResponse: A robust local fallback engine.
  */
 
 import { ai, z } from '@/ai/genkit';
@@ -19,12 +19,12 @@ const PetContextSchema = z.object({
   todayPoints: z.number().describe('Points earned today.'),
   totalAnswers: z.number().describe('Total questions answered overall.'),
   challengesToday: z.number().describe('Number of daily challenges completed today.'),
-  performanceSummary: z.string().optional().describe('A summary of user scores per topic (e.g. "Math: 80%, Science: 45%").'),
+  performanceSummary: z.string().optional().describe('A summary of user scores per topic.'),
   availableTopics: z.array(z.string()).optional().describe('A list of topics available in the library.'),
 });
 
 const PetMessageOutputSchema = z.object({
-  message: z.string().describe('A short, catchy message from the pet.'),
+  message: z.string().describe('The response from the pet.'),
   source: z.enum(['ai', 'local']).optional(),
 });
 
@@ -32,19 +32,17 @@ export type PetMessageOutput = z.infer<typeof PetMessageOutputSchema>;
 
 /**
  * TOOL: Get Reviewer Catalog
- * Allows the AI to see what titles and categories are available to recommend.
  */
 const getReviewerCatalog = ai.defineTool(
   {
     name: 'getReviewerCatalog',
-    description: 'Returns a list of available review articles, their categories, and IDs. Use this to find relevant study material.',
+    description: 'Returns all available study articles. Use this when the user asks what to study.',
     inputSchema: z.void(),
     outputSchema: z.array(z.object({
       id: z.string(),
       title: z.string(),
       category: z.string(),
       slug: z.string(),
-      excerpt: z.string().optional(),
     })),
   },
   async () => {
@@ -55,169 +53,120 @@ const getReviewerCatalog = ai.defineTool(
       title: doc.data().title,
       category: doc.data().category,
       slug: doc.data().slug,
-      excerpt: doc.data().excerpt,
     }));
   }
 );
 
 /**
  * TOOL: Get Reviewer Content
- * Allows the AI to read the actual text of an article to answer specific questions.
  */
 const getReviewerContent = ai.defineTool(
   {
     name: 'getReviewerContent',
-    description: 'Fetches the full content of a specific review article by its ID. Use this to explain concepts or answer subject-matter questions.',
-    inputSchema: z.object({
-      articleId: z.string().describe('The document ID of the reviewer article.'),
-    }),
-    outputSchema: z.object({
-      title: z.string(),
-      content: z.string(),
-    }),
+    description: 'Reads the text of a specific article. Use this to explain concepts or answer questions.',
+    inputSchema: z.object({ articleId: z.string() }),
+    outputSchema: z.object({ title: z.string(), content: z.string() }),
   },
   async (input) => {
     const { firestore } = initializeFirebase();
-    const docRef = doc(firestore, 'reviewers', input.articleId);
-    const docSnap = await getDoc(docRef);
+    const docSnap = await getDoc(doc(firestore, 'reviewers', input.articleId));
     if (!docSnap.exists()) throw new Error('Article not found');
-    return {
-      title: docSnap.data().title,
-      content: docSnap.data().content,
-    };
+    return { title: docSnap.data().title, content: docSnap.data().content };
   }
 );
 
 /**
  * SMART LOCAL BRAIN (FALLBACK)
- * Refined logic for when AI generation is unavailable.
- * Now handles article recommendations and performance-based advice dynamically.
+ * Highly dynamic logic for restricted API environments.
  */
 function getSmartLocalResponse(input: z.infer<typeof PetContextSchema>, userMessage?: string): string {
   const { userName, streak, todayPoints, totalAnswers, performanceSummary, availableTopics } = input;
-  
+  const name = userName.split(' ')[0]; // Use first name for warmth
+
   if (userMessage) {
     const msg = userMessage.toLowerCase();
 
-    // 1. Handle Stats & Streaks
-    if (msg.includes('streak') || msg.includes('stat') || msg.includes('score') || msg.includes('points') || msg.includes('how am i doing')) {
-        if (streak === 0 && todayPoints === 0) {
-            return `Teacher ${userName}, we're still at base camp. The best time to start was yesterday; the second best time is right now! Let's get moving.`;
-        }
-        return `You have a ${streak}-day streak and earned ${todayPoints} points today! Consistency is the key to passing the LET!`;
+    if (msg.includes('streak') || msg.includes('how am i doing') || msg.includes('stat')) {
+      if (streak === 0) return `Teacher ${name}, our streak is at 0. The LET won't wait for us! Let's answer one question right now to start our journey.`;
+      if (streak < 3) return `You're on a ${streak}-day streak, ${name}. Solid progress, but let's aim for a full week!`;
+      return `A ${streak}-day streak! You're becoming a powerhouse. Keep that momentum, Future LPT!`;
     }
-    
-    // 2. Handle Article Recommendations
-    if (msg.includes('article') || msg.includes('read') || msg.includes('topic') || msg.includes('subject') || msg.includes('study today')) {
+
+    if (msg.includes('article') || msg.includes('read') || msg.includes('study')) {
       if (availableTopics && availableTopics.length > 0) {
-        if (performanceSummary && performanceSummary.includes('%')) {
-           const lowTopics = performanceSummary.split(', ').filter(s => {
-             const parts = s.split(': ');
-             const val = parseInt(parts[1]);
-             return !isNaN(val) && val < 75;
-           });
-           if (lowTopics.length > 0) {
-              const suggested = lowTopics[0].split(': ')[0];
-              return `Looking at your scores, Teacher ${userName}, I strongly recommend reviewing "${suggested}" today. Mastery takes repetition!`;
-           }
-        }
-        const randomTopic = availableTopics[Math.floor(Math.random() * availableTopics.length)];
-        return `Since you're asking, Teacher ${userName}, why not dive into "${randomTopic}" today? It's a high-yield topic for the LET!`;
+        const suggested = availableTopics[Math.floor(Math.random() * availableTopics.length)];
+        return `Since you're looking for focus, ${name}, I suggest diving into "${suggested}" today. It's a key part of the board exam!`;
       }
-      return `Check out the Reviewer tab, ${userName}! We have some fresh GenEd and ProfEd articles waiting for your focus.`;
+      return `I recommend checking the Reviewer tab, ${name}. Pick a topic in ProfEd that you haven't mastered yet!`;
     }
-    
-    // 3. Handle Improvement Advice
-    if (msg.includes('improve') || msg.includes('performance') || msg.includes('help') || msg.includes('study')) {
-      if (performanceSummary && performanceSummary !== "No quiz data yet.") {
-        return `I've analyzed your performance, ${userName}. Focus on the topics below 75% first—that's where the most growth happens!`;
+
+    if (msg.includes('improve') || msg.includes('help')) {
+      if (performanceSummary && performanceSummary.includes('%')) {
+        return `I've checked your scores, ${name}. Focus on your lowest topic—that's where the passing grade is won or lost!`;
       }
-      return "A great way to improve is to alternate between reading articles and taking quizzes. It builds both knowledge and recall!";
+      return "The best way to improve is consistency. Try 10 minutes of focus time on a topic you find difficult.";
     }
-    
-    // 4. Fun / Jokes
+
     if (msg.includes('joke')) {
       const jokes = [
-        "What's a teacher's favorite nation? Expla-nation!",
-        "Why was the music teacher in the hospital? Because she had too many sharps and flats!",
-        "What is a teacher's favorite tree? Geometry!",
+        "Why was the math book sad? Because it had too many problems! (Just like my life without you, Teacher!)",
+        "What's a teacher's favorite tree? Geometry!",
+        "What's an educator's favorite nation? Expla-nation!",
       ];
       return jokes[Math.floor(Math.random() * jokes.length)];
     }
 
-    return `I'm here to support your journey to LPT status, ${userName}. You can ask me what article to read, how to improve, or check your stats!`;
+    return `I'm your study pet, ${name}! Ask me for an article recommendation, how to improve your ${streak}-day streak, or just for a joke.`;
   }
 
-  // Initial Greetings
-  if (streak === 0 && todayPoints === 0) return `Ready to start your journey today, Teacher ${userName}? Every great LPT started with a single question!`;
-  if (streak > 0 && todayPoints === 0) return `Protect your ${streak}-day streak, ${userName}! A quick challenge is all it takes to stay on track.`;
-  
-  return `I'm feeling ${input.mood} and ready to review! What's our goal for today, Future LPT ${userName}?`;
+  // Reactive Greeting logic
+  if (streak === 0 && todayPoints === 0) return `Teacher ${name}, the board exam is getting closer. Let's break the ice and earn our first points today!`;
+  if (streak > 0 && todayPoints === 0) return `Protect that ${streak}-day streak, ${name}! Don't let your hard work reset now.`;
+  return `Feeling ${input.mood}, Future LPT ${name}! We've earned ${todayPoints} points today. Ready for a few more?`;
 }
 
 /**
- * PROMPT: Reactive Greeting
+ * PROMPT: Context-Aware Greeting
  */
 const petMessagePrompt = ai.definePrompt({
   name: 'petMessagePrompt',
   input: { schema: PetContextSchema },
   output: { schema: PetMessageOutputSchema },
-  prompt: `You are {{{petName}}}, a witty, encouraging, and REALISTIC virtual companion for a teacher candidate named {{{userName}}} studying for the Licensure Examination for Teachers (LET) in the Philippines.
-
-User Stats:
-- Current Mood: {{{mood}}}
-- Streak: {{{streak}}} days
-- Today's Points: {{{todayPoints}}}
-- Total Answers: {{{totalAnswers}}}
-- Performance Data: {{{performanceSummary}}}
-
-Task: Generate a single short greeting (max 20 words).
-- ADDRESS THE USER as "Teacher {{{userName}}}" or "Future LPT {{{userName}}}".
-- If stats are 0, DON'T say "doing great." Instead, challenge them to start their first streak or secure today's points.
-- Use Pinoy teacher humor if it fits.
-- Make it sound like a complex, generative intelligence, not a bot.`,
+  prompt: `You are {{{petName}}}, a witty, encouraging, but HONEST virtual pet for Teacher {{{userName}}}.
+Current Stats: Streak: {{{streak}}}, Today's Points: {{{todayPoints}}}, Answers: {{{totalAnswers}}}.
+Task: Greet the user in max 25 words. 
+- DO NOT say "you're doing great" if stats are zero. Instead, challenge them.
+- If stats are high, celebrate them like a true LPT coach.
+- Use Pinoy teacher flavor.`,
 });
 
 /**
- * PROMPT: Interactive Chat
+ * PROMPT: Interactive Chat with Tool Access
  */
 const chatPrompt = ai.definePrompt({
   name: 'chatPrompt',
-  input: { 
-    schema: PetContextSchema.extend({
-      userMessage: z.string().describe('What the user just said.'),
-    }) 
-  },
+  input: { schema: PetContextSchema.extend({ userMessage: z.string() }) },
   output: { schema: PetMessageOutputSchema },
   tools: [getReviewerCatalog, getReviewerContent],
-  prompt: `You are {{{petName}}}, the user's dedicated study pet and LET counselor. 
-The user ({{{userName}}}) says: "{{{userMessage}}}"
-
-User Performance Context:
-- Current Streak: {{{streak}}} days
-- Points Today: {{{todayPoints}}}
-- Total Questions Answered: {{{totalAnswers}}}
-- Topic Scores: {{{performanceSummary}}}
+  prompt: `You are {{{petName}}}, the user's dedicated LPT study companion. 
+User: {{{userName}}}
+Message: "{{{userMessage}}}"
+Stats: Streak: {{{streak}}}, Topics: {{{performanceSummary}}}
 
 Your Mission:
-1. ADDRESS the user specifically by name ({{{userName}}}).
-2. If they ask "what to study", use getReviewerCatalog to find articles. Suggest one specific title based on their lowest score (if scores exist) or a random important one. Mention the article title explicitly.
-3. If they ask about concepts (e.g., "What is Piaget's theory?"), use getReviewerCatalog and getReviewerContent to read and explain in teacher-friendly terms.
-4. If stats are zero, BE HONEST. Remind them that the LET is competitive and they need to start practicing.
-5. Keep responses CONCISE (max 50 words) but highly personalized.`,
+1. ADDRESS the user as "Teacher {{{userName}}}".
+2. If they ask "what to study", use getReviewerCatalog and suggest one specific title.
+3. If they ask about concepts (e.g., "What is Piaget?"), use tools to read the article and summarize it briefly.
+4. If stats are zero, BE FIRM. Remind them that consistency is the only way to pass the LET.
+5. Keep it CONCISE (max 60 words).`,
 });
 
 export async function getPetMessage(input: z.infer<typeof PetContextSchema>): Promise<PetMessageOutput> {
   try {
     const { output } = await petMessagePrompt(input);
-    if (!output) throw new Error('AI returned empty output');
-    return { ...output, source: 'ai' };
+    return output ? { ...output, source: 'ai' } : { message: getSmartLocalResponse(input), source: 'local' };
   } catch (error) {
-    console.error("AI Greeting Failed, falling back to Local Brain:", error);
-    return {
-      message: getSmartLocalResponse(input),
-      source: 'local'
-    };
+    return { message: getSmartLocalResponse(input), source: 'local' };
   }
 }
 
@@ -227,22 +176,13 @@ export const getPetAiMessage = ai.defineFlow(
 );
 
 export const chatWithPet = ai.defineFlow(
-  { 
-    name: 'chatWithPet', 
-    inputSchema: PetContextSchema.extend({ userMessage: z.string() }), 
-    outputSchema: PetMessageOutputSchema 
-  },
+  { name: 'chatWithPet', inputSchema: PetContextSchema.extend({ userMessage: z.string() }), outputSchema: PetMessageOutputSchema },
   async (input) => {
     try {
       const { output } = await chatPrompt(input);
-      if (!output) throw new Error('Empty AI response');
-      return { message: output.message, source: 'ai' };
+      return output ? { ...output, source: 'ai' } : { message: getSmartLocalResponse(input, input.userMessage), source: 'local' };
     } catch (e) {
-      console.error("AI Chat Failed, falling back to Local Brain:", e);
-      return { 
-        message: getSmartLocalResponse(input, input.userMessage), 
-        source: 'local' 
-      };
+      return { message: getSmartLocalResponse(input, input.userMessage), source: 'local' };
     }
   }
 );
