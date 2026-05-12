@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useMemo } from 'react';
@@ -10,7 +9,7 @@ import { useUser } from '@/firebase/auth/use-user';
 import { streakPets, achievementPets, rarePets } from '@/lib/data';
 import { cn } from '@/lib/utils';
 import { Flame, Zap, Trophy, Brain, Coffee, Moon, Stars } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, subDays, isSameDay } from 'date-fns';
 
 type PetMood = 'happy' | 'sleepy' | 'stressed' | 'motivated' | 'focused';
 
@@ -30,6 +29,9 @@ const MOODS: Record<PetMood, MoodConfig> = {
       "You're doing great! Keep it up!",
       "I love seeing you study!",
       "Feeling good today, are you?",
+      "Education is the most powerful weapon! Let's go!",
+      "You make this look easy!",
+      "Why did the teacher wear sunglasses? Because the class was so bright!",
     ],
   },
   sleepy: {
@@ -40,6 +42,9 @@ const MOODS: Record<PetMood, MoodConfig> = {
       "Is it study time yet? *yawn*",
       "I'm ready for a nap...",
       "Wake me up when we start reviewing.",
+      "ZZZ... oh! I was just visualizing our success.",
+      "Even a future LPT needs their beauty sleep.",
+      "If I fall asleep, just poke me with a stylus.",
     ],
   },
   stressed: {
@@ -50,6 +55,9 @@ const MOODS: Record<PetMood, MoodConfig> = {
       "That's a lot of questions! Take a breath.",
       "Don't let the exam scare you!",
       "Maybe a short break?",
+      "Deep breaths. One Republic Act at a time.",
+      "Even the best teachers started where you are.",
+      "I believe in you more than I believe in the test results!",
     ],
   },
   motivated: {
@@ -60,6 +68,9 @@ const MOODS: Record<PetMood, MoodConfig> = {
       "UNSTOPPABLE! Let's crush this LET!",
       "Look at that streak go!",
       "You're making this look easy!",
+      "Future LPT in the building!",
+      "Your brain is basically a supercomputer right now.",
+      "Why was the math book sad? Because it had too many problems. But not you!",
     ],
   },
   focused: {
@@ -70,6 +81,9 @@ const MOODS: Record<PetMood, MoodConfig> = {
       "Shhh, I'm analyzing the data...",
       "Absolute focus mode engaged.",
       "Every minute counts towards that LPT title.",
+      "I can practically see the neural pathways forming.",
+      "This kind of focus is what separates the masters.",
+      "Data processing... 99.9% consistency detected.",
     ],
   },
 };
@@ -92,8 +106,8 @@ export function VirtualPetHero() {
   const petName = user?.petNames?.[petProfile.name] || petProfile.name;
 
   // Dynamic Logic for Mood, XP, and Level
-  const { mood, level, xpProgress, energy } = useMemo(() => {
-    // 1. Calculate Level (Simple log growth)
+  const { mood, level, xpProgress, energy, moodKey } = useMemo(() => {
+    // 1. Calculate Level (Simple square root growth)
     const currentLevel = Math.floor(Math.sqrt(points / 20)) + 1;
     const nextLevelXP = Math.pow(currentLevel, 2) * 20;
     const prevLevelXP = Math.pow(currentLevel - 1, 2) * 20;
@@ -102,8 +116,6 @@ export function VirtualPetHero() {
     const xpPercent = Math.min((currentLevelXP / totalLevelXPNeeded) * 100, 100);
 
     // 2. Calculate Energy
-    // Max 100. Gains 20 per Pomodoro. Loses 5 per challenge. 
-    // For MVP, we base it on today's session frequency
     const focusEnergy = Math.min((todayStats.pomodorosCompleted || 0) * 25 + 50, 100);
     const activityEnergy = Math.max(focusEnergy - (todayStats.challengesCompleted?.length || 0) * 10, 20);
 
@@ -116,15 +128,55 @@ export function VirtualPetHero() {
 
     return {
       mood: MOODS[currentMood],
+      moodKey: currentMood,
       level: currentLevel,
       xpProgress: xpPercent,
       energy: activityEnergy,
     };
   }, [points, streak, todayStats]);
 
+  const performanceRemarks = useMemo(() => {
+    if (!user) return [];
+    const remarks: string[] = [];
+
+    // Consistency Check
+    const yesterdayKey = format(subDays(new Date(), 1), 'yyyy-MM-dd');
+    const wasActiveYesterday = user.dailyProgress?.[yesterdayKey]?.challengesCompleted?.length || 0 > 0;
+    if (wasActiveYesterday && streak > 1) {
+      remarks.push(`Day ${streak}! Our consistency is legendary!`);
+    } else if (!wasActiveYesterday && streak === 0) {
+      remarks.push("Welcome back! I missed our review sessions.");
+    }
+
+    // High Achievement
+    if (user.highestStreak > 10 && streak > 0) {
+      remarks.push(`We've hit 10+ days before, I know we can do it again!`);
+    }
+
+    if ((user.questionsAnswered || 0) > 500) {
+      remarks.push(`Over 500 questions answered! You're becoming a master.`);
+    } else if ((user.questionsAnswered || 0) > 100) {
+      remarks.push(`100+ questions! That's serious dedication.`);
+    }
+
+    // Exam Proximity (If exam date is set)
+    if (user.examDate) {
+      const daysLeft = Math.ceil((new Date(user.examDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+      if (daysLeft < 7 && daysLeft > 0) {
+        remarks.push(`Only ${daysLeft} days to go. We've got this! Final stretch!`);
+      }
+    }
+
+    return remarks;
+  }, [user, streak]);
+
   const randomMessage = useMemo(() => {
-    return mood.messages[Math.floor(Math.random() * mood.messages.length)];
-  }, [mood]);
+    // Combine mood messages with special performance remarks
+    // 40% chance of a performance remark if available
+    const useRemark = performanceRemarks.length > 0 && Math.random() > 0.6;
+    const pool = useRemark ? performanceRemarks : mood.messages;
+    return pool[Math.floor(Math.random() * pool.length)];
+  }, [mood, performanceRemarks]);
 
   if (!user) return null;
 
@@ -134,9 +186,9 @@ export function VirtualPetHero() {
         {/* Left: Pet Visual & Bubble */}
         <div className="relative flex flex-col items-center group">
           {/* Chat Bubble */}
-          <div className="absolute -top-16 left-1/2 -translate-x-1/2 w-48 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none md:opacity-100 md:static md:translate-x-0 md:mb-4 md:w-56">
+          <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-48 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none md:opacity-100 md:static md:translate-x-0 md:mb-4 md:w-64">
             <div className="relative bg-card border shadow-sm rounded-2xl p-3 text-center">
-              <p className="text-sm font-medium leading-tight">
+              <p className="text-sm font-medium leading-tight text-foreground">
                 "{randomMessage}"
               </p>
               {/* Triangle pointer */}
@@ -195,10 +247,11 @@ export function VirtualPetHero() {
               </div>
               <Progress 
                 value={energy} 
-                className="h-2.5 bg-muted" 
-                style={{
-                   // @ts-ignore - dynamic primary color override for low energy
-                   '--progress-background': energy < 30 ? 'hsl(var(--destructive))' : 'hsl(var(--primary))' 
+                className="h-2.5 bg-muted"
+                // Using standard CSS variable for progress indicator
+                style={{ 
+                  // @ts-ignore
+                  '--progress-foreground': energy < 30 ? 'hsl(var(--destructive))' : 'hsl(var(--primary))'
                 }}
               />
             </CardContent>
