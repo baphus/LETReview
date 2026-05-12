@@ -1,14 +1,16 @@
 'use client';
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { useUser } from '@/firebase/auth/use-user';
 import { streakPets, achievementPets, rarePets } from '@/lib/data';
 import { cn } from '@/lib/utils';
-import { Flame, Trophy, Brain, Stars, Moon, Coffee, Loader2 } from 'lucide-react';
+import { Flame, Trophy, Brain, Stars, Moon, Coffee, Loader2, Send } from 'lucide-react';
 import { format } from 'date-fns';
-import { getPetAiMessage } from '@/ai/flows/pet-message-flow';
+import { getPetAiMessage, chatWithPet } from '@/ai/flows/pet-message-flow';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 type PetMood = 'happy' | 'sleepy' | 'stressed' | 'motivated' | 'focused';
 
@@ -19,73 +21,71 @@ interface MoodConfig {
 }
 
 const MOODS: Record<PetMood, MoodConfig> = {
-  happy: {
-    label: 'Happy',
-    icon: <Stars className="h-3 w-3" />,
-    color: 'bg-green-500',
-  },
-  sleepy: {
-    label: 'Sleepy',
-    icon: <Moon className="h-3 w-3" />,
-    color: 'bg-blue-400',
-  },
-  stressed: {
-    label: 'Stressed',
-    icon: <Coffee className="h-3 w-3" />,
-    color: 'bg-orange-500',
-  },
-  motivated: {
-    label: 'On Fire!',
-    icon: <Flame className="h-3 w-3" />,
-    color: 'bg-red-500',
-  },
-  focused: {
-    label: 'Focused',
-    icon: <Brain className="h-3 w-3" />,
-    color: 'bg-purple-500',
-  },
+  happy: { label: 'Happy', icon: <Stars className="h-3 w-3" />, color: 'bg-green-500' },
+  sleepy: { label: 'Sleepy', icon: <Moon className="h-3 w-3" />, color: 'bg-blue-400' },
+  stressed: { label: 'Stressed', icon: <Coffee className="h-3 w-3" />, color: 'bg-orange-500' },
+  motivated: { label: 'On Fire!', icon: <Flame className="h-3 w-3" />, color: 'bg-red-500' },
+  focused: { label: 'Focused', icon: <Brain className="h-3 w-3" />, color: 'bg-purple-500' },
 };
 
 export function VirtualPetHero() {
   const { user } = useUser();
   const [aiMessage, setAiMessage] = useState<string | null>(null);
+  const [displayedMessage, setDisplayedMessage] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [userChatInput, setUserChatInput] = useState("");
+  
+  const typewriterIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const allPets = [...streakPets, ...achievementPets, ...rarePets];
-
   const todayKey = format(new Date(), 'yyyy-MM-dd');
   const todayStats = user?.dailyProgress?.[todayKey] || {};
   const streak = user?.streak || 0;
   const totalAnswers = user?.questionsAnswered || 0;
   const challengesToday = todayStats.challengesCompleted?.length || 0;
 
-  // Derive Pet Data
   const petProfile = useMemo(() => {
     const active = allPets.find((p) => p.name === user?.activePet);
-    return active || allPets[0]; // Fallback to Rocky
+    return active || allPets[0]; 
   }, [user?.activePet, allPets]);
 
   const petName = user?.petNames?.[petProfile.name] || petProfile.name;
 
-  // Dynamic Logic for Mood
-  const { moodKey, moodConfig } = useMemo(() => {
+  const { moodConfig } = useMemo(() => {
     let currentMood: PetMood = 'happy';
     if (streak >= 3) currentMood = 'motivated';
     if ((todayStats.questionsAnswered || 0) > 15) currentMood = 'focused';
     if (challengesToday > 2) currentMood = 'stressed';
     if ((todayStats.pomodorosCompleted || 0) === 0 && !todayStats.qotdCompleted) currentMood = 'sleepy';
 
-    return {
-      moodKey: currentMood,
-      moodConfig: MOODS[currentMood],
-    };
+    return { moodConfig: MOODS[currentMood] };
   }, [streak, todayStats, challengesToday]);
 
-  // AI Message Generation with robust local fallback
+  // Handle Typewriter Animation
+  useEffect(() => {
+    if (!aiMessage) return;
+    
+    if (typewriterIntervalRef.current) clearInterval(typewriterIntervalRef.current);
+    
+    setDisplayedMessage("");
+    let i = 0;
+    typewriterIntervalRef.current = setInterval(() => {
+      setDisplayedMessage(aiMessage.substring(0, i + 1));
+      i++;
+      if (i >= aiMessage.length) {
+        if (typewriterIntervalRef.current) clearInterval(typewriterIntervalRef.current);
+      }
+    }, 30);
+
+    return () => {
+      if (typewriterIntervalRef.current) clearInterval(typewriterIntervalRef.current);
+    };
+  }, [aiMessage]);
+
+  // Initial Greeting
   useEffect(() => {
     if (!user) return;
-
-    const fetchAiMessage = async () => {
+    const fetchGreeting = async () => {
       setIsGenerating(true);
       try {
         const response = await getPetAiMessage({
@@ -99,32 +99,57 @@ export function VirtualPetHero() {
         });
         setAiMessage(response.message);
       } catch (error) {
-        console.error('AI Flow error handled in UI:', error);
-        setAiMessage(`Welcome back, teacher ${user.name}! Ready to study?`);
+        setAiMessage(`Hey ${user.name}! Ready to study?`);
       } finally {
         setIsGenerating(false);
       }
     };
+    fetchGreeting();
+  }, [user?.uid]);
 
-    fetchAiMessage();
-  }, [user?.uid, streak, challengesToday, petName, moodConfig.label, todayStats.pointsEarned, totalAnswers, user?.name]);
+  const handleChat = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userChatInput.trim() || isGenerating) return;
+
+    const input = userChatInput.trim();
+    setUserChatInput("");
+    setIsGenerating(true);
+    setAiMessage(null); // Clear to trigger animation on response
+
+    try {
+      const response = await chatWithPet({
+        petName,
+        userName: user?.name || "Teacher",
+        mood: moodConfig.label,
+        streak,
+        todayPoints: todayStats.pointsEarned || 0,
+        totalAnswers,
+        challengesToday,
+        userMessage: input,
+      });
+      setAiMessage(response.message);
+    } catch (e) {
+      setAiMessage("I'm a bit distracted right now, but I'm always cheering for you!");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   if (!user) return null;
 
   return (
     <div className="w-full mb-8 space-y-6">
       <div className="flex flex-col items-center gap-6">
-        {/* Chat Bubble - Optimized for mobile */}
+        {/* Chat Bubble */}
         <div className="w-full max-w-xs md:max-w-md animate-fade-in-up">
-          <div className="relative bg-card border shadow-sm rounded-2xl p-4 text-center min-h-[60px] flex items-center justify-center">
-            {isGenerating ? (
+          <div className="relative bg-card border shadow-sm rounded-2xl p-4 text-center min-h-[80px] flex flex-col items-center justify-center">
+            {isGenerating && !aiMessage ? (
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             ) : (
               <p className="text-sm md:text-base font-medium leading-tight text-foreground">
-                "{aiMessage || '...'}"
+                "{displayedMessage || '...'}"
               </p>
             )}
-            {/* Triangle pointer */}
             <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[8px] border-t-card" />
           </div>
         </div>
@@ -152,7 +177,22 @@ export function VirtualPetHero() {
           </Badge>
         </div>
 
-        {/* Habit Stats - Compact for mobile */}
+        {/* Chat Input */}
+        <form onSubmit={handleChat} className="flex w-full max-w-xs md:max-w-md items-center space-x-2">
+          <Input 
+            type="text" 
+            placeholder={`Chat with ${petName}...`} 
+            value={userChatInput}
+            onChange={(e) => setUserChatInput(e.target.value)}
+            className="flex-1 rounded-full bg-background"
+            disabled={isGenerating}
+          />
+          <Button type="submit" size="icon" className="rounded-full shrink-0" disabled={isGenerating || !userChatInput.trim()}>
+            <Send className="h-4 w-4" />
+          </Button>
+        </form>
+
+        {/* Habit Stats */}
         <div className="w-full max-w-lg grid grid-cols-3 gap-3">
           <div className="bg-muted/40 rounded-2xl p-4 flex flex-col items-center justify-center text-center shadow-sm">
              <Flame className="h-6 w-6 text-destructive mb-1" />

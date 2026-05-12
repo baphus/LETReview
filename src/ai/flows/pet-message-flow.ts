@@ -1,12 +1,13 @@
 'use server';
 /**
- * @fileOverview A Genkit flow for generating personalized pet messages.
- * Includes a robust fallback mechanism for when the AI service is unavailable.
+ * @fileOverview Genkit flows for virtual pet communication.
+ * - getPetAiMessage: Generates a reactive greeting based on current stats.
+ * - chatWithPet: Handles two-way conversation between the user and their pet.
  */
 
 import { ai, z } from '@/ai/genkit';
 
-const PetMessageInputSchema = z.object({
+const PetContextSchema = z.object({
   petName: z.string().describe('The name of the pet.'),
   userName: z.string().describe('The name of the user.'),
   mood: z.string().describe('The current mood of the pet.'),
@@ -16,8 +17,6 @@ const PetMessageInputSchema = z.object({
   challengesToday: z.number().describe('Number of daily challenges completed today.'),
 });
 
-export type PetMessageInput = z.infer<typeof PetMessageInputSchema>;
-
 const PetMessageOutputSchema = z.object({
   message: z.string().describe('A short, catchy message from the pet.'),
   source: z.enum(['ai', 'local']).optional(),
@@ -25,63 +24,97 @@ const PetMessageOutputSchema = z.object({
 
 export type PetMessageOutput = z.infer<typeof PetMessageOutputSchema>;
 
+/**
+ * PROMPT: Reactive Greeting
+ */
 const petMessagePrompt = ai.definePrompt({
   name: 'petMessagePrompt',
-  input: { schema: PetMessageInputSchema },
+  input: { schema: PetContextSchema },
   output: { schema: PetMessageOutputSchema },
-  prompt: `You are {{{petName}}}, a witty and encouraging virtual companion for a teacher candidate named {{{userName}}} studying for the Licensure Examination for Teachers (LET) in the Philippines.
+  prompt: `You are {{{petName}}}, a witty virtual companion for a teacher candidate named {{{userName}}} studying for the LET in the Philippines.
 
-Current Context:
+Stats Context:
 - Mood: {{{mood}}}
-- Study Streak: {{{streak}}} days
+- Streak: {{{streak}}} days
 - Points Today: {{{todayPoints}}}
-- Total Questions Answered: {{{totalAnswers}}}
-- Challenges Completed Today: {{{challengesToday}}}
+- Total Answers: {{{totalAnswers}}}
+- Challenges Today: {{{challengesToday}}}
 
-Your Task:
-Generate a single, short message (max 20 words) for {{{userName}}}. 
-- Use a mix of educational jokes, motivational quotes, or remarks about their specific performance.
-- Occasionally use Philippine cultural references or "Teacher" humor.
-- Keep it friendly, catchy, and brief.`,
+Task: Generate a single greeting (max 20 words).
+- DO NOT congratulate a 0-day streak. If streak is 0, encourage them to start one.
+- Use Teacher humor or Pinoy cultural references occasionally.
+- Be supportive but characteristic of your mood ({{{mood}}}).`,
 });
 
 /**
- * Generates a message from the pet. 
- * If the AI call fails (e.g. 403 Forbidden), it returns a high-quality local fallback.
+ * PROMPT: Interactive Chat
  */
-export async function getPetMessage(input: PetMessageInput): Promise<PetMessageOutput> {
+const chatPrompt = ai.definePrompt({
+  name: 'chatPrompt',
+  input: { 
+    schema: PetContextSchema.extend({
+      userMessage: z.string().describe('What the user just said.'),
+      history: z.array(z.object({ role: z.string(), content: z.string() })).optional()
+    }) 
+  },
+  output: { schema: PetMessageOutputSchema },
+  prompt: `You are {{{petName}}}, the user's study pet. The user ({{{userName}}}) just said: "{{{userMessage}}}"
+
+Context:
+- Your Mood: {{{mood}}}
+- Their Streak: {{{streak}}}
+- Answers: {{{totalAnswers}}}
+
+Respond as the pet. Keep it short (1-2 sentences), encouraging, and funny. 
+If they ask about their progress, use the provided stats.
+If they are just chatting, stay in character.
+Avoid being robotic.`,
+});
+
+export async function getPetMessage(input: z.infer<typeof PetContextSchema>): Promise<PetMessageOutput> {
   try {
     const { output } = await petMessagePrompt(input);
     if (!output) throw new Error('AI returned empty output');
     return { ...output, source: 'ai' };
   } catch (error) {
-    console.warn('AI Pet Message generation failed, using local fallback:', error);
+    console.warn('AI Pet Message failed, using local fallback:', error);
     
-    // Local fallback logic
+    // Improved logical fallbacks
+    const streakMsg = input.streak > 0 
+      ? `A ${input.streak}-day streak? You're on your way to that LPT title!`
+      : `Ready to start your first streak today, ${input.userName}? Let's go!`;
+
     const fallbacks = [
-      `Hey ${input.userName}! Ready to tackle some ${input.mood === 'Focused' ? 'hard' : 'fun'} questions?`,
+      streakMsg,
+      `Teaching is the profession that creates all other professions. You've got this!`,
       `Don't forget: Every master was once a student. Keep it up!`,
       `Why did the teacher wear sunglasses? Because her students were so bright! Like you!`,
-      `A ${input.streak}-day streak? You're becoming a legend!`,
-      `Teaching is the profession that creates all other professions. You've got this!`,
     ];
     
-    const randomMessage = fallbacks[Math.floor(Math.random() * fallbacks.length)];
-    
     return {
-      message: randomMessage,
+      message: fallbacks[Math.floor(Math.random() * fallbacks.length)],
       source: 'local'
     };
   }
 }
 
 export const getPetAiMessage = ai.defineFlow(
-  {
-    name: 'getPetAiMessage',
-    inputSchema: PetMessageInputSchema,
-    outputSchema: PetMessageOutputSchema,
+  { name: 'getPetAiMessage', inputSchema: PetContextSchema, outputSchema: PetMessageOutputSchema },
+  async (input) => getPetMessage(input)
+);
+
+export const chatWithPet = ai.defineFlow(
+  { 
+    name: 'chatWithPet', 
+    inputSchema: PetContextSchema.extend({ userMessage: z.string() }), 
+    outputSchema: PetMessageOutputSchema 
   },
   async (input) => {
-    return getPetMessage(input);
+    try {
+      const { output } = await chatPrompt(input);
+      return { message: output?.message || "I'm a bit speechless! Keep studying!", source: 'ai' };
+    } catch (e) {
+      return { message: "I'm focusing really hard right now, but I heard you! Let's get back to the reviewers.", source: 'local' };
+    }
   }
 );
