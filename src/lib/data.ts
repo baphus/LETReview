@@ -1,3 +1,4 @@
+
 import { getFirestore, collection, query, where, getDocs, limit, getDoc, doc } from 'firebase/firestore';
 import { initializeFirebase } from '@/firebase';
 import type { QuizQuestion, PetProfile } from "./types";
@@ -24,7 +25,7 @@ const getSeed = (str: string): (() => number) => {
 };
 
 
-export const getQuestionForDate = async (date: Date): Promise<QuizQuestion> => {
+export const getQuestionForDate = async (date: Date, subscribedReviewerIds?: string[]): Promise<QuizQuestion | null> => {
     const { firestore } = initializeFirebase();
     const dayOfYear = getDayOfYear(date);
     const category = (dayOfYear % 2 === 0) ? 'gened' : 'profed';
@@ -39,21 +40,29 @@ export const getQuestionForDate = async (date: Date): Promise<QuizQuestion> => {
         if (!querySnapshot.empty) {
             questionsInCategory = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuizQuestion));
         } else {
-            questionsInCategory = staticQuestions.filter(q => (q as QuizQuestion).category === category) as QuizQuestion[];
+            questionsInCategory = (staticQuestions as QuizQuestion[]).filter(q => q.category === category);
         }
     } catch (e) {
         console.error("Error fetching QOTD from Firestore, using fallback", e);
-        questionsInCategory = staticQuestions.filter(q => (q as QuizQuestion).category === category) as QuizQuestion[];
+        questionsInCategory = (staticQuestions as QuizQuestion[]).filter(q => q.category === category);
+    }
+
+    if (subscribedReviewerIds && subscribedReviewerIds.length > 0) {
+        questionsInCategory = questionsInCategory.filter(q => 
+            q.reviewerIds?.some(id => subscribedReviewerIds.includes(id))
+        );
+    } else if (subscribedReviewerIds && subscribedReviewerIds.length === 0) {
+        // If they have the subscription field but it's empty, they get nothing for daily activities
+        return null;
     }
 
 
     if (questionsInCategory.length === 0) {
-        // Ultimate fallback
-        return staticQuestions[0] as QuizQuestion;
+        return null;
     }
 
     const questionIndex = dayOfYear % questionsInCategory.length;
-    const question = questionsInCategory[questionIndex];
+    const question = { ...questionsInCategory[questionIndex] };
 
     const dateString = date.toDateString();
     const rng = getSeed(dateString + question.id);
@@ -62,8 +71,8 @@ export const getQuestionForDate = async (date: Date): Promise<QuizQuestion> => {
     return question;
 }
 
-export const getQuestionOfTheDay = async (): Promise<QuizQuestion> => {
-    return getQuestionForDate(new Date());
+export const getQuestionOfTheDay = async (subscribedReviewerIds?: string[]): Promise<QuizQuestion | null> => {
+    return getQuestionForDate(new Date(), subscribedReviewerIds);
 };
 
 export const getQuestions = async (options: {
@@ -72,6 +81,7 @@ export const getQuestions = async (options: {
     limit?: number;
     shuffle?: boolean;
     topicId?: string;
+    subscribedReviewerIds?: string[];
 }): Promise<QuizQuestion[]> => {
     const { firestore } = initializeFirebase();
     
@@ -121,9 +131,20 @@ export const getQuestions = async (options: {
             filteredQuestions = filteredQuestions.filter(q => q.topicIds?.includes(options.topicId as string));
         }
     }
+
+    if (options.subscribedReviewerIds) {
+        if (options.subscribedReviewerIds.length > 0) {
+            filteredQuestions = filteredQuestions.filter(q => 
+                q.reviewerIds?.some(id => options.subscribedReviewerIds?.includes(id))
+            );
+        } else {
+            // Explicitly empty subscription list means no questions for targeted activities
+            filteredQuestions = [];
+        }
+    }
     
     if (options.shuffle) {
-        filteredQuestions = filteredQuestions.sort(() => Math.random() - 0.5);
+        filteredQuestions = [...filteredQuestions].sort(() => Math.random() - 0.5);
     }
     
     if (options.limit) {

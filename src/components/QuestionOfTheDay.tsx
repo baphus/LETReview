@@ -11,7 +11,8 @@ import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CheckCircle, XCircle, Star } from "lucide-react";
+import { CheckCircle, XCircle, Star, AlertCircle } from "lucide-react";
+import Link from "next/link";
 
 const getTodayKey = () => format(new Date(), 'yyyy-MM-dd');
 
@@ -26,9 +27,9 @@ export const QuestionOfTheDay = ({ onCorrectAnswer, className }: { onCorrectAnsw
     
     useEffect(() => {
         setIsLoading(true);
-        getQuestionOfTheDay().then(qotd => {
+        getQuestionOfTheDay(user?.subscribedReviewerIds).then(qotd => {
             setQuestion(qotd);
-            if(user){
+            if(user && qotd){
                 const todayKey = getTodayKey();
                 const todaysProgress = user.dailyProgress?.[todayKey];
 
@@ -114,7 +115,26 @@ export const QuestionOfTheDay = ({ onCorrectAnswer, className }: { onCorrectAnsw
         )
     }
 
-    if (!question) return null;
+    if (!question) {
+        return (
+            <Card className={cn("mb-6 bg-amber-50 border-amber-200", className)}>
+                <CardHeader>
+                    <CardTitle className="font-headline text-2xl text-amber-800 flex items-center gap-2">
+                        <AlertCircle className="h-6 w-6" />
+                        No Questions Available
+                    </CardTitle>
+                    <CardDescription className="text-amber-700">
+                        Subscribe to study articles to receive a personalized Question of the Day.
+                    </CardDescription>
+                </CardHeader>
+                <CardFooter>
+                    <Link href="/profile" passHref className="w-full">
+                        <Button className="w-full" variant="outline">Manage Subscriptions</Button>
+                    </Link>
+                </CardFooter>
+            </Card>
+        );
+    }
 
     return (
         <Card className={cn("mb-6", className)}>

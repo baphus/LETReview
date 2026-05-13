@@ -118,6 +118,7 @@ export interface UserProfile {
     answeredQuestionIds?: string[];
     quizProgress?: Record<string, TopicQuizProgress>;
     hasCompletedOnboarding?: boolean;
+    subscribedReviewerIds?: string[];
     // New Virtual Pet Stats
     petLevel?: number;
     petXP?: number;

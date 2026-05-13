@@ -220,10 +220,11 @@ function QuestionsPageContent() {
           limit: isChallenge ? challengeCount : config?.count,
           shuffle: isChallenge || isShuffled || !!topicId,
           topicId: topicId || undefined,
+          subscribedReviewerIds: isChallenge ? user?.subscribedReviewerIds : undefined,
       });
       setQuestions(fetchedQuestions);
       setIsLoading(false);
-  }, [category, isChallenge, challengeDifficulty, challengeCount, isShuffled, topicId]);
+  }, [category, isChallenge, challengeDifficulty, challengeCount, isShuffled, topicId, user?.subscribedReviewerIds]);
 
   useEffect(() => {
     if ((isChallenge && quizPhase === 'active') || (quizPhase === 'study' && !topicId && !isChallenge)) {
@@ -475,7 +476,12 @@ function QuestionsPageContent() {
   if (isChallenge && !isLoading && questions.length === 0) {
      return (
         <div className="container mx-auto p-4 max-w-2xl text-center">
-            <p>Could not load questions for the challenge.</p>
+             <Card className="p-8 border-amber-200 bg-amber-50">
+                <p className="text-amber-800 font-semibold mb-4">No questions found for this challenge based on your subscriptions.</p>
+                <Link href="/profile" passHref>
+                    <Button variant="outline">Update Subscriptions</Button>
+                </Link>
+            </Card>
         </div>
     )
   }
@@ -733,7 +739,7 @@ function QuestionsPageContent() {
             <Card className="h-80 flex justify-center items-center">
                <div className="text-center text-muted-foreground">
                 <p>No questions found for this criteria.</p>
-                {isChallenge && <p>Please check back tomorrow for new questions.</p>}
+                {isChallenge && <p>Please update your subscriptions in Profile if you see this.</p>}
               </div>
             </Card>
           )

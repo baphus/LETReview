@@ -119,6 +119,7 @@
         "createdAt": { "type": "string", "format": "date-time" },
         "questionsAnswered": { "type": "number" },
         "answeredQuestionIds": { "type": "array", "items": { "type": "string" } },
+        "subscribedReviewerIds": { "type": "array", "items": { "type": "string" } },
         "quizProgress": {
           "type": "object",
           "description": "Tracks user's quiz performance per topic.",

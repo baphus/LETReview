@@ -1,9 +1,10 @@
+
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { User, LogOut, Camera, Palette, Gem, Trophy, Clock, Award, Check, Edit, UserPlus, AlertTriangle, MessageSquare, Flame, HelpCircle, Star, Lock, Heart } from "lucide-react";
+import { User, LogOut, Camera, Palette, Gem, Trophy, Clock, Award, Check, Edit, UserPlus, AlertTriangle, MessageSquare, Flame, HelpCircle, Star, Lock, Heart, CheckCircle2 } from "lucide-react";
 import { useEffect, useState, useRef, ChangeEvent, useMemo, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -16,11 +17,13 @@ import Image from "next/image";
 import { achievementPets, rarePets, streakPets } from "@/lib/data";
 import { Progress } from "@/components/ui/progress";
 import { useUser } from "@/firebase/auth/use-user";
-import { useAuth } from "@/firebase";
+import { useAuth, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { signOut } from "firebase/auth";
-import type { PetProfile } from "@/lib/types";
+import type { PetProfile, Reviewer } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { startOfWeek, endOfWeek, eachDayOfInterval, format, isToday } from "date-fns";
+import { collection, query, where } from "firebase/firestore";
+import { Switch } from "@/components/ui/switch";
 
 const themes = [
     { name: 'Default', value: 'default', cost: 0, colors: { primary: 'hsl(231 48% 48%)', accent: 'hsl(110 32% 48%)' } },
@@ -75,6 +78,7 @@ export default function ProfilePage() {
   const { toast } = useToast();
   const { user, updateUser } = useUser();
   const auth = useAuth();
+  const firestore = useFirestore();
   
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState("");
@@ -84,6 +88,8 @@ export default function ProfilePage() {
   
   const [editingPet, setEditingPet] = useState<string | null>(null);
   const [newPetName, setNewPetName] = useState("");
+
+  const { data: reviewers } = useCollection<Reviewer>(useMemoFirebase(() => firestore ? query(collection(firestore, 'reviewers'), where('status', '==', 'published')) : null, [firestore]));
 
   useEffect(() => {
     if (user) {
@@ -295,6 +301,21 @@ export default function ProfilePage() {
     });
   }
 
+  const handleToggleSubscription = (reviewerId: string) => {
+      if (!user) return;
+      const current = user.subscribedReviewerIds || [];
+      const updated = current.includes(reviewerId) 
+          ? current.filter(id => id !== reviewerId) 
+          : [...current, reviewerId];
+      
+      updateUser({ subscribedReviewerIds: updated });
+      toast({
+          title: current.includes(reviewerId) ? "Unsubscribed" : "Subscribed",
+          description: `Daily activities updated for this topic.`,
+          className: "bg-blue-50 border-blue-200"
+      });
+  }
+
 
   if (!user) {
     return null; // Or a loading spinner
@@ -388,7 +409,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="container mx-auto max-w-2xl">
+    <div className="container mx-auto max-w-2xl pb-10">
       <Card>
         <CardHeader>
             <CardTitle>Edit Profile</CardTitle>
@@ -436,6 +457,45 @@ export default function ProfilePage() {
                 </div>
             </div>
             
+        </CardContent>
+      </Card>
+
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>Study Subscriptions</CardTitle>
+          <CardDescription>Only reviewers you are subscribed to will appear in your Daily Activities and Challenges.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+            {reviewers && reviewers.length > 0 ? (
+                reviewers.map(reviewer => {
+                    const isSubscribed = user.subscribedReviewerIds?.includes(reviewer.id);
+                    return (
+                        <div key={reviewer.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+                            <div className="flex items-center gap-3">
+                                <div className={cn("p-2 rounded-full", isSubscribed ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground")}>
+                                    <CheckCircle2 className="h-5 w-5" />
+                                </div>
+                                <div>
+                                    <p className="font-semibold text-sm">{reviewer.title}</p>
+                                    <Badge variant="outline" className="text-[10px] capitalize h-4">{reviewer.category}</Badge>
+                                </div>
+                            </div>
+                            <Switch 
+                                checked={isSubscribed} 
+                                onCheckedChange={() => handleToggleSubscription(reviewer.id)} 
+                            />
+                        </div>
+                    )
+                })
+            ) : (
+                <p className="text-center text-muted-foreground text-sm py-4">No published reviewers available yet.</p>
+            )}
+            {!user.subscribedReviewerIds?.length && reviewers?.length && (
+                <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded-md border border-amber-100 mt-4 flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4" />
+                    You haven't subscribed to any reviewers. Daily challenges might be empty!
+                </p>
+            )}
         </CardContent>
       </Card>
       
