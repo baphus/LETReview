@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Flame, Star, RefreshCcw } from "lucide-react";
+import { Flame, Star, RefreshCcw, Settings2, AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { startOfDay, isBefore, startOfYesterday, format } from 'date-fns';
 import { useUser } from "@/firebase/auth/use-user";
 import { QuestionOfTheDay } from "@/components/QuestionOfTheDay";
+import Link from "next/link";
 
 const getTodayKey = () => format(new Date(), 'yyyy-MM-dd');
 
@@ -82,10 +83,11 @@ export default function DailyPage() {
   };
   
   if (!user) {
-      return null; // Or a loading spinner
+      return null; 
   }
   
   const todaysChallenges = user.dailyProgress?.[todayKey]?.challengesCompleted || [];
+  const hasSubscriptions = user.subscribedReviewerIds && user.subscribedReviewerIds.length > 0;
 
   const challenges = [
     { difficulty: 'easy', count: 5, points: 25, color: 'green' },
@@ -152,8 +154,15 @@ export default function DailyPage() {
       )}
 
       <section>
-        <div className="flex flex-col items-center gap-4 mb-4">
-            <h2 className="text-2xl font-bold font-headline">Daily Challenges</h2>
+        <div className="flex flex-col gap-4 mb-4">
+            <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold font-headline">Daily Challenges</h2>
+                <Link href="/profile">
+                    <Button variant="outline" size="sm">
+                        <Settings2 className="mr-2 h-4 w-4" /> Manage
+                    </Button>
+                </Link>
+            </div>
              <Select value={selectedCategory} onValueChange={(value) => setSelectedCategory(value as "gened" | "profed" | "majorship")}>
                 <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select a category" />
@@ -165,34 +174,52 @@ export default function DailyPage() {
                 </SelectContent>
             </Select>
         </div>
-        <div className="space-y-4">
-          {challenges.map(challenge => {
-             const challengeId = `${challenge.difficulty}-${selectedCategory}`;
-             const isCompleted = todaysChallenges.includes(challengeId);
-            return (
-                <Card key={challenge.difficulty} className={cn(isCompleted && "bg-muted/50", `border-${challenge.color}-200`)}>
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <CardTitle className="font-headline capitalize">{challenge.difficulty} Challenge</CardTitle>
-                            <CardDescription>Complete a set of {challenge.count} {getCategoryName(selectedCategory)} questions.</CardDescription>
+
+        {!hasSubscriptions ? (
+            <Card className="border-dashed border-2 bg-muted/20">
+                <CardContent className="flex flex-col items-center justify-center py-10 text-center space-y-4">
+                    <AlertCircle className="h-10 w-10 text-muted-foreground" />
+                    <div className="space-y-1">
+                        <p className="font-semibold text-lg">No Active Subscriptions</p>
+                        <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+                            Subscribe to study articles in your profile to unlock daily challenges for this category.
+                        </p>
+                    </div>
+                    <Link href="/profile">
+                        <Button>Go to Subscriptions</Button>
+                    </Link>
+                </CardContent>
+            </Card>
+        ) : (
+            <div className="space-y-4">
+            {challenges.map(challenge => {
+                const challengeId = `${challenge.difficulty}-${selectedCategory}`;
+                const isCompleted = todaysChallenges.includes(challengeId);
+                return (
+                    <Card key={challenge.difficulty} className={cn(isCompleted && "bg-muted/50", `border-${challenge.color}-200`)}>
+                    <CardHeader>
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <CardTitle className="font-headline capitalize">{challenge.difficulty} Challenge</CardTitle>
+                                <CardDescription>Complete a set of {challenge.count} {getCategoryName(selectedCategory)} questions.</CardDescription>
+                            </div>
+                            {isCompleted && <Badge variant="secondary">Completed</Badge>}
                         </div>
-                        {isCompleted && <Badge variant="secondary">Completed</Badge>}
-                    </div>
-                  </CardHeader>
-                  <CardFooter className="flex justify-between items-center">
-                    <div className={`flex items-center gap-1 font-semibold text-${challenge.color}-600`}>
-                      <Star className={`h-4 w-4 fill-${challenge.color}-500`} />
-                      <span>{challenge.points} Points</span>
-                    </div>
-                    <Button onClick={() => handleStartChallenge(challenge.difficulty, challenge.count)} disabled={isCompleted}>
-                      {isCompleted ? 'Done' : 'Start'}
-                    </Button>
-                  </CardFooter>
-                </Card>
-            )
-          })}
-        </div>
+                    </CardHeader>
+                    <CardFooter className="flex justify-between items-center">
+                        <div className={`flex items-center gap-1 font-semibold text-${challenge.color}-600`}>
+                        <Star className={`h-4 w-4 fill-${challenge.color}-500`} />
+                        <span>{challenge.points} Points</span>
+                        </div>
+                        <Button onClick={() => handleStartChallenge(challenge.difficulty, challenge.count)} disabled={isCompleted}>
+                        {isCompleted ? 'Done' : 'Start'}
+                        </Button>
+                    </CardFooter>
+                    </Card>
+                )
+            })}
+            </div>
+        )}
       </section>
     </div>
   );

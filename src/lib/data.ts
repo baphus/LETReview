@@ -47,13 +47,16 @@ export const getQuestionForDate = async (date: Date, subscribedReviewerIds?: str
         questionsInCategory = (staticQuestions as QuizQuestion[]).filter(q => q.category === category);
     }
 
-    if (subscribedReviewerIds && subscribedReviewerIds.length > 0) {
-        questionsInCategory = questionsInCategory.filter(q => 
-            q.reviewerIds?.some(id => subscribedReviewerIds.includes(id))
-        );
-    } else if (subscribedReviewerIds && subscribedReviewerIds.length === 0) {
-        // If they have the subscription field but it's empty, they get nothing for daily activities
-        return null;
+    // Filter by subscriptions if provided
+    if (subscribedReviewerIds) {
+        if (subscribedReviewerIds.length > 0) {
+            questionsInCategory = questionsInCategory.filter(q => 
+                q.reviewerIds?.some(id => subscribedReviewerIds.includes(id))
+            );
+        } else {
+            // User has no subscriptions, explicitly return null
+            return null;
+        }
     }
 
 
@@ -132,6 +135,7 @@ export const getQuestions = async (options: {
         }
     }
 
+    // Apply subscription filter if provided
     if (options.subscribedReviewerIds) {
         if (options.subscribedReviewerIds.length > 0) {
             filteredQuestions = filteredQuestions.filter(q => 
@@ -139,7 +143,7 @@ export const getQuestions = async (options: {
             );
         } else {
             // Explicitly empty subscription list means no questions for targeted activities
-            filteredQuestions = [];
+            return [];
         }
     }
     
