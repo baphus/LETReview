@@ -24,7 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, query, where } from "firebase/firestore";
+import { collection, query, where, limit } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
 import { QuestionOfTheDay } from "@/components/QuestionOfTheDay";
 import { VirtualPetHero } from "@/components/VirtualPetHero";
@@ -42,10 +42,13 @@ export default function HomePage() {
   const [featuredArticle, setFeaturedArticle] = useState<Reviewer | null>(null);
   const [randomTopic, setRandomTopic] = useState<Topic | null>(null);
 
-  const { data: articles, isLoading: isLoadingArticles } = useCollection<Reviewer>(useMemoFirebase(() => firestore ? query(collection(firestore, 'reviewers'), where('status', '==', 'published')) : null, [firestore]));
-  const { data: topics, isLoading: isLoadingTopics } = useCollection<Topic>(useMemoFirebase(() => firestore ? collection(firestore, 'topics') : null, [firestore]));
-  const { data: subjects, isLoading: isLoadingSubjects } = useCollection<Subject>(useMemoFirebase(() => firestore ? collection(firestore, 'subjects') : null, [firestore]));
-  const { data: questions, isLoading: isLoadingQuestions } = useCollection<QuizQuestion>(useMemoFirebase(() => firestore ? collection(firestore, 'questions') : null, [firestore]));
+  // OPTIMIZATION: Only fetch a small number of reviewers/topics/subjects for the home page
+  const { data: articles, isLoading: isLoadingArticles } = useCollection<Reviewer>(useMemoFirebase(() => firestore ? query(collection(firestore, 'reviewers'), where('status', '==', 'published'), limit(10)) : null, [firestore]));
+  const { data: topics, isLoading: isLoadingTopics } = useCollection<Topic>(useMemoFirebase(() => firestore ? query(collection(firestore, 'topics'), limit(20)) : null, [firestore]));
+  const { data: subjects, isLoading: isLoadingSubjects } = useCollection<Subject>(useMemoFirebase(() => firestore ? query(collection(firestore, 'subjects'), limit(10)) : null, [firestore]));
+  
+  // OPTIMIZATION: Do not fetch all questions on home page. This was the biggest read leak.
+  // Instead, we just pick a random topic from the topic list if it exists.
 
   useEffect(() => {
     if (articles && articles.length > 0 && !featuredArticle) {
@@ -54,21 +57,11 @@ export default function HomePage() {
   }, [articles, featuredArticle]);
 
   useEffect(() => {
-    if (topics && topics.length > 0 && questions && questions.length > 0 && !randomTopic) {
-      const topicIdsWithQuestions = new Set<string>();
-      questions.forEach(q => {
-        q.topicIds?.forEach(topicId => {
-          topicIdsWithQuestions.add(topicId);
-        });
-      });
-
-      const topicsWithQuestions = topics.filter(t => topicIdsWithQuestions.has(t.id));
-
-      if (topicsWithQuestions.length > 0) {
-        setRandomTopic(topicsWithQuestions[Math.floor(Math.random() * topicsWithQuestions.length)]);
-      }
+    if (topics && topics.length > 0 && !randomTopic) {
+      // Pick a random topic from the limited list we fetched
+      setRandomTopic(topics[Math.floor(Math.random() * topics.length)]);
     }
-  }, [topics, questions, randomTopic]);
+  }, [topics, randomTopic]);
   
   const todayKey = useMemo(() => getTodayKey(), []);
   
@@ -232,7 +225,7 @@ export default function HomePage() {
                     </Card>
                 )}
 
-                {isLoadingTopics || isLoadingQuestions ? <Skeleton className="h-56 w-full" /> : (
+                {isLoadingTopics ? <Skeleton className="h-56 w-full" /> : (
                     randomTopic ? (
                         <Card className="flex flex-col">
                             <CardHeader>

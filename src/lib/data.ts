@@ -34,7 +34,8 @@ export const getQuestionForDate = async (date: Date, subscribedReviewerIds?: str
     
     try {
         const questionsRef = collection(firestore, 'questions');
-        const q = query(questionsRef, where('category', '==', category));
+        // LIMIT the fetch to 50 to avoid reading thousands of docs
+        const q = query(questionsRef, where('category', '==', category), limit(50));
         const querySnapshot = await getDocs(q);
 
         if (!querySnapshot.empty) {
@@ -93,7 +94,8 @@ export const getQuestions = async (options: {
 
     try {
         const questionsRef = collection(firestore, 'questions');
-        const queryConstraints = [];
+        const queryConstraints: any[] = [];
+        
         if (options.category) {
             queryConstraints.push(where('category', '==', options.category));
         }
@@ -102,6 +104,14 @@ export const getQuestions = async (options: {
         }
         if (options.topicId) {
             queryConstraints.push(where('topicIds', 'array-contains', options.topicId));
+        }
+        
+        // CRITICAL: Apply the limit at the Firestore level, not after fetching
+        if (options.limit && !options.shuffle) {
+            queryConstraints.push(limit(options.limit));
+        } else if (options.shuffle) {
+            // If shuffling, we still shouldn't fetch EVERYTHING. Limit to a reasonable pool.
+            queryConstraints.push(limit(100));
         }
         
         const q = query(questionsRef, ...queryConstraints);
