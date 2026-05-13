@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { useUser } from '@/firebase/auth/use-user';
 import { streakPets, achievementPets, rarePets } from '@/lib/data';
 import { cn } from '@/lib/utils';
-import { Flame, Trophy, Brain, Stars, Moon, Coffee, Loader2, Send } from 'lucide-react';
+import { Flame, Trophy, Brain, Stars, Moon, Coffee, Loader2, Send, Heart, AlertCircle, Zap } from 'lucide-react';
 import { format } from 'date-fns';
 import { getPetAiMessage, chatWithPet } from '@/ai/flows/pet-message-flow';
 import { Input } from '@/components/ui/input';
@@ -15,7 +15,7 @@ import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import type { Topic } from '@/lib/types';
 
-type PetMood = 'happy' | 'sleepy' | 'stressed' | 'motivated' | 'focused';
+type PetMood = 'happy' | 'sleepy' | 'stressed' | 'motivated' | 'focused' | 'proud' | 'concerned' | 'determined';
 
 interface MoodConfig {
   label: string;
@@ -24,11 +24,14 @@ interface MoodConfig {
 }
 
 const MOODS: Record<PetMood, MoodConfig> = {
+  proud: { label: 'Proud of You!', icon: <Trophy className="h-3 w-3" />, color: 'bg-yellow-500' },
   happy: { label: 'Happy', icon: <Stars className="h-3 w-3" />, color: 'bg-green-500' },
+  determined: { label: 'Determined', icon: <Zap className="h-3 w-3" />, color: 'bg-blue-600' },
   sleepy: { label: 'Sleepy', icon: <Moon className="h-3 w-3" />, color: 'bg-blue-400' },
   stressed: { label: 'Stressed', icon: <Coffee className="h-3 w-3" />, color: 'bg-orange-500' },
   motivated: { label: 'On Fire!', icon: <Flame className="h-3 w-3" />, color: 'bg-red-500' },
   focused: { label: 'Focused', icon: <Brain className="h-3 w-3" />, color: 'bg-purple-500' },
+  concerned: { label: 'Concerned', icon: <AlertCircle className="h-3 w-3" />, color: 'bg-destructive' },
 };
 
 export function VirtualPetHero() {
@@ -57,24 +60,47 @@ export function VirtualPetHero() {
 
   const petName = user?.petNames?.[petProfile.name] || petProfile.name;
 
-  const performanceSummary = useMemo(() => {
-    if (!user?.quizProgress || !topics) return "No quiz data yet.";
+  const { performanceSummary, averageScore } = useMemo(() => {
+    if (!user?.quizProgress || !topics) return { performanceSummary: "No quiz data yet.", averageScore: 0 };
+    
+    let totalScore = 0;
+    let topicCount = 0;
+    
     const summaries = Object.entries(user.quizProgress).map(([id, stats]) => {
         const topic = topics.find(t => t.id === id);
+        totalScore += stats.averageScore;
+        topicCount++;
         return `${topic?.name || 'Topic'}: ${stats.averageScore.toFixed(0)}%`;
     });
-    return summaries.length > 0 ? summaries.join(', ') : "No quiz data yet.";
+    
+    return {
+        performanceSummary: summaries.length > 0 ? summaries.join(', ') : "No quiz data yet.",
+        averageScore: topicCount > 0 ? totalScore / topicCount : 0
+    };
   }, [user?.quizProgress, topics]);
 
   const moodConfig = useMemo(() => {
     let currentMood: PetMood = 'happy';
-    if (streak >= 3) currentMood = 'motivated';
-    if ((todayStats.questionsAnswered || 0) > 10) currentMood = 'focused';
+
+    // Priority 1: Extreme Performance
+    if (averageScore >= 85 && totalAnswers > 20) currentMood = 'proud';
+    else if (averageScore < 60 && totalAnswers > 5) currentMood = 'concerned';
+    else if (averageScore >= 70) currentMood = 'determined';
+
+    // Priority 2: Consistency
+    if (streak >= 5) currentMood = 'motivated';
+
+    // Priority 3: Daily Activity
+    if ((todayStats.questionsAnswered || 0) > 15) currentMood = 'focused';
     if (challengesToday > 2) currentMood = 'stressed';
-    if ((todayStats.pomodorosCompleted || 0) === 0 && !todayStats.qotdCompleted) currentMood = 'sleepy';
+    
+    // Priority 4: Inactivity
+    if ((todayStats.questionsAnswered || 0) === 0 && (todayStats.pomodorosCompleted || 0) === 0) {
+        currentMood = 'sleepy';
+    }
 
     return MOODS[currentMood];
-  }, [streak, todayStats, challengesToday]);
+  }, [streak, todayStats, challengesToday, averageScore, totalAnswers]);
 
   const startTypewriter = (text: string) => {
     if (typewriterIntervalRef.current) clearInterval(typewriterIntervalRef.current);
@@ -120,7 +146,7 @@ export function VirtualPetHero() {
       }
     };
     fetchGreeting();
-  }, [user?.uid, user?.activePet, !!topics]);
+  }, [user?.uid, user?.activePet, !!topics, moodConfig.label]);
 
   const handleChat = async (e: React.FormEvent) => {
     e.preventDefault();

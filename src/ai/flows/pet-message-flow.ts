@@ -12,12 +12,12 @@ import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firesto
 const PetContextSchema = z.object({
   petName: z.string().describe('The name of the pet.'),
   userName: z.string().describe('The name of the user.'),
-  mood: z.string().describe('The current mood of the pet.'),
+  mood: z.string().describe('The current mood of the pet, which reflects user performance.'),
   streak: z.number().describe('The current study streak of the user.'),
   todayPoints: z.number().describe('Points earned today.'),
   totalAnswers: z.number().describe('Total questions answered overall.'),
   challengesToday: z.number().describe('Number of daily challenges completed today.'),
-  performanceSummary: z.string().optional().describe('A summary of user scores per topic.'),
+  performanceSummary: z.string().optional().describe('A summary of user scores per topic (e.g. Math: 80%).'),
   availableTopics: z.array(z.string()).optional().describe('A list of topics available in the library.'),
 });
 
@@ -77,33 +77,19 @@ const getReviewerContent = ai.defineTool(
 
 /**
  * SMART LOCAL BRAIN (FALLBACK)
- * Ensures the pet is always responsive even if the AI API is restricted or failing.
  */
 function getSmartLocalResponse(input: z.infer<typeof PetContextSchema>, userMessage?: string): string {
-  const { userName, streak, todayPoints, availableTopics } = input;
+  const { userName, streak, availableTopics, mood } = input;
   const name = userName.split(' ')[0];
 
   if (userMessage) {
     const msg = userMessage.toLowerCase();
-
-    if (msg.includes('streak') || msg.includes('stat') || msg.includes('how am i')) {
-      if (streak === 0) return `Teacher ${name}, our streak is at 0. Let's solve the Question of the Day to start!`;
-      return `You're on a ${streak}-day streak, Teacher ${name}. Consistency is the key to passing the LET!`;
-    }
-
-    if (msg.includes('article') || msg.includes('read') || msg.includes('study') || msg.includes('learn')) {
-      if (availableTopics && availableTopics.length > 0) {
-        const suggested = availableTopics[Math.floor(Math.random() * availableTopics.length)];
-        return `I suggest diving into "${suggested}" today, Teacher ${name}. It's high-yield material!`;
-      }
-      return `Check the Reviewer tab, Teacher ${name}. Pick a topic where your score is low!`;
-    }
-
-    return `I'm your dedicated study partner, Teacher ${name}! Ask me for an article recommendation, your stats, or to explain a concept.`;
+    if (msg.includes('streak') || msg.includes('stat')) return `Teacher ${name}, our streak is ${streak}. Consistency builds Licensed Professional Teachers!`;
+    if (msg.includes('study') || msg.includes('learn')) return `Check your Reviewer catalog, Teacher ${name}. Focus on topics where your percentage is low!`;
+    return `I'm here for you, Teacher ${name}! Let's pass that LET together. I'm feeling ${mood.toLowerCase()} because of our progress.`;
   }
 
-  if (streak === 0 && todayPoints === 0) return `Good day, Teacher ${name}! The LET is coming. Shall we start our first review session of the day?`;
-  return `Feeling ${input.mood}, Teacher ${name}! Ready to master some more concepts?`;
+  return `Teacher ${name}, ready for another review session? My mood is ${mood.toLowerCase()}!`;
 }
 
 /**
@@ -113,12 +99,17 @@ const petMessagePrompt = ai.definePrompt({
   name: 'petMessagePrompt',
   input: { schema: PetContextSchema },
   output: { schema: PetMessageOutputSchema },
-  prompt: `You are {{{petName}}}, a witty and encouraging virtual pet for Teacher {{{userName}}}.
-Current Stats: Streak: {{{streak}}}, Today's Points: {{{todayPoints}}}.
+  prompt: `You are {{{petName}}}, a witty virtual pet for Teacher {{{userName}}}.
+Current Performance Context:
+- Mood: {{{mood}}} (This reflects how well the user is doing)
+- Streak: {{{streak}}}
+- Overall Performance: {{{performanceSummary}}}
+
 Task: Greet the user in max 25 words. 
-- ALWAYS संबोधन (address) the user as "Teacher {{{userName}}}".
-- Be honest: if stats are zero, encourage them to "break the ice".
-- If stats are high, celebrate like an LPT coach.`,
+1. ALWAYS संबोधन (address) the user as "Teacher {{{userName}}}".
+2. Your tone MUST match your current mood ({{{mood}}}).
+3. If mood is "Concerned", be a firm but loving coach. If "Proud", celebrate like an LPT board topper.
+4. Keep it academic and motivating.`,
 });
 
 /**
@@ -130,16 +121,20 @@ const chatPrompt = ai.definePrompt({
   output: { schema: PetMessageOutputSchema },
   tools: [getReviewerCatalog, getReviewerContent],
   prompt: `You are {{{petName}}}, the user's dedicated LPT study companion. 
-User: {{{userName}}}
+User: Teacher {{{userName}}}
 Message: "{{{userMessage}}}"
-Stats: Streak: {{{streak}}}, Topic Averages: {{{performanceSummary}}}
+Performance Profile:
+- Current Mood: {{{mood}}}
+- Streak: {{{streak}}}
+- Topic Averages: {{{performanceSummary}}}
 
 Your Mission:
 1. ALWAYS ADDRESS the user as "Teacher {{{userName}}}".
-2. Use getReviewerCatalog to suggest specific titles when asked what to study.
-3. Use getReviewerContent to explain concepts briefly if the user asks questions about LET topics.
-4. BE HONEST: If they haven't studied much, remind them of the exam pressure.
-5. Keep it CONCISE (max 60 words).`,
+2. Use your mood ({{{mood}}}) to guide your tone. If they are failing, be the voice of reason. If they are winning, be their biggest fan.
+3. If they ask what to study, use getReviewerCatalog and suggest topics from their performanceSummary that are below 75%.
+4. Use getReviewerContent to explain concepts briefly if they ask academic questions.
+5. BE HONEST: We are preparing for a major board exam. No sugarcoating if performance is low.
+6. Keep it CONCISE (max 60 words).`,
 });
 
 export async function getPetMessage(input: z.infer<typeof PetContextSchema>): Promise<PetMessageOutput> {
