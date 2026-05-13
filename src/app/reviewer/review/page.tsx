@@ -4,7 +4,7 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Clock, BookOpen, Bookmark, PlusCircle, Zap, Search, LayoutGrid, List } from 'lucide-react';
+import { Clock, BookOpen, Bookmark, PlusCircle, Zap, Search, LayoutGrid, List, Brain } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -21,6 +21,7 @@ import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 
 const ReviewerGridCard = ({ article, subject, isBookmarked, onBookmarkToggle }: { article: Reviewer, subject?: Subject, isBookmarked: boolean, onBookmarkToggle: (e: React.MouseEvent) => void }) => {
+    const hasTopics = article.topicIds && article.topicIds.length > 0;
     return (
         <Card className="flex flex-col hover:border-primary/50 transition-colors h-full">
              <CardHeader>
@@ -55,12 +56,17 @@ const ReviewerGridCard = ({ article, subject, isBookmarked, onBookmarkToggle }: 
             <CardFooter className="flex items-center gap-2 mt-auto">
                 <Link href={`/reviewer/review/${article.slug}`} passHref className="flex-1">
                     <Button className="w-full">
-                        <BookOpen className="mr-2 h-4 w-4" /> Read
+                        <BookOpen className="mr-2 h-4 w-4" /> Study
                     </Button>
                 </Link>
-                <Link href={`/reviewer/flashcards?topicId=${article.topicIds[0]}`} passHref className="flex-1">
-                    <Button variant="outline" className="w-full" disabled={!article.topicIds || article.topicIds.length === 0}>
-                       <Zap className="mr-2 h-4 w-4" /> Flashcards
+                <Link href={`/reviewer/flashcards?topicId=${article.topicIds[0]}`} passHref>
+                    <Button variant="outline" size="icon" disabled={!hasTopics} title="Flashcards">
+                       <Zap className="h-4 w-4" />
+                    </Button>
+                </Link>
+                <Link href={`/reviewer/questions?topic=${article.topicIds[0]}`} passHref>
+                    <Button variant="outline" size="icon" disabled={!hasTopics} title="Start Quiz">
+                       <Brain className="h-4 w-4" />
                     </Button>
                 </Link>
             </CardFooter>
@@ -69,6 +75,7 @@ const ReviewerGridCard = ({ article, subject, isBookmarked, onBookmarkToggle }: 
 };
 
 const ReviewerListCard = ({ article, subject, isBookmarked, onBookmarkToggle }: { article: Reviewer, subject?: Subject, isBookmarked: boolean, onBookmarkToggle: (e: React.MouseEvent) => void }) => {
+    const hasTopics = article.topicIds && article.topicIds.length > 0;
     return (
         <Card className="hover:border-primary/50 transition-colors w-full">
             <div className="flex flex-col sm:flex-row">
@@ -99,16 +106,21 @@ const ReviewerListCard = ({ article, subject, isBookmarked, onBookmarkToggle }: 
                 <Separator orientation="vertical" className="hidden sm:block h-auto" />
                 <div className="p-6 pt-0 sm:pt-6 sm:pl-0 flex items-center justify-end sm:justify-center">
                     <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon" onClick={onBookmarkToggle}>
+                        <Button variant="ghost" size="icon" onClick={onBookmarkToggle} title="Bookmark">
                             <Bookmark className={cn("h-5 w-5 text-muted-foreground", isBookmarked && "fill-current text-primary")} />
                         </Button>
+                        <Link href={`/reviewer/questions?topic=${article.topicIds[0]}`} passHref>
+                            <Button variant="outline" size="icon" disabled={!hasTopics} title="Start Quiz">
+                               <Brain className="h-4 w-4" />
+                            </Button>
+                        </Link>
                         <Link href={`/reviewer/flashcards?topicId=${article.topicIds[0]}`} passHref>
-                            <Button variant="outline" disabled={!article.topicIds || article.topicIds.length === 0}>
-                               <Zap className="mr-2 h-4 w-4" /> Flashcards
+                            <Button variant="outline" size="icon" disabled={!hasTopics} title="Flashcards">
+                               <Zap className="h-4 w-4" />
                             </Button>
                         </Link>
                         <Link href={`/reviewer/review/${article.slug}`} passHref>
-                            <Button><BookOpen className="mr-2 h-4 w-4" /> Read</Button>
+                            <Button><BookOpen className="mr-2 h-4 w-4" /> Study</Button>
                         </Link>
                     </div>
                 </div>
@@ -132,8 +144,9 @@ const ReviewerSkeleton = ({ viewMode }: { viewMode: 'grid' | 'list' }) => {
                         <Skeleton className="h-4 w-5/6" />
                     </div>
                     <div className="flex items-center justify-end gap-2">
-                        <Skeleton className="h-10 w-10" />
-                        <Skeleton className="h-10 w-32" />
+                        <Skeleton className="h-10 w-10 rounded-md" />
+                        <Skeleton className="h-10 w-10 rounded-md" />
+                        <Skeleton className="h-10 w-10 rounded-md" />
                         <Skeleton className="h-10 w-24" />
                     </div>
                 </div>
@@ -155,8 +168,9 @@ const ReviewerSkeleton = ({ viewMode }: { viewMode: 'grid' | 'list' }) => {
                 <Skeleton className="h-5 w-1/2" />
             </CardContent>
             <CardFooter className="flex items-center gap-2 mt-auto">
-                <Skeleton className="h-10 w-1/2" />
-                <Skeleton className="h-10 w-1/2" />
+                <Skeleton className="h-10 flex-1 rounded-md" />
+                <Skeleton className="h-10 w-10 rounded-md" />
+                <Skeleton className="h-10 w-10 rounded-md" />
             </CardFooter>
         </Card>
     );
