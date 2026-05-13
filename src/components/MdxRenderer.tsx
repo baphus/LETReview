@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { evaluate } from '@mdx-js/mdx';
 import * as runtime from 'react/jsx-runtime';
 import { useMDXComponents } from '@mdx-js/react';
@@ -13,6 +14,9 @@ interface MdxRendererProps {
   source: string;
   components?: Record<string, React.ComponentType<any>>;
 }
+
+// Production Optimization: Compilation cache to prevent redundant processing of the same Markdown source
+const compilationCache = new Map<string, any>();
 
 export function MdxRenderer({ source, components = {} }: MdxRendererProps) {
   const [mdxModule, setMdxModule] = useState<any>(null);
@@ -28,6 +32,12 @@ export function MdxRenderer({ source, components = {} }: MdxRendererProps) {
   useEffect(() => {
     if (!isMounted) return;
 
+    if (compilationCache.has(source)) {
+      setMdxModule(compilationCache.get(source));
+      setError(null);
+      return;
+    }
+
     let active = true;
 
     async function compileMdx() {
@@ -40,6 +50,7 @@ export function MdxRenderer({ source, components = {} }: MdxRendererProps) {
         });
 
         if (active) {
+          compilationCache.set(source, mod);
           setMdxModule(mod);
           setError(null);
         }

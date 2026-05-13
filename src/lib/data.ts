@@ -4,6 +4,10 @@ import { initializeFirebase } from '@/firebase';
 import type { QuizQuestion, PetProfile } from "./types";
 import staticQuestions from './seeds/questions-seed.json';
 
+// Production Optimization: In-memory cache for the current session to prevent redundant reads
+const questionsCache: Record<string, { data: QuizQuestion[], timestamp: number }> = {};
+const CACHE_TTL = 1000 * 60 * 5; // 5 minutes cache for dynamic queries
+
 const getDayOfYear = (date: Date): number => {
     const start = new Date(date.getFullYear(), 0, 0);
     const diff = (date.getTime() - start.getTime()) + ((start.getTimezoneOffset() - date.getTimezoneOffset()) * 60 * 1000);
@@ -30,11 +34,15 @@ export const getQuestionForDate = async (date: Date, subscribedReviewerIds?: str
     const dayOfYear = getDayOfYear(date);
     const category = (dayOfYear % 2 === 0) ? 'gened' : 'profed';
     
+    const cacheKey = `qotd-${dayOfYear}-${subscribedReviewerIds?.join(',') || 'none'}`;
+    if (questionsCache[cacheKey] && (Date.now() - questionsCache[cacheKey].timestamp < CACHE_TTL)) {
+        return questionsCache[cacheKey].data[0] || null;
+    }
+
     let questionsInCategory: QuizQuestion[] = [];
     
     try {
         const questionsRef = collection(firestore, 'questions');
-        // LIMIT the fetch to 50 to avoid reading thousands of docs
         const q = query(questionsRef, where('category', '==', category), limit(50));
         const querySnapshot = await getDocs(q);
 
@@ -48,18 +56,15 @@ export const getQuestionForDate = async (date: Date, subscribedReviewerIds?: str
         questionsInCategory = (staticQuestions as QuizQuestion[]).filter(q => q.category === category);
     }
 
-    // Filter by subscriptions if provided
     if (subscribedReviewerIds) {
         if (subscribedReviewerIds.length > 0) {
             questionsInCategory = questionsInCategory.filter(q => 
                 q.reviewerIds?.some(id => subscribedReviewerIds.includes(id))
             );
         } else {
-            // User has no subscriptions, explicitly return null
             return null;
         }
     }
-
 
     if (questionsInCategory.length === 0) {
         return null;
@@ -71,6 +76,9 @@ export const getQuestionForDate = async (date: Date, subscribedReviewerIds?: str
     const dateString = date.toDateString();
     const rng = getSeed(dateString + question.id);
     question.choices = [...question.choices].sort(() => rng() - rng());
+
+    // Update cache
+    questionsCache[cacheKey] = { data: [question], timestamp: Date.now() };
 
     return question;
 }
@@ -89,6 +97,11 @@ export const getQuestions = async (options: {
 }): Promise<QuizQuestion[]> => {
     const { firestore } = initializeFirebase();
     
+    const cacheKey = `questions-${JSON.stringify(options)}`;
+    if (questionsCache[cacheKey] && (Date.now() - questionsCache[cacheKey].timestamp < CACHE_TTL)) {
+        return questionsCache[cacheKey].data;
+    }
+    
     let fetchedQuestions: QuizQuestion[] = [];
     let fromFallback = false;
 
@@ -106,12 +119,10 @@ export const getQuestions = async (options: {
             queryConstraints.push(where('topicIds', 'array-contains', options.topicId));
         }
         
-        // CRITICAL: Apply the limit at the Firestore level, not after fetching
         if (options.limit && !options.shuffle) {
             queryConstraints.push(limit(options.limit));
         } else if (options.shuffle) {
-            // If shuffling, we still shouldn't fetch EVERYTHING. Limit to a reasonable pool.
-            queryConstraints.push(limit(100));
+            queryConstraints.push(limit(100)); // Pool for shuffling
         }
         
         const q = query(questionsRef, ...queryConstraints);
@@ -132,7 +143,6 @@ export const getQuestions = async (options: {
     
     let filteredQuestions = fetchedQuestions;
 
-    // If we used fallback, we need to apply filters manually
     if (fromFallback) {
         if (options.category) {
             filteredQuestions = filteredQuestions.filter(q => q.category === options.category);
@@ -145,14 +155,12 @@ export const getQuestions = async (options: {
         }
     }
 
-    // Apply subscription filter if provided
     if (options.subscribedReviewerIds) {
         if (options.subscribedReviewerIds.length > 0) {
             filteredQuestions = filteredQuestions.filter(q => 
                 q.reviewerIds?.some(id => options.subscribedReviewerIds?.includes(id))
             );
         } else {
-            // Explicitly empty subscription list means no questions for targeted activities
             return [];
         }
     }
@@ -165,12 +173,14 @@ export const getQuestions = async (options: {
         filteredQuestions = filteredQuestions.slice(0, options.limit);
     }
 
-    // Shuffle choices for each question
     filteredQuestions.forEach(question => {
         if(question.choices) {
             question.choices = [...question.choices].sort(() => Math.random() - 0.5);
         }
     });
+
+    // Update cache
+    questionsCache[cacheKey] = { data: filteredQuestions, timestamp: Date.now() };
 
     return filteredQuestions;
 };

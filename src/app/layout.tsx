@@ -1,3 +1,4 @@
+
 import type { Metadata, Viewport } from 'next';
 import { Inter, Space_Grotesk } from 'next/font/google';
 import './globals.css';
@@ -18,27 +19,19 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://letreview.app'), // Replace with actual domain when deployed
+  metadataBase: new URL('https://letreview.app'),
   title: {
     default: 'LETReview | Your Gamified LET Review Partner',
     template: '%s | LETReview'
   },
   description: 'Ace the Licensure Examination for Teachers (LET) in the Philippines with our gamified review app. Study GENED, PROFED, and Majorship topics with interactive quizzes, streaks, and pets.',
-  keywords: [
-    'LET Reviewer 2026', 
-    'Licensure Examination for Teachers', 
-    'Philippine Teacher Board Exam', 
-    'GENED Reviewer', 
-    'PROFED Reviewer', 
-    'Gamified Study App', 
-    'LET Practice Quiz'
-  ],
-  authors: [{ name: 'LETReview Team' }],
-  creator: 'LETReview',
-  publisher: 'LETReview',
+  applicationName: 'LETReview',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'LETReview',
+  },
   formatDetection: {
-    email: false,
-    address: false,
     telephone: false,
   },
   openGraph: {
@@ -66,6 +59,7 @@ export const metadata: Metadata = {
   manifest: '/manifest.json',
   icons: {
     icon: '/favicon.ico',
+    apple: '/icon-192x192.png',
   },
 };
 
@@ -73,6 +67,7 @@ export const viewport: Viewport = {
   themeColor: '#4A4AFF',
   width: 'device-width',
   initialScale: 1,
+  maximumScale: 1,
 };
 
 export default function RootLayout({

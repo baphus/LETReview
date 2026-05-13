@@ -1,17 +1,23 @@
+
 {
-  "name": "LETReview",
+  "name": "LETReview: Gamified Teacher Review",
   "short_name": "LETReview",
-  "description": "Your gamified review partner for the Licensure Examination for Teachers.",
-  "icons": [
-    {
-      "src": "/logo.svg",
-      "sizes": "48x48 72x72 96x96 128x128 256x256 512x512",
-      "type": "image/svg+xml",
-      "purpose": "any"
-    }
-  ],
+  "description": "Ace your Licensure Examination for Teachers with engaging reviews and pets.",
   "start_url": "/home",
   "display": "standalone",
-  "background_color": "#FFFFFF",
-  "theme_color": "#4A4AFF"
+  "background_color": "#ffffff",
+  "theme_color": "#4A4AFF",
+  "icons": [
+    {
+      "src": "https://picsum.photos/seed/let1/192/192",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://picsum.photos/seed/let1/512/512",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
 }

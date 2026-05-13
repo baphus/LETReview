@@ -1,0 +1,33 @@
+
+{
+  "logo": {
+    "url": "/logo.svg",
+    "width": 96,
+    "height": 96,
+    "alt": "LETReview Logo"
+  },
+  "landing": {
+    "preview": {
+      "url": "/images/landing/app-preview.png",
+      "width": 1200,
+      "height": 800,
+      "alt": "App Preview",
+      "hint": "app screenshot"
+    }
+  },
+  "pets": {
+    "rocky": { "url": "/pets/rocky.png", "hint": "very hard" },
+    "whiskers": { "url": "/pets/whiskers.png", "hint": "cat pet" },
+    "goldie": { "url": "/pets/goldie.png", "hint": "goldfish pet" },
+    "sonic": { "url": "/pets/sonic.png", "hint": "hedgehog pet" },
+    "feathers": { "url": "/pets/feathers.png", "hint": "bird pet" },
+    "hoppy": { "url": "/pets/hoppy.png", "hint": "rabbit pet" },
+    "spike": { "url": "/pets/spike.png", "hint": "armadillo pet" },
+    "phoenix": { "url": "/pets/phoenix.png", "hint": "mythical bird" },
+    "owlbert": { "url": "/pets/owlbert.png", "hint": "wise owl" },
+    "einstein": { "url": "/pets/einstein.png", "hint": "smart dog" },
+    "sparky": { "url": "/pets/sparky.png", "hint": "electric pet" },
+    "bolt": { "url": "/pets/bolt.png", "hint": "fast pet" },
+    "draco": { "url": "/pets/draco.png", "hint": "fire dragon" }
+  }
+}
