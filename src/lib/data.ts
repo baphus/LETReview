@@ -39,39 +39,55 @@ export const getQuestionForDate = async (date: Date, subscribedReviewerIds?: str
         return questionsCache[cacheKey].data[0] || null;
     }
 
-    let questionsInCategory: QuizQuestion[] = [];
+    let questionsPool: QuizQuestion[] = [];
     
     try {
         const questionsRef = collection(firestore, 'questions');
-        const q = query(questionsRef, where('category', '==', category), limit(50));
+        let q;
+        
+        // If we have subscriptions, specifically fetch questions for those articles
+        if (subscribedReviewerIds && subscribedReviewerIds.length > 0) {
+            // Firestore array-contains-any limit is 10
+            const batchIds = subscribedReviewerIds.slice(0, 10);
+            q = query(
+                questionsRef, 
+                where('category', '==', category),
+                where('reviewerIds', 'array-contains-any', batchIds),
+                limit(50)
+            );
+        } else if (subscribedReviewerIds) {
+            // Subscribed list exists but is empty
+            return null;
+        } else {
+            // No subscription context, fetch general questions
+            q = query(questionsRef, where('category', '==', category), limit(50));
+        }
+
         const querySnapshot = await getDocs(q);
 
         if (!querySnapshot.empty) {
-            questionsInCategory = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuizQuestion));
+            questionsPool = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuizQuestion));
         } else {
-            questionsInCategory = (staticQuestions as QuizQuestion[]).filter(q => q.category === category);
+            // Final fallback to static data
+            questionsPool = (staticQuestions as QuizQuestion[]).filter(q => q.category === category);
+            if (subscribedReviewerIds && subscribedReviewerIds.length > 0) {
+                questionsPool = questionsPool.filter(q => 
+                    q.reviewerIds?.some(id => subscribedReviewerIds.includes(id))
+                );
+            }
         }
     } catch (e) {
         console.error("Error fetching QOTD from Firestore, using fallback", e);
-        questionsInCategory = (staticQuestions as QuizQuestion[]).filter(q => q.category === category);
+        questionsPool = (staticQuestions as QuizQuestion[]).filter(q => q.category === category);
     }
 
-    if (subscribedReviewerIds) {
-        if (subscribedReviewerIds.length > 0) {
-            questionsInCategory = questionsInCategory.filter(q => 
-                q.reviewerIds?.some(id => subscribedReviewerIds.includes(id))
-            );
-        } else {
-            return null;
-        }
-    }
-
-    if (questionsInCategory.length === 0) {
+    if (questionsPool.length === 0) {
         return null;
     }
 
-    const questionIndex = dayOfYear % questionsInCategory.length;
-    const question = { ...questionsInCategory[questionIndex] };
+    // Deterministic selection based on the day
+    const questionIndex = dayOfYear % questionsPool.length;
+    const question = { ...questionsPool[questionIndex] };
 
     const dateString = date.toDateString();
     const rng = getSeed(dateString + question.id);
@@ -118,11 +134,20 @@ export const getQuestions = async (options: {
         if (options.topicId) {
             queryConstraints.push(where('topicIds', 'array-contains', options.topicId));
         }
+
+        // Subscriptions direct query optimization
+        if (options.subscribedReviewerIds && options.subscribedReviewerIds.length > 0) {
+            const batchIds = options.subscribedReviewerIds.slice(0, 10);
+            queryConstraints.push(where('reviewerIds', 'array-contains-any', batchIds));
+        } else if (options.subscribedReviewerIds) {
+            // User explicitly has 0 subscriptions
+            return [];
+        }
         
         if (options.limit && !options.shuffle) {
             queryConstraints.push(limit(options.limit));
-        } else if (options.shuffle) {
-            queryConstraints.push(limit(100)); // Pool for shuffling
+        } else {
+            queryConstraints.push(limit(100)); // Pool for shuffling/filtering
         }
         
         const q = query(questionsRef, ...queryConstraints);
@@ -153,15 +178,10 @@ export const getQuestions = async (options: {
         if (options.topicId) {
             filteredQuestions = filteredQuestions.filter(q => q.topicIds?.includes(options.topicId as string));
         }
-    }
-
-    if (options.subscribedReviewerIds) {
-        if (options.subscribedReviewerIds.length > 0) {
+        if (options.subscribedReviewerIds && options.subscribedReviewerIds.length > 0) {
             filteredQuestions = filteredQuestions.filter(q => 
                 q.reviewerIds?.some(id => options.subscribedReviewerIds?.includes(id))
             );
-        } else {
-            return [];
         }
     }
     
