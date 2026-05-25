@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -5,11 +6,9 @@ import { useRouter, useParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-// Firebase and user hooks
 import { useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
 import { useUser } from '@/firebase/auth/use-user';
 import { collection, doc, updateDoc, query } from 'firebase/firestore';
-// UI Components
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -22,10 +21,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-// Types
 import type { Subject, Topic, QuizQuestion } from '@/lib/types';
 
-// Schema for validation
 const formSchema = z.object({
   question: z.string().min(10, 'Question is too short.'),
   difficulty: z.enum(['easy', 'medium', 'hard']),
@@ -90,19 +87,19 @@ export default function EditQuestionPage() {
     }
   }, [question, form]);
 
-  const selectedCategory = form.watch("category");
-  const selectedSubject = form.watch("subjectId");
-
   useEffect(() => {
-    if (!isUserLoading && !isAdmin) {
-      toast({ variant: 'destructive', title: 'Unauthorized', description: 'You do not have permission to access this page.' });
-      router.push('/quiz');
+    if (!isUserLoading && question && user) {
+        const isCreator = (question as any).createdBy === user.uid;
+        if (!isCreator && !isAdmin) {
+            toast({ variant: 'destructive', title: 'Unauthorized', description: 'You can only edit your own questions.' });
+            router.push('/quiz');
+        }
     }
-  }, [isUserLoading, isAdmin, router, toast]);
+  }, [isUserLoading, question, user, isAdmin, router, toast]);
 
   const onSubmit = async (data: FormValues) => {
     if (!firestore || !questionRef) {
-      toast({ variant: 'destructive', title: 'Database not available', description: 'Please try again later.' });
+      toast({ variant: 'destructive', title: 'Database not available' });
       return;
     }
     setIsSubmitting(true);
@@ -115,7 +112,7 @@ export default function EditQuestionPage() {
         description: 'The question has been updated successfully.',
         className: 'bg-green-100 border-green-200',
       });
-      router.push('/admin');
+      router.push('/quiz');
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Error Updating Question', description: error.message });
     } finally {
@@ -123,16 +120,17 @@ export default function EditQuestionPage() {
     }
   };
 
-  if (isUserLoading || isLoadingQuestion || !isAdmin) {
+  if (isUserLoading || isLoadingQuestion) {
     return <div className="text-center p-8">Loading...</div>;
   }
   
-  const correctAnswer = form.watch("correctAnswer");
+  const selectedCategory = form.watch("category");
+  const selectedSubject = form.watch("subjectId");
 
   return (
     <div className="container mx-auto p-4 max-w-2xl">
       <div className="flex items-center gap-4 mb-6">
-        <Link href="/admin">
+        <Link href="/quiz">
           <Button variant="outline" size="icon"><ArrowLeft className="h-4 w-4" /></Button>
         </Link>
         <h1 className="text-2xl font-bold font-headline">Edit Question</h1>
@@ -238,18 +236,14 @@ export default function EditQuestionPage() {
                     <FormControl>
                         <RadioGroup onValueChange={field.onChange} value={field.value} className="space-y-2">
                             {[0, 1, 2, 3].map(index => {
-                                const choiceField = form.watch(`choices.${index}` as const);
+                                const choiceValue = form.watch(`choices.${index}` as const);
                                 return (
-                                <FormField key={index} control={form.control} name={`choices.${index}` as any} render={({ field: currentChoiceField }) => (
-                                    <FormItem className="flex items-center space-x-3 space-y-0">
-                                        <FormControl>
-                                            <div className="flex items-center gap-2 w-full">
-                                                <RadioGroupItem value={currentChoiceField.value || ''} />
-                                                <Input {...currentChoiceField} placeholder={`Choice ${String.fromCharCode(65 + index)}`} />
-                                            </div>
-                                        </FormControl>
-                                    </FormItem>
-                                )} />
+                                <div key={index} className="flex items-center gap-2">
+                                    <RadioGroupItem value={choiceValue} />
+                                    <FormField control={form.control} name={`choices.${index}` as any} render={({ field: choiceField }) => (
+                                        <Input {...choiceField} placeholder={`Choice ${String.fromCharCode(65 + index)}`} />
+                                    )} />
+                                </div>
                             )})}
                         </RadioGroup>
                     </FormControl>

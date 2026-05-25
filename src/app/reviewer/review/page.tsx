@@ -184,7 +184,7 @@ export default function ReviewPage() {
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     
     const firestore = useFirestore();
-    const { user, isAdmin, firebaseUser } = useUser();
+    const { user, firebaseUser } = useUser();
     const { toast } = useToast();
 
     const allArticlesQuery = useMemoFirebase(() => {
@@ -280,17 +280,26 @@ export default function ReviewPage() {
     };
 
     return (
-        <div>
+        <div className="pb-10">
             <div className="flex flex-col gap-4 mb-6">
-                <div className="relative w-full">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                    <Input
-                        placeholder="Search articles by title or keyword..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-10"
-                    />
+                <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+                    <div className="relative w-full sm:max-w-md">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                        <Input
+                            placeholder="Search articles..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full pl-10"
+                        />
+                    </div>
+                    <Link href="/reviewer/review/new" passHref>
+                        <Button className="w-full sm:w-auto">
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Create Article
+                        </Button>
+                    </Link>
                 </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Select value={categoryId} onValueChange={(value) => { setCategoryId(value as any); setSubjectId('all'); }}>
                         <SelectTrigger><SelectValue placeholder="All Categories"/></SelectTrigger>
@@ -329,14 +338,6 @@ export default function ReviewPage() {
                                 <List className="h-4 w-4" />
                             </Button>
                         </div>
-                        {isAdmin && (
-                            <Link href="/reviewer/review/new" passHref>
-                                <Button>
-                                    <PlusCircle className="mr-2 h-4 w-4" />
-                                    New Article
-                                </Button>
-                            </Link>
-                        )}
                     </div>
                 </div>
             </div>
@@ -371,9 +372,6 @@ export default function ReviewPage() {
                     <p className="text-muted-foreground">No review articles found for this filter.</p>
                 </div>
             )}
-             <div className="text-center py-10 mt-8 border-t">
-                <p className="text-muted-foreground">More reviewers coming soon.</p>
-            </div>
         </div>
     );
 }

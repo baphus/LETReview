@@ -199,7 +199,7 @@ export default function QuizPage() {
     if (currentIndex > 0) {
         setCurrentIndex((prev) => prev - 1);
     } else {
-        setCurrentIndex(questions.length - 1); // Loop to the end
+        setCurrentIndex(questions.length - 1); 
     }
   };
   
@@ -278,7 +278,6 @@ export default function QuizPage() {
 
   useEffect(() => {
     resetQuizState();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [category]);
   
   useEffect(() => {
@@ -296,7 +295,7 @@ export default function QuizPage() {
   }, [currentQuestion, challengeAnswers]);
   
   return (
-    <div className="container mx-auto max-w-2xl">
+    <div className="container mx-auto max-w-2xl pb-20">
        <Dialog open={showResults} onOpenChange={handleDialogClose}>
         <DialogContent className="flex flex-col h-[90dvh] max-h-[600px]">
           <DialogHeader className="items-center text-center">
@@ -365,13 +364,11 @@ export default function QuizPage() {
                      >
                         <Shuffle className="h-4 w-4" />
                     </Button>
-                    {isAdmin && (
-                        <Link href="/reviewer/questions/new" passHref>
-                            <Button variant="outline" size="icon" className="shrink-0" aria-label="Add new question">
-                                <PlusCircle className="h-4 w-4" />
-                            </Button>
-                        </Link>
-                    )}
+                    <Link href="/reviewer/questions/new" passHref>
+                        <Button variant="outline" size="icon" className="shrink-0" aria-label="Add new question">
+                            <PlusCircle className="h-4 w-4" />
+                        </Button>
+                    </Link>
                 </div>
             </div>
         </>

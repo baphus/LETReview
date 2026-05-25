@@ -34,8 +34,8 @@ export interface Reviewer {
   orderIndex: number;
   createdBy?: string;
   publishedAt?: string;
-  createdAt?: string;
-  updatedAt?: string;
+  createdAt?: any;
+  updatedAt?: any;
 }
 
 export interface QuizQuestion {
@@ -50,6 +50,7 @@ export interface QuizQuestion {
   correctAnswer: string;
   explanation?: string;
   reviewerIds?: string[];
+  createdBy?: string;
 }
 
 

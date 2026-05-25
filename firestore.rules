@@ -10,6 +10,10 @@ service cloud.firestore {
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
+    
+    function isDocOwner(data) {
+      return isSignedIn() && data.createdBy == request.auth.uid;
+    }
 
     function isAdmin() {
       // Admin user ID with special permissions
@@ -42,12 +46,14 @@ service cloud.firestore {
 
     match /reviewers/{reviewerId} {
       allow get, list: if true;
-      allow create, update, delete: if isAdmin();
+      allow create: if isSignedIn();
+      allow update, delete: if isDocOwner(resource.data) || isAdmin();
     }
 
     match /questions/{questionId} {
       allow get, list: if true;
-      allow create, update, delete: if isAdmin();
+      allow create: if isSignedIn();
+      allow update, delete: if isDocOwner(resource.data) || isAdmin();
     }
 
     match /pets/{petId} {

@@ -6,11 +6,9 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-// Firebase and user hooks
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { useUser } from '@/firebase/auth/use-user';
 import { collection, doc, writeBatch } from 'firebase/firestore';
-// UI Components
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -25,11 +23,9 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, ArrowLeft, Code } from 'lucide-react';
 import Link from 'next/link';
-// Types
 import type { Subject, Topic, QuizQuestion } from '@/lib/types';
 
 
-// Schemas for validation
 const singleQuestionFormSchema = z.object({
   question: z.string().min(10, 'Question is too short.'),
   difficulty: z.enum(['easy', 'medium', 'hard']),
@@ -47,7 +43,6 @@ const batchImportSchema = z.object({
   jsonContent: z.string().min(1, 'JSON content cannot be empty.'),
 });
 
-// Zod schema for questions in batch import
 const batchQuestionSchema = z.object({
   question: z.string().min(1, "Each question must have text."),
   difficulty: z.enum(['easy', 'medium', 'hard']),
@@ -62,7 +57,7 @@ type BatchImportFormValues = z.infer<typeof batchImportSchema>;
 export default function NewQuestionPage() {
   const router = useRouter();
   const firestore = useFirestore();
-  const { user, isAdmin, isLoading: isUserLoading } = useUser();
+  const { user, isLoading: isUserLoading } = useUser();
   const { toast } = useToast();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -88,22 +83,15 @@ export default function NewQuestionPage() {
     resolver: zodResolver(batchImportSchema),
   });
 
-  useEffect(() => {
-    if (!isUserLoading && !isAdmin) {
-      toast({ variant: 'destructive', title: 'Unauthorized', description: 'You do not have permission to access this page.' });
-      router.push('/quiz');
-    }
-  }, [isUserLoading, isAdmin, router, toast]);
-
   const onSingleSubmit = async (data: SingleQuestionFormValues) => {
-    if (!firestore) {
-      toast({ variant: 'destructive', title: 'Database not available', description: 'Please try again later.' });
+    if (!firestore || !user) {
+      toast({ variant: 'destructive', title: 'Session required' });
       return;
     }
     setIsSubmitting(true);
     
     const questionId = 'q-' + Date.now().toString(36);
-    const newQuestion: Omit<QuizQuestion, 'id'> & { id: string } = {
+    const newQuestion: QuizQuestion = {
       id: questionId,
       category: selectedCategory,
       ...(selectedSubject && { subjectId: selectedSubject }),
@@ -114,6 +102,7 @@ export default function NewQuestionPage() {
       choices: data.choices,
       correctAnswer: data.choices[parseInt(data.correctAnswerIndex, 10)],
       explanation: data.explanation,
+      createdBy: user.uid,
     };
 
     try {
@@ -136,10 +125,7 @@ export default function NewQuestionPage() {
   };
   
   const onBatchSubmit = async (data: BatchImportFormValues) => {
-    if (!firestore) {
-      toast({ variant: 'destructive', title: 'Database not available', description: 'Please try again later.' });
-      return;
-    }
+    if (!firestore || !user) return;
     setIsSubmitting(true);
 
     let parsedJson;
@@ -161,26 +147,14 @@ export default function NewQuestionPage() {
     }
 
     const batchQuestions = validationResult.data;
-    let errorFound = false;
-
-    const newQuestions = batchQuestions.map((item, index) => {
-      if (!item.choices.includes(item.correctAnswer)) {
-        toast({ variant: 'destructive', title: 'Validation Error', description: `In item ${index}: The 'correctAnswer' is not one of the 'choices'.` });
-        errorFound = true;
-      }
-      return {
+    const newQuestions = batchQuestions.map((item, index) => ({
         id: `q-batch-${Date.now().toString(36)}-${index}`,
         category: selectedCategory,
         ...(selectedSubject && { subjectId: selectedSubject }),
         topicIds: selectedTopics,
+        createdBy: user.uid,
         ...item
-      };
-    });
-
-    if (errorFound) {
-      setIsSubmitting(false);
-      return;
-    }
+    }));
 
     try {
       const batch = writeBatch(firestore);
@@ -198,7 +172,7 @@ export default function NewQuestionPage() {
     }
   };
 
-  if (isUserLoading || !isAdmin) {
+  if (isUserLoading) {
     return <div className="text-center p-8">Loading...</div>;
   }
   
@@ -213,7 +187,7 @@ export default function NewQuestionPage() {
 ]`;
 
   return (
-    <div className="container mx-auto p-4 max-w-2xl">
+    <div className="max-w-2xl mx-auto pb-10">
       <div className="flex items-center gap-4 mb-6">
         <Link href="/quiz">
           <Button variant="outline" size="icon"><ArrowLeft className="h-4 w-4" /></Button>
@@ -262,7 +236,7 @@ export default function NewQuestionPage() {
                         setSelectedTopics(prev => checked ? [...prev, topic.id] : prev.filter(id => id !== topic.id));
                       }}
                     />
-                    <label htmlFor={topic.id} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{topic.name}</label>
+                    <label htmlFor={topic.id} className="text-sm font-medium leading-none">{topic.name}</label>
                   </div>
                 ))}
               </div>
@@ -283,7 +257,6 @@ export default function NewQuestionPage() {
             <TabsContent value="single">
               <Form {...singleQuestionForm}>
                 <form onSubmit={singleQuestionForm.handleSubmit(onSingleSubmit)} className="space-y-4 pt-4">
-                  {/* Form content from AddQuestionDialog */}
                    <FormField control={singleQuestionForm.control} name="question" render={({ field }) => (
                         <FormItem><FormLabel>Question</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
@@ -324,7 +297,7 @@ export default function NewQuestionPage() {
                     <FormField control={singleQuestionForm.control} name="explanation" render={({ field }) => (
                         <FormItem><FormLabel>Explanation</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
-                  <Button type="submit" disabled={isSubmitting}>
+                  <Button type="submit" disabled={isSubmitting} className="w-full">
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Save Question
                   </Button>
@@ -334,7 +307,6 @@ export default function NewQuestionPage() {
             <TabsContent value="batch">
               <Form {...batchImportForm}>
                 <form onSubmit={batchImportForm.handleSubmit(onBatchSubmit)} className="space-y-4 pt-4">
-                  {/* Batch import form from AddQuestionDialog */}
                     <FormField control={batchImportForm.control} name="jsonContent" render={({ field }) => (
                         <FormItem>
                             <FormLabel>JSON Content</FormLabel>
@@ -349,14 +321,13 @@ export default function NewQuestionPage() {
                         <Code className="h-4 w-4" />
                         <AlertTitle>Required JSON Format</AlertTitle>
                         <AlertDescription>
-                        <p className="mb-2 text-xs">Paste an array of question objects. Example for one question:</p>
                         <pre className="text-xs whitespace-pre-wrap bg-muted p-2 rounded-md">
                             <code>{jsonFormatReference}</code>
                         </pre>
                         </AlertDescription>
                     </Alert>
 
-                  <Button type="submit" disabled={isSubmitting}>
+                  <Button type="submit" disabled={isSubmitting} className="w-full">
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Import Questions
                   </Button>
