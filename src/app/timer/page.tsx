@@ -1,10 +1,10 @@
 
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Clock, Coffee, Play, Pause, RotateCcw, Award, Gem, Bell, Flame, ArrowRight } from "lucide-react";
+import { Clock, Coffee, Play, Pause, RotateCcw, Award, Gem, Bell, Flame, ArrowRight, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTimer } from "@/hooks/use-timer";
 import { getQuestions } from "@/lib/data";
@@ -22,32 +22,45 @@ const MiniQuiz = ({ onCorrectAnswer, onIncorrectAnswer, onStreak }: { onCorrectA
     const [isAnswered, setIsAnswered] = useState(false);
     const [isCorrect, setIsCorrect] = useState(false);
     const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
-    const [questionIndex, setQuestionIndex] = useState(0);
+    const [usedQuestionIds, setUsedQuestionIds] = useState<Set<string>>(new Set());
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        getQuestions({ difficulty: 'easy', shuffle: true, limit: 10 }).then(setQuizQuestions);
+        setIsLoading(true);
+        getQuestions({ shuffle: true, limit: 100 }).then((questions) => {
+            setQuizQuestions(questions);
+            setIsLoading(false);
+        });
     }, []);
 
     const getNewQuestion = useCallback(() => {
         if (quizQuestions.length === 0) return;
         
-        const nextIndex = (questionIndex + 1) % quizQuestions.length;
-        setQuestionIndex(nextIndex);
+        // Find a question that hasn't been used yet in this timer session
+        const availableQuestions = quizQuestions.filter(q => !usedQuestionIds.has(q.id));
         
-        const newQuestion = { ...quizQuestions[nextIndex] };
-        newQuestion.choices = [...newQuestion.choices].sort(() => Math.random() - 0.5);
-        setQuestion(newQuestion);
+        // If all questions are used, reset the tracker
+        const sourcePool = availableQuestions.length > 0 ? availableQuestions : quizQuestions;
+        if (availableQuestions.length === 0) setUsedQuestionIds(new Set());
+
+        const randomIndex = Math.floor(Math.random() * sourcePool.length);
+        const newQuestion = sourcePool[randomIndex];
+        
+        setUsedQuestionIds(prev => new Set(prev).add(newQuestion.id));
+        setQuestion({
+            ...newQuestion,
+            choices: [...newQuestion.choices].sort(() => Math.random() - 0.5)
+        });
         setSelectedAnswer(null);
         setIsAnswered(false);
         setIsCorrect(false);
-    }, [quizQuestions, questionIndex]);
+    }, [quizQuestions, usedQuestionIds]);
 
     useEffect(() => {
-        if (quizQuestions.length > 0) {
+        if (!isLoading && quizQuestions.length > 0 && !question) {
             getNewQuestion();
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [quizQuestions]);
+    }, [isLoading, quizQuestions, question, getNewQuestion]);
 
     const handleAnswer = (answer: string) => {
         if (isAnswered || !question) return;
@@ -68,6 +81,15 @@ const MiniQuiz = ({ onCorrectAnswer, onIncorrectAnswer, onStreak }: { onCorrectA
         }
     };
     
+    if (isLoading) return (
+        <Card className="w-full max-w-sm">
+            <CardContent className="flex flex-col items-center justify-center py-10">
+                <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+                <p className="text-sm text-muted-foreground">Preparing focus quiz...</p>
+            </CardContent>
+        </Card>
+    );
+
     if (!question) return null;
 
     return (

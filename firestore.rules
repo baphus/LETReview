@@ -12,7 +12,7 @@ service cloud.firestore {
     }
     
     function isDocOwner(data) {
-      return isSignedIn() && data.createdBy == request.auth.uid;
+      return isSignedIn() && (data.createdBy == request.auth.uid || data.uid == request.auth.uid);
     }
 
     function isAdmin() {
@@ -45,13 +45,17 @@ service cloud.firestore {
     }
 
     match /reviewers/{reviewerId} {
-      allow get, list: if true;
+      // Explicitly allow admins to list all reviewers for dashboard
+      allow list: if isAdmin();
+      allow get: if true;
       allow create: if isSignedIn();
       allow update, delete: if isDocOwner(resource.data) || isAdmin();
     }
 
     match /questions/{questionId} {
-      allow get, list: if true;
+      // Explicitly allow admins to list all questions for dashboard
+      allow list: if isAdmin();
+      allow get: if true;
       allow create: if isSignedIn();
       allow update, delete: if isDocOwner(resource.data) || isAdmin();
     }

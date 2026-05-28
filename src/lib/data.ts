@@ -32,7 +32,6 @@ const getSeed = (str: string): (() => number) => {
 export const getQuestionForDate = async (date: Date, subscribedReviewerIds?: string[]): Promise<QuizQuestion | null> => {
     const { firestore } = initializeFirebase();
     const dayOfYear = getDayOfYear(date);
-    const category = (dayOfYear % 2 === 0) ? 'gened' : 'profed';
     
     const cacheKey = `qotd-${dayOfYear}-${subscribedReviewerIds?.join(',') || 'none'}`;
     if (questionsCache[cacheKey] && (Date.now() - questionsCache[cacheKey].timestamp < CACHE_TTL)) {
@@ -51,16 +50,15 @@ export const getQuestionForDate = async (date: Date, subscribedReviewerIds?: str
             const batchIds = subscribedReviewerIds.slice(0, 10);
             q = query(
                 questionsRef, 
-                where('category', '==', category),
                 where('reviewerIds', 'array-contains-any', batchIds),
-                limit(50)
+                limit(100)
             );
         } else if (subscribedReviewerIds) {
             // Subscribed list exists but is empty
             return null;
         } else {
             // No subscription context, fetch general questions
-            q = query(questionsRef, where('category', '==', category), limit(50));
+            q = query(questionsRef, limit(100));
         }
 
         const querySnapshot = await getDocs(q);
@@ -69,7 +67,7 @@ export const getQuestionForDate = async (date: Date, subscribedReviewerIds?: str
             questionsPool = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuizQuestion));
         } else {
             // Final fallback to static data
-            questionsPool = (staticQuestions as QuizQuestion[]).filter(q => q.category === category);
+            questionsPool = staticQuestions as QuizQuestion[];
             if (subscribedReviewerIds && subscribedReviewerIds.length > 0) {
                 questionsPool = questionsPool.filter(q => 
                     q.reviewerIds?.some(id => subscribedReviewerIds.includes(id))
@@ -78,7 +76,7 @@ export const getQuestionForDate = async (date: Date, subscribedReviewerIds?: str
         }
     } catch (e) {
         console.error("Error fetching QOTD from Firestore, using fallback", e);
-        questionsPool = (staticQuestions as QuizQuestion[]).filter(q => q.category === category);
+        questionsPool = staticQuestions as QuizQuestion[];
     }
 
     if (questionsPool.length === 0) {

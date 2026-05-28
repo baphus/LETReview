@@ -177,8 +177,8 @@ export default function NewReviewerPage() {
   };
 
   const handleSeed = async () => {
-    if (!firestore) {
-        toast({ variant: "destructive", title: "Firestore not available" });
+    if (!firestore || !user) {
+        toast({ variant: "destructive", title: "Firestore or User not available" });
         return;
     }
     try {
@@ -193,19 +193,27 @@ export default function NewReviewerPage() {
       });
 
       reviewersSeed.forEach((reviewer: any) => {
-        batch.set(doc(firestore, 'reviewers', reviewer.id), { ...reviewer, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+        batch.set(doc(firestore, 'reviewers', reviewer.id), { 
+            ...reviewer, 
+            createdBy: user.uid,
+            createdAt: new Date().toISOString(), 
+            updatedAt: new Date().toISOString() 
+        });
       });
       
       questionsSeed.forEach((question) => {
         const questionRef = doc(firestore, 'questions', question.id);
-        batch.set(questionRef, question);
+        batch.set(questionRef, {
+            ...question,
+            createdBy: user.uid
+        });
       });
 
       await batch.commit();
       
       toast({
         title: "Database Seeded",
-        description: `Content was successfully added.`,
+        description: `Content assigned to your account.`,
         className: "bg-green-100 border-green-300"
       });
 
@@ -273,8 +281,8 @@ export default function NewReviewerPage() {
                 <CardTitle>System Management</CardTitle>
             </CardHeader>
             <CardContent>
-                <p className="text-sm text-muted-foreground mb-4">Seed the database with initial questions and articles. This should only be run once.</p>
-                <Button variant="outline" className="w-full" onClick={handleSeed}><Database className="mr-2 h-4 w-4" />Seed Database</Button>
+                <p className="text-sm text-muted-foreground mb-4">Seed the database with initial questions and articles. This will assign ownership of system content to YOU so it appears in your private library.</p>
+                <Button variant="outline" className="w-full" onClick={handleSeed}><Database className="mr-2 h-4 w-4" />Seed Database & Assign Ownership</Button>
             </CardContent>
         </Card>
       )}
