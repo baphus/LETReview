@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -16,16 +15,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import type { Subject, Topic, Reviewer } from '@/lib/types';
+import type { Subject, Topic, Reviewer, QuizQuestion } from '@/lib/types';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, Database, PlusCircle, Trash2, ArrowLeft } from 'lucide-react';
-import Link from 'next/link';
-
+import { Loader2, Database, PlusCircle, Trash2 } from 'lucide-react';
 import reviewersSeed from '@/lib/seeds/reviewers-seed.json';
 import subjectsSeed from '@/lib/seeds/subjects-seed.json';
 import topicsSeed from '@/lib/seeds/topics-seed.json';
 import questionsSeed from '@/lib/seeds/questions-seed.json';
-
 import {
   Dialog,
   DialogContent,
@@ -127,6 +123,13 @@ export default function NewReviewerPage() {
     }
   }, [titleValue, form]);
 
+  useEffect(() => {
+    if (!isUserLoading && !isAdmin) {
+      toast({ variant: 'destructive', title: 'Unauthorized', description: 'You do not have permission to access this page.' });
+      router.push('/reviewer/review');
+    }
+  }, [isUserLoading, isAdmin, router, toast]);
+
   const handleAddSubject = async (data: z.infer<typeof subjectSchema>) => {
     if (!firestore || !selectedCategory) return;
     const slug = data.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
@@ -169,7 +172,7 @@ export default function NewReviewerPage() {
   const handleDeleteSubject = async (subjectId: string) => {
     if (!firestore) return;
     try {
-        await setDoc(doc(firestore, 'subjects', subjectId), { status: 'deleted' }, { merge: true }); 
+        await setDoc(doc(firestore, 'subjects', subjectId), { status: 'deleted' }, { merge: true }); // Prefer soft delete in admin tool
         toast({ title: 'Subject Deleted' });
     } catch (error: any) {
         toast({ variant: 'destructive', title: 'Error', description: error.message });
@@ -177,8 +180,8 @@ export default function NewReviewerPage() {
   };
 
   const handleSeed = async () => {
-    if (!firestore || !user) {
-        toast({ variant: "destructive", title: "Firestore or User not available" });
+    if (!firestore) {
+        toast({ variant: "destructive", title: "Firestore not available" });
         return;
     }
     try {
@@ -193,27 +196,19 @@ export default function NewReviewerPage() {
       });
 
       reviewersSeed.forEach((reviewer: any) => {
-        batch.set(doc(firestore, 'reviewers', reviewer.id), { 
-            ...reviewer, 
-            createdBy: user.uid,
-            createdAt: new Date().toISOString(), 
-            updatedAt: new Date().toISOString() 
-        });
+        batch.set(doc(firestore, 'reviewers', reviewer.id), { ...reviewer, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
       });
       
       questionsSeed.forEach((question) => {
         const questionRef = doc(firestore, 'questions', question.id);
-        batch.set(questionRef, {
-            ...question,
-            createdBy: user.uid
-        });
+        batch.set(questionRef, question);
       });
 
       await batch.commit();
       
       toast({
         title: "Database Seeded",
-        description: `Content assigned to your account.`,
+        description: `Content was successfully added.`,
         className: "bg-green-100 border-green-300"
       });
 
@@ -223,6 +218,7 @@ export default function NewReviewerPage() {
         title: "Seeding Failed",
         description: error.message || "An unknown error occurred.",
       });
+      console.error("Seeding failed:", error);
     }
   };
 
@@ -237,8 +233,8 @@ export default function NewReviewerPage() {
       orderIndex: 0, 
       createdBy: user.uid,
       publishedAt: new Date().toISOString(),
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
+      createdAt: serverTimestamp() as any,
+      updatedAt: serverTimestamp() as any,
     };
 
     try {
@@ -251,6 +247,7 @@ export default function NewReviewerPage() {
       });
       router.push(`/reviewer/review/${data.slug}`);
     } catch (error) {
+      console.error("Error creating reviewer:", error);
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -260,32 +257,23 @@ export default function NewReviewerPage() {
     }
   };
 
-  if (isUserLoading) {
-    return <div className="text-center p-8">Loading...</div>;
+  if (isUserLoading || !isAdmin) {
+    return <div className="text-center p-8">Checking permissions...</div>;
   }
   
   const availableTopics = topics?.filter(t => t.subjectId === selectedSubjectId) || [];
 
   return (
-    <div className="max-w-4xl mx-auto pb-10">
-      <header className="mb-6 flex items-center gap-4">
-          <Link href="/reviewer/review">
-            <Button variant="outline" size="icon"><ArrowLeft className="h-4 w-4" /></Button>
-          </Link>
-          <h1 className="text-3xl font-bold font-headline">New Study Article</h1>
-      </header>
-
-      {isAdmin && (
-        <Card className="mb-6 border-dashed">
-            <CardHeader>
-                <CardTitle>System Management</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <p className="text-sm text-muted-foreground mb-4">Seed the database with initial questions and articles. This will assign ownership of system content to YOU so it appears in your private library.</p>
-                <Button variant="outline" className="w-full" onClick={handleSeed}><Database className="mr-2 h-4 w-4" />Seed Database & Assign Ownership</Button>
-            </CardContent>
-        </Card>
-      )}
+    <>
+      <Card className="mb-6">
+          <CardHeader>
+              <CardTitle>Content Management</CardTitle>
+          </CardHeader>
+          <CardContent>
+              <p className="text-sm text-muted-foreground mb-2">Seed the database with initial questions and articles. This should only be run once.</p>
+              <Button variant="outline" className="w-full" onClick={handleSeed}><Database className="mr-2 h-4 w-4" />Seed Database</Button>
+          </CardContent>
+      </Card>
       
       <Card>
         <CardHeader>
@@ -360,8 +348,8 @@ export default function NewReviewerPage() {
                         <FormLabel>Category</FormLabel>
                         <Select onValueChange={(value) => {
                             field.onChange(value);
-                            form.setValue('subjectId', ''); 
-                            form.setValue('topicIds', []);
+                            form.setValue('subjectId', ''); // Reset subject when category changes
+                            form.setValue('topicIds', []); // Reset topics too
                         }} defaultValue={field.value}>
                         <FormControl>
                             <SelectTrigger>
@@ -388,7 +376,7 @@ export default function NewReviewerPage() {
                                     setIsManageSubjectsOpen(true);
                                 } else {
                                     field.onChange(value);
-                                    form.setValue('topicIds', []); 
+                                    form.setValue('topicIds', []); // Reset topics when subject changes
                                 }
                             }} value={field.value}>
                             <FormControl>
@@ -398,11 +386,9 @@ export default function NewReviewerPage() {
                             </FormControl>
                             <SelectContent>
                                 {isLoadingSubjects ? <SelectItem value="loading" disabled>Loading...</SelectItem> : subjects?.filter(s => s.categoryId === selectedCategory).map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-                                {isAdmin && (
-                                    <SelectItem value="manage" className="text-primary font-semibold">
-                                        <span className="flex items-center"><PlusCircle className="h-4 w-4 mr-2" /> Manage subjects...</span>
-                                    </SelectItem>
-                                )}
+                                <SelectItem value="manage" className="text-primary font-semibold">
+                                    <span className="flex items-center"><PlusCircle className="h-4 w-4 mr-2" /> Manage subjects...</span>
+                                </SelectItem>
                             </SelectContent>
                             </Select>
                             <FormMessage />
@@ -420,12 +406,10 @@ export default function NewReviewerPage() {
                         <FormItem>
                             <div className="flex justify-between items-center mb-2">
                                 <FormLabel>Topics</FormLabel>
-                                {isAdmin && (
-                                    <Button type="button" variant="outline" size="sm" onClick={() => setIsManageTopicsOpen(true)}>
-                                        <PlusCircle className="h-4 w-4 mr-2" />
-                                        Manage Topics
-                                    </Button>
-                                )}
+                                <Button type="button" variant="outline" size="sm" onClick={() => setIsManageTopicsOpen(true)}>
+                                    <PlusCircle className="h-4 w-4 mr-2" />
+                                    Manage Topics
+                                </Button>
                             </div>
                         
                             <div className="max-h-40 overflow-y-auto rounded-md border p-4 space-y-2">
@@ -456,7 +440,7 @@ export default function NewReviewerPage() {
                                         </FormItem>
                                     )}
                                 />
-                                )) : <p className="text-sm text-muted-foreground text-center">No topics found for this subject.</p>}
+                                )) : <p className="text-sm text-muted-foreground text-center">No topics found for this subject. Add one!</p>}
                             </div>
                             <FormMessage />
                         </FormItem>
@@ -523,7 +507,7 @@ export default function NewReviewerPage() {
                     </FormItem>
                 )}
                 />
-              <Button type="submit" disabled={isSubmitting} className="w-full">
+              <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Publish Article
               </Button>
@@ -532,6 +516,7 @@ export default function NewReviewerPage() {
         </CardContent>
       </Card>
 
+      {/* Manage Subjects Dialog */}
       <Dialog open={isManageSubjectsOpen} onOpenChange={setIsManageSubjectsOpen}>
         <DialogContent>
             <DialogHeader>
@@ -572,6 +557,7 @@ export default function NewReviewerPage() {
         </DialogContent>
       </Dialog>
       
+      {/* Manage Topics Dialog */}
       <Dialog open={isManageTopicsOpen} onOpenChange={setIsManageTopicsOpen}>
         <DialogContent>
           <DialogHeader>
@@ -605,6 +591,6 @@ export default function NewReviewerPage() {
           </Form>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -41,6 +40,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import Link from 'next/link';
 
+// The schema is the same as for creating
 const reviewerFormSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters long."),
   slug: z.string().min(3, "Slug must be at least 3 characters long.").regex(/^[a-z0-9-]+$/, "Slug can only contain lowercase letters, numbers, and hyphens."),
@@ -128,14 +128,11 @@ export default function EditReviewerPage() {
   const selectedSubjectId = form.watch("subjectId");
 
   useEffect(() => {
-    if (!isUserLoading && article && user) {
-        const isCreator = article.createdBy === user.uid;
-        if (!isCreator && !isAdmin) {
-            toast({ variant: 'destructive', title: 'Unauthorized', description: 'You can only edit your own articles.' });
-            router.push(`/reviewer/review/${slug}`);
-        }
+    if (!isUserLoading && !isAdmin) {
+      toast({ variant: 'destructive', title: 'Unauthorized', description: 'You do not have permission to access this page.' });
+      router.push('/reviewer/review');
     }
-  }, [isUserLoading, article, user, isAdmin, router, toast, slug]);
+  }, [isUserLoading, isAdmin, router, toast]);
 
   const handleAddSubject = async (data: z.infer<typeof subjectSchema>) => {
     if (!firestore || !selectedCategory) return;
@@ -218,6 +215,7 @@ export default function EditReviewerPage() {
       });
       router.push(`/reviewer/review/${data.slug}`);
     } catch (error) {
+      console.error("Error updating reviewer:", error);
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -227,7 +225,7 @@ export default function EditReviewerPage() {
     }
   };
 
-  if (isUserLoading || isLoadingArticle) {
+  if (isUserLoading || isLoadingArticle || !isAdmin) {
     return <div className="text-center p-8">Loading...</div>;
   }
   
@@ -238,7 +236,7 @@ export default function EditReviewerPage() {
   const availableTopics = topics?.filter(t => t.subjectId === selectedSubjectId) || [];
 
   return (
-    <div className="max-w-4xl mx-auto pb-10">
+    <>
       <Card>
         <CardHeader>
           <div className="flex items-center gap-4">
@@ -350,11 +348,9 @@ export default function EditReviewerPage() {
                             </FormControl>
                             <SelectContent>
                                 {isLoadingSubjects ? <SelectItem value="loading" disabled>Loading...</SelectItem> : subjects?.filter(s => s.categoryId === selectedCategory).map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-                                {isAdmin && (
-                                    <SelectItem value="manage" className="text-primary font-semibold">
-                                        <span className="flex items-center"><PlusCircle className="h-4 w-4 mr-2" /> Manage subjects...</span>
-                                    </SelectItem>
-                                )}
+                                <SelectItem value="manage" className="text-primary font-semibold">
+                                    <span className="flex items-center"><PlusCircle className="h-4 w-4 mr-2" /> Manage subjects...</span>
+                                </SelectItem>
                             </SelectContent>
                             </Select>
                             <FormMessage />
@@ -372,12 +368,10 @@ export default function EditReviewerPage() {
                         <FormItem>
                             <div className="flex justify-between items-center mb-2">
                                 <FormLabel>Topics</FormLabel>
-                                {isAdmin && (
-                                    <Button type="button" variant="outline" size="sm" onClick={() => setIsManageTopicsOpen(true)}>
-                                        <PlusCircle className="h-4 w-4 mr-2" />
-                                        Manage Topics
-                                    </Button>
-                                )}
+                                <Button type="button" variant="outline" size="sm" onClick={() => setIsManageTopicsOpen(true)}>
+                                    <PlusCircle className="h-4 w-4 mr-2" />
+                                    Manage Topics
+                                </Button>
                             </div>
                         
                             <div className="max-h-40 overflow-y-auto rounded-md border p-4 space-y-2">
@@ -408,7 +402,7 @@ export default function EditReviewerPage() {
                                         </FormItem>
                                     )}
                                 />
-                                )) : <p className="text-sm text-muted-foreground text-center">No topics found.</p>}
+                                )) : <p className="text-sm text-muted-foreground text-center">No topics found for this subject. Add one!</p>}
                             </div>
                             <FormMessage />
                         </FormItem>
@@ -475,7 +469,7 @@ export default function EditReviewerPage() {
                     </FormItem>
                 )}
                 />
-              <Button type="submit" disabled={isSubmitting} className="w-full">
+              <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Update Article
               </Button>
@@ -484,6 +478,7 @@ export default function EditReviewerPage() {
         </CardContent>
       </Card>
 
+      {/* Manage Subjects Dialog */}
       <Dialog open={isManageSubjectsOpen} onOpenChange={setIsManageSubjectsOpen}>
         <DialogContent>
             <DialogHeader>
@@ -507,7 +502,7 @@ export default function EditReviewerPage() {
                               <AlertDialogHeader>
                                   <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                                   <AlertDialogDescription>
-                                      This will permanently delete the subject "{subject.name}".
+                                      This will permanently delete the subject "{subject.name}". Associated articles and questions will NOT be deleted but may become uncategorized. This action cannot be undone.
                                   </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
@@ -540,6 +535,7 @@ export default function EditReviewerPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Manage Topics Dialog */}
       <Dialog open={isManageTopicsOpen} onOpenChange={setIsManageTopicsOpen}>
         <DialogContent>
           <DialogHeader>
@@ -560,7 +556,7 @@ export default function EditReviewerPage() {
                             <AlertDialogHeader>
                                 <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    This will permanently delete the topic "{topic.name}".
+                                    This will permanently delete the topic "{topic.name}". Associated articles and questions will not be deleted but will lose this topic tag. This action cannot be undone.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
@@ -589,6 +585,6 @@ export default function EditReviewerPage() {
           </Form>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }
