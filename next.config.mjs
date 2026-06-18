@@ -1,6 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  /* config options here */
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -15,6 +14,8 @@ const nextConfig = {
       },
     ],
   },
+  // Prevent chunk timeout issues during deployment
+  productionBrowserSourceMaps: false,
 };
 
-module.exports = nextConfig;
+export default nextConfig;
