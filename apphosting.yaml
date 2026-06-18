@@ -22,6 +22,6 @@ env:
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
     value: "AIzaSyDCLLr_g6MBdQbJvQ-puM8bXbI0L4icF3Q"
   - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
-    value: letreview.firebaseapp.com
+    value: letreview--letreview.asia-southeast1.hosted.app
   - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
     value: "719794505288"
