@@ -41,11 +41,28 @@ service cloud.firestore {
     }
 
     match /reviewers/{reviewerId} {
+      // Allow all authenticated users (including anonymous/guest) to read
+      allow get, list: if true;
+      allow create, update, delete: if isAdmin();
+      
+      // Subcollections under reviewers
+      match /{subcollection=**} {
+        allow get, list: if true;
+        allow create, update, delete: if isAdmin();
+      }
+    }
+
+    match /questions/{questionId} {
       allow get, list: if true;
       allow create, update, delete: if isAdmin();
     }
 
-    match /questions/{questionId} {
+    match /dailyChallenges/{challengeId} {
+      allow get, list: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /qotd/{docId} {
       allow get, list: if true;
       allow create, update, delete: if isAdmin();
     }
@@ -56,7 +73,7 @@ service cloud.firestore {
     }
 
     match /feedback/{feedbackId} {
-      allow create: if true;
+      allow create: if isSignedIn();
       allow read, list: if isAdmin();
     }
   }

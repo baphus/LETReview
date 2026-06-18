@@ -76,9 +76,6 @@
 
   /* PWA Mobile Optimizations */
   html {
-    /* Prevent text size adjustment on orientation change (iOS) */
-    -webkit-text-size-adjust: 100%;
-    text-size-adjust: 100%;
     /* Smooth scrolling */
     scroll-behavior: smooth;
     /* Account for iOS safe areas (notch, home indicator) */
