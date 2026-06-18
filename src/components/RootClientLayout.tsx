@@ -17,6 +17,9 @@ import { useUser } from '@/firebase/auth/use-user';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { OnboardingDialog } from '@/components/OnboardingDialog';
 import { Loader2 } from 'lucide-react';
+import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration';
+import { InstallPrompt } from '@/components/InstallPrompt';
+import { NetworkStatus } from '@/components/NetworkStatus';
 
 const publicPaths = [
   '/',
@@ -118,6 +121,9 @@ export function RootClientLayout({ children }: { children: React.ReactNode }) {
         >
           <RootLayoutContent>{children}</RootLayoutContent>
         </Suspense>
+        <ServiceWorkerRegistration />
+        <InstallPrompt />
+        <NetworkStatus />
       </TooltipProvider>
     </FirebaseClientProvider>
   );

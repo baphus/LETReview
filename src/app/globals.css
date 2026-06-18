@@ -73,6 +73,70 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* PWA Mobile Optimizations */
+  html {
+    /* Prevent text size adjustment on orientation change (iOS) */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    /* Smooth scrolling */
+    scroll-behavior: smooth;
+    /* Account for iOS safe areas (notch, home indicator) */
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+
+  body {
+    /* Prevent pull-to-refresh in standalone PWA mode */
+    overscroll-behavior-y: contain;
+    /* Prevent bounce scroll on iOS */
+    -webkit-overflow-scrolling: touch;
+    /* Disable text selection highlight on tap (mobile feel) */
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Minimum touch target sizes (48px as per WCAG) */
+  button, a, [role="button"], input[type="checkbox"], input[type="radio"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Allow smaller buttons inside dense UIs like headers */
+  header button, header a, nav button, nav a {
+    min-height: 36px;
+    min-width: 36px;
+  }
+}
+
+/* Standalone PWA mode styles (when installed) */
+@media all and (display-mode: standalone) {
+  body {
+    /* Remove overscroll glow effect */
+    overscroll-behavior: none;
+  }
+
+  /* Ensure content doesn't go behind status bar */
+  header:first-of-type {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  /* Account for home indicator on modern iPhones */
+  .bottom-nav, nav[aria-label="bottom"] {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* iOS-specific standalone tweaks */
+@supports (-webkit-touch-callout: none) {
+  /* Disable callout on long press for links/images */
+  a, img {
+    -webkit-touch-callout: none;
+  }
+
+  /* Fix iOS 100vh issue */
+  .h-dvh {
+    height: -webkit-fill-available;
+    height: 100dvh;
+  }
 }
 
 /* Custom styles for flashcard flip animation */
