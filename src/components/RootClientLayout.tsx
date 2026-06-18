@@ -20,6 +20,7 @@ import { Loader2 } from 'lucide-react';
 import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration';
 import { InstallPrompt } from '@/components/InstallPrompt';
 import { NetworkStatus } from '@/components/NetworkStatus';
+import { usePetXP } from '@/hooks/use-pet-xp';
 
 const publicPaths = [
   '/',
@@ -35,6 +36,9 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, isLoading, activeTheme } = useUser();
   const [showOnboarding, setShowOnboarding] = useState(false);
+
+  // Passive XP tracking - awards pet XP when user completes activities
+  usePetXP();
 
   useEffect(() => {
     document.documentElement.classList.remove('mint', 'sunset', 'rose');
