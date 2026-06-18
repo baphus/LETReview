@@ -1,7 +1,25 @@
 # Settings to manage and configure a Firebase App Hosting backend.
 # https://firebase.google.com/docs/app-hosting/configure
+# Backend ID: letreview
+# Backend URL: letreview--letreview.asia-southeast1.hosted.app
 
 runConfig:
-  # Increase this value if you'd like to automatically spin up
-  # more instances in response to increased traffic.
-  maxInstances: 1
+  cpu: 1
+  memoryMiB: 512
+  concurrency: 80
+  minInstances: 0
+  maxInstances: 2
+
+env:
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: letreview
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: "1:719794505288:web:70fd1f9a0d58d1aeb27a7d"
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: "AIzaSyDCLLr_g6MBdQbJvQ-puM8bXbI0L4icF3Q"
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: letreview--letreview.asia-southeast1.hosted.app
+  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    value: "719794505288"
+  - variable: NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+    value: "G-5V556KZ0HZ"
