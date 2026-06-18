@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useMemo, useState, useEffect, useRef } from 'react';
-import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useUser } from '@/firebase/auth/use-user';
@@ -18,6 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
+import { PetAvatar } from '@/components/PetAvatar';
 import type { Topic } from '@/lib/types';
 
 // Extended mood system with 12 moods for richer emotional expression
@@ -214,7 +214,7 @@ export function VirtualPetHero() {
   }, [user?.examDate]);
 
   // Compute mood with full context
-  const moodConfig = useMemo(() => {
+  const { moodConfig, currentMood } = useMemo(() => {
     const ctx: MoodContext = {
       timeOfDay: getTimeOfDay(),
       streak,
@@ -231,7 +231,7 @@ export function VirtualPetHero() {
     };
     
     const mood = computeMood(ctx);
-    return MOODS[mood];
+    return { moodConfig: MOODS[mood], currentMood: mood };
   }, [streak, daysInactive, averageScore, totalAnswers, todayStats, challengesToday, daysUntilExam, recentTrend]);
 
   // Pet XP / Level system
@@ -354,14 +354,13 @@ export function VirtualPetHero() {
                 "absolute inset-0 rounded-full blur-2xl opacity-25 transition-all duration-700 scale-125",
                 moodConfig.color
               )} />
-              <div className="relative z-10 w-32 h-32 sm:w-36 sm:h-36 flex items-center justify-center overflow-hidden">
-                <Image
+              <div className="relative z-10">
+                <PetAvatar
                   src={petProfile.image}
-                  alt={petName}
-                  width={144}
-                  height={144}
-                  className="animate-bob p-1 drop-shadow-2xl object-contain"
-                  data-ai-hint={petProfile.hint}
+                  name={petName}
+                  mood={currentMood}
+                  hint={petProfile.hint}
+                  size={144}
                 />
               </div>
             </div>
