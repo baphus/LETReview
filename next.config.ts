@@ -1,5 +1,6 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {
+import type { NextConfig } from 'next';
+
+const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -14,8 +15,6 @@ const nextConfig = {
       },
     ],
   },
-  // Prevent chunk timeout issues during deployment
-  productionBrowserSourceMaps: false,
 };
 
 export default nextConfig;
