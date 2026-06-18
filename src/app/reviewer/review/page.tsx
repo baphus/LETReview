@@ -280,20 +280,21 @@ export default function ReviewPage() {
     };
 
     return (
-        <div>
-            <div className="flex flex-col gap-4 mb-6">
+        <div className="space-y-4">
+            {/* Search & Filters */}
+            <div className="space-y-3">
                 <div className="relative w-full">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
-                        placeholder="Search articles by title or keyword..."
+                        placeholder="Search articles..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-10"
+                        className="w-full pl-9 h-10 rounded-xl"
                     />
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex gap-2">
                     <Select value={categoryId} onValueChange={(value) => { setCategoryId(value as any); setSubjectId('all'); }}>
-                        <SelectTrigger><SelectValue placeholder="All Categories"/></SelectTrigger>
+                        <SelectTrigger className="flex-1 h-9 rounded-xl text-xs"><SelectValue placeholder="Category"/></SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">All Categories</SelectItem>
                             <SelectItem value="gened">General Education</SelectItem>
@@ -302,7 +303,7 @@ export default function ReviewPage() {
                         </SelectContent>
                     </Select>
                     <Select value={subjectId} onValueChange={(value) => setSubjectId(value)}>
-                        <SelectTrigger><SelectValue placeholder="All Subjects"/></SelectTrigger>
+                        <SelectTrigger className="flex-1 h-9 rounded-xl text-xs"><SelectValue placeholder="Subject"/></SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">All Subjects</SelectItem>
                              {isLoadingSubjects ? (
@@ -315,25 +316,25 @@ export default function ReviewPage() {
                         </SelectContent>
                     </Select>
                 </div>
-                <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+                <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <Switch id="bookmarked-filter" checked={showOnlyBookmarked} onCheckedChange={setShowOnlyBookmarked} />
-                        <Label htmlFor="bookmarked-filter">Show bookmarked only</Label>
+                        <Label htmlFor="bookmarked-filter" className="text-xs text-muted-foreground">Bookmarked only</Label>
                     </div>
-                     <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-1 rounded-md border p-1">
-                            <Button variant={viewMode === 'grid' ? 'secondary' : 'ghost'} size="icon" className="h-8 w-8" onClick={() => setViewMode('grid')}>
-                                <LayoutGrid className="h-4 w-4" />
+                     <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-0.5 rounded-lg border p-0.5">
+                            <Button variant={viewMode === 'grid' ? 'secondary' : 'ghost'} size="icon" className="h-7 w-7" onClick={() => setViewMode('grid')}>
+                                <LayoutGrid className="h-3.5 w-3.5" />
                             </Button>
-                             <Button variant={viewMode === 'list' ? 'secondary' : 'ghost'} size="icon" className="h-8 w-8" onClick={() => setViewMode('list')}>
-                                <List className="h-4 w-4" />
+                             <Button variant={viewMode === 'list' ? 'secondary' : 'ghost'} size="icon" className="h-7 w-7" onClick={() => setViewMode('list')}>
+                                <List className="h-3.5 w-3.5" />
                             </Button>
                         </div>
                         {isAdmin && (
                             <Link href="/reviewer/review/new" passHref>
-                                <Button>
-                                    <PlusCircle className="mr-2 h-4 w-4" />
-                                    New Article
+                                <Button size="sm" className="h-7 rounded-lg text-xs">
+                                    <PlusCircle className="mr-1 h-3.5 w-3.5" />
+                                    New
                                 </Button>
                             </Link>
                         )}
@@ -342,8 +343,7 @@ export default function ReviewPage() {
             </div>
             
             <div className={cn(
-                "gap-6",
-                viewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3" : "flex flex-col"
+                viewMode === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" : "flex flex-col gap-3"
             )}>
                 {isLoadingArticles && Array.from({ length: 6 }).map((_, i) => <ReviewerSkeleton key={i} viewMode={viewMode} />)}
                 

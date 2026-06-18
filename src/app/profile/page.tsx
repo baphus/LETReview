@@ -409,11 +409,8 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="container mx-auto max-w-2xl pb-10">
-      <Card>
-        <CardHeader>
-            <CardTitle>Edit Profile</CardTitle>
-        </CardHeader>
+    <div className="container mx-auto max-w-lg pb-10 space-y-5">
+      <Card className="mt-0">
         <CardContent className="space-y-6">
             <div className="flex flex-col items-center gap-4">
                 <div className="relative">
@@ -460,7 +457,7 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
 
-      <Card className="mt-6">
+      <Card className="mt-0">
         <CardHeader>
           <CardTitle>Study Subscriptions</CardTitle>
           <CardDescription>Only reviewers you are subscribed to will appear in your Daily Activities and Challenges.</CardDescription>
@@ -499,7 +496,7 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
       
-      <Card className="mt-6">
+      <Card>
         <CardHeader>
           <CardTitle>Your Statistics</CardTitle>
           <CardDescription>A summary of your review journey so far.</CardDescription>
@@ -538,7 +535,7 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
 
-      <Card className="mt-6">
+      <Card>
             <CardHeader>
                 <CardTitle>This Week's Progress</CardTitle>
                 <CardDescription>A look at your completed challenges for the current week.</CardDescription>
@@ -578,7 +575,7 @@ export default function ProfilePage() {
             </CardContent>
         </Card>
 
-      <Card className="mt-6">
+      <Card>
         <CardHeader>
             <CardTitle>Achievements</CardTitle>
             <CardDescription>Unlock new pets by completing milestones.</CardDescription>
@@ -619,7 +616,7 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
       
-       <Card className="mt-6">
+       <Card>
             <CardHeader>
                 <CardTitle>App Settings</CardTitle>
             </CardHeader>
@@ -645,7 +642,7 @@ export default function ProfilePage() {
             </CardContent>
         </Card>
 
-      <Card className="mt-6">
+      <Card>
         <CardHeader>
             <CardTitle>Themes</CardTitle>
             <CardDescription>Customize the look and feel of your app. Your points: {user.points}</CardDescription>
@@ -679,7 +676,7 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
       
-      <section className="mt-8" id="pet-collection">
+      <section className="" id="pet-collection">
         <h2 className="text-xl font-bold font-headline mb-4">Pet Collection ({unlockedPetsCount}/{allPets.length})</h2>
         <Card>
           <CardContent className="p-4">
@@ -692,7 +689,7 @@ export default function ProfilePage() {
         </Card>
       </section>
       
-      <Card className="mt-6">
+      <Card>
         <CardHeader>
             <CardTitle>Pet Store</CardTitle>
             <CardDescription>Purchase rare pets with your points.</CardDescription>
@@ -732,7 +729,7 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
 
-      <Card className="mt-6">
+      <Card>
         <CardHeader>
           <CardTitle>About LETReview</CardTitle>
         </CardHeader>
@@ -747,7 +744,7 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
 
-      <Card className="mt-6">
+      <Card>
         <CardHeader>
             <CardTitle className="text-destructive">Danger Zone</CardTitle>
         </CardHeader>
