@@ -22,26 +22,49 @@ const MiniQuiz = ({ onCorrectAnswer, onIncorrectAnswer, onStreak }: { onCorrectA
   const [isAnswered, setIsAnswered] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
-  const [questionIndex, setQuestionIndex] = useState(0);
+  const [usedIds, setUsedIds] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    getQuestions({ difficulty: 'easy', shuffle: true, limit: 10 }).then(setQuizQuestions);
+  const fetchQuestions = useCallback(async () => {
+    const fetched = await getQuestions({ shuffle: true, limit: 100 });
+    setQuizQuestions(fetched);
+    return fetched;
   }, []);
 
-  const getNewQuestion = useCallback(() => {
-    if (quizQuestions.length === 0) return;
-    const nextIndex = (questionIndex + 1) % quizQuestions.length;
-    setQuestionIndex(nextIndex);
-    const newQuestion = { ...quizQuestions[nextIndex] };
-    newQuestion.choices = [...newQuestion.choices].sort(() => Math.random() - 0.5);
-    setQuestion(newQuestion);
+  useEffect(() => {
+    fetchQuestions();
+  }, [fetchQuestions]);
+
+  const getNewQuestion = useCallback(async () => {
+    let pool = quizQuestions;
+    let currentUsedIds = usedIds;
+
+    // If we've used all questions, refetch a fresh batch
+    const available = pool.filter(q => !currentUsedIds.has(q.id));
+    if (available.length === 0) {
+      pool = await fetchQuestions();
+      currentUsedIds = new Set();
+      setUsedIds(new Set());
+    }
+
+    const remainingPool = pool.filter(q => !currentUsedIds.has(q.id));
+    if (remainingPool.length === 0) return;
+
+    // Pick a random question from the remaining pool
+    const randomIndex = Math.floor(Math.random() * remainingPool.length);
+    const picked = { ...remainingPool[randomIndex] };
+    picked.choices = [...picked.choices].sort(() => Math.random() - 0.5);
+
+    setUsedIds(prev => new Set(prev).add(picked.id));
+    setQuestion(picked);
     setSelectedAnswer(null);
     setIsAnswered(false);
     setIsCorrect(false);
-  }, [quizQuestions, questionIndex]);
+  }, [quizQuestions, usedIds, fetchQuestions]);
 
   useEffect(() => {
-    if (quizQuestions.length > 0) getNewQuestion();
+    if (quizQuestions.length > 0 && !question) {
+      getNewQuestion();
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quizQuestions]);
 
